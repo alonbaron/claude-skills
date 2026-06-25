@@ -68,3 +68,11 @@ not a transcript.
 
 The user has a single clear recommendation, understands the strongest case
 against it, and knows the one risk to watch.
+
+## Global rules
+
+Apply on every run — canonical home `~/.claude/CLAUDE.md`:
+- **Ground everything.** Only what's given or verified; never invent files, APIs, or facts. Unknown → say "I don't know" or state the assumption.
+- **No tokenmaxing.** Lead with the answer; keep an output budget; no filler, no restating the question.
+- **Agent discipline.** Read before you edit; small reversible changes; ask when blocked, don't guess; report failures honestly.
+- **Commits are the user's alone.** Author = the user; never add an AI co-author or `Co-Authored-By`/credit line, and don't mention AI in commit messages.

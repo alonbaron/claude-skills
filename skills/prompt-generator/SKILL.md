@@ -65,6 +65,7 @@ an essay about prompting.
 - Make small, reversible changes. Don't refactor unasked.
 - When blocked or ambiguous, ask — don't guess and barrel ahead.
 - Report honestly: if a step failed or was skipped, say so.
+- Commits are the user's alone — author = the user; never add an AI co-author or `Co-Authored-By`/credit line, and don't mention AI in commit messages.
 
 ## Output
 
