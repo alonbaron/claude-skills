@@ -1,0 +1,17 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "alonbaron",
+  "description": "Alon Baron's Claude Code skills — architecture, code review, prompting, and decision tooling.",
+  "owner": {
+    "name": "Alon Baron",
+    "url": "https://github.com/alonbaron"
+  },
+  "plugins": [
+    {
+      "name": "alon-skills",
+      "source": "./",
+      "description": "Six skills: architect, review-swarm, ask-the-council, prompt-generator, up-to-date, ponytail.",
+      "category": "productivity"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "name": "alon-skills",
+  "description": "Architecture, code review, prompting, and decision-making skills tuned to Alon Baron's engineering style: model-first, failure-path-aware, YAGNI.",
+  "author": {
+    "name": "Alon Baron",
+    "url": "https://github.com/alonbaron"
+  },
+  "homepage": "https://github.com/alonbaron/claude-skills",
+  "repository": "https://github.com/alonbaron/claude-skills",
+  "license": "MIT",
+  "keywords": ["architecture", "code-review", "prompt-engineering", "yagni", "claude-code", "skills"]
+}
