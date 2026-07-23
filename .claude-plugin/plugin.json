@@ -1,6 +1,7 @@
 {
   "name": "alon-skills",
-  "description": "Architecture, code review, prompting, and decision-making skills tuned to Alon Baron's engineering style: model-first, failure-path-aware, YAGNI.",
+  "version": "2.0.0",
+  "description": "Architecture, code review, prompting, and decision-making skills tuned to Alon Baron's engineering style: model-first, failure-path-aware, YAGNI. v2: skills self-invoke when the task shape matches.",
   "author": {
     "name": "Alon Baron",
     "url": "https://github.com/alonbaron"

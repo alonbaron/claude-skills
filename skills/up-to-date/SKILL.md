@@ -1,13 +1,13 @@
 ---
 name: up-to-date
 description: >
-  Preflight sync + situational-awareness brief to run BEFORE starting work on a
-  repo, so the agent builds on latest code, not stale local state. Fetches from
-  origin, reports ahead/behind divergence, summarizes recent commits and open
-  PRs/issues, flags uncommitted/dirty state, and (on request) refreshes library
-  docs via context7. Read-only by default — never pulls or rewrites a dirty tree
-  without explicit OK. Use when the user says "up-to-date", "sync first", "pull
-  latest", "catch me up on the repo", or "before we start".
+  Preflight sync + situational brief before repo work: fetch origin,
+  ahead/behind divergence, recent commits, open PRs/issues, dirty-state
+  warnings, one recommended first action. Read-only — never pulls or rewrites a
+  dirty tree without explicit OK. Use proactively before starting work in any
+  repo with a remote, especially shared or long-untouched ones. Also on
+  "up-to-date", "sync first", "pull latest", "catch me up on the repo". Not for
+  repos without a remote or quick mid-task re-checks.
 argument-hint: "[optional: 'docs' to also refresh library docs, or a path]"
 ---
 
@@ -16,6 +16,13 @@ argument-hint: "[optional: 'docs' to also refresh library docs, or a path]"
 Get current before doing work. Goal: a short situational brief so you build on
 the latest code with full context. **Read-only by default. Never mutate a dirty
 tree, never force, never discard local work without explicit confirmation.**
+
+## Proactive use
+
+When work is about to start in a repo with a remote, invoke this without being
+asked: announce in one line ("Running up-to-date on <repo>") and proceed.
+Proactive runs stay strictly read-only — the sync decision (step 7) still
+requires explicit OK.
 
 ## Steps
 
@@ -57,6 +64,18 @@ tree, never force, never discard local work without explicit confirmation.**
   without explicit user OK.
 - If `gh` is missing or unauthenticated, skip that section and say so — don't
   guess at remote state.
+
+## When not to use
+
+- No remote → nothing to sync; say so in one line and start the work.
+- Mid-task re-checks in a repo already briefed this session — `git fetch` +
+  `git status` answer it without the full brief.
+
+## Hand-offs
+
+- Brief delivered → start the actual task on the now-current tree.
+- The task is a new app/feature/workstream with no design docs → `architect`
+  next, before code.
 
 ## Done when
 

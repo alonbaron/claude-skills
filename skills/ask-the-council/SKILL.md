@@ -1,14 +1,13 @@
 ---
 name: ask-the-council
 description: >
-  Convene a panel of opinionated advisors (parallel Claude subagents, each with
-  a distinct mandate and a forbidden move so they genuinely diverge), gather
-  independent positions, optionally cross-critique, then deliver a Chairman
-  synthesis that COMMITS to one recommendation with explicit tradeoffs. For
-  high-stakes judgment, design, and tradeoff calls — not fact-finding (use
-  deep-research for facts). Use when the user says "ask the council", "convene
-  the council", "the council", "get a panel", or wants multiple expert
-  perspectives on a decision.
+  Convenes a panel of opinionated advisors (parallel Claude subagents, each with
+  a distinct mandate and a forbidden move so they genuinely diverge), then a
+  Chairman synthesis that COMMITS to one recommendation with explicit tradeoffs.
+  Use proactively for any high-stakes design, architecture, or tradeoff decision
+  where credible options genuinely compete. Also on "ask the council", "the
+  council", "get a panel". Not for fact-finding or decisions with one obvious
+  answer — answer those directly.
 argument-hint: "[the decision or question] [+ 'deep' for the full panel]"
 ---
 
@@ -16,6 +15,13 @@ argument-hint: "[the decision or question] [+ 'deep' for the full panel]"
 
 A panel of advisors who are required to disagree, then a Chairman who decides.
 Use for decisions and tradeoffs, not for gathering facts.
+
+## Proactive use
+
+If a decision is high-stakes and the options genuinely compete — architecture
+choice, buy-vs-build, irreversible migration — invoke this without being asked:
+announce in one line ("Convening the council: <decision>") and proceed. Never
+ask permission to run the skill.
 
 ## Process
 
@@ -63,6 +69,18 @@ not a transcript.
   refusing to choose is not.
 - Separate opinion from fact; flag any claim that should be verified before
   acting. The council gives judgment, not ground truth.
+
+## When not to use
+
+- Fact-finding — run a research pass; the council opines, it doesn't verify.
+- Low-stakes or one-obvious-answer calls — deciding directly is cheaper and
+  faster than a panel.
+
+## Hand-offs
+
+- Verdict chosen → `ponytail` the winning option down to its minimal build.
+- Verdict changes an architectural fact → `architect` updates
+  `SOURCE_OF_TRUTH.md` before any code.
 
 ## Done when
 

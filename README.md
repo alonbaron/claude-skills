@@ -40,6 +40,8 @@ Pull updates anytime with `/plugin marketplace update alonbaron`. No version is 
 
 Each skill also triggers from plain language — e.g. *"spec this out before we build"*, *"swarm review this diff"*, *"ask the council whether…"*, *"catch me up on the repo"*, *"be lazy here"*.
 
+**v2 — proactive by default.** Since v2.0.0 the skills fire on task *shape*, not just keywords: starting a new feature invokes **architect**, opening work in a repo with a remote invokes **up-to-date**, finishing a non-trivial implementation invokes **review-swarm**, a solution growing past the minimum invokes **ponytail** — announced in one line, no permission asked. Each skill carries a "when not to use" boundary so it stays out of the way on trivial work.
+
 ---
 
 ## ◢ What they share
@@ -64,7 +66,7 @@ Each skill also triggers from plain language — e.g. *"spec this out before we 
 
 ## ◢ License
 
-MIT — see [LICENSE](LICENSE). The **ponytail** skill is third-party (MIT, © Dietrich Gebert), redistributed unmodified with attribution from [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail).
+MIT — see [LICENSE](LICENSE). The **ponytail** skill is derived from the third-party [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) (MIT, © Dietrich Gebert), adapted with attribution.
 
 <p align="center">
   <sub>Built by <a href="https://github.com/alonbaron">@alonbaron</a> · <b>Build the model. Define the rules. Then write the code.</b></sub>

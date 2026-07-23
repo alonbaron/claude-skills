@@ -1,14 +1,13 @@
 ---
 name: review-swarm
 description: >
-  Local, free, multi-specialist review of the working diff using parallel Claude
-  subagents, then adversarial verification of every finding, dedup, and a ranked
-  report with file:line evidence. Specialists: correctness, security/trust
-  boundaries, data/perf (N+1, transactions), architecture-altitude,
-  ponytail-simplicity, and tests/failure-paths. Complements the built-in
-  /code-review (this is local + tailored; /code-review ultra is the cloud one).
-  Use when the user says "review-swarm", "swarm review", "multi-agent review",
-  or "deep review this diff".
+  Local, free, multi-specialist review of a diff: parallel Claude subagents
+  (correctness, security/trust boundaries, data/perf, architecture-altitude,
+  ponytail-simplicity, tests/failure paths), adversarial verification, dedup,
+  ranked file:line report. Use proactively when asked to review, check, or
+  assess a diff, branch, or PR — and after any non-trivial implementation,
+  before the PR. Also on "review-swarm", "swarm review", "deep review". Not for
+  trivial diffs or when asked to fix, not review.
 argument-hint: "[optional: 'staged' | 'branch' | a path]"
 ---
 
@@ -16,6 +15,13 @@ argument-hint: "[optional: 'staged' | 'branch' | a path]"
 
 Review the working changes with a panel of specialists in parallel, then keep
 only the findings that survive scrutiny. Free and local (Claude subagents).
+
+## Proactive use
+
+If the user asks to review, check, or assess changes — or you've just finished
+a non-trivial implementation and a PR is next — invoke this without being
+asked: announce in one line ("Running review-swarm on <scope>") and proceed.
+Never ask permission to run the skill.
 
 ## Steps
 
@@ -53,6 +59,18 @@ only the findings that survive scrutiny. Free and local (Claude subagents).
   manufactured nit.
 - Don't fix here — this is review. Offer to hand the ranked list to an
   implementer (or to `/code-review --fix`) if the user wants changes applied.
+
+## When not to use
+
+- A trivial diff (docs, rename, one-liner) — a single-pass read or plain
+  `/code-review` covers it; a swarm is overkill.
+- The ask is "fix it", not "review it" — implement, then swarm the result.
+
+## Hand-offs
+
+- Architecture findings that contradict the design docs → `architect audit`.
+- Simplicity findings the user accepts → `ponytail` the fix.
+- Heavyweight cloud pass wanted → `/code-review ultra`.
 
 ## Relationship to built-ins
 

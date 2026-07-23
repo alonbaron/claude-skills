@@ -1,15 +1,13 @@
 ---
 name: prompt-generator
 description: >
-  Turns a vague ask into a rigorous, grounded, token-efficient prompt for an
-  agent or LLM. Bakes in explicit role + objective, testable success criteria,
-  anti-hallucination rules (verify or say "I don't know", never invent
-  files/APIs/facts), anti-tokenmaxing (output budget, no restating the prompt,
-  lead with the answer), and strict agent rules (read before edit, ask when
-  blocked, small reversible changes). Use whenever the user says
-  "prompt-generator", "write a prompt", "make a prompt for", "improve this
-  prompt", "turn this into a prompt", "prompt for an agent", or hands over a
-  rough/sloppy prompt to tighten.
+  Turns a vague ask into a rigorous, grounded, token-efficient prompt: role +
+  objective, testable done criteria, anti-hallucination (verify or say "I don't
+  know"), anti-tokenmaxing (lead with the answer, output budget), strict agent
+  discipline. Use proactively when the user hands over a prompt or task spec
+  destined for another agent or LLM. Also on "write a prompt", "improve this
+  prompt", "prompt for an agent". Not for human-facing prose or work you'll
+  execute yourself this session.
 argument-hint: "[task, or a rough prompt to refine]"
 ---
 
@@ -18,6 +16,13 @@ argument-hint: "[task, or a rough prompt to refine]"
 Produce the prompt the user should have written. A good prompt is precise,
 grounded, and short — every token earns its place. You output a *prompt*, not
 an essay about prompting.
+
+## Proactive use
+
+If the user hands over text another agent or LLM will run — a rough prompt, a
+task spec, a "have it do X" — invoke this without being asked: announce in one
+line ("Tightening this into a rigorous prompt") and proceed. Never ask
+permission to run the skill.
 
 ## Process
 
@@ -66,6 +71,20 @@ an essay about prompting.
 - When blocked or ambiguous, ask — don't guess and barrel ahead.
 - Report honestly: if a step failed or was skipped, say so.
 - Commits are the user's alone — author = the user; never add an AI co-author or `Co-Authored-By`/credit line, and don't mention AI in commit messages.
+
+## When not to use
+
+- Text a human will read (docs, messages, specs for people) — that's writing,
+  not prompting.
+- Work you'll do yourself in this session — just do it; don't write yourself a
+  prompt.
+
+## Hand-offs
+
+- The prompt drives a coding agent onto a repo → bake "run `up-to-date` first"
+  into its steps.
+- The task behind the prompt is a whole build → suggest `architect` for the
+  design docs instead of one mega-prompt.
 
 ## Output
 

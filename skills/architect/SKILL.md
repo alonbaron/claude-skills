@@ -1,16 +1,13 @@
 ---
 name: architect
 description: >
-  Produces and maintains a production-grade design doc system BEFORE code, in
-  Alon's house format: SOURCE_OF_TRUTH.md, ARCHITECTURE_ROADMAP.md,
-  TODO_WORKFLOW.md, and a CLAUDE.md rules file (auto-loaded by Claude Code), plus
-  a modular docs/architecture/ set for larger projects. Model first — data +
-  invariants → enforcement at the core → failure paths → API contracts → NFRs →
-  phased workstream. All docs stay synced top-down at all times (docs before
-  code). Design only, no implementation. Use when the user says "architect",
-  "design doc", "spec this out", "before we build", "production-grade plan",
-  "architecture for", "roadmap", "source of truth", or is starting a new app,
-  feature, or workstream.
+  Produces Alon's design-doc system BEFORE code: SOURCE_OF_TRUTH,
+  ARCHITECTURE_ROADMAP, TODO_WORKFLOW, CLAUDE.md (+ modular docs/architecture).
+  Model first: data + invariants → core enforcement → failure paths → API
+  contracts → phased workstream. Use proactively when a new app, feature, or
+  workstream is starting and code hasn't been written, or docs may have drifted
+  (audit). Also on "architect", "design doc", "spec this out", "roadmap". Not
+  for small fixes inside a current design.
 argument-hint: "[what you're building]   ·   add 'audit' to check existing docs for drift"
 ---
 
@@ -25,6 +22,13 @@ boundaries (app-layer validation **and** a DB constraint) — never "the fronten
 handles it" · **design failure paths** as deliberately as happy paths · **small,
 reversible, independently shippable steps** · **one source of truth** —
 everything else derives from it and links back.
+
+## Proactive use
+
+If a new app, feature, or workstream is starting and no current design docs
+exist, invoke this without being asked: announce in one line — "Running
+architect: <why>" — and proceed. Never ask permission to run the skill; the 1–3
+blocking questions below are still allowed.
 
 ## The four artifacts (+ the modular set)
 
@@ -122,6 +126,18 @@ size: a single feature → `SOURCE_OF_TRUTH` + a light `ARCHITECTURE_ROADMAP` +
   API you haven't confirmed.
 - Decision-dense: tables and bullets, not prose. Call out reversed or forbidden
   decisions inline (`> Do not reintroduce X without an explicit decision`).
+
+## When not to use
+
+- A small fix or task already covered by current design docs — just do it.
+- Pure implementation of an already-designed phase — code, don't re-spec.
+
+## Hand-offs
+
+- Repo with a remote → run `up-to-date` first so the design builds on latest code.
+- A load-bearing decision with genuinely competing options → `ask-the-council`
+  before locking it into `SOURCE_OF_TRUTH.md`.
+- After a phase is implemented → `review-swarm` the diff before the PR.
 
 ## Global rules
 
