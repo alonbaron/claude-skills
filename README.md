@@ -24,7 +24,7 @@
 /plugin install alon-skills@alonbaron
 ```
 
-Pull updates anytime with `/plugin marketplace update alonbaron`. No version is pinned, so every push is the latest.
+Pull updates anytime with `/plugin marketplace update alonbaron` — the marketplace tracks `main`, so you're always on the latest. Tagged releases like [`v2.0.0`](https://github.com/alonbaron/claude-skills/releases) mark the milestones.
 
 ---
 
