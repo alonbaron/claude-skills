@@ -3,10 +3,11 @@
 </p>
 
 <p align="center">
-  <img alt="Claude Code plugin" src="https://img.shields.io/badge/Claude_Code-plugin-E879F9?style=flat-square&labelColor=140A1B">&nbsp;
-  <img alt="6 skills" src="https://img.shields.io/badge/skills-6-818CF8?style=flat-square&labelColor=0A0E18">&nbsp;
-  <img alt="MIT license" src="https://img.shields.io/badge/license-MIT-34D399?style=flat-square&labelColor=0A0E18">&nbsp;
-  <a href="https://github.com/alonbaron"><img alt="by alonbaron" src="https://img.shields.io/badge/by-alonbaron-A78BFA?style=flat-square&labelColor=0A0E18&logo=github"></a>
+  <img alt="Claude Code plugin" src="https://img.shields.io/badge/Claude_Code-plugin-0891B2?style=flat-square&labelColor=0F1E33">&nbsp;
+  <img alt="6 skills" src="https://img.shields.io/badge/skills-6-4F46E5?style=flat-square&labelColor=0F1E33">&nbsp;
+  <img alt="version" src="https://img.shields.io/badge/version-v2.0.0-7C3AED?style=flat-square&labelColor=0F1E33">&nbsp;
+  <img alt="MIT license" src="https://img.shields.io/badge/license-MIT-059669?style=flat-square&labelColor=0F1E33">&nbsp;
+  <a href="https://github.com/alonbaron"><img alt="by alonbaron" src="https://img.shields.io/badge/by-alonbaron-C026D3?style=flat-square&labelColor=0F1E33&logo=github&logoColor=white"></a>
 </p>
 
 <p align="center">
@@ -66,7 +67,7 @@ Each skill also triggers from plain language — e.g. *"spec this out before we 
 
 ## ◢ License
 
-MIT — see [LICENSE](LICENSE). The **ponytail** skill is derived from the third-party [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) (MIT, © Dietrich Gebert), adapted with attribution.
+MIT — see [LICENSE](LICENSE). The **ponytail** skill is vendored from the third-party [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) (MIT, © Dietrich Gebert) and redistributed under the same terms; third-party attribution is recorded in [NOTICE](NOTICE).
 
 <p align="center">
   <sub>Built by <a href="https://github.com/alonbaron">@alonbaron</a> · <b>Build the model. Define the rules. Then write the code.</b></sub>

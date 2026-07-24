@@ -19,9 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----
-
-The `skills/ponytail/` skill is vendored from https://github.com/DietrichGebert/ponytail
-(MIT License, Copyright (c) Dietrich Gebert) and redistributed here unmodified
-under the same MIT terms.
