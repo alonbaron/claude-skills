@@ -59,6 +59,19 @@ If you also run a UX skill or a prose skill, two hand-offs are worth wiring: rev
 
 ---
 
+## ◢ Companion skills
+
+Not shipped here and not mine. Two third-party skills the hand-offs above are written against, if you want somewhere for them to go. Install them separately.
+
+| Skill | Source | Pairs with |
+|---|---|---|
+| **ux-designer** | [szilu/ux-designer-skill](https://github.com/szilu/ux-designer-skill) (MIT) | review-swarm, which passes UI and accessibility hunks to it |
+| **humanizer** | [blader/humanizer](https://github.com/blader/humanizer) (MIT) | architect, for executive summaries and README prose |
+
+One catch worth knowing about humanizer: as of v2.9.1 the plugin puts `SKILL.md` at its root instead of `skills/humanizer/SKILL.md`. Claude Code installs it, reports it enabled, and never loads it. Copy `SKILL.md` out of `~/.claude/plugins/cache/humanizer/humanizer/<version>/` into `~/.claude/skills/humanizer/` and it works.
+
+---
+
 ## ◢ What's new in v2.1
 
 - Descriptions name the situation rather than the capability — when the skill should fire, the words you'd actually type, and when it should stay quiet.
