@@ -42,6 +42,10 @@ permission to run the skill.
 
 - **Role** — who the model is and its single objective.
 - **Context / Inputs** — what it's given; mark placeholders as `{{like_this}}`.
+- **Ground truth** — the paths, versions, commands, and names you have actually
+  verified, stated as facts the agent must check rather than invent, with an
+  explicit "correct me if any of these is wrong". A coding-agent prompt without
+  this section is where hallucinated file paths come from.
 - **Rules** — the grounding + efficiency rules below, plus task-specific ones.
 - **Steps** — ordered, only if the task is genuinely multi-step.
 - **Output format** — exact shape; lead with the answer.

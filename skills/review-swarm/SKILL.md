@@ -7,7 +7,9 @@ description: >
   ranked file:line report. Use proactively when asked to review, check, or
   assess a diff, branch, or PR — and after any non-trivial implementation,
   before the PR. Also on "review-swarm", "swarm review", "deep review". Not for
-  trivial diffs or when asked to fix, not review.
+  trivial diffs, not when asked to fix rather than review, not when security
+  alone is the whole ask (built-in "security-review"), and not when
+  "/code-review" is named explicitly.
 argument-hint: "[optional: 'staged' | 'branch' | a path]"
 ---
 
@@ -28,6 +30,10 @@ Never ask permission to run the skill.
 1. **Scope the diff.** Default: working tree vs the default branch. `staged` →
    `git diff --staged`; `branch` → vs merge-base with main; a path → limit to
    it. Read the changed hunks and enough surrounding code to judge them.
+   **Size guard:** over ~40 changed files or ~2000 changed lines, don't swarm
+   the whole thing — split by area and say which slice you reviewed, or ask
+   which slice matters. A swarm that overruns its context reports confidently
+   on code it never read.
 2. **Fan out specialists — in parallel.** Spawn the reviewers below with the
    Agent tool, **all in one message** so they run concurrently. Give each the
    diff plus the files it needs and its single lens. Each returns findings as:
@@ -69,6 +75,8 @@ Never ask permission to run the skill.
 ## Hand-offs
 
 - Architecture findings that contradict the design docs → `architect audit`.
+- The diff touches UI, forms, or markup → hand those hunks to `ux-designer`
+  for the UX/a11y read; this swarm judges correctness, not interface quality.
 - Simplicity findings the user accepts → `ponytail` the fix.
 - Heavyweight cloud pass wanted → `/code-review ultra`.
 

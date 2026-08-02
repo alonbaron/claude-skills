@@ -80,6 +80,10 @@ Given `architect audit`, do **not** author — verify sync and report drift: cod
 facts missing from the docs, dead links, index/file mismatches, stale TODO
 statuses. Output a prioritized fix list and offer to apply it.
 
+Every drift item cites **both sides**: the `file:line` in code that states the
+fact, and the doc (+ § or line) that should describe it and doesn't. No item
+without both is a finding — it's a hunch, and hunches don't go in the list.
+
 ## `CLAUDE.md` template (generalize to the project)
 
 ```
@@ -138,6 +142,10 @@ size: a single feature → `SOURCE_OF_TRUTH` + a light `ARCHITECTURE_ROADMAP` +
 - A load-bearing decision with genuinely competing options → `ask-the-council`
   before locking it into `SOURCE_OF_TRUTH.md`.
 - After a phase is implemented → `review-swarm` the diff before the PR.
+- The doc set carries prose a human (not an agent) will read — §0 executive
+  context, a README, a mini-ADR rationale → `humanizer` on *those passages
+  only*. The tables, invariants, and contracts stay as they are; they're
+  reference text, and "sounding human" is not a goal there.
 
 ## Global rules
 

@@ -34,6 +34,9 @@ requires explicit OK.
    local.)
 4. **Divergence:** current branch vs its upstream —
    `git rev-list --left-right --count @{upstream}...HEAD`. Report ahead/behind.
+   No upstream (new local branch, or detached HEAD) → that command fails; say
+   so plainly, fall back to `origin/<default-branch>` for the comparison, and
+   note the branch is unpushed. Never report "in sync" from a failed command.
 5. **Recent activity:** `git log --oneline -15` on the branch, and the same for
    the default branch if you're not on it. Summarize what changed, not every
    line.

@@ -6,8 +6,10 @@ description: >
   before fifty. Levels: lite/full/ultra. Use proactively when a solution is
   growing beyond the minimum: new abstractions, dependencies, scaffolding "for
   later", or complaints about over-engineering or bloat. Also on "ponytail",
-  "be lazy", "yagni", "simplest solution", "do less". Not at trust boundaries
-  or when the full version is explicitly asked.
+  "be lazy", "yagni", "simplest solution", "do less". Not at trust boundaries,
+  not when the full version is explicitly asked, and not for tidying an
+  already-written diff — that is built-in "simplify". Ponytail governs what
+  gets built, before and while it is written; simplify cleans up after.
 argument-hint: "[lite|full|ultra]"
 license: MIT
 ---
@@ -121,9 +123,8 @@ test, YAGNI applies to tests too.
 
 ## Boundaries
 
-Ponytail governs what you build, not how you talk (pair with Caveman for
-terse prose). "stop ponytail" / "normal mode": revert. Level persists until
-changed or session end.
+Ponytail governs what you build, not how you talk. "stop ponytail" /
+"normal mode": revert. Level persists until changed or session end.
 
 The shortest path to done is the right path.
 

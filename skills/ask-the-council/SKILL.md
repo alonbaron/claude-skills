@@ -75,6 +75,10 @@ not a transcript.
 - Fact-finding — run a research pass; the council opines, it doesn't verify.
 - Low-stakes or one-obvious-answer calls — deciding directly is cheaper and
   faster than a panel.
+- **Reversible in an afternoon** — decide, ship, and revisit if it bites. A
+  panel costs 4–6 subagents; spend that only where being wrong is expensive to
+  undo (schema, auth model, vendor lock-in, a migration). If you can't name
+  what the wrong choice costs to reverse, don't seat the council.
 
 ## Hand-offs
 
