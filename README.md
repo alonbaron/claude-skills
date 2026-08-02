@@ -5,7 +5,7 @@
 <p align="center">
   <img alt="Claude Code plugin" src="https://img.shields.io/badge/Claude_Code-plugin-0891B2?style=flat-square&labelColor=0F1E33">&nbsp;
   <img alt="6 skills" src="https://img.shields.io/badge/skills-6-4F46E5?style=flat-square&labelColor=0F1E33">&nbsp;
-  <img alt="version" src="https://img.shields.io/badge/version-v2.0.0-7C3AED?style=flat-square&labelColor=0F1E33">&nbsp;
+  <img alt="version" src="https://img.shields.io/badge/version-v2.1.0-7C3AED?style=flat-square&labelColor=0F1E33">&nbsp;
   <img alt="MIT license" src="https://img.shields.io/badge/license-MIT-059669?style=flat-square&labelColor=0F1E33">&nbsp;
   <a href="https://github.com/alonbaron"><img alt="by alonbaron" src="https://img.shields.io/badge/by-alonbaron-C026D3?style=flat-square&labelColor=0F1E33&logo=github&logoColor=white"></a>
 </p>
@@ -24,7 +24,7 @@
 /plugin install alon-skills@alonbaron
 ```
 
-Pull updates anytime with `/plugin marketplace update alonbaron` — the marketplace tracks `main`, so you're always on the latest. Tagged releases like [`v2.0.0`](https://github.com/alonbaron/claude-skills/releases) mark the milestones.
+Pull updates anytime with `/plugin marketplace update alonbaron` — the marketplace tracks `main`, so you're always on the latest. Tagged releases like [`v2.1.0`](https://github.com/alonbaron/claude-skills/releases) mark the milestones.
 
 ---
 
@@ -42,6 +42,31 @@ Pull updates anytime with `/plugin marketplace update alonbaron` — the marketp
 Each skill also triggers from plain language — e.g. *"spec this out before we build"*, *"swarm review this diff"*, *"ask the council whether…"*, *"catch me up on the repo"*, *"be lazy here"*.
 
 **v2 — proactive by default.** Since v2.0.0 the skills fire on task *shape*, not just keywords: starting a new feature invokes **architect**, opening work in a repo with a remote invokes **up-to-date**, finishing a non-trivial implementation invokes **review-swarm**, a solution growing past the minimum invokes **ponytail** — announced in one line, no permission asked. Each skill carries a "when not to use" boundary so it stays out of the way on trivial work.
+
+---
+
+## ◢ Living with Claude Code's built-ins
+
+A skill that fires when a built-in should have, or stays quiet because a built-in got there first, is a bug even when both are good on their own. v2.1 settles the overlaps inside the descriptions, so the choice gets made at trigger time instead of after you already have the wrong answer.
+
+| Overlap | Who wins | Why |
+|---|---|---|
+| **ponytail** vs `/simplify` | split | ponytail governs what gets *built*, before and while you write it. `/simplify` cleans a diff that already exists. |
+| **review-swarm** vs `/code-review` | review-swarm | It's the default for a real diff. `/code-review` takes over when you name it, or for a one-liner not worth a swarm. |
+| **review-swarm** vs `/security-review` | depends on the ask | Security is one of the swarm's six lenses. When security is the whole question, `/security-review` goes deeper. |
+
+If you also run a UX skill or a prose skill, two hand-offs are worth wiring: review-swarm passes UI and accessibility hunks to the design reviewer instead of guessing at them, and architect's executive summaries are prose worth humanizing. Its tables, invariants, and API contracts are not.
+
+---
+
+## ◢ What's new in v2.1
+
+- Descriptions name the situation rather than the capability — when the skill should fire, the words you'd actually type, and when it should stay quiet.
+- review-swarm stops at roughly 40 files or 2,000 changed lines, splits by area, and says which slice it read. A swarm that runs out of context mid-review still writes a confident report.
+- `architect audit` findings cite both sides: the `file:line` in code that states the fact, and the doc that should describe it and doesn't. Anything less is a hunch.
+- ask-the-council weighs the cost of being wrong before seating a panel. Four to six subagents is too much for a decision you can reverse in an afternoon.
+- up-to-date handles a branch with no upstream. The divergence check fails on a fresh local branch or a detached HEAD, and it now says so instead of reporting "in sync" from a command that never ran.
+- prompt-generator adds a ground-truth section: the paths, versions, and commands you verified, stated as facts the agent must check rather than invent.
 
 ---
 
