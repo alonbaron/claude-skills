@@ -1,0 +1,46 @@
+# Runs the eval cases that need a working shell sandbox (architect, review-swarm,
+# up-to-date: their skills run `!` git commands when they load). Start it by
+# pushing a commit whose message contains [run-evals], or from the Actions tab.
+# Needs the repository secret ANTHROPIC_API_KEY. Costs real API money: about
+# $15-25 for the 9 cases at --runs 2, both arms (estimate from local runs).
+name: evals
+on:
+  workflow_dispatch:
+  push:
+    branches: ["claude/**"]
+jobs:
+  sandboxed-cases:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[run-evals]')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Sandbox dependencies
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q bubblewrap socat
+          # Ubuntu 24.04 blocks unprivileged user namespaces through AppArmor; bwrap needs them.
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          bwrap --ro-bind / / --dev /dev --proc /proc --unshare-all true && echo "bwrap works"
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code && claude --version
+      - name: Run the 9 sandboxed cases
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          mkdir evals-ci
+          cp -r evals/architect evals/review-swarm evals/up-to-date evals-ci/
+          claude plugin eval . --eval-dir evals-ci --runs 2 -j 4 --scaffold \
+            --allow-tools Write Edit Bash --model claude-fable-5-1 --judge-model sonnet \
+            --no-publish --trust-plugin --threshold 0.7 --json evals-ci/result.json
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-results
+          path: |
+            evals-ci/result.json
+            evals-ci/results/
