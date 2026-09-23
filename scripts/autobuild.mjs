@@ -247,7 +247,7 @@ function makeProgress(since) {
 function runSession(wfArgs) {
   return new Promise((done) => {
     const prompt = `Use the Workflow tool with name alon-skills:build-loop and args ${JSON.stringify(wfArgs)}. Wait for it to finish. Reply with only the JSON object it returned, no prose.`;
-    const cliArgs = ["-p", "--permission-mode", "auto", "--allowedTools", "Workflow", "--output-format", "json"];
+    const cliArgs = ["-p", "--model", "fable", "--permission-mode", "auto", "--allowedTools", "Workflow", "--output-format", "json"];
     if (pluginDir) cliArgs.push("--plugin-dir", process.platform === "win32" ? JSON.stringify(resolve(pluginDir)) : resolve(pluginDir));
     const env = { ...process.env, CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS: process.env.CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS || "7200000" };
     // On Windows `claude` is a .cmd shim, which Node only runs through a shell; one command string avoids
