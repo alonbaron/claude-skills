@@ -80,3 +80,19 @@ Target: >= 0.8 fire rate on should-fire, <= 0.2 on should-not, per skill.
 
 All six are inside the target. API-equivalent cost about $115 over four
 invocations; two batches were lost to the 5-hour usage limit and re-run.
+
+## 7. Review and first real build-loop run
+
+- Built-in /code-review (high) on v2.1.0..HEAD, shipped code only: 10 findings,
+  all in build-loop.js and autobuild.mjs, all confirmed and fixed in 4239e81.
+  review-swarm itself was not available in this session.
+- build-loop, never run before: dry run OK; `autobuild.mjs --tasks 1` on a
+  fixture repo (scratchpad/fixture-repo, not kept) built row 1.1 end to end in ~4
+  min, driver-reported $1.75. All stages ran; the adversary lens was skipped
+  (19 lines < 30), research skipped (nothing unverified), no fix round needed.
+- Found: the planner's commit carried Co-Authored-By + Claude-Session trailers
+  despite COMMON forbidding them; the host's attribution instruction won. The
+  refute lenses flagged it. Documented in README; not fixed in code.
+- CI: .github/workflows/evals.yml runs the 9 sandbox cases on ubuntu-24.04 when a
+  commit message contains [run-evals]. Needs the ANTHROPIC_API_KEY secret. Not
+  yet run.
