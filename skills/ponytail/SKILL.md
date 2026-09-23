@@ -137,6 +137,9 @@ same bloat the ladder exists to refuse.
 Ponytail governs what you build, not how you talk. "stop ponytail" /
 "normal mode": revert to normal. Otherwise the level persists until changed
 or session end. Default: **full**. Switch: `/ponytail lite|full|ultra`.
+Only the user picks a level. When you invoke this skill on your own, pass no
+level and run full; lite is never yours to choose, since it builds what the
+ladder would refuse.
 
 The shortest path to done is the right path.
 
