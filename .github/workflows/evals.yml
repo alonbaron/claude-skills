@@ -1,8 +1,8 @@
 # Runs the eval cases that need a working shell sandbox (architect, review-swarm,
 # up-to-date: their skills run `!` git commands when they load). Start it by
 # pushing a commit whose message contains [run-evals], or from the Actions tab.
-# Needs the repository secret ANTHROPIC_API_KEY. Costs real API money: about
-# $15-25 for the 9 cases at --runs 2, both arms (estimate from local runs).
+# Needs the repository secret CLAUDE_CODE_OAUTH_TOKEN (from `claude setup-token`),
+# so the runs count against the owner's Claude plan, not an API key.
 name: evals
 on:
   workflow_dispatch:
@@ -29,7 +29,7 @@ jobs:
         run: npm install -g @anthropic-ai/claude-code && claude --version
       - name: Run the 9 sandboxed cases
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
         run: |
           mkdir evals-ci
           cp -r evals/architect evals/review-swarm evals/up-to-date evals-ci/
