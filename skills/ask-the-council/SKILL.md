@@ -1,42 +1,47 @@
 ---
 name: ask-the-council
-description: >
-  Convenes a panel of opinionated advisors (parallel Claude subagents, each with
-  a distinct mandate and a forbidden move so they genuinely diverge), then a
-  Chairman synthesis that COMMITS to one recommendation with explicit tradeoffs.
-  Use proactively for any high-stakes design, architecture, or tradeoff decision
-  where credible options genuinely compete. Also on "ask the council", "the
-  council", "get a panel". Not for fact-finding or decisions with one obvious
-  answer — answer those directly.
+description: >-
+  Convenes a panel of opinionated Claude advisors, each with a distinct
+  mandate and a forbidden move so they genuinely diverge, then a Chairman
+  synthesis that commits to one recommendation with the decisive tradeoff and
+  the strongest dissent named.
+when_to_use: >-
+  Trigger proactively for high-stakes design, architecture, or tradeoff
+  decisions where credible options genuinely compete and being wrong is
+  expensive to reverse — schema, auth model, vendor lock-in, an irreversible
+  migration. Also on "ask the council", "the council", "get a panel". Not for
+  fact-finding (the council opines, it doesn't verify — run research
+  instead), not for calls with one obvious answer, and not for anything
+  reversible in an afternoon: decide, ship, and revisit if it bites.
 argument-hint: "[the decision or question] [+ 'deep' for the full panel]"
+effort: max
 ---
 
 # Ask the Council
 
-A panel of advisors who are required to disagree, then a Chairman who decides.
-Use for decisions and tradeoffs, not for gathering facts.
+A panel of advisors who are required to disagree, then a Chairman who
+decides. Use for decisions and tradeoffs, not for gathering facts.
 
 ## Proactive use
 
 If a decision is high-stakes and the options genuinely compete — architecture
-choice, buy-vs-build, irreversible migration — invoke this without being asked:
-announce in one line ("Convening the council: <decision>") and proceed. Never
-ask permission to run the skill.
+choice, buy-vs-build, irreversible migration — invoke this without being
+asked: announce in one line ("Convening the council: <decision>") and
+proceed. Never ask permission to run the skill.
 
-## Process
+Gate it first: if you can't name what the wrong choice costs to reverse,
+don't seat the council — decide directly and move on. A panel costs 4–6 opus
+subagents; spend that only where being wrong is expensive to undo.
 
-1. **Frame the decision.** Restate the question, the real options, and the
-   binding constraints. If one missing fact would flip the answer, ask it (max
-   1–2). Otherwise proceed on stated assumptions.
-2. **Seat the council — in parallel.** Spawn advisors with the Agent tool, **all
-   in one message**. Default panel of 4; `deep` seats all 6 and adds a critique
-   round. Each advisor returns: **position · core reasoning · biggest risk they
-   see · confidence (low/med/high)**.
-3. **(deep only) Cross-critique.** Show each advisor the others' positions
-   (unattributed) and have them name the single strongest opposing point.
-4. **Chairman synthesis (you).** Not an average — a judgment. Output where they
-   converge, where they split and *why*, the decisive tradeoff, and **one
-   recommended path** with its rationale and the main risk to watch.
+## Frame and seat the council
+
+Restate the decision, the real options, and the binding constraints. If one
+missing fact would flip the answer, ask it (max 1–2 questions) — otherwise
+proceed on stated assumptions. Then spawn the advisors with the Agent tool,
+all in one message, so they run in parallel. Each returns: **position · core
+reasoning · biggest risk they see · confidence (low/med/high)**. On `deep`,
+once all seats report, show each advisor the others' positions
+(unattributed) and have them name the single strongest opposing point.
 
 ## The seats (mandate + forbidden move = real divergence)
 
@@ -54,31 +59,46 @@ ask permission to run the skill.
   *Forbidden:* the field's standard framing.
 
 Default 4 = Executor, First-Principles, Long-term Architect, Adversary.
+`deep` seats all 6 and adds the cross-critique round. The forbidden move is
+what forces real divergence instead of four agents politely agreeing — keep
+it non-negotiable; seat count never changes.
+
+## Model routing
+
+Spawn every advisor seat — and the deep-mode critique round — with the Agent
+tool's `model` parameter set to `opus`: this is the one skill in the plugin
+whose entire value is the quality of independent judgment per seat, and it
+shouldn't silently inherit whatever subagent default a given session has.
+The Chairman synthesis is never a subagent — it runs in the main thread, on
+the session's own model, because committing to a recommendation needs the
+full conversation context the advisors don't have. Naming `model: opus` in
+the spawn itself is what makes this portable: it doesn't depend on any
+installer's default subagent model.
+
+The Chairman synthesis is not an average of the seats' positions — it's a
+judgment call. Weigh the seats, don't tally them; a 3–1 split doesn't win by
+count if the lone dissent names the risk that actually decides it.
 
 ## Output
 
-Lead with the **recommendation** (one or two sentences). Then: the key split and
-the tradeoff that decides it, then any dissent worth keeping. Short — a brief,
-not a transcript.
+Lead with the **recommendation** (one or two sentences). Then: the key split
+and the tradeoff that decides it, then any dissent worth keeping. Short — a
+brief, not a transcript.
 
-## Rules
+## Boundaries
 
-- Advisors must actually diverge; enforce it through the mandates. No
-  fence-sitting, no five-hedged-options answers.
 - The Chairman **commits** to a recommendation — naming the risk is allowed,
   refusing to choose is not.
+- Advisors must actually diverge; enforce it through the mandates. No
+  fence-sitting, no five-hedged-options answers.
 - Separate opinion from fact; flag any claim that should be verified before
   acting. The council gives judgment, not ground truth.
-
-## When not to use
-
-- Fact-finding — run a research pass; the council opines, it doesn't verify.
-- Low-stakes or one-obvious-answer calls — deciding directly is cheaper and
-  faster than a panel.
-- **Reversible in an afternoon** — decide, ship, and revisit if it bites. A
-  panel costs 4–6 subagents; spend that only where being wrong is expensive to
-  undo (schema, auth model, vendor lock-in, a migration). If you can't name
-  what the wrong choice costs to reverse, don't seat the council.
+- Not for fact-finding — run a research pass instead; the council opines, it
+  doesn't verify. Not for low-stakes or one-obvious-answer calls — deciding
+  directly is cheaper and faster than a panel.
+- Verify or say you don't know; never invent a path, API, number, or fact.
+  Commits are the repo owner's alone: no AI co-author trailer, no AI mention
+  in messages.
 
 ## Hand-offs
 
@@ -90,11 +110,3 @@ not a transcript.
 
 The user has a single clear recommendation, understands the strongest case
 against it, and knows the one risk to watch.
-
-## Global rules
-
-Apply on every run — canonical home `~/.claude/CLAUDE.md`:
-- **Ground everything.** Only what's given or verified; never invent files, APIs, or facts. Unknown → say "I don't know" or state the assumption.
-- **No tokenmaxing.** Lead with the answer; keep an output budget; no filler, no restating the question.
-- **Agent discipline.** Read before you edit; small reversible changes; ask when blocked, don't guess; report failures honestly.
-- **Commits are the user's alone.** Author = the user; never add an AI co-author or `Co-Authored-By`/credit line, and don't mention AI in commit messages.

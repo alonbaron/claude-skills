@@ -1,94 +1,74 @@
 ---
 name: up-to-date
-description: >
-  Preflight sync + situational brief before repo work: fetch origin,
-  ahead/behind divergence, recent commits, open PRs/issues, dirty-state
-  warnings, one recommended first action. Read-only — never pulls or rewrites a
-  dirty tree without explicit OK. Use proactively before starting work in any
-  repo with a remote, especially shared or long-untouched ones. Also on
-  "up-to-date", "sync first", "pull latest", "catch me up on the repo". Not for
-  repos without a remote or quick mid-task re-checks.
-argument-hint: "[optional: 'docs' to also refresh library docs, or a path]"
+description: >-
+  Preflight sync and situational brief before repo work: fetches origin,
+  reports ahead/behind divergence (with a no-upstream/detached-HEAD
+  fallback), recent commits, open PRs and issues touching the work, and
+  dirty-tree warnings, then names one recommended first action. Read-only by
+  default — never pulls, rebases, merges, or discards local work without
+  explicit confirmation.
+when_to_use: >-
+  Use proactively before starting work in any repo with a remote, especially
+  one that's shared or hasn't been touched in a while. Trigger phrases:
+  "up-to-date", "sync first", "pull latest", "catch me up on the repo". Not
+  for a repo with no remote (say so in one line, then start the task), and
+  not for a mid-task re-check in a repo already briefed this session (a
+  plain git fetch + git status answers that without the full brief).
+argument-hint: "[optional: 'docs' to also refresh library docs, or a path to scope the PR/issue check]"
+allowed-tools: Bash(git rev-parse *) Bash(git remote *) Bash(git branch *) Bash(git status *) Bash(git stash list*) Bash(git fetch *) Bash(git rev-list *) Bash(git log *) Bash(gh pr list *) Bash(gh issue list *)
 ---
 
 # Up To Date
 
-Get current before doing work. Goal: a short situational brief so you build on
-the latest code with full context. **Read-only by default. Never mutate a dirty
-tree, never force, never discard local work without explicit confirmation.**
+!`echo "--- git rev-parse --show-toplevel"; git rev-parse --show-toplevel 2>&1 || true; echo "--- git remote -v"; git remote -v 2>&1 || true; echo "--- git branch --show-current"; git branch --show-current 2>&1 || true; echo "--- git status --short"; git status --short 2>&1 || true; echo "--- git stash list"; git stash list 2>&1 || true; echo "--- git fetch --all --prune"; git fetch --all --prune 2>&1 || true; echo "--- git rev-list --left-right --count @{upstream}...HEAD"; git rev-list --left-right --count @{upstream}...HEAD 2>&1 || true; echo "--- git log --oneline -15"; git log --oneline -15 2>&1 || true; echo "--- gh pr list --limit 20"; gh pr list --limit 20 2>&1 || true; echo "--- gh issue list --limit 20"; gh issue list --limit 20 2>&1 || true`
 
-## Proactive use
+The block above is this repo's git and GitHub state, captured once before you see the rest of this skill — raw command output, not analysis.
 
-When work is about to start in a repo with a remote, invoke this without being
-asked: announce in one line ("Running up-to-date on <repo>") and proceed.
-Proactive runs stay strictly read-only — the sync decision (step 7) still
-requires explicit OK.
+Get current before doing work. Goal: a short situational brief so you build on the latest code with full context. **Read-only by default. Never mutate a dirty tree, never force, never discard local work without explicit confirmation** — that holds even when this skill fired proactively.
 
-## Steps
+## Reading the block
 
-1. **Confirm it's a git repo with a remote.** If not, say so and stop — there's
-   nothing to sync.
-2. **Local state:** `git status --short` and `git stash list`. Note uncommitted
-   changes, untracked files, stashes. This gates everything below.
-3. **Fetch:** `git fetch --all --prune`. (Fetch is safe; it changes nothing
-   local.)
-4. **Divergence:** current branch vs its upstream —
-   `git rev-list --left-right --count @{upstream}...HEAD`. Report ahead/behind.
-   No upstream (new local branch, or detached HEAD) → that command fails; say
-   so plainly, fall back to `origin/<default-branch>` for the comparison, and
-   note the branch is unpushed. Never report "in sync" from a failed command.
-5. **Recent activity:** `git log --oneline -15` on the branch, and the same for
-   the default branch if you're not on it. Summarize what changed, not every
-   line.
-6. **Open work (if `gh` is available and the remote is GitHub):** `gh pr list`
-   and `gh issue list`. Surface anything touching the files you're about to
-   work on.
-7. **Sync decision:**
-   - Clean + behind only → offer `git pull --ff-only`. Do it only on confirm.
-   - Diverged (ahead *and* behind) → explain; recommend rebase or merge; ask.
-   - Dirty → do NOT pull. Report the dirty state and let the user decide.
-8. **Library currency (only if asked or `docs` arg given):** for the key deps in
-   play, use context7 (resolve-library-id → query-docs) to pull current API
-   docs, so code targets today's API, not stale memory.
+Read it; don't re-run those commands as tool calls. Only run one again if the block shows it failed for a transient reason (a network blip on `fetch`, say) — a missing remote, no upstream, or `gh` unauthenticated are expected outcomes to report, not errors to retry.
 
-## Output: the brief
+- The `rev-parse` line errored → not a git repo; say so and stop, there's nothing to sync.
+- `git remote -v` came back empty → no remote; say so in one line and start the task. Skip divergence and PR/issue checks entirely.
+- The `rev-list` line failed (fresh local branch, detached HEAD) → say so plainly, note the branch is unpushed, and fall back to comparing against `origin/<default-branch>`. Never report "in sync" from a failed command.
+- `gh pr list` / `gh issue list` errored or came back empty (no `gh`, unauthenticated, non-GitHub remote) → skip that section and say so; don't guess at open work.
+
+## The brief
 
 - **Branch** + sync state (ahead/behind, clean/dirty) in one line.
-- **Recent commits** — 2–4 line summary of what's new.
+- **Recent commits** — 2–4 line summary of what's new, not every line of `git log`.
 - **Open PRs/issues** relevant to the intended work (or "none touching this").
 - **Warnings** — dirty tree, diverged history, stale deps.
 - **Recommended first action** — one line.
 
+## Sync decision
+
+- Clean + behind only → offer `git pull --ff-only`. Do it only on confirm.
+- Diverged (ahead *and* behind) → explain; recommend rebase or merge; ask.
+- Dirty → do NOT pull. Report the dirty state and let the user decide.
+
+## Library currency
+
+Only if asked, or the `docs` arg is given: for the key deps in play, use context7 (resolve-library-id → query-docs) to pull current API docs, so code targets today's API, not stale memory.
+
 ## Rules
 
-- Report only what commands return. Never invent commit messages, PR titles, or
-  authors.
-- No mutating command (`pull`, `rebase`, `merge`, `checkout`, `stash pop`)
-  without explicit user OK.
-- If `gh` is missing or unauthenticated, skip that section and say so — don't
-  guess at remote state.
+- Report only what the injected block or a command actually returned. Never invent commit messages, PR titles, or authors.
+- No mutating command (`pull`, `rebase`, `merge`, `checkout`, `stash pop`) without explicit user OK.
+- Verify or say you don't know; never invent a path, API, number, or fact. Commits are the repo owner's alone: no AI co-author trailer, no AI mention in messages.
 
 ## When not to use
 
 - No remote → nothing to sync; say so in one line and start the work.
-- Mid-task re-checks in a repo already briefed this session — `git fetch` +
-  `git status` answer it without the full brief.
+- Mid-task re-checks in a repo already briefed this session — a plain `git fetch` + `git status` answers it without the full brief.
+
+## Proactive use
+
+When work is about to start in a repo with a remote, invoke this without being asked: announce in one line ("Running up-to-date on \<repo\>") and proceed. The sync decision still requires explicit confirmation, proactive or not.
 
 ## Hand-offs
 
 - Brief delivered → start the actual task on the now-current tree.
-- The task is a new app/feature/workstream with no design docs → `architect`
-  next, before code.
-
-## Done when
-
-The user knows: what branch they're on, whether it's behind/ahead/clean, what
-changed recently, what open work overlaps, and the one safe next action.
-
-## Global rules
-
-Apply on every run — canonical home `~/.claude/CLAUDE.md`:
-- **Ground everything.** Only what's given or verified; never invent files, APIs, or facts. Unknown → say "I don't know" or state the assumption.
-- **No tokenmaxing.** Lead with the answer; keep an output budget; no filler, no restating the question.
-- **Agent discipline.** Read before you edit; small reversible changes; ask when blocked, don't guess; report failures honestly.
-- **Commits are the user's alone.** Author = the user; never add an AI co-author or `Co-Authored-By`/credit line, and don't mention AI in commit messages.
+- The task is a new app/feature/workstream with no design docs → `architect` next, before code.

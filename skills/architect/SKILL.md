@@ -1,22 +1,37 @@
 ---
 name: architect
-description: >
-  Produces Alon's design-doc system BEFORE code: SOURCE_OF_TRUTH,
-  ARCHITECTURE_ROADMAP, TODO_WORKFLOW, CLAUDE.md (+ modular docs/architecture).
-  Model first: data + invariants → core enforcement → failure paths → API
-  contracts → phased workstream. Use proactively when a new app, feature, or
-  workstream is starting and code hasn't been written, or docs may have drifted
-  (audit). Also on "architect", "design doc", "spec this out", "roadmap". Not
-  for small fixes inside a current design.
+description: >-
+  Produces Alon's design-doc system before code: SOURCE_OF_TRUTH.md,
+  ARCHITECTURE_ROADMAP.md, TODO_WORKFLOW.md, CLAUDE.md, plus a modular
+  docs/architecture set for larger projects. Model first: data and invariants
+  before framework, every invariant enforced at two boundaries, failure paths
+  designed as deliberately as happy paths, one source of truth everything else
+  links back to. Also audits existing docs against the code, drift cited
+  both sides.
+when_to_use: >-
+  Use proactively, no permission asked, when a new app, feature, or workstream
+  is starting and no design docs exist yet, or to wire one missing fact into
+  docs that already exist. Also run "architect audit" when docs may have
+  drifted from code. Fires on "architect", "design doc", "spec this out",
+  "roadmap", "audit the docs". Not for a small fix already fully covered by
+  current docs — just do it. Not for pure implementation of an
+  already-designed phase — code, don't re-spec.
 argument-hint: "[what you're building]   ·   add 'audit' to check existing docs for drift"
+effort: max
 ---
+
+!`ls -1 SOURCE_OF_TRUTH.md ARCHITECTURE_ROADMAP.md TODO_WORKFLOW.md CLAUDE.md docs/architecture 2>/dev/null || true`
+
+The line above lists which design docs already exist in this repo, so create-vs-audit mode is known before the first tool call.
 
 # Architect
 
 Design and document the system before building it — in the house doc format,
 kept in sync at all times. Output is **documents, not code.**
 
-Principles, enforced *in the docs*: **model first** (data + invariants before
+## Principles
+
+Enforced *in the docs*: **model first** (data + invariants before
 framework) · **enforce every invariant at the core**, ideally at *two*
 boundaries (app-layer validation **and** a DB constraint) — never "the frontend
 handles it" · **design failure paths** as deliberately as happy paths · **small,
@@ -53,7 +68,9 @@ everywhere else.
 4. **`TODO_WORKFLOW.md`** — the task tracker. Status legend (`[ ]` ·
    `[IN PROGRESS]` · `[FINISHED - PENDING MERGE]` · `[MERGED/DONE]` ·
    `[BLOCKED]`); tasks grouped by phase; each row:
-   `# · Task · Architecture Ref (linked to the §/file) · Status · Branch`.
+   `# · Task · Architecture Ref (linked to the §/file) · Status · Branch`. A
+   task closed mid-phase leaves a `Left for <id>: ...` note for whoever picks
+   it up next.
 5. **`CLAUDE.md`** (project root) — the rules file Claude Code auto-loads:
    operating rules + the sync protocol (template below). One markdown file — no
    `.clauderules`, no `.cursorrules`, no import shim.
@@ -91,6 +108,15 @@ without both is a finding — it's a hunch, and hunches don't go in the list.
 
 Stack: <one-line stack summary>.
 
+## Commands
+
+| Scope | Install | Test | Lint | Format |
+|---|---|---|---|---|
+| root | `<cmd>` | `<cmd>` | `<cmd>` | `<cmd>` |
+| <package> | `<cmd>` | `<cmd>` | `<cmd>` | `<cmd>` |
+
+Note any package-manager quirk here (workspaces, monorepo tool, pinned version).
+
 ## Git (mandatory, no exceptions)
 - Open `feature/<topic>` branch BEFORE first edit. Never commit to `main`.
 - Micro-commit per logical step. Conventional Commits (feat/fix/refactor/chore/docs/test).
@@ -102,12 +128,14 @@ Stack: <one-line stack summary>.
 2. Load `SOURCE_OF_TRUTH.md` + the relevant `docs/architecture/*.md` before coding. Never guess an API surface — verify against version-pinned context.
 3. Update status: `[FINISHED - PENDING MERGE]` at PR open, `[MERGED/DONE]` after merge, `[BLOCKED]` with the blocker noted.
 4. PR when every task in a phase is `[FINISHED - PENDING MERGE]`.
+5. On close, append a dated entry to `docs/handoff.md` (newest-first) — what shipped, what's left, and any `Left for <id>: ...` note for the next task to pick up.
 
 ## Reference precedence
 - Apex truth: `SOURCE_OF_TRUTH.md`.
 - Architecture + phases: `ARCHITECTURE_ROADMAP.md`.
 - Modular details: `docs/architecture/00-index.md` (start there).
 - Tasks: `TODO_WORKFLOW.md`.
+- Handoff log: `docs/handoff.md` (newest entry first).
 
 ## Architecture-change rule (sync)
 If a task changes any architectural fact, update `SOURCE_OF_TRUTH.md` → `ARCHITECTURE_ROADMAP.md` → the modular `NN-*.md` FIRST, THEN write code.
@@ -119,7 +147,9 @@ Ask 1–3 blocking questions only (scale, users, hard constraints, existing
 stack). State assumptions for the rest and proceed — don't stall. Match depth to
 size: a single feature → `SOURCE_OF_TRUTH` + a light `ARCHITECTURE_ROADMAP` +
 `TODO_WORKFLOW` + `CLAUDE.md`; a new product → add the modular
-`docs/architecture/` set.
+`docs/architecture/` set. An existing doc set that's just missing one fact — a
+new invariant, an endpoint, a decision — gets that one addition wired into its
+right doc and cross-linked; it does not get re-authored from scratch.
 
 ## Rules
 
@@ -130,6 +160,9 @@ size: a single feature → `SOURCE_OF_TRUTH` + a light `ARCHITECTURE_ROADMAP` +
   API you haven't confirmed.
 - Decision-dense: tables and bullets, not prose. Call out reversed or forbidden
   decisions inline (`> Do not reintroduce X without an explicit decision`).
+- Verify or say you don't know; never invent a path, API, number, or fact.
+  Commits are the repo owner's alone: no AI co-author trailer, no AI mention in
+  messages.
 
 ## When not to use
 
@@ -146,14 +179,6 @@ size: a single feature → `SOURCE_OF_TRUTH` + a light `ARCHITECTURE_ROADMAP` +
   context, a README, a mini-ADR rationale → `humanizer` on *those passages
   only*. The tables, invariants, and contracts stay as they are; they're
   reference text, and "sounding human" is not a goal there.
-
-## Global rules
-
-Apply on every run — canonical home `~/.claude/CLAUDE.md`:
-- **Ground everything.** Only what's given or verified; never invent files, APIs, or facts. Unknown → say "I don't know" or state the assumption.
-- **No tokenmaxing.** Lead with the answer; keep an output budget; no filler, no restating the question.
-- **Agent discipline.** Read before you edit; small reversible changes; ask when blocked, don't guess; report failures honestly.
-- **Commits are the user's alone.** Author = the user; never add an AI co-author or `Co-Authored-By`/credit line, and don't mention AI in commit messages.
 
 ## Done when
 

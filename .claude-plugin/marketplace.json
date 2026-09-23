@@ -10,7 +10,7 @@
     {
       "name": "alon-skills",
       "source": "./",
-      "description": "Six skills: architect, review-swarm, ask-the-council, prompt-generator, up-to-date, ponytail.",
+      "description": "Six skills (architect, review-swarm, ask-the-council, prompt-generator, up-to-date, ponytail) and one workflow (build-loop) that builds TODO rows unattended.",
       "category": "productivity"
     }
   ]
