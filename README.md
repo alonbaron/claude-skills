@@ -58,19 +58,19 @@ Each skill also triggers from plain language — e.g. *"spec this out before we 
 
 ## ◢ The build loop
 
-`/alon-skills:build-loop` builds `TODO_WORKFLOW.md` rows one at a time without supervision, in any repo that carries the architect doc set. Each stage is a fresh subagent with an empty context; state between runs lives in the repo, never in chat.
+`/alon-skills:build-loop` builds `TODO_WORKFLOW.md` rows one at a time without supervision, in any repo that carries the architect doc set. Each stage is a fresh subagent with an empty context; state between runs lives in the repo, never in chat. Fable 5.1 makes the calls everything downstream inherits (which row, what done means, who wins a dispute), Opus 5.5 reviews and repairs, Sonnet 5 builds, Haiku 4.5 searches and counts. Stages name model aliases, so each follows the newest model of its tier.
 
 | Stage | Model | Reads | Writes | Returns | Stops the loop when |
 |---|---|---|---|---|---|
-| plan | opus, effort high | `TODO_WORKFLOW.md`, git status/branch/log, the `## Commands` table in `CLAUDE.md`, `<scratch>/<id>/plan.json` of a stale row | TODO row → `[IN PROGRESS]` (commit), the branch, `plan.json` | taskId, taskRow, branch, baseCommit, docsToRead, leftForThisTask, commands, resuming, stopReason, staleBlocked | dirty tree; `TODO_WORKFLOW.md` or `SOURCE_OF_TRUTH.md` missing; no `## Commands` table and no single root manifest; no eligible row (names the first two rejected); a stale `[IN PROGRESS]` row it cannot safely resume (closed `[BLOCKED]` for a human) |
+| plan | fable, effort high | `TODO_WORKFLOW.md`, git status/branch/log, the `## Commands` table in `CLAUDE.md`, `<scratch>/<id>/plan.json` of a stale row | TODO row → `[IN PROGRESS]` (commit), the branch, `plan.json` | taskId, taskRow, branch, baseCommit, docsToRead, leftForThisTask, commands, resuming, stopReason, staleBlocked | dirty tree; `TODO_WORKFLOW.md` or `SOURCE_OF_TRUTH.md` missing; no `## Commands` table and no single root manifest; no eligible row (names the first two rejected); a stale `[IN PROGRESS]` row it cannot safely resume (closed `[BLOCKED]` for a human) |
 | scout | haiku, low | grep/glob excerpts, doc headings | nothing | files with scope, tests, docSections, notes | returns nothing → row back to `[ ]` with a note |
-| spec | opus, high | SoT sections, the scout's locations, existing `spec.md` when resuming | SoT → Roadmap → NN docs (committed when a fact changes), `<scratch>/<id>/spec.md` (8 sections, incl. acceptance criteria and unverified APIs) | specPath, docsChanged, unverifiedApis, verifyCommands, stopReason | a missing decision it refuses to guess → row back to `[ ]` with the decision named |
+| spec | fable, high | SoT sections, the scout's locations, existing `spec.md` when resuming | SoT → Roadmap → NN docs (committed when a fact changes), `<scratch>/<id>/spec.md` (8 sections, incl. acceptance criteria and unverified APIs) | specPath, docsChanged, unverifiedApis, verifyCommands, stopReason | a missing decision it refuses to guess → row back to `[ ]` with the decision named |
 | research | sonnet, medium; skipped when unverifiedApis is empty | manifests, type definitions, context7 | `research.md` | researchPath, unverifiedRemaining | never |
 | build | sonnet | `spec.md`, `research.md`, the files the spec names | code + tests, micro-commits, `build.md` | ok, commits, testsPassed, lintPassed, deviations, blockedReason | blockedReason or not ok → `[BLOCKED]`; budget below the build-to-close tail (only when the session set a token target) |
 | measure | haiku, low; independent of the builder | `git diff --stat` and `--name-only` base..HEAD | nothing | filesChanged, linesChanged, docsOnly, touchesTrustBoundary, trustPaths, languages | never (a missing result assumes a trust boundary, so the security lens runs) |
 | refute | correctness + acceptance on sonnet; invariants on opus; security on sonnet only when a trust-boundary path changed; adversary on sonnet round 1 only, skipped under 30 changed lines or docs-only, and run after the other lenses so its test file never races their test runs (writes one breaking test, keeps it uncommitted only if it fails); critic on opus round 1 only (spec vs the TODO row) | `spec.md`, `build.md`, the diff, the SoT invariants, the commands | nothing except the adversary's test file | per lens: verdict, testsRan, blocking, advisory | all lenses return nothing → `[BLOCKED]` |
 | merge (script) | — | the lens votes | — | a cited `file:line` finding always blocks; an uncited `fail` counts as a vote and blocks only when two or more lenses agree; rounds 2+ run correctness, acceptance, invariants plus any lens that blocked the round before | — |
-| arbiter | opus; only when a finding the fixer disputed comes back | the finding, the dispute, the diff | nothing | upheld or dismissed per finding, with a reason | never |
+| arbiter | fable; only when a finding the fixer disputed comes back | the finding, the dispute, the diff | nothing | upheld or dismissed per finding, with a reason | never |
 | fix | opus, high; at most `maxFixRounds` (default 2) | the blocking findings, `spec.md` | fixes + tests, commits (adopts the adversary's test) | fixed, notFixed (key + reason), commits | blocking findings still standing after the last round → `[BLOCKED]` |
 | close | sonnet, low; the only writer of `TODO_WORKFLOW.md` and `docs/handoff.md`; runs on every exit after plan succeeded | `build.md`, `spec.md` §1 and §8, the outcome | the row's status and `Left for <id>: …` note, a newest-first `docs/handoff.md` entry, one commit; deletes an adversary test nobody adopted | ok, commit | — |
 
@@ -82,7 +82,7 @@ The only stop that means "run again" is `reached maxTasks`. Everything else mean
 /alon-skills:build-loop            # up to 3 tasks
 /alon-skills:build-loop 1          # one task
 /alon-skills:build-loop 2.1        # that row
-/alon-skills:build-loop {"maxTasks":1,"models":{"plan":"fable","spec":"fable"},"skipLenses":["adversary"]}
+/alon-skills:build-loop {"maxTasks":1,"models":{"build":"opus"},"skipLenses":["adversary"]}
 ```
 
 Args and defaults: `maxTasks` 3 · `task` null · `models` {} (per-stage overrides: plan, scout, spec, research, build, measure, refute, invariants, critic, arbiter, fix, close) · `dryRun` false · `maxFixRounds` 2 · `skipLenses` [] · `scratch` `.claude/scratch/build-loop`.
