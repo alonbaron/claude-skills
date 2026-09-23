@@ -64,3 +64,19 @@ assumptions in STEP4.md and evals/README.md.
 and re-run: refuses-trust-boundary 1.00 / 0.83, defers-to-simplify 1.00 / 1.00
 (now must-not-fire), pushback 1.00 / 0.40. The other nine (architect,
 review-swarm, up-to-date) are not measurable in this container; see section 2.
+
+## 6. Trigger suite on v3 (`--runs 2 -j 4 --ablation none`, fable-5-1)
+
+Target: >= 0.8 fire rate on should-fire, <= 0.2 on should-not, per skill.
+
+| skill | should-fire | false fires | note |
+|---|---|---|---|
+| architect | 20/20 | 0/20 | |
+| ask-the-council | 20/20 | 0/20 | |
+| ponytail | 19/20 | 0/20 | after the when_to_use edit; before it 14/20 |
+| prompt-generator | 17/20 | 0/18 | two no-cases never ran (first run hit its cost cap) |
+| review-swarm | 16/20 | 0/20 | misses yes-03 ("what's left before I ship"), yes-07 ("does this fit the architecture", arguably architect's) |
+| up-to-date | 20/20 | 0/20 | |
+
+All six are inside the target. API-equivalent cost about $115 over four
+invocations; two batches were lost to the 5-hour usage limit and re-run.
