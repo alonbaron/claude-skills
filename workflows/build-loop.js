@@ -135,7 +135,7 @@ const PLAN_SCHEMA = {
     stopReason: { type: ["string", "null"] },
     staleBlocked: {
       type: ["object", "null"],
-      properties: { taskId: { type: "string" }, reason: { type: "string" } },
+      properties: { taskId: { type: "string" }, reason: { type: "string" }, branch: { type: ["string", "null"] } },
       required: ["taskId", "reason"],
     },
   },
@@ -280,6 +280,8 @@ async function retryOnce(label, run) {
   return run();
 }
 const findingKey = (f) => `${f.file}:${f.line == null ? "-" : f.line}`;
+// One finding, not one location: two lenses can raise different problems at the same file:line.
+const findingId = (f) => findingKey(f) + "|" + String(f.issue || "").slice(0, 40).toLowerCase();
 const fmtFinding = (f, i) => `${i + 1}. [${findingKey(f)}] ${f.issue} -> ${f.fix}`;
 const fmtCommands = (c) =>
   ["install", "test", "lint", "format"]
@@ -304,7 +306,7 @@ Preconditions, checked first; on failure set stopReason and pick nothing:
 - Working tree dirty -> stopReason "dirty tree: <git status --short, verbatim>".
 - Commands: take the "## Commands" table from CLAUDE.md (root row, plus the package row that the task touches). If CLAUDE.md has no such section, fall back ONLY to a single unambiguous root manifest whose scripts name test/lint (package.json "scripts", pyproject/Makefile targets); if there is none, or more than one candidate, stopReason "no ## Commands table in CLAUDE.md and no single root manifest; add the table". Never guess a command.
 
-Resume first: a row whose Status is "[IN PROGRESS]" is resumable only when ALL hold: its Branch exists locally; "${opts.scratch}/<id>/plan.json" exists and has baseCommit; "git merge-base --is-ancestor <baseCommit> HEAD" exits 0 after switching to that branch; the tree is clean. Then pick it with resuming=true and reuse the stored baseCommit. If a stale "[IN PROGRESS]" row fails any of those checks, do not pick it: return staleBlocked = {taskId, reason} (the loop closes it as BLOCKED for a human) and taskId null.
+Resume first: a row whose Status is "[IN PROGRESS]" is resumable only when ALL hold: its Branch exists locally; "${opts.scratch}/<id>/plan.json" exists and has baseCommit; "git merge-base --is-ancestor <baseCommit> HEAD" exits 0 after switching to that branch; the tree is clean. Then pick it with resuming=true and reuse the stored baseCommit. If a stale "[IN PROGRESS]" row fails any of those checks, do not pick it: return staleBlocked = {taskId, reason, branch (the row's branch if it exists, else null)} (the loop closes it as BLOCKED for a human) and taskId null.
 
 Otherwise eligibility, in file order, first match wins:
 1. Status is exactly "[ ]" and the Branch column names a branch (not "—" or empty).
@@ -466,9 +468,11 @@ Blocking = wrong to merge (bug, failing or missing test for a spec item, invaria
   );
 }
 
-function lensesFor(round, m) {
+function lensesFor(round, m, carried) {
   const core = ["correctness", "acceptance", "invariants"];
-  if (round >= 2) return core.filter((l) => !SKIP.has(l));
+  // Later rounds re-run the core plus any lens that blocked last round, so its finding can come back
+  // (and reach the arbiter if disputed) instead of vanishing. The adversary is not re-run: its test is in the tree.
+  if (round >= 2) return core.concat(carried.filter((l) => LENSES[l] && !core.includes(l) && l !== "adversary")).filter((l) => !SKIP.has(l));
   const extra = [];
   if (m.touchesTrustBoundary) extra.push("security");
   if (!m.docsOnly && m.linesChanged >= 30) extra.push("adversary");
@@ -483,7 +487,7 @@ function merge(votes) {
   for (const v of votes) {
     for (const f of v.blocking) {
       if (!f.file || f.file === "unknown") continue;
-      const k = findingKey(f) + "|" + f.issue.slice(0, 40).toLowerCase();
+      const k = findingId(f);
       if (seen.has(k)) continue;
       seen.add(k);
       blocking.push({ ...f, lens: v.lens });
@@ -539,12 +543,12 @@ async function close(p, sp, outcome) {
     `${COMMON}
 
 Stage: close. Record the outcome of task ${p.taskId} where the next session will look. You are the only stage that edits TODO_WORKFLOW.md and docs/handoff.md.
-Branch ${p.branch}. Outcome: ${JSON.stringify(outcome)}
+Branch ${p.branch}. If you are not on it and it exists, switch to it first. If you are on main and it does not exist, do not commit: return ok false. Outcome: ${JSON.stringify(outcome)}
 Read ${dir}/build.md and ${sp ? sp.specPath : dir + "/spec.md"} (sections 1 and 8 only) if they exist; if not, work from the outcome alone.
 
 1. TODO_WORKFLOW.md, row ${p.taskId}: set Status to "${statusCell}" followed by a note in the same register as the finished rows above it: which docs changed (if any), the one-line result, then "Left for <next task id or 'later'>: ..." carrying every advisory finding, deviation and disputed finding worth keeping. Under 90 words. Do not touch other rows. ${outcome.status === STATUS.todo ? 'The status goes back to "[ ]" because nothing was built; the note says why the loop stopped.' : ""}
 2. docs/handoff.md: create it if missing with a two-line header saying it is the build loop's log, newest first. Insert one entry at the top: "## <date from git log -1 --format=%cs> — ${p.taskId} ${outcome.status} (${p.branch})" then 3-6 bullets: what shipped, refute rounds and what they caught, what stays open. Do not recommend which row to pick next; the planner decides from TODO_WORKFLOW.md.
-3. Commit both files: "docs: TODO ${p.taskId} ${subject}". Leave the tree clean.`,
+3. Commit both files: "docs: TODO ${p.taskId} ${subject}". If an uncommitted test file left by the adversarial review lens is still in the tree (it was never adopted by a fix), delete it; the note in step 1 records what it tested. Leave "git status" empty.`,
     { label: `close:${p.taskId}`, phase: "Close", model: M.close, effort: "low", schema: CLOSE_SCHEMA },
   );
 }
@@ -585,13 +589,25 @@ for (let n = 0; n < opts.maxTasks; n++) {
   }
   if (p.staleBlocked) {
     // A crashed earlier run left a row the planner cannot safely resume; hand it to a human instead of skipping it forever.
-    const stale = { taskId: p.staleBlocked.taskId, branch: p.branch || "(unknown)", resuming: false };
-    await closeIfPossible(stale, null, { status: STATUS.blocked, reason: `stale in-progress row: ${p.staleBlocked.reason}`, rounds: 0, advisory: [] }, results);
-    stoppedBecause = `stale [IN PROGRESS] row ${p.staleBlocked.taskId} closed as BLOCKED: ${p.staleBlocked.reason}`;
+    const stale = { taskId: p.staleBlocked.taskId, branch: p.staleBlocked.branch || p.branch || "(unknown)", resuming: false };
+    const c = await closeIfPossible(stale, null, { status: STATUS.blocked, reason: `stale in-progress row: ${p.staleBlocked.reason}`, rounds: 0, advisory: [] }, results);
+    stoppedBecause =
+      c && c.ok
+        ? `stale [IN PROGRESS] row ${p.staleBlocked.taskId} closed as BLOCKED: ${p.staleBlocked.reason}`
+        : `stale [IN PROGRESS] row ${p.staleBlocked.taskId} could not be closed; mark it by hand: ${p.staleBlocked.reason}`;
     break;
   }
   if (!p.taskId) {
     stoppedBecause = p.stopReason || "no eligible task";
+    break;
+  }
+  // The schema cannot require these only when a task was picked, so check them here.
+  p.docsToRead = p.docsToRead || [];
+  p.leftForThisTask = p.leftForThisTask || [];
+  if (!p.branch || !p.baseCommit) {
+    const reason = `planner picked ${p.taskId} without ${!p.branch ? "a branch" : "a base commit"}`;
+    await closeIfPossible({ ...p, branch: p.branch || "(unknown)" }, null, { status: STATUS.todo, reason, rounds: 0, advisory: [] }, results);
+    stoppedBecause = reason;
     break;
   }
   log(`task ${p.taskId} on ${p.branch} (base ${String(p.baseCommit).slice(0, 7)})${p.resuming ? ", resuming" : ""}`);
@@ -645,19 +661,21 @@ for (let n = 0; n < opts.maxTasks; n++) {
   const advisory = [];
   const disputes = new Map(); // finding key -> fixer's reason, from the previous round
   const dismissed = new Set();
+  let carriedLenses = [];
   let passed = false;
   let failedReason = null;
   while (round <= MAX_FIX_ROUNDS + 1) {
-    const lenses = lensesFor(round, m);
+    const lenses = lensesFor(round, m, carriedLenses);
+    // The adversary writes (and maybe deletes) a test file, so it runs after the others rather than
+    // alongside lenses that run the whole suite on the same tree.
+    const readers = lenses.filter((l) => l !== "adversary");
     const votes = (
-      await parallel(
-        lenses.map((lens) => () =>
-          (lens === "adversary" ? refute(p, sp, m, lens, round) : retryOnce(`refute:${lens}`, () => refute(p, sp, m, lens, round))).then((v) =>
-            v ? { ...v, lens } : null,
-          ),
-        ),
-      )
+      await parallel(readers.map((lens) => () => retryOnce(`refute:${lens}`, () => refute(p, sp, m, lens, round)).then((v) => (v ? { ...v, lens } : null))))
     ).filter(Boolean);
+    if (lenses.includes("adversary")) {
+      const v = await refute(p, sp, m, "adversary", round);
+      if (v) votes.push({ ...v, lens: "adversary" });
+    }
     if (!votes.length) {
       failedReason = `refute stage returned nothing in round ${round}`;
       break;
@@ -665,7 +683,7 @@ for (let n = 0; n < opts.maxTasks; n++) {
     if (votes.length < lenses.length) log(`round ${round}: ${lenses.length - votes.length} of ${lenses.length} lenses returned nothing`);
     const merged = merge(votes);
     advisory.push(...merged.advisory);
-    blocking = merged.blocking.filter((f) => !dismissed.has(findingKey(f)));
+    blocking = merged.blocking.filter((f) => !dismissed.has(findingId(f)));
     if (merged.uncitedFails.length === 1) log(`round ${round}: ${merged.uncitedFails[0]} failed without a citation; one vote does not block`);
 
     // A finding the fixer disputed last round that came back goes to the arbiter once.
@@ -674,11 +692,11 @@ for (let n = 0; n < opts.maxTasks; n++) {
       const a = await arbiter(p, reappeared.map((f) => ({ finding: f, reason: disputes.get(findingKey(f)) })));
       for (const r of a ? a.rulings : []) {
         if (r.ruling === "dismissed") {
-          dismissed.add(r.key);
+          for (const f of reappeared) if (findingKey(f) === r.key) dismissed.add(findingId(f));
           advisory.push({ file: r.key.split(":")[0], line: null, issue: `arbiter dismissed: ${r.reason}`, fix: "none", lens: "arbiter" });
         }
       }
-      blocking = blocking.filter((f) => !dismissed.has(findingKey(f)));
+      blocking = blocking.filter((f) => !dismissed.has(findingId(f)));
       log(`arbiter ruled on ${reappeared.length}: ${a ? a.rulings.filter((r) => r.ruling === "dismissed").length : 0} dismissed`);
     }
 
@@ -686,6 +704,7 @@ for (let n = 0; n < opts.maxTasks; n++) {
       passed = true;
       break;
     }
+    carriedLenses = [...new Set(blocking.map((f) => f.lens))];
     log(`refute round ${round} on ${p.taskId}: ${blocking.length} blocking, ${advisory.length} advisory`);
     if (round > MAX_FIX_ROUNDS) break;
     const f = await fix(p, sp, blocking, round);

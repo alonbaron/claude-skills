@@ -97,15 +97,29 @@ if (existsSync(lockPath)) {
     process.exit(3);
   }
   say(`stale lock from pid ${other ? other.pid : "?"} replaced`);
+  try {
+    unlinkSync(lockPath);
+  } catch {}
 }
-writeFileSync(lockPath, JSON.stringify({ pid: process.pid, time: new Date().toISOString(), repo }), "utf8");
+try {
+  // "wx" fails if the file exists, so two drivers started together cannot both take the lock.
+  writeFileSync(lockPath, JSON.stringify({ pid: process.pid, time: new Date().toISOString(), repo }), { encoding: "utf8", flag: "wx" });
+} catch (e) {
+  console.error(`could not take ${lockPath} (${e.code}); another autobuild may be starting on the same tree`);
+  process.exit(3);
+}
 const releaseLock = () => {
   try {
     unlinkSync(lockPath);
   } catch {}
 };
 process.on("exit", releaseLock);
-for (const sig of ["SIGINT", "SIGTERM"]) process.on(sig, () => process.exit(130));
+let current = null; // the running claude child, stopped with the driver so the lock never outlives it
+for (const sig of ["SIGINT", "SIGTERM"])
+  process.on(sig, () => {
+    if (current) current.kill(sig);
+    process.exit(130);
+  });
 
 // ---------- progress: tail the newest workflow journal for this repo ----------
 const slugOf = (p) => p.replace(/[^A-Za-z0-9]/g, "-");
@@ -211,6 +225,10 @@ function makeProgress(since) {
       try {
         e = JSON.parse(lines[k]);
       } catch {
+        if (k === lines.length - 1) {
+          lines.length = k; // half-flushed last line: read it again on the next tick
+          break;
+        }
         continue;
       }
       if (e.type === "started" && e.key) names.set(e.key, { label: e.label, phase: e.phase });
@@ -230,20 +248,24 @@ function runSession(wfArgs) {
   return new Promise((done) => {
     const prompt = `Use the Workflow tool with name alon-skills:build-loop and args ${JSON.stringify(wfArgs)}. Wait for it to finish. Reply with only the JSON object it returned, no prose.`;
     const cliArgs = ["-p", "--permission-mode", "auto", "--allowedTools", "Workflow", "--output-format", "json"];
-    if (pluginDir) cliArgs.push("--plugin-dir", JSON.stringify(resolve(pluginDir)));
+    if (pluginDir) cliArgs.push("--plugin-dir", process.platform === "win32" ? JSON.stringify(resolve(pluginDir)) : resolve(pluginDir));
     const env = { ...process.env, CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS: process.env.CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS || "7200000" };
     // On Windows `claude` is a .cmd shim, which Node only runs through a shell; one command string avoids
-    // the args-with-shell deprecation. Every arg is a plain token or already JSON-quoted.
+    // the args-with-shell deprecation. Every arg is a plain token or JSON-quoted there; elsewhere no shell, no quotes.
     const child =
       process.platform === "win32"
         ? spawn(`claude ${cliArgs.join(" ")}`, { cwd: repo, env, shell: true, stdio: ["pipe", "pipe", "pipe"] })
         : spawn("claude", cliArgs, { cwd: repo, env, stdio: ["pipe", "pipe", "pipe"] });
+    current = child;
     let out = "";
     let err = "";
     child.stdout.on("data", (d) => (out += d));
     child.stderr.on("data", (d) => (err += d));
     child.on("error", (e) => done({ code: -1, out, err: `${err}\nspawn failed: ${e.message}` }));
-    child.on("close", (code) => done({ code, out, err }));
+    child.on("close", (code) => {
+      current = null;
+      done({ code, out, err });
+    });
     child.stdin.end(prompt, "utf8"); // prompt via stdin: no shell quoting of JSON on any platform
   });
 }
@@ -271,8 +293,11 @@ function parseResult(out) {
   }
   return { doc, stopped };
 }
-const usageLimited = (doc, text) =>
-  Boolean(doc && (doc.api_error_status === 429 || doc.is_error)) || /session limit|usage limit|rate limit|429/i.test(text || "");
+// A reply that carries stoppedBecause finished normally, and its text holds task rows and commit hashes that
+// can contain "rate limit" or "429"; only a reply without one is checked against the limit messages.
+const usageLimited = (doc, text, stopped) =>
+  Boolean(doc && doc.api_error_status === 429) ||
+  (!stopped && /you've hit your (session|usage) limit|usage limit reached|rate limit|\b429\b/i.test(text || ""));
 
 // ---------- main ----------
 let branch = "?";
@@ -309,7 +334,7 @@ for (let i = 1; i <= tasks; i++) {
   }
   say(`session ${doc.session_id || "?"} cost $${Number(doc.total_cost_usd || 0).toFixed(2)} turns ${doc.num_turns ?? "?"}`);
   raw(typeof doc.result === "string" ? doc.result.trim() : JSON.stringify(doc));
-  if (usageLimited(doc, doc.result)) {
+  if (usageLimited(doc, doc.result, stopped)) {
     say(`usage or rate limit hit: ${String(doc.result || "").slice(0, 160)}; stopping`);
     exitCode = 1;
     break;
