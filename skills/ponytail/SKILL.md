@@ -8,11 +8,12 @@ description: >-
   the requirement itself).
 when_to_use: >-
   Fires when a solution is outgrowing the minimum: an abstraction with one
-  caller, a new dependency for a few lines, scaffolding "for later," or a
-  complaint about over-engineering or bloat — invoke without asking, announce
+  caller, a new dependency for a few lines, scaffolding "for later," a
+  question whether the stdlib or platform already covers it, or a complaint
+  about over-engineering or bloat — invoke without asking, announce
   in one line, proceed. Also on "ponytail", "be lazy", "yagni", "simplest
-  solution", "do less". Not at trust boundaries (validation, auth, error
-  handling that prevents data loss, a11y), not once the user has heard the
+  solution", "do less". Never to weaken a trust boundary (validation, auth,
+  error handling that prevents data loss, a11y), not once the user has heard the
   lazier option and reaffirmed the full one, and not for tidying a diff
   that already exists and works — that's built-in /simplify. Ponytail
   governs what gets built, before and while it's written; simplify cleans up after.
