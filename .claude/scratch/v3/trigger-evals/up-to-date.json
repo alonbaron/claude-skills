@@ -1,0 +1,82 @@
+[
+ {
+  "query": "opening the TenderTrack repo this morning to start on the invoice export feature — what's the state of things before I touch anything?",
+  "should_trigger": true
+ },
+ {
+  "query": "before I start refactoring auth in ShiftManager's Django backend, check if we're behind origin, whether my tree's dirty, and show me the last few commits",
+  "should_trigger": true
+ },
+ {
+  "query": "haven't touched the ShiftManager scheduling repo in like 3 weeks, before picking it back up make sure i'm current and see if any open PRs touch the shift-swap code",
+  "should_trigger": true
+ },
+ {
+  "query": "catch me up on the repo before I start the Cloudflare Worker migration",
+  "should_trigger": true
+ },
+ {
+  "query": "use up-to-date before we touch the TenderTrack repo",
+  "should_trigger": true
+ },
+ {
+  "query": "run /up-to-date on the claude-skills repo, then let's start the rewrite",
+  "should_trigger": true
+ },
+ {
+  "query": "just checked out a fresh branch off main for the ShiftManager django backend, no upstream set yet — where do things stand before I start coding?",
+  "should_trigger": true
+ },
+ {
+  "query": "we've got three repos for TenderTrack (api, worker, frontend) — before wiring up the new tender-matching feature across all of them, check where each one stands vs origin",
+  "should_trigger": true
+ },
+ {
+  "query": "about to kick off the new shift-swap feature in ShiftManager, first tell me if the repo's up to date, what's changed recently, and if there's an open PR already doing this",
+  "should_trigger": true
+ },
+ {
+  "query": "before reviewing the open PRs on the TenderTrack repo, first check if my local main is behynd origin and what changed recently",
+  "should_trigger": true
+ },
+ {
+  "query": "this is just a local scratch git repo for testing snippets, no origin set — can you tell me what's changed since my last commit?",
+  "should_trigger": false
+ },
+ {
+  "query": "I already had you check the repo state a few minutes ago before I started, now I just want to know if anything new landed on origin since then",
+  "should_trigger": false
+ },
+ {
+  "query": "we're starting a brand new microservice for TenderTrack's tender-matching engine, nothing exists yet — help me design the domain model and API contracts before we write code",
+  "should_trigger": false
+ },
+ {
+  "query": "before we start the new sprint on ShiftManager, run npm outdated and check our dependencies are current, flag anything with known CVEs",
+  "should_trigger": false
+ },
+ {
+  "query": "do a security review of the changes on this branch before we merge, focus just on auth and injection risks",
+  "should_trigger": false
+ },
+ {
+  "query": "clean up this diff, it's got some leftover unused imports and duplicate logic",
+  "should_trigger": false
+ },
+ {
+  "query": "just finished implementing the shift-swap approval flow in ShiftManager, can you do a full review of the diff before I open the PR",
+  "should_trigger": false
+ },
+ {
+  "query": "this authentication middleware is getting way over-engineered with all these abstraction layers, can we simplify the approach",
+  "should_trigger": false
+ },
+ {
+  "query": "just run git pull --rebase on this branch for me, I know it's clean",
+  "should_trigger": false
+ },
+ {
+  "query": "generate a changelog from the last 20 commits on the main branch for our release notes",
+  "should_trigger": false
+ }
+]

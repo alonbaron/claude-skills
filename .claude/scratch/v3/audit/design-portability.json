@@ -1,0 +1,125 @@
+{
+ "angle": "Portability engineer: make build-loop.js (and its headless wrapper) run in any repo that follows the architect skill's doc contract, on day one, without hardcoded pnpm/Windows/Liars! facts baked into the script.",
+ "summary": "The current build-loop.js is portable in structure (generic plan→scout→spec→research→build→refute→fix→close pipeline, generic doc filenames) but leaks repo-specific facts into three places: the COMMON prompt block (pnpm/corepack commands), the architecture refute lens (Liars' invariant IDs I1/I2/I3/I6), and the build stage's denylist (Math.random/node: import bans). The headless wrapper is worse: autobuild.ps1 resolves its own repo root from the script's own location (breaks once shipped inside a plugin) and build-status.ps1 hardcodes one project's `~/.claude/projects/<slug>` path. Fix: discover repo commands from a new CLAUDE.md \"## Commands\" section inside the plan stage and thread them downstream instead of hardcoding; generalize the architecture lens to read whatever invariants exist; ship both .ps1 and .sh wrappers that resolve cwd as the target repo; stop depending on Claude Code's undocumented internal project-slug layout for progress display.",
+ "stages": [
+  {
+   "name": "plan",
+   "model": "opus",
+   "effort": "high",
+   "does": "Picks the next eligible TODO row, opens its branch, marks it IN PROGRESS, and now also discovers this repo's verification commands by reading CLAUDE.md's '## Commands' section (new) instead of the loop assuming pnpm.",
+   "reads": "TODO_WORKFLOW.md; git status/branch/log; CLAUDE.md '## Commands' section; SOURCE_OF_TRUTH.md section headers only (to list docsToRead, not to hardcode invariant IDs)",
+   "writes": "TODO row status -> IN PROGRESS (commit); branch checkout/create",
+   "returns": "taskId, taskRow, branch, baseCommit, docsToRead, leftForThisTask, commands (scope->{install,test,lint,format} table read verbatim from CLAUDE.md), stopReason"
+  },
+  {
+   "name": "scout",
+   "model": "haiku",
+   "effort": "low",
+   "does": "Read-only location report: files, symbols, tests, doc sections the task touches; unchanged in role, but now also reports which package/scope (monorepo dir) each file belongs to so spec can pick the right row of the Commands table.",
+   "reads": "source tree via grep/glob (excerpts only); doc sections named by plan",
+   "writes": "nothing",
+   "returns": "files[] (with scope), tests[], docSections[], notes[]"
+  },
+  {
+   "name": "spec",
+   "model": "opus",
+   "effort": "high",
+   "does": "Docs-first: updates SOURCE_OF_TRUTH -> ARCHITECTURE_ROADMAP -> docs/architecture/NN-*.md before writing spec.md if an architectural fact changes; picks the exact verifyCommands (shell strings) from plan's commands table for the scopes scout touched, instead of assuming a pnpm --filter syntax.",
+   "reads": "SOURCE_OF_TRUTH.md relevant sections, scout's doc/file locations, plan.commands",
+   "writes": "docs (only if architecture changes, then commits); scratch/<task>/spec.md",
+   "returns": "specPath, docsChanged[], unverifiedApis[], verifyCommands[] (literal shell commands, replaces the old 'packages' field), stopReason"
+  },
+  {
+   "name": "research",
+   "model": "sonnet",
+   "effort": "medium",
+   "does": "Verifies any API the spec could not confirm from the repo or its dependency manifests; skipped entirely when unverifiedApis is empty. Unchanged in role.",
+   "reads": "spec.md unverifiedApis list, installed dependency manifests/types, context7 MCP",
+   "writes": "scratch/<task>/research.md",
+   "returns": "researchPath, unverifiedRemaining[]"
+  },
+  {
+   "name": "build",
+   "model": "sonnet",
+   "effort": "medium",
+   "does": "Implements spec.md's files/tests exactly; runs spec.verifyCommands (not a hardcoded pnpm string) and must not report pass unless they exited 0; micro-commits; may not touch TODO_WORKFLOW.md, SOURCE_OF_TRUTH.md, ARCHITECTURE_ROADMAP.md, docs/architecture, or docs/handoff.md. The old inline denylist (Math.random bans, node: import bans) is dropped from the prompt -- those now live only in spec.md's 'Do not' section, which is the one source of truth for repo-specific constraints.",
+   "reads": "spec.md (+research.md if present)",
+   "writes": "source + test files; git commits on the task branch",
+   "returns": "ok, commits[], testsPassed, lintPassed, deviations[], blockedReason"
+  },
+  {
+   "name": "refute (x2 parallel: correctness, architecture)",
+   "model": "opus",
+   "effort": "high",
+   "does": "Two read-only reviewers rerun spec.verifyCommands themselves (never trust the builder's self-report) and read the diff for logic errors / untested paths (correctness lens), or check it against whichever invariants actually exist in this repo's SOURCE_OF_TRUTH §3 plus the spec's Do-Not and acceptance criteria and ponytail simplicity (architecture lens) -- generalized from the four Liars'-specific invariant IDs the current lens names verbatim.",
+   "reads": "spec.md, build.md, git diff baseCommit..HEAD, SOURCE_OF_TRUTH.md §3 (whatever it contains, not a fixed ID list)",
+   "writes": "nothing (read-only)",
+   "returns": "verdict (pass/fail), testsRan, blocking[], advisory[]"
+  },
+  {
+   "name": "fix",
+   "model": "opus",
+   "effort": "high",
+   "does": "Addresses only the blocking findings with the smallest correct change, re-runs spec.verifyCommands, commits; disputes a finding rather than guessing if it's wrong. Capped at 2 rounds, unchanged.",
+   "reads": "blocking findings, spec.md",
+   "writes": "source + test fixes; commits",
+   "returns": "fixed[], notFixed[], commits[]"
+  },
+  {
+   "name": "close",
+   "model": "sonnet",
+   "effort": "low",
+   "does": "Sole writer of TODO_WORKFLOW.md and docs/handoff.md: sets the row's status to one of architect's exact legend strings, carries 'Left for <id>' notes, appends one newest-first handoff entry. Unchanged -- this stage was already portable since it only relies on architect's documented status legend and doc filenames.",
+   "reads": "build.md, spec.md sections 1 and 8, outcome object from the loop",
+   "writes": "TODO_WORKFLOW.md row, docs/handoff.md entry; commit",
+   "returns": "ok, commit"
+  }
+ ],
+ "repo_contract": "A repo is loop-ready when it has exactly what the architect skill already produces, plus one addition. Required as-is from architect: TODO_WORKFLOW.md with rows of `# | Task | Architecture Ref | Status | Branch`, status values restricted to the five literal strings `[ ]`, `[IN PROGRESS]`, `[FINISHED - PENDING MERGE]`, `[MERGED/DONE]`, `[BLOCKED] <note>` (verified in architect/SKILL.md's status legend and matched by build-loop.js's CLOSE_SCHEMA outcome.status); SOURCE_OF_TRUTH.md with a §3 invariants section (contents are read, never assumed); ARCHITECTURE_ROADMAP.md and docs/architecture/NN-*.md as the docs-first destinations; a Branch column of either a real branch name or \"—\" for owner-only rows. New requirement, not in today's architect template: a CLAUDE.md \"## Commands\" section -- a small table (Scope | Install | Test | Lint | Format) covering the repo root and, for a monorepo, one row per package/workspace -- which the plan stage reads verbatim instead of the loop guessing a package manager. Without this section plan must stop with a named stopReason rather than falling back to a guessed command (no silent pnpm/npm/cargo assumption). docs/handoff.md is loop-owned (created on first close if missing) and needs no repo contribution beyond existing. The \"Left for <id>: ...\" note convention is currently only documented inside build-loop.js's close prompt; it should move into architect's CLAUDE.md/TODO_WORKFLOW template text so any repo's rows support it without the workflow re-explaining it every run.",
+ "args": "Unchanged shape, one validation relaxed: {maxTasks: number (default 3) -- set by a bare positive-integer string arg; task: string|null -- set by any other non-JSON string arg, matched against the TODO `#` column verbatim by the plan agent (the current `/^[0-9P]+[ab]?\\.\\d+$/` regex, which only fits Liars' P.1/0.5/4a.14 numbering, is dropped); models: object override per stage, same keys as the stage list above; dryRun: boolean, unchanged (returns immediately with no agents launched). No new arg added -- repo command discovery happens inside plan via CLAUDE.md, not via an arg, so the same invocation works in any repo without per-repo wrapper flags.",
+ "quality_mechanisms": [
+  "Docs-first architecture rule in spec (SoT -> Roadmap -> NN doc before spec.md) -- prevents code shipping ahead of the docs that describe it, which is exactly the drift architect's sync protocol exists to forbid.",
+  "Two-lens parallel refute where the correctness lens reruns tests/lint itself rather than trusting build.testsPassed -- prevents a builder's false self-reported pass from reaching merge.",
+  "Architecture lens checks the diff against whatever invariants exist in SOURCE_OF_TRUTH §3 plus spec Do-Not/acceptance criteria -- prevents spec-technically-satisfied-but-architecturally-wrong code, without hardcoding one project's invariant IDs into a supposedly generic reviewer.",
+  "Default-to-fail-when-uncertain in refute -- prevents an ambiguous finding from being optimistically waved through.",
+  "Fix-round cap (2) then mark [BLOCKED] instead of looping -- prevents unbounded spend on a task the model genuinely cannot finish.",
+  "Budget guard before starting each task (stop if remaining < MIN_BUDGET_PER_TASK) -- prevents starting a task and running out of budget mid-build, leaving an uncommitted or half-reviewed diff.",
+  "Single-writer rule: only close touches TODO_WORKFLOW.md, build is explicitly forbidden from it -- prevents a race/conflict between builder and closer and keeps one clean audit point per status flip.",
+  "Dirty-tree check in plan -- prevents building on top of uncommitted state left by a human or a crashed prior run.",
+  "BLOCKED-row dependency propagation in plan's eligibility check -- prevents burning a build on a task whose prerequisite owner decision doesn't exist yet.",
+  "NEW: commands read from CLAUDE.md's Commands section rather than assumed -- prevents the portability failure actually latent in today's script: a hardcoded pnpm/corepack command silently failing (non-zero exit) in any repo that isn't Liars!, which the loop would currently misreport or crash on.",
+  "NEW: UTF-8-forced wrapper output/log encoding -- prevents the mangled stop-reason text already visible in autobuild.log ('2.3G–”2.12') from recurring and making a stop undiagnosable.",
+  "NEW: generic task-id matching (no numbering-scheme regex) -- prevents the wrapper silently rejecting a valid -Task argument in a repo with a different ID convention than Liars'."
+ ],
+ "stop_conditions": [
+  "No eligible TODO row (planner names the first two rejected rows and why)",
+  "Dirty working tree at plan time",
+  "Builder reports not-ok or a blockedReason (missing tool, unresolvable spec contradiction)",
+  "Refute still fails after MAX_FIX_ROUNDS (2) fix rounds -- row marked [BLOCKED]",
+  "Remaining token/turn budget below MIN_BUDGET_PER_TASK before starting the next task",
+  "maxTasks reached (normal completion, not a failure)",
+  "NEW: CLAUDE.md has no '## Commands' section and the repo has no single unambiguous manifest the plan agent can confirm from -- plan stops naming the missing section rather than guessing a package manager",
+  "Headless wrapper: the `claude -p` process exits non-zero (crash, 429 usage-limit such as the one already observed in autobuild.log, auth error) -- wrapper stops and logs the raw output",
+  "Headless wrapper: the reply has no parseable stoppedBecause JSON -- wrapper stops rather than looping on a malformed/truncated reply"
+ ],
+ "headless": "Both a PowerShell (autobuild.ps1) and a POSIX (autobuild.sh) wrapper ship inside the plugin under ${CLAUDE_PLUGIN_ROOT}/scripts/, same flags and log format on each. Each spawns one `claude -p \"Use the Workflow tool with name alon-skills:build-loop and args {...}\" --permission-mode auto --output-format json` process per task (fresh context per task, matching today's design), reads its JSON result, appends to a repo-local log, and stops on anything other than \"reached maxTasks\". The required delta from today's autobuild.ps1: it currently derives its target repo root from its own script location (`Split-Path $PSScriptRoot -Parent`), which is correct only because the script lives inside Liars! itself; once the script ships inside the plugin instead, that same logic would resolve into the plugin's install directory. The wrapper must instead resolve the repo it's acting on from the caller's current working directory (or an explicit `-RepoPath`/`--repo-path` argument), and `Set-Location` there before touching TODO_WORKFLOW.md or the log. A repo invokes it by calling the plugin-provided script path directly (e.g. `& \"$(claude plugin root alon-skills)/scripts/autobuild.ps1\"` or the documented equivalent) from its own root. Progress display (build-status.ps1) should stop depending on Claude Code's internal `~/.claude/projects/<slug>/*/subagents/workflows/*/journal.jsonl` layout for a repo-derived slug I only ever observed for one path (`Liars!` -> `c--Users-alonb-Desktop-Code-Liars-`) and never saw documented -- the safer, fully portable alternative is to also have the workflow's own `log()` calls tee to a repo-local file (e.g. `.claude/scratch/build-loop/progress.log`) that the wrapper tails directly, removing the dependency on an unverified internal path format entirely.",
+ "changes_from_liars": [
+  "Replace the COMMON prompt block's hardcoded pnpm/corepack command facts with a `commands` object the plan stage reads from CLAUDE.md's new '## Commands' section and threads to every downstream stage -- a public plugin can't assume any one package manager.",
+  "Replace LENSES.architecture's literal invariant IDs (I1 redact-only serializer, I2 injected PRNG, I3 persist-before-broadcast, I6 no client balance writes) with an instruction to check whatever invariants SOURCE_OF_TRUTH.md §3 actually lists -- those four IDs are Liars'-specific domain facts baked into a reviewer meant to be generic.",
+  "Drop the build stage's inline denylist ('No Math.random in packages/rules...', 'No node: imports...') and rely solely on spec.md's 'Do not' section (already partially the mechanism) -- duplicating repo facts in both spec.md and the workflow script is exactly the drift architect's sync protocol forbids.",
+  "Rename SPEC_SCHEMA.packages ('pnpm filter names') to verifyCommands (literal shell command strings pulled from the Commands table) -- 'pnpm filter name' has no meaning in an npm/uv/cargo/go repo.",
+  "Drop opts.task's numbering regex (`/^[0-9P]+[ab]?\\.\\d+$/`); any non-JSON, non-integer arg is passed through verbatim as opts.task and matched against the TODO `#` column by the plan agent -- task ID conventions vary per project (Liars' `4a.14` is one convention among many).",
+  "autobuild.ps1/.sh: resolve the target repo from cwd or an explicit -RepoPath, not from the script's own directory -- required once the script is shipped inside the plugin rather than copied into each repo.",
+  "Add autobuild.sh as a POSIX counterpart to autobuild.ps1, same flags and log format -- a plugin for 'any repo' can't assume Windows/PowerShell.",
+  "Force UTF-8 output/log encoding in the wrapper -- the current autobuild.log already shows a mangled em-dash in a stop reason ('2.3G–”2.12'), which would recur on any non-default console codepage.",
+  "build-status.ps1: stop hardcoding one project's journal glob path; derive it from the target repo or, preferably, have the workflow also write progress lines to a repo-local file so the wrapper never depends on Claude Code's internal project-slug directory layout.",
+  "autobuild's invoked workflow name changes from bare 'build-loop' to the namespaced 'alon-skills:build-loop', per the documented plugin-workflow invocation convention."
+ ],
+ "open_questions": [
+  "The `~/.claude/projects/<slug>` directory-naming algorithm is inferred from a single observed example in Liars!'s own log, not from any documentation I read -- before relying on it for a portable build-status script it needs verification against at least one more repo path, or should be replaced outright by the repo-local progress-file approach.",
+  "The ground truth documents `!`cmd`` dynamic context injection for SKILL.md frontmatter, and separately states Workflow scripts do no direct IO ('agents do all IO') -- I've assumed command discovery must happen inside the plan agent call rather than at the script level; worth confirming there's no workflow-level injection equivalent before finalizing.",
+  "Whether the plugin should ship one shared ${CLAUDE_PLUGIN_ROOT}/workflows/build-loop.js every repo uses as-is, or have the architect skill scaffold a per-repo copy into .claude/workflows/ (as Liars! has today) that a repo can then diverge from -- changes how future fixes propagate and wasn't decided in the task brief.",
+  "No model policy for build-loop's own stages was handed down (the decided policy only covers review-swarm and ask-the-council) -- the sonnet/opus split proposed above is my inference from the same pattern ('cheap reviewers on sonnet, judgment on a stronger model'), not a confirmed decision.",
+  "Today's script names 'fable' as the default model for plan/spec, but Fable isn't established as available to other plugin users -- I've treated it as an optional per-run override rather than a default; whether Fable should appear in the public plugin at all is unconfirmed."
+ ]
+}

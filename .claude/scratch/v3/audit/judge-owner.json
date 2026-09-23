@@ -1,0 +1,85 @@
+{
+ "scores": [
+  {
+   "design_index": 0,
+   "portability": 9,
+   "unattended_reliability": 5,
+   "review_rigor": 5,
+   "token_efficiency": 7,
+   "total": 26,
+   "notes": "Verified against the real script: correctly targets the three actual leaks (COMMON's 'corepack pnpm --filter @overdue/rules' block at build-loop.js:86-90, LENSES.architecture's literal I1/I2/I3/I6 IDs at line 386, autobuild.ps1's Split-Path $PSScriptRoot self-location at line 16, build-status.ps1's hardcoded 'c--Users-alonb-Desktop-Code-Liars-' journal path at line 6) and ships both .ps1/.sh wrappers. But it does not touch the loop's actual reliability bugs: close() is still only called from the build-failure branch and the refute-exhausted branch (verified: plan-fails, scout-fails, spec-stopReason, and refuters-died all `break` with no close() call at lines 467-470, 476-479, 482-485, 531-534) — Design 0 leaves 4 rows permanently stuck IN PROGRESS with no docs/handoff.md entry, unaddressed. No fix for the crude 'anyFail && !blocking.length' synthetic-finding fallback (line 542-550). No answer to the concurrent double-launch race actually observed in the log (two sessions at 15:12 and 15:15 on different branches)."
+  },
+  {
+   "design_index": 1,
+   "portability": 7,
+   "unattended_reliability": 10,
+   "review_rigor": 5,
+   "token_efficiency": 7,
+   "total": 29,
+   "notes": "The only design grounded in the real autobuild.log line-by-line: correctly identifies the 429-mid-spec crash on task 0.5 at 15:19 (verified: log shows spec:0.5 started 15:16, 'claude exited EXIT:1' at 15:19, api_error_status 429, 'session limit -- resets 4pm'), the mangled em-dash in the stop reason (verified in the log), and — the strongest finding across all three designs — that close() is skipped on 4 of the loop's break paths (verified by reading the control flow), leaving TODO_WORKFLOW.md rows silently stuck IN PROGRESS forever, matching row 0.5's real state today. Also correctly catches a genuine, previously undetected two-session race: the log shows a second autobuild session starting at 15:15 on 'feature/bootstrap' while the first (started 15:12 on 'feature/protocol') was still running — its lock-file fix responds to a bug the other two designs never noticed. Weak spot: its own changes_from_liars list never states that LENSES.architecture's hardcoded I1/I2/I3/I6 gets generalized (unlike Designs 0 and 2) — a real, unaddressed portability leak. Refute stays 2-lens with the buggy synthetic-finding fallback unfixed."
+  },
+  {
+   "design_index": 2,
+   "portability": 9,
+   "unattended_reliability": 5,
+   "review_rigor": 10,
+   "token_efficiency": 5,
+   "total": 29,
+   "notes": "Correctly generalizes the I1/I2/I3/I6 invariant IDs and adds a manifest-convention fallback (package.json/pyproject.toml/Makefile/Cargo.toml) before stopping on ambiguity, more forgiving than Designs 0/1's 'CLAUDE.md Commands or stop' rule while still honoring the no-guessing constraint. Its evidence-weighted voting directly fixes a real bug verified in the code (build-loop.js:542-550: a single uncited fail currently blocks a task exactly as hard as a cited defect). Its added lenses (security-at-trust-boundary, ponytail-simplicity, adversarial test-writer) pull directly from review-swarm's actual proven lens set (verified in review-swarm/SKILL.md) rather than inventing new review dimensions. But it explicitly claims close() 'was already fully generic in the original -- no delta needed there' — this is wrong; it never noticed the close()-skipped-on-4-break-paths bug Design 1 found, so rows can still get silently stuck IN PROGRESS forever. No lock file for the observed concurrent-session race. Highest token cost of the three (completeness critic + adversarial test-writer + arbiter, round-1 and diff-gated but still additive)."
+  }
+ ],
+ "winner": 1,
+ "grafts": [
+  {
+   "from_design": 2,
+   "idea": "Evidence-weighted voting in refute: a cited file:line finding always blocks; an uncited 'fail' verdict only blocks if ≥2 independent lenses agree.",
+   "why": "Fixes a real bug verified in build-loop.js:542-550 that Design 1 leaves untouched: today, any single lens returning verdict=fail with zero listed findings still synthesizes a generic blocking item, which stalls a task exactly as hard as a genuine cited defect."
+  },
+  {
+   "from_design": 2,
+   "idea": "Opus arbiter, escalation-only: fires when a disputed (notFixed) finding reappears next round, or breadth lenses disagree; gives one binding upheld/dismissed call.",
+   "why": "Design 1 already threads notFixed disputes into close's record, but never resolves them — a wrongly-blocking finding still burns fix rounds until MAX_FIX_ROUNDS and closes BLOCKED. The arbiter is bounded (most tasks never invoke it) so it doesn't undo Design 1's token discipline."
+  },
+  {
+   "from_design": 2,
+   "idea": "Build self-reports diffStats / touchesTrustBoundary / docsOnly; refute uses it to gate which lenses run (ponytail, security, adversarial test-writer only on round 1, skipped on trivial/docs-only diffs).",
+   "why": "Lets the merged design add review breadth (security-at-trust-boundary and ponytail-simplicity lenses, pulled from review-swarm's real lens set) without paying full multi-lens cost on every one-line fix — keeps Design 1's token-efficiency profile while closing Design 1's 'refute stays 2-lens' gap."
+  },
+  {
+   "from_design": 0,
+   "idea": "Explicitly generalize LENSES.architecture's hardcoded invariant IDs (I1/I2/I3/I6) to 'whatever SOURCE_OF_TRUTH.md §3 actually lists.'",
+   "why": "Design 1's own stage list and changes_from_liars never call this out, even though it hardcodes Liars!-specific SoT entries verbatim (verified at build-loop.js:386) — the clearest example of a non-portable literal surviving into what's meant to be a public-plugin reviewer."
+  },
+  {
+   "from_design": 0,
+   "idea": "Move the 'Left for <id>: ...' note convention out of the workflow script's close() prompt and into architect's own CLAUDE.md/TODO_WORKFLOW.md template text.",
+   "why": "Today the convention only exists inside build-loop.js's prompt string; any repo using build-loop without architect's template carrying it will silently lose the cross-task handoff mechanism the owner relies on to know what's left."
+  }
+ ],
+ "fatal_flaws": [
+  {
+   "design_index": 0,
+   "flaw": "Never diagnoses or fixes the close()-skipped-on-early-break bug: 4 of the loop's break paths (planner returns nothing, scout fails, spec stopReason, refuters die — verified at build-loop.js lines 467-470, 476-479, 482-485, 531-534) still leave a TODO_WORKFLOW.md row silently stuck '[IN PROGRESS]' with no docs/handoff.md entry, exactly the state real row 0.5 is in today after the observed 429 crash."
+  },
+  {
+   "design_index": 1,
+   "flaw": "Does not generalize LENSES.architecture's literal I1/I2/I3/I6 invariant IDs (verified hardcoded at build-loop.js:386) — nowhere stated as fixed in the design's changes_from_liars list, so a repo without those exact SoT entries gets a reviewer checking invariants that don't exist in its docs."
+  },
+  {
+   "design_index": 2,
+   "flaw": "Explicitly and incorrectly asserts close() 'was already fully generic in the original — no delta needed there,' missing the verified close()-skipped-on-4-break-paths bug entirely; under this design rows can still get permanently stuck IN PROGRESS with the owner having no idea why, directly failing the stated Owner lens ('trustworthy closed rows... no mess')."
+  }
+ ],
+ "recommended_stage_list": [
+  "Plan (opus default, models.plan override) — discovers repo commands from CLAUDE.md's '## Commands' section with a manifest-convention fallback (package.json/pyproject.toml/Makefile/Cargo.toml) before stopping on genuine ambiguity; checks <scratchDir>/*.json checkpoints and resumes a stale '[IN PROGRESS]' row left by a crashed prior run instead of treating it as ineligible forever; stops on dirty tree or missing TODO_WORKFLOW.md/SOURCE_OF_TRUTH.md.",
+  "Scout (haiku) — read-only file/symbol/test/doc-section location report; persists to <scratchDir>/scout.json so a resumed task skips re-scouting.",
+  "Spec (opus) — docs-first (SoT → Roadmap → NN-*.md) before spec.md, using discovered commands (not a hardcoded pnpm string); on failure keeps already-committed doc edits and discards only uncommitted stray ones; checkpoints to spec.json.",
+  "Research (sonnet) — skipped entirely when spec.unverifiedApis is empty; verifies library facts via installed manifests/types or context7, never edits code.",
+  "Build (sonnet) — pre-Build budget gate checks the full build+refute+fix+close cost before touching a file; implements the spec exactly with the discovered verification commands; self-reports diffStats/touchesTrustBoundary/docsOnly for refute's gating; must leave the tree committed-or-clean on any exit.",
+  "Refute (sonnet for breadth lenses, opus for the completeness critic; parallel, diff-gated) — correctness+tests (reruns commands itself) and acceptance-checklist-vs-spec run every round; invariants+docs-sync runs when SOURCE_OF_TRUTH.md §3 actually has a table (generalized, no literal IDs); ponytail-simplicity, security-at-trust-boundary, and the adversarial test-writer run once, round 1 only, skipped on trivial/docs-only diffs; findings merged by evidence-weighted voting (a cited file:line finding always blocks; an uncited fail needs ≥2 lenses agreeing).",
+  "Arbiter (opus, escalation-only) — fires only when a disputed (notFixed) finding reappears next round or lenses disagree; one binding upheld/dismissed call per disputed finding.",
+  "Fix (opus, capped at args.maxFixRounds, default 2) — addresses blocking findings with the smallest correct change, disputes wrong ones under notFixed (threaded into close's record), re-runs the discovered commands.",
+  "Close (sonnet) — sole writer of TODO_WORKFLOW.md/docs/handoff.md; invoked via a single closeIfPossible() helper on EVERY early-break path after Plan succeeds (scout-failed, spec-stopReason, build-blocked, refuters-died, budget-short, max-fix-rounds-exhausted), not just build-failure; tolerates its own agent() returning null and logs that Plan's resume-priority rule will pick the row up next run.",
+  "Wrapper (portable driver outside the Workflow script, with a lock file under <repo>/.claude/scratch/build-loop/) — spawns one `claude -p` process per task against the namespaced /alon-skills:build-loop, stops on anything but 'reached maxTasks', and tails a repo-local progress log the workflow writes itself instead of scraping Claude Code's internal ~/.claude/projects/<slug> journal path."
+ ]
+}

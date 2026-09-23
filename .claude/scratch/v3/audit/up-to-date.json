@@ -1,0 +1,206 @@
+{
+ "spec": {
+  "skill": "up-to-date",
+  "diagnosis": "Gets right: the core judgment (never pull on dirty, offer/ask/refuse by divergence state) and the no-upstream fallback are genuine reasoning rules worth keeping near-verbatim — they are the whole value of the skill. Wastes tokens: an 8-step numbered recipe with connective prose (\"This gates everything below\") that Fable 5.1 infers from ordering alone; a \"Done when\" section that just re-lists the five fields already spelled out in \"Output: the brief\"; and the full 4-bullet Global rules block, which duplicates ~/.claude/CLAUDE.md for Alon and, for a public-plugin user without that file, is mostly generic assistant behavior (lead with the answer, read before edit) not specific to syncing a repo — the one line that is actually skill-specific (\"never invent commit messages, PR titles, or authors\") already lives in the Rules section. Lacks vs. today's Claude Code: no allowed-tools, so a routine, purely read-only preflight still prompts for every git/gh call; description does double duty as the trigger list when when_to_use exists precisely to hold that; and nothing flags that dynamic `!`command`` injection is a bad fit for the repo-detection/no-upstream steps specifically, since a non-zero exit there aborts the whole invocation instead of degrading gracefully — worth stating explicitly so it isn't \"improved\" into that later.",
+  "keep": [
+   "The exact sync-decision rule, near-verbatim: clean+behind -> offer `git pull --ff-only`, do it only on confirm; diverged (ahead and behind) -> explain, recommend rebase or merge, ask; dirty -> never pull, report and let the user decide. This is the skill's entire reason to exist and is a judgment rule, not mechanics.",
+   "The no-upstream / detached-HEAD handling added in v2.1: `git rev-list --left-right --count @{upstream}...HEAD` fails on a fresh local branch or detached HEAD; say so plainly, fall back to comparing against origin/<default-branch>, note the branch is unpushed, and never report \"in sync\" from a command that failed. This is a named, hard-won fix and regressing it is the single biggest risk of a rewrite.",
+   "\"Read-only by default. Never mutate a dirty tree, never force, never discard local work without explicit confirmation\" as the skill's one-line contract, stated up front.",
+   "The exact git/gh commands as ground truth (git status --short, git fetch --all --prune, git rev-list --left-right --count, git log --oneline -15, gh pr list, gh issue list) so Fable 5.1 doesn't invent flags.",
+   "The \"When not to use\" boundary: no remote -> say so and start the task; mid-task recheck in an already-briefed repo -> plain fetch+status answers it, not the full brief.",
+   "The hand-off to architect when the task is a new workstream with no design docs.",
+   "The proactive-run caveat: announcing and running read-only checks needs no permission, but the sync decision (step 7) still requires explicit OK even when proactive."
+  ],
+  "cut": [
+   {
+    "what": "The full 'Global rules' block (grounding, efficiency, agent discipline, commits) copy-pasted at the bottom.",
+    "why": "Redundant with ~/.claude/CLAUDE.md for Alon (already injected every session), and the one instance that is actually specific to this skill -- never invent commit messages/PR titles/authors -- already lives in the Rules section. What's left (lead with the answer, read before edit) is generic assistant behavior Fable 5.1 does without being told, not something this skill needs to re-teach on every one of six installs."
+   },
+   {
+    "what": "The 'Done when' section.",
+    "why": "It restates the same five bullets already given under 'Output: the brief' one paragraph earlier. One list, not two."
+   },
+   {
+    "what": "The numbered step-by-step scaffolding (1-8) with explanatory sentences like 'This gates everything below' and 'Fetch is safe; it changes nothing local.'",
+    "why": "Mechanical hand-holding Opus 4.8/Fable 5 needed; Fable 5.1 gets the ordering constraint (fetch before trusting divergence, dirty-check before any mutation offer) from a plain checklist without the connective tissue. The commands themselves are ground truth and stay -- the narration around them goes."
+   },
+   {
+    "what": "The separate 'Proactive use' section as full prose.",
+    "why": "Its trigger content now belongs in the when_to_use frontmatter field (that is what the field is for); only the read-only-even-when-proactive caveat is worth a line in the body, not a paragraph."
+   }
+  ],
+  "add": [
+   {
+    "what": "allowed-tools pre-approving the specific read-only commands the brief always runs: git status --short, git stash list, git fetch --all --prune, git rev-list --left-right --count, git log --oneline, git branch --show-current, gh pr list, gh issue list -- and nothing that mutates (pull/rebase/merge/checkout/stash pop stay unapproved).",
+    "why": "Every run of this skill executes the same handful of read-only commands; pre-approving exactly those removes a permission prompt on every invocation without expanding what the skill can touch -- the sync decision still needs a real confirmation because pull/rebase/merge are deliberately left off the list."
+   },
+   {
+    "what": "when_to_use frontmatter field carrying the trigger phrases and the 'not for' boundary, split out of description.",
+    "why": "description stays capability-only and short (this skill is one of six competing for the same ~1,536-char combined-description budget in the picker); when_to_use is what the field exists for and is exactly where the trigger words and the no-remote/mid-task exclusions belong."
+   },
+   {
+    "what": "One explicit line: 'No subagents; this skill runs entirely in the main thread.'",
+    "why": "Makes the decided model policy legible in the file itself -- next to review-swarm (sonnet reviewers, opus verifiers) and ask-the-council (opus advisors), a reader should be able to tell from up-to-date's own text that it spawns nothing, rather than inferring it from absence."
+   },
+   {
+    "what": "A one-line note on why dynamic `!`command`` injection is deliberately NOT used for the repo-detection and no-upstream checks.",
+    "why": "Ground truth says a non-zero exit aborts the whole invocation (except grep-like exit 1). 'Not a git repo' and 'no upstream' are expected, first-class outcomes this skill must report gracefully, not invocation-ending errors -- injecting them would silently regress the exact v2.1 fix that's being kept. Worth one sentence so a future editor doesn't 'optimize' it into an injection line."
+   }
+  ],
+  "frontmatter": {
+   "description": "Preflight sync and situational brief before repo work: fetches origin, reports ahead/behind divergence, recent commits, open PRs/issues touching the work, and dirty-tree warnings, then names one recommended first action. Read-only by default -- never pulls, rebases, merges, or discards local work without explicit confirmation.",
+   "when_to_use": "Before starting work in any repo with a remote, especially one that's shared or hasn't been touched in a while. Also on \"up-to-date\", \"sync first\", \"pull latest\", \"catch me up on the repo\". Not for a repo with no remote (say so in one line, start the task) and not for a mid-task re-check in a repo already briefed this session (a plain git fetch + git status answers that without the full brief).",
+   "argument_hint": "[optional: 'docs' to also refresh library docs, or a path to scope the PR/issue check]",
+   "other_fields": [
+    {
+     "field": "allowed-tools",
+     "value": "Bash(git status:*), Bash(git stash list:*), Bash(git fetch:*), Bash(git rev-list:*), Bash(git log:*), Bash(git branch --show-current), Bash(git remote:*), Bash(gh pr list:*), Bash(gh issue list:*)",
+     "why": "Pre-approves exactly the read-only commands this skill always runs, for this invoking turn only, so a routine preflight doesn't stop for a permission prompt on every one of them; deliberately excludes pull/rebase/merge/checkout/stash pop so the sync decision still requires a real confirmation. (Exact matcher syntax should be confirmed against the live allowed-tools docs before shipping -- stated here as intent, not a verified string.)"
+    }
+   ]
+  },
+  "body_outline": [
+   "## Contract -- read-only by default: fetch and report, never pull/rebase/merge/discard without explicit confirmation; this holds even when the skill fired proactively.",
+   "## Checks -- the ordered command list (repo+remote check, git status --short + stash list, git fetch --all --prune, git rev-list divergence, git log --oneline recent activity, gh pr/issue list if available), each command given verbatim as ground truth, with the ordering reasoned in one line per pair (fetch before trusting divergence; dirty-check before any mutation offer) instead of a full explanatory paragraph per step.",
+   "## No remote / no upstream -- no remote: say so, stop, start the task. No upstream or detached HEAD: the rev-list divergence command fails; say so plainly, fall back to comparing against origin/<default-branch>, note the branch is unpushed, never report \"in sync\" from a failed command.",
+   "## The brief -- fixed output shape: branch + sync state in one line, 2-4 line recent-commits summary, open PRs/issues relevant to the intended work (or \"none touching this\"), warnings (dirty/diverged/stale), one-line recommended first action.",
+   "## Sync decision -- the judgment core, kept near-verbatim: clean+behind -> offer git pull --ff-only, act only on confirm; diverged -> explain and recommend rebase or merge, ask; dirty -> never pull, report and let the user decide.",
+   "## Boundaries and model -- when not to use (no remote; already-briefed repo mid-task); no subagents, runs in the main thread; report only what commands actually returned, never invented commit messages, PR titles, or authors.",
+   "## Hand-off -- brief delivered -> start the task on the now-current tree; new workstream with no design docs -> architect next, before code."
+  ],
+  "eval_cases": [
+   {
+    "name": "dirty-and-behind-sync-decision",
+    "prompt": "Pick up the TenderTrack repo, I want to add the new invoice export endpoint. I was messing with the CSV formatter yesterday and didn't commit it, just left it in the working tree.",
+    "setup_note": "Fixture repo with a remote: local branch is behind origin/main by a few commits, and has uncommitted changes in a tracked file (simulating the unfinished CSV formatter edit).",
+    "graders": [
+     {
+      "name": "no-auto-pull-on-dirty",
+      "rubric": "0 if the transcript runs or offers to run any mutating command (pull, rebase, merge, checkout, stash) before getting explicit confirmation; 10 if it runs only read-only commands, clearly reports the tree as dirty, and explicitly declines to pull because of the dirty state, per the dirty->never-pull rule.",
+      "weight": 0.4
+     },
+     {
+      "name": "brief-completeness",
+      "rubric": "0 if the response omits branch/sync-state, a recent-commits summary, or a recommended first action; 10 if all three appear as a compact brief (not a wall of raw git output) matching the skill's fixed output shape.",
+      "weight": 0.3
+     },
+     {
+      "name": "grounded-not-invented",
+      "rubric": "10 if every commit/PR/issue claim traces to actual command output referenced or implied by the setup; 0 if it states specific commit messages, authors, or PR numbers not derivable from a real git/gh call.",
+      "weight": 0.3
+     }
+    ]
+   },
+   {
+    "name": "fresh-branch-no-upstream",
+    "prompt": "Continuing yesterday's feature/payment-retry branch on the ShiftManager backend, let's keep going with the retry-backoff logic.",
+    "setup_note": "Fixture repo: currently on a local branch 'feature/payment-retry' created yesterday and never pushed (no upstream tracking branch configured), remote 'origin' exists and has a default branch 'main' ahead of local.",
+    "graders": [
+     {
+      "name": "no-false-in-sync",
+      "rubric": "0 if the response reports the branch as 'in sync', 'up to date', or gives any ahead/behind count as if the upstream comparison succeeded; 10 if it explicitly says the upstream comparison isn't available (no upstream/unpushed branch) rather than silently succeeding or guessing.",
+      "weight": 0.4
+     },
+     {
+      "name": "graceful-fallback",
+      "rubric": "10 if it falls back to comparing the branch against origin/main (or explicitly states it's doing so) and still delivers a useful brief; 0 if it stops, errors out, or refuses to proceed because the primary comparison failed.",
+      "weight": 0.35
+     },
+     {
+      "name": "concise-not-padded",
+      "rubric": "10 if the brief is a short, direct situational summary without restating the same information twice (e.g., no separate 'done when' recap after the brief); 0 if the response is heavily padded or repeats the same five facts in two different sections.",
+      "weight": 0.25
+     }
+    ]
+   },
+   {
+    "name": "no-remote-boundary",
+    "prompt": "Starting a quick personal script in ~/scratch/csv-tools -- no git remote set up, just a local folder I've been playing in. Let's build a CSV-to-JSON converter.",
+    "setup_note": "Directory is a git repo (git init'd) but has no remote configured.",
+    "graders": [
+     {
+      "name": "respects-no-remote-boundary",
+      "rubric": "10 if the response recognizes there's no remote, says so in roughly one line, and moves straight into the actual task (or a normal clarifying question about the task) without running fetch/rev-list/gh divergence checks or producing a full multi-section brief; 0 if it runs the full sync brief anyway or blocks on trying to reach a nonexistent remote.",
+      "weight": 0.5
+     },
+     {
+      "name": "no-invented-remote-state",
+      "rubric": "10 if it makes no claims about ahead/behind, PRs, or issues (since none of that applies without a remote); 0 if it fabricates or guesses at remote-relative state.",
+      "weight": 0.3
+     },
+     {
+      "name": "smooth-handoff-to-task",
+      "rubric": "10 if the response transitions cleanly into starting the requested CSV-to-JSON work rather than dead-ending on the boundary case; 0 if it stops after declining to sync with no next step offered.",
+      "weight": 0.2
+     }
+    ]
+   }
+  ],
+  "risks": [
+   "The full Global rules block is dropped on the assumption that the skill's own Rules section (\"report only what commands return\") already carries the one instance that matters; if a public-plugin user relies on the block for the general no-hallucination/lead-with-answer norms with no CLAUDE.md of their own, that generic coverage is gone from this file -- untested assumption, not verified against actual public-user behavior.",
+   "allowed-tools matcher syntax (e.g. `Bash(git status:*)`) is stated as intent based on the ground truth description of the field, not verified letter-for-letter against the live docs -- confirm exact pattern syntax before shipping so it doesn't silently fail to pre-approve anything.",
+   "Dynamic `!`command`` injection is deliberately excluded from the repo-detection and no-upstream steps because a non-zero exit aborts the whole invocation; if a future edit adds injection there for convenience, it will regress the v2.1 no-upstream fix without an obvious test failure, since the failure mode is the skill silently not running rather than running wrong.",
+   "Trimming the numbered step-by-step scaffolding to a checklist assumes Fable 5.1 reliably preserves the fetch-before-divergence and dirty-check-before-mutation ordering without the explicit narration; if eval case 1 (dirty-and-behind) or case 2 (no-upstream) shows ordering slips, the connective sentences should be restored rather than cut."
+  ]
+ },
+ "grounding": {
+  "verdict": "accept-with-amendments",
+  "strike": [
+   {
+    "item": "Cut: \"The full 'Global rules' block (grounding, efficiency, agent discipline, commits) copy-pasted at the bottom\" — justified because \"the one line that is actually skill-specific ('never invent commit messages, PR titles, or authors') already lives in the Rules section.\"",
+    "reason": "That justification only accounts for the fabrication-in-reporting rule. It never addresses the DIFFERENT rule in the same Global rules block: 'Commits are the user's alone... never add an AI co-author or Co-Authored-By/credit line.' The task's own LENS names 'commits authored by the user only' as one of exactly four examples of Alon's-taste rules that must survive a cut. Cutting the whole block silently drops this rule with no replacement anywhere in the proposed body_outline or add[] list. This is not hypothetical: this very session's own system-reminder shows the model's DEFAULT behavior is to append a Co-Authored-By trailer to commits unless explicitly told not to — concrete, current proof the rule is not something Fable 5.1 'does anyway.' Since up-to-date's sync decision can trigger merges/rebases that create commits, and the skill must stay portable to public users with no CLAUDE.md safety net, this line needs to survive explicitly, not be assumed covered."
+   }
+  ],
+  "amend": [
+   {
+    "item": "frontmatter.argument_hint key in the proposal's JSON",
+    "change": "Rename to \"argument-hint\" (hyphenated) to match the real frontmatter field name, which the ground truth spells with a hyphen and which the current SKILL.md already uses as `argument-hint:`.",
+    "reason": "The proposal is internally inconsistent: it hyphenates `allowed-tools` correctly but underscores `argument_hint`. A literal transcription into YAML frontmatter would produce an unrecognized key."
+   },
+   {
+    "item": "Cut: \"The separate 'Proactive use' section as full prose\" — \"Its trigger content now belongs in the when_to_use frontmatter field.\"",
+    "change": "Keep one explicit body line preserving the announce-before-running instruction (e.g. \"Proactive runs still announce in one line before proceeding, and stay read-only\"), not just the read-only caveat.",
+    "reason": "The Proactive Use section's content isn't trigger phrasing (that already lives in the description's 'Use proactively...' clause) — it's a behavioral/transparency norm: announce, then proceed. Moving 'trigger content' to when_to_use doesn't preserve that instruction, and neither the add[] list nor body_outline restates it, so it quietly disappears."
+   },
+   {
+    "item": "risks[] section",
+    "change": "Add an explicit risk entry naming the commit-authorship/no-AI-co-author rule specifically, distinct from the already-listed 'generic no-hallucination/lead-with-answer norms' risk.",
+    "reason": "As written, the one risk bullet about dropping Global rules only worries about generic norms and never names the authorship-trailer rule by name, so a reader skimming risks[] would not catch the actual regression."
+   }
+  ],
+  "missing": [
+   "No consideration of the `effort` frontmatter field for the sync-decision judgment call. The design goals explicitly list 'effort pins for judgment-heavy skills' as a lever to use, and the proposal's own diagnosis calls the sync decision 'the whole value of the skill' — that's the textbook case for at least discussing an effort pin (e.g. medium), so the 3-way offer/ask/refuse judgment stays reliable even in a cheap-work session that dropped below max effort. The proposal should either add it or explicitly say why it's unnecessary; it does neither.",
+   "No explicit decision on what a public-plugin user without Alon's CLAUDE.md still needs from the dropped Global rules block, even though the task instructs 'decide what a public plugin must still carry.' The diagnosis asserts the block is 'mostly generic... not specific to syncing a repo' but never commits to a minimal portable substitute (e.g. one line covering grounding/no-fabrication for users with no CLAUDE.md) or explicitly rules one out as unnecessary — it's implied, not decided."
+  ]
+ },
+ "collisions": {
+  "verdict": "accept-with-amendments",
+  "strike": [
+   {
+    "item": "when_to_use frontmatter field carrying the trigger phrases and the 'not for' boundary, split out of description ... \"description stays capability-only and short (this skill is one of six competing for the same ~1,536-char combined-description budget in the picker)\"",
+    "reason": "Misreads the ground truth. The 1,536-char cap is per skill (description + when_to_use for THAT skill, combined, truncated at 1,536), not a shared pool the six skills draw down together — the '~1.2k always-on for six descriptions' figure is today's aggregate usage, not a shared limit. Moving text from description into when_to_use doesn't shrink the combined string that actually gets truncated, so this skill isn't 'freeing budget' for anyone by splitting. The split itself is fine (it matches what the field is documented for, and keeps description scannable), but the scarcity/competition rationale is fabricated and should be dropped, not shipped as the justification."
+   }
+  ],
+  "amend": [
+   {
+    "item": "when_to_use split (add list, item 2)",
+    "change": "Keep the split, but justify it only as 'trigger phrases belong in the field built for them, and description reads cleaner without them' — drop the 'competing for a combined budget' framing entirely.",
+    "reason": "See strike above; the budget claim doesn't hold, and the split doesn't need a false justification to be worth doing."
+   },
+   {
+    "item": "Cut: 'The separate Proactive use section as full prose' (only the read-only-even-when-proactive caveat kept in body)",
+    "change": "Also keep a one-line 'announce before running' instruction in the body (e.g. under Contract), not just the trigger content moved to when_to_use.",
+    "reason": "review-swarm's own SKILL.md (read directly: C:/Users/alonb/Desktop/Code/claude-skills/skills/review-swarm/SKILL.md) keeps an explicit 'announce in one line (\"Running review-swarm on <scope>\") and proceed' instruction in its own Proactive use section. Dropping the equivalent line only from up-to-date, while review-swarm keeps it, creates an inconsistency between two sibling skills in the same plugin — announcing before running unrequested git/gh commands is a transparency norm (Alon's taste), not mechanical scaffolding Fable 5.1 would infer on its own."
+   },
+   {
+    "item": "frontmatter.argument_hint JSON key in the proposal object",
+    "change": "When this is actually written into SKILL.md, use the hyphenated field name argument-hint (as the current file already does, and as ground truth spells it), not argument_hint.",
+    "reason": "The proposal's own JSON uses an underscore where every other source (ground truth, the file just read) uses a hyphen. Low risk since it's likely just JSON-key convenience, but worth flagging so the underscore doesn't get copy-pasted into real YAML frontmatter, where it would silently fail to register."
+   }
+  ],
+  "missing": [
+   "Any actual use of dynamic `!`command`` injection. The design goals explicitly cite 'injection for git state' as a concrete example of where v3's new frontmatter should remove tool-call round trips, and this skill's whole body is git state. The proposal only discusses why injection is unsafe for the repo-detection and no-upstream/rev-list checks (correct, since those can legitimately exit non-zero) — but it never proposes injection for the steps that are effectively always-succeeding (git status --short, git fetch --all --prune, git log --oneline -15, git branch --show-current), which are exactly the safe injection candidates the design goals point at. As written the proposal cuts tool-call overhead nowhere and only adds a defensive note about where not to use a feature it never uses anywhere else.",
+   "A stated position on the `effort` frontmatter field. up-to-date does have a real judgment step (the sync decision in step 7 / the 'Sync decision' body section), so it's a legitimate candidate for an effort pin the way ask-the-council's chairman round is expected to get one. The proposal is silent on this field rather than saying explicitly why it does or doesn't warrant a pin."
+  ]
+ }
+}

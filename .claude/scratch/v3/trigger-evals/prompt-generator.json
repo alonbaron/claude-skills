@@ -1,0 +1,82 @@
+[
+ {
+  "query": "I need to hand this off to a coding subagent on the ShiftManager repo — spawn one that fixes the Cloudflare Workers rate limiter bug in src/middleware/rateLimit.ts, but right now it's just a paragraph I typed. Can you tighten it into something rigorous before I send it?",
+  "should_trigger": true
+ },
+ {
+  "query": "our orchestrator (Fable) spawns a worker model to summarize customer support tickets — here's my rough attempt at the worker's system prompt, needs to be tight and not hallucinate ticket IDs",
+  "should_trigger": true
+ },
+ {
+  "query": "write a prompt for an agent that will classify incoming TenderTrack leads as hot/warm/cold from a CSV export",
+  "should_trigger": true
+ },
+ {
+  "query": "I'm building an LLM-as-judge to grade FastAPI PR descriptions against a rubric — need the grading prompt airtight so it doesn't just rubber-stamp everything",
+  "should_trigger": true
+ },
+ {
+  "query": "here's a task spec I'm about to paste into a fresh Claude Code session on a different machine to refactor the Django auth module — can you sharpen it first so it doesn't wander off and invent file paths?",
+  "should_trigger": true
+ },
+ {
+  "query": "improve this prompt: 'make the bot answer questions about our docs' — that's literally what I have for the Cloudflare Worker AI chatbot's system prompt right now",
+  "should_trigger": true
+ },
+ {
+  "query": "I typed up a rough spec for a subagent that will run a security lens against our Spring Boot payments service, but it's vague about what counts as done — can you polish it into something precise?",
+  "should_trigger": true
+ },
+ {
+  "query": "give me a solid prompt to hand a fresh LLM instance that will migrate our Godot save-game format from v3 to v4 — it should verify field names instead of guessing them",
+  "should_trigger": true
+ },
+ {
+  "query": "we're setting up a workflow with fable 5.1 as orchestrator spawning other models — I have a scratchy draft of the worker prompt for the 'extract invariants' step, needs role, done criteria, output budget spelled out",
+  "should_trigger": true
+ },
+ {
+  "query": "here's the task description I'm going to feed an autonomous agent that renames every occurrence of TenderTrack's old API key format across the repo — right now it's three rambling sentences, make it precise",
+  "should_trigger": true
+ },
+ {
+  "query": "our ShiftManager onboarding email to new Israeli customers reads really stiff and AI-ish, can you rewrite it so it sounds human?",
+  "should_trigger": false
+ },
+ {
+  "query": "just fix the off-by-one bug in src/utils/pagination.py yourself, don't write me a prompt, just do it",
+  "should_trigger": false
+ },
+ {
+  "query": "we're kicking off a brand new FastAPI + React app for TenderTrack's bid-comparison feature, nothing's built yet — help me spec out the architecture and roadmap before any code",
+  "should_trigger": false
+ },
+ {
+  "query": "should we build our new multi-agent orchestrator on top of LangGraph or roll our own with Cloudflare Durable Objects? there are real tradeoffs and I want a panel to argue it out",
+  "should_trigger": false
+ },
+ {
+  "query": "can you review the system prompt in agents/support_worker.py for bugs — I think it's letting the model hallucinate refund amounts",
+  "should_trigger": false
+ },
+ {
+  "query": "write the README for our claude-skills plugin explaining what each skill does",
+  "should_trigger": false
+ },
+ {
+  "query": "what even is a system prompt vs a user prompt, can you explain the difference real quick",
+  "should_trigger": false
+ },
+ {
+  "query": "critique the onboarding flow copy in ShiftManager's RTL Hebrew sign-up form, the button labels feel off",
+  "should_trigger": false
+ },
+ {
+  "query": "just go ahead and summarize these 40 support tickets into three themes for me right now",
+  "should_trigger": false
+ },
+ {
+  "query": "I already wrote the prompt for our Django admin cleanup agent and it's running fine — now review the diff it produced on branch cleanup/admin-panel before I merge",
+  "should_trigger": false
+ }
+]

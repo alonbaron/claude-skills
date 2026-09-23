@@ -1,0 +1,82 @@
+[
+ {
+  "query": "TenderTrack's tender records table is growing fast, some of the team wants to move to DynamoDB for scale, others insist postgres is fine with better indexes. we need to pick one and live with it, whats the actual tradeoff here",
+  "should_trigger": true
+ },
+ {
+  "query": "should we build our own auth/permissions system for ShiftManager or just wire up Auth0? half the team says building it ourselves gives us more control, the other half says we're reinventing the wheel and it'll bite us later",
+  "should_trigger": true
+ },
+ {
+  "query": "we're seriously considering splitting the monolith into microservices next quarter. its a big investment and honestly the team is split down the middle on whether its worth it or just adds ops overhead",
+  "should_trigger": true
+ },
+ {
+  "query": "working on the new order-processing Worker on Cloudflare — trying to decide between an event-driven queue setup and a straightforward synchronous REST flow. one engineer swears by queues for resilience, another says its overkill for our volume and just adds latency and debugging pain. need to actually land on one before we build more on top of it",
+  "should_trigger": true
+ },
+ {
+  "query": "picking between Cloudflare D1 and running our own postgres for the new billing service. D1 is way simpler to operate but some of us are worried about vendor lock-in if we ever need to move off cloudflare. need someone to actually weigh this and give a real recommendation, not a list of pros and cons",
+  "should_trigger": true
+ },
+ {
+  "query": "ask the council: should TenderTrack's new bidding module use a shared multi-tenant schema or separate DBs per customer?",
+  "should_trigger": true
+ },
+ {
+  "query": "can you get a panel of advisors together to debate whether we should keep our homegrown permission system or migrate to Cloudflare Access — this decision is going to be expensive to reverse either way",
+  "should_trigger": true
+ },
+ {
+  "query": "before I even start writing the SOURCE_OF_TRUTH doc for the new billing service, I can't get the team to agree — shared schema vs per-tenant DBs. this is the kind of thing that decides the whole doc, so I need it settled first",
+  "should_trigger": true
+ },
+ {
+  "query": "torn on this one — do we build a real plugin/extension system into ShiftManager now so we can add integrations later, or keep it minimal and bolt things on when we actually need them? some say we'll definitely need it in 6 months, others say that's just speculative complexity. genuinely can't tell who's right and getting it wrong is expensive to unwind later",
+  "should_trigger": true
+ },
+ {
+  "query": "trying to decide whether to raise a seed round for the startup now or bootstrap for another 6 months before talking to investors. both paths have real people arguing for them and honestly this is basically a one-way door once we pick",
+  "should_trigger": true
+ },
+ {
+  "query": "what's the actual pricing difference between DynamoDB on-demand and provisioned capacity at around 50k writes/sec, need real numbers before we talk to anyone",
+  "should_trigger": false
+ },
+ {
+  "query": "should I call this field userId or user_id in the TenderTrack API models, we already use camelCase everywhere else",
+  "should_trigger": false
+ },
+ {
+  "query": "should the ShiftManager 'confirm shift' button be blue or the existing green? can just change the CSS if people hate it",
+  "should_trigger": false
+ },
+ {
+  "query": "just finished the payment webhook handler for TenderTrack, can you review it for bugs and edge cases before I push?",
+  "should_trigger": false
+ },
+ {
+  "query": "this settings module has ballooned into ten config layers we don't need, can you cut it down to the minimum that actually works?",
+  "should_trigger": false
+ },
+ {
+  "query": "starting a brand new feature for TenderTrack, nothing built yet — can you write the SOURCE_OF_TRUTH and roadmap docs so the team has something to build against?",
+  "should_trigger": false
+ },
+ {
+  "query": "I need to hand off the vendor-comparison scoring logic to a different LLM agent to implement — can you turn my rough notes into a rigorous, unambiguous prompt for it?",
+  "should_trigger": false
+ },
+ {
+  "query": "before I start work in the ShiftManager repo today, can you check if we're behind origin/main and see what PRs are open?",
+  "should_trigger": false
+ },
+ {
+  "query": "we already decided FastAPI over Django for the new scheduling service last week — can you scaffold the initial project structure now?",
+  "should_trigger": false
+ },
+ {
+  "query": "curious what your honest opinion is on whether we should add a caching layer in front of the TenderTrack search endpoint, it's just slow right now",
+  "should_trigger": false
+ }
+]

@@ -1,0 +1,82 @@
+[
+ {
+  "query": "ok i think the payment-retry logic in our FastAPI backend is done, can you check my working tree against main before i open the PR",
+  "should_trigger": true
+ },
+ {
+  "query": "assess this branch, it's about 15 files touching TenderTrack's tender-matching service (Django) plus the DB migrations",
+  "should_trigger": true
+ },
+ {
+  "query": "just finished wiring the JWT refresh flow into the Spring auth service, tests pass, next up is opening the PR",
+  "should_trigger": true
+ },
+ {
+  "query": "alright the ShiftManager shift-swap feature is implemented end to end (React + Cloudflare Worker), what's left before i can ship it",
+  "should_trigger": true
+ },
+ {
+  "query": "run review-swarm on my staged changes",
+  "should_trigger": true
+ },
+ {
+  "query": "can you do a swarm review of this diff, want the correctness/security/perf angles before i merge",
+  "should_trigger": true
+ },
+ {
+  "query": "our SQLAlchemy layer changed a bunch of query shapes in this PR, worried about N+1s and missing indexes creeping in, can you give it a real look with a few different lenses",
+  "should_trigger": true
+ },
+ {
+  "query": "i refactored how the Godot save-game system talks to the inventory module, not sure it still respects the domain boundaries we set up, can someone look at whether this still fits the architecture before i keep building on it",
+  "should_trigger": true
+ },
+ {
+  "query": "this diff isn't trivial, touches auth, a couple of DB migrations and some UI — don't just eyeball it, i want it looked at from a bunch of angles before it goes up",
+  "should_trigger": true
+ },
+ {
+  "query": "reviewing my Cloudflare Workers + React changes for TenderTrack before merging — it touches the auth middleware and the invoice submission form, want a thorough pass",
+  "should_trigger": true
+ },
+ {
+  "query": "can you review this one-line typo fix in the README before i push",
+  "should_trigger": false
+ },
+ {
+  "query": "there's a null pointer bug in the auth middleware, just fix it, i don't need a review, i know what's wrong",
+  "should_trigger": false
+ },
+ {
+  "query": "run a full security review of our Turnstile integration before launch, that's literally the only thing i care about right now",
+  "should_trigger": false
+ },
+ {
+  "query": "/code-review this branch please, the shift-swap changes in ShiftManager",
+  "should_trigger": false
+ },
+ {
+  "query": "this diff works fine but it's messy, dedupe the duplicated validation logic across the two handlers and drop the unused imports",
+  "should_trigger": false
+ },
+ {
+  "query": "is this RTL layout for ShiftManager's Hebrew invoice form accessible? check contrast and tab order for me",
+  "should_trigger": false
+ },
+ {
+  "query": "this new notification-queue abstraction feels like overkill for what we actually need, can you push back on the design before i write more code",
+  "should_trigger": false
+ },
+ {
+  "query": "we're starting a brand new microservice for TenderTrack's tender-matching, write up the domain model, invariants and API contracts before we touch code",
+  "should_trigger": false
+ },
+ {
+  "query": "kick off /code-review ultra on this PR and post the findings as a github comment when it's done",
+  "should_trigger": false
+ },
+ {
+  "query": "can you summarize what changed in this PR for the changelog entry",
+  "should_trigger": false
+ }
+]

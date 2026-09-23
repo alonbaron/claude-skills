@@ -1,0 +1,122 @@
+{
+ "angle": "Unattended-reliability engineer: I read the real build-loop.js, its two wrapper scripts, and three real headless runs (a clean finish, a correct \"no eligible task\" stop, and a mid-spec 429 crash) and found four concrete, file:line-grounded reliability bugs, plus the portability gap (hardcoded pnpm/Godot facts) that blocks shipping this in a public plugin for any repo.",
+ "summary": "build-loop.js has a real bug I verified by reading the loop: 3 of its 4 early-break paths (scout fails, spec stop-reason, both refuters die) never call close(), so the row stays \"[IN PROGRESS]\" forever and docs/handoff.md gets no entry — only the build-failure path closes correctly. The real 15:16 log shows exactly this: spec:0.5 died to a 429 mid-edit, and plan's eligibility rule 1 (\"status is exactly '[ ]'\") makes that row permanently unpickable next run. v3 fixes both with a single closeIfPossible() used on every break, a resume-priority rule in Plan for stale IN PROGRESS rows, and per-stage JSON checkpoints in the scratch dir so a fresh headless process can reconstruct where a killed run stopped. Portability: replace the hardcoded pnpm/Godot COMMON block with a CLAUDE.md `## Commands` contract (already auto-injected into every subagent, so discovery costs zero extra tokens) instead of a new Discover stage. The outer per-task wrapper moves from Windows-only PowerShell to a portable Node script with a lock file, fixing the concurrent double-launch I found in the log (two `claude -p` sessions 3 minutes apart on different branches, same working tree).",
+ "stages": [
+  {
+   "name": "Plan",
+   "model": "opus (override via args.models.plan, e.g. \"fable\" for repos with it)",
+   "effort": "high",
+   "does": "Picks the next eligible '[ ]' row OR resumes a stale '[IN PROGRESS]' row left by a crashed prior run (new: checks <scratchDir>/*.json to see which stage last completed and sets resumeFromStage). Opens/switches the branch, verifies an existing branch isn't foreign work unrelated to this task, commits the IN PROGRESS status. Stops immediately if TODO_WORKFLOW.md/SOURCE_OF_TRUTH.md are missing (repo hasn't run architect) or CLAUDE.md has no '## Commands' section.",
+   "reads": "TODO_WORKFLOW.md, git status/branch/log, CLAUDE.md (auto-injected, includes Commands), <scratchDir>/*.json checkpoints from any prior attempt at this taskId",
+   "writes": "TODO_WORKFLOW.md status cell (commit), the branch",
+   "returns": "taskId, taskRow, branch, baseCommit, docsToRead, leftForThisTask, resuming, resumeFromStage, stopReason"
+  },
+  {
+   "name": "Scout",
+   "model": "haiku",
+   "effort": "low",
+   "does": "Read-only: locates files/symbols/tests/doc sections the task touches. Unchanged from v2 except its result is now persisted to disk so a resumed task can skip re-scouting.",
+   "reads": "repo source via grep/glob, doc headings named by Plan",
+   "writes": "<scratchDir>/scout.json (new — was in-memory only, lost on process death)",
+   "returns": "files[], tests[], docSections[], notes[]"
+  },
+  {
+   "name": "Spec",
+   "model": "opus",
+   "effort": "high",
+   "does": "Docs-first: updates SOURCE_OF_TRUTH -> ARCHITECTURE_ROADMAP -> NN-*.md and commits that BEFORE writing spec.md. Change from v2: on failure it no longer reverts already-committed doc edits (those are real, correct work regardless of whether the spec later stalls) — only uncommitted stray edits are discarded. Uses CLAUDE.md's Commands section for verification-command wording instead of a hardcoded pnpm filter string.",
+   "reads": "SOURCE_OF_TRUTH.md, the scout's doc/file locations, CLAUDE.md Commands",
+   "writes": "SOURCE_OF_TRUTH.md/ROADMAP/NN-*.md (commit), <scratchDir>/spec.md, <scratchDir>/spec.json",
+   "returns": "specPath, docsChanged[], unverifiedApis[], packages[]/commands, stopReason"
+  },
+  {
+   "name": "Research",
+   "model": "sonnet",
+   "effort": "medium",
+   "does": "Skipped when spec.unverifiedApis is empty (unchanged). Verifies external API surfaces via node_modules/.d.ts or context7; never edits code.",
+   "reads": "spec.md's unverified list, node_modules types, context7",
+   "writes": "<scratchDir>/research.md, research.json",
+   "returns": "researchPath, unverifiedRemaining[]"
+  },
+  {
+   "name": "Build",
+   "model": "sonnet",
+   "effort": "default (no override)",
+   "does": "Precondition (zero-token, script-level, not a sub-agent): checks budget.remaining() against the cost of build+2 refute+2 fix+close BEFORE any file is touched, and stops cleanly (clean tree, nothing built) if it's short — new guard, since v2 only gated budget between whole tasks, not before the expensive tail of a single task. Implements the spec exactly, runs the commands CLAUDE.md names (never invents a package-manager/filter syntax), micro-commits, must leave the tree committed-or-clean on any exit.",
+   "reads": "spec.md (+research.md if present), only the files the spec names",
+   "writes": "source + test files (micro-commits), <scratchDir>/build.md, build.json",
+   "returns": "ok, commits[], testsPassed, lintPassed, deviations[], blockedReason"
+  },
+  {
+   "name": "Refute (x2 parallel)",
+   "model": "opus",
+   "effort": "high",
+   "does": "Adversarially verifies the build claim: correctness lens reruns tests/lint itself (a builder 'done' claim is never evidence — kept from v2, it's the mechanism that catches a lying builder), architecture lens checks invariants/spec 'Do not'/ponytail. A verdict=fail with no listed finding still gets a synthetic blocking item (kept from v2 — prevents a silent stall).",
+   "reads": "spec.md, build.md, git diff baseCommit..HEAD",
+   "writes": "nothing (read-only)",
+   "returns": "verdict, testsRan, blocking[], advisory[]"
+  },
+  {
+   "name": "Fix",
+   "model": "opus",
+   "effort": "high",
+   "does": "Fixes only the blocking findings, smallest correct change, adds/repairs the proving test. Change from v2: disputed findings (notFixed) are no longer just logged — they're carried into the outcome the Close stage records, so a disputed finding survives into docs/handoff.md instead of vanishing.",
+   "reads": "blocking findings, spec.md",
+   "writes": "source/test files (commit), <scratchDir>/fix-r<N>.json",
+   "returns": "fixed[], notFixed[] (now propagated), commits[]"
+  },
+  {
+   "name": "Close",
+   "model": "sonnet",
+   "effort": "low",
+   "does": "The only stage allowed to edit TODO_WORKFLOW.md (unchanged constraint, and refute's correctness lens still treats any other stage touching it as a blocking finding). Structural fix: invoked via a single closeIfPossible(p, sp, status, reason) helper called on EVERY early exit after Plan succeeds — scout-failed, spec-stopReason, build-blocked, refuters-died, max-fix-rounds-exhausted, budget-short — not just the build-failure path v2 special-cased. Tolerates its own agent() returning null (e.g. systemic 429): logs that the row will show as IN PROGRESS and be picked up by Plan's resume-priority rule next run, rather than crashing.",
+   "reads": "build.md, spec.md sections 1+8, the outcome object",
+   "writes": "TODO_WORKFLOW.md row (commit), docs/handoff.md entry (commit)",
+   "returns": "ok, commit"
+  }
+ ],
+ "repo_contract": "Required files/columns (unchanged from architect's existing contract, verified in TODO_WORKFLOW.md and the architect SKILL.md): TODO_WORKFLOW.md rows of `# | Task | Architecture Ref | Status | Branch`, status strings exactly `[ ]` / `[IN PROGRESS]` / `[FINISHED - PENDING MERGE]` / `[MERGED/DONE]` / `[BLOCKED] <reason>`; SOURCE_OF_TRUTH.md, ARCHITECTURE_ROADMAP.md, docs/architecture/NN-*.md; docs/handoff.md as a newest-first log (auto-created on first close if missing, as v2 already does). New requirement for portability: CLAUDE.md must carry a `## Commands` section naming the exact test/lint/format invocation per package plus package-manager quirks (e.g. \"pnpm not on PATH, use corepack pnpm\") — this is how the loop discovers commands without guessing, since CLAUDE.md is already auto-injected into every subagent (verified in ground truth), so no extra Discover stage or file read is needed. This is a delta the architect skill's CLAUDE.md template should also gain (it currently has no Commands section); until a repo adds it, Plan stops with a named reason instead of guessing a package manager or test filter syntax — satisfying the \"must not guess\" constraint directly.",
+ "args": "Unchanged from the current build-loop.js: {maxTasks: 3, task: null, models: {}, dryRun: false} parsed the same way (a bare integer → maxTasks, a task-id-shaped string → {task, maxTasks:1}, JSON object → merged). This shape was never Liars!-specific — only the COMMON prompt block hardcoded repo facts — so it ships as-is. models{} overrides per-stage model exactly as today (e.g. a repo with Fable access passes {\"models\":{\"plan\":\"fable\",\"spec\":\"fable\"}}).",
+ "quality_mechanisms": [
+  "Every stage persists its structured result to <scratchDir>/<stage>.json (not just prose .md files) — prevents total state loss when a fresh `claude -p` headless process is killed mid-task (the observed 429 at 15:19 left nothing on disk for the next run to reconstruct from).",
+  "Plan gains a resume-priority rule for stale '[IN PROGRESS]' rows — v2's eligibility rule 1 requires status exactly '[ ]', so any row left IN PROGRESS by a crash becomes permanently invisible to the planner; this is the direct fix for the row 0.5 scenario in the real log.",
+  "closeIfPossible() is called on every early-break path (scout-failed, spec-stopReason, refuters-died, budget-short), not only build-failure — I read build-loop.js and confirmed 3 of 4 abort paths currently skip close() entirely, leaving the row silently stuck IN PROGRESS with no docs/handoff.md entry.",
+  "A pre-Build budget gate checks whether enough budget remains for build+2 refute+2 fix+close before any file is touched — v2 only gates budget between whole tasks, so a task could start Build with too little budget left and get truncated mid-edit.",
+  "CLAUDE.md '## Commands' replaces the hardcoded pnpm/Godot COMMON block — without it the loop would either guess wrong commands in an unfamiliar repo (violates the no-guessing constraint) or need a new paid Discover stage; the injected-CLAUDE.md trick makes discovery free.",
+  "Spec no longer blanket-reverts committed doc edits on failure — only uncommitted stray edits are discarded, so correct docs-before-code work survives a stalled spec instead of being thrown away.",
+  "Refute's independent test rerun stays authoritative over the builder's self-reported testsPassed/lintPassed (kept unchanged from v2) — this is the existing mechanism that catches a builder that lies about tests passing.",
+  "Wrapper-level lock file (.claude/scratch/build-loop/.lock, pid+timestamp) — the real log shows two autobuild sessions launched 3 minutes apart on different branches against the same working tree; nothing in v2 prevented that race.",
+  "fix stage's notFixed disputes now flow into Close's advisory/Left-for note instead of only being console-logged — a disputed finding no longer vanishes when the task closes."
+ ],
+ "stop_conditions": [
+  "TODO_WORKFLOW.md or SOURCE_OF_TRUTH.md missing (repo hasn't run /architect yet)",
+  "CLAUDE.md has no '## Commands' section (can't discover test/lint/format without guessing)",
+  "dirty working tree at Plan time (git status --short included verbatim in stopReason, unchanged from v2)",
+  "no eligible task, with the specific rejected rows and reasons named (unchanged behavior from v2, which the real log shows working correctly)",
+  "a stale '[IN PROGRESS]' row Plan cannot safely resume (ambiguous partial state — e.g. an uncommitted mid-edit from a killed process) closes as BLOCKED for human review rather than being silently skipped forever",
+  "scout, spec, build, or both refuters return null (agent killed/failed, e.g. a 429) — best-effort close as BLOCKED with the failure reason, loop stops",
+  "spec stage: an architectural decision is missing from the docs and can't be guessed",
+  "budget insufficient for the build+refute+fix tail, checked before Build starts so nothing is left half-built",
+  "refute still failing after MAX_FIX_ROUNDS (2) fix rounds — closes BLOCKED, loop stops",
+  "reached maxTasks — the only stop that means 'run me again', matching the wrapper's existing 'reached maxTasks*' success check"
+ ],
+ "headless": "The Workflow script (workflows/build-loop.js) ships inside the plugin and is invoked either in-session as /alon-skills:build-loop [maxTasks|taskId], or headlessly per task exactly as today: `claude -p \"Use the Workflow tool with name alon-skills:build-loop and args {\\\"maxTasks\\\":1}\" --permission-mode auto --output-format json`, one fresh process per task, JSON result parsed for stoppedBecause. That pattern is sound and not Liars!-specific, so it's kept. The outer N-task loop can't itself be a Workflow script (the API forbids fs/process-spawn — 'agents do all IO'), so it ships as a companion CLI at workflows/build-loop/autobuild.mjs (Node, not PowerShell — this is the concrete portability fix for scripts/autobuild.ps1 and build-status.ps1, which are Windows-only and, in build-status.ps1's case, hardcode the literal path segment \"Liars-\" into the journal glob). A repo runs it as `node <plugin-root>/workflows/build-loop/autobuild.mjs --tasks 5 [--task 2.1] [--dry-run] [--repo <path>]`; it resolves the plugin root via import.meta.url, defaults --repo to cwd, writes its lock file and log under <repo>/.claude/scratch/build-loop/ (never inside the plugin), and computes the subagent-journal glob from the actual repo path instead of a hardcoded one. Progress is shown by tailing that journal's started/result entries (same technique as build-status.ps1, ported to Node) — phase, label, and a one-line Format-Result summary per stage, printed live and appended to autobuild.log.",
+ "changes_from_liars": [
+  "Close is now called via closeIfPossible() on every early-break path, not only build-failure — build-loop.js today only calls close() inside the `if (!b || !b.ok)` branch; the scout-null, spec-stopReason, and refuters-died branches each `break` without it, leaving the row permanently IN PROGRESS with no docs/handoff.md entry. Verified by reading the loop's control flow directly.",
+  "Plan's eligibility rule 1 ('Status is exactly \"[ ]\"') is extended with a resume-priority check for stale IN PROGRESS rows — today a crashed task's row is invisible to the planner forever, which is exactly what the 15:16-15:19 log shows happening to task 0.5.",
+  "Every stage now writes its structured JSON to <scratchDir>, where today only spec.md/research.md/build.md (prose) are persisted and the schema objects (PLAN_SCHEMA, SCOUT_SCHEMA, etc.) exist only in the script's in-memory variables — lost the instant a fresh `claude -p` process dies.",
+  "The hardcoded COMMON block's repo-specific paragraph ('Bare \"pnpm\" is NOT on PATH... corepack pnpm --filter @overdue/rules test...') is replaced by a reference to CLAUDE.md's '## Commands' section — the single biggest portability blocker for shipping this in a public plugin for any repo.",
+  "Spec's failure path changes from 'revert any partial doc edits' to 'keep committed doc edits, discard only uncommitted stray ones' — the current instruction risks discarding correct docs-before-code work just because spec.md itself later stalls.",
+  "A budget check moves from between-tasks-only (MIN_BUDGET_PER_TASK gate in the for-loop) to also running once more, for free, immediately before Build — so an expensive Plan+Scout+Spec doesn't leave too little budget for the build+refute+fix tail to finish cleanly.",
+  "fix's notFixed disputes are threaded into the outcome object Close records, instead of only being passed to log() and discarded after the run.",
+  "autobuild.ps1 + build-status.ps1 (Windows-only, one hardcodes the literal repo folder name 'Liars-' in its journal glob) are replaced by a single portable Node script with a lock file, fixing the two-concurrent-session race actually seen in the log at 15:12 and 15:15.",
+  "Model defaults for the judgment stages (plan, spec) move from a hardcoded 'fable' to 'opus' as the public default, with args.models.plan/spec as the documented override for repos with Fable access — 'fable' isn't confirmed as universally available to plugin users, and the plugin must stay portable.",
+  "Prompt structure in every stage keeps COMMON as the literal first block (already true in v2's template strings) but the intent is now explicit: it's the identical, cacheable prefix across all 8 stage prompts, so it's kept first rather than after the varying role-intro sentence."
+ ],
+ "open_questions": [
+  "Does `claude plugin eval`'s case.yaml/prompt.md/grader format actually fit a repo-mutating Workflow script (real git commits, real cost per run), or does build-loop need its own lighter harness — e.g. a disposable fixture repo with a 2-row TODO_WORKFLOW.md, asserting dryRun and a trivial maxTasks:1 run against known-good stoppedBecause values? The ground truth only confirms the eval format for SKILL.md prompts.",
+  "Is 'fable' (claude-fable-5-1) actually resolvable for arbitrary plugin installs, or is it Alon/Anthropic-account-specific? This decides whether opus is really the right public default for Plan/Spec or whether the workflow should attempt fable and fall back.",
+  "Should autobuild.mjs enforce a wall-clock or dollar-cost ceiling across the whole N-task run? The real log shows per-task cost ranging $0.47 (dry run) to $17.57 (one finished task with 2 fix rounds) with no ceiling today.",
+  "Should the architect skill's CLAUDE.md template gain the '## Commands' section now as a prerequisite, or should build-loop tolerate its absence via a one-time fallback Discover stage for repos whose CLAUDE.md predates it? I've assumed the former (stop and ask, don't guess) per the explicit 'must not guess' constraint, but that couples this workflow's rollout to an architect-skill change."
+ ]
+}

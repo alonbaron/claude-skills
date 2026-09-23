@@ -1,0 +1,193 @@
+{
+ "spec": {
+  "skill": "ponytail",
+  "diagnosis": "Ponytail's actual identity — the 7-rung ladder, \"read before you climb,\" root-cause-not-symptom, the ponytail: comment convention, and \"When NOT to be lazy\" — is all judgment content already written correctly for a model that follows intent; none of it is mechanical scaffolding to strip. The waste is structural, not conceptual: a verbatim 7-line \"Global rules\" block duplicated from CLAUDE.md (redundant for Alon, and not ponytail's job for anyone else), a \"Persistence\" section reminding the model to stay active every turn when the runtime already keeps invoked skill content in context across turns, and a \"Proactive use\" paragraph that now mostly restates what description/when_to_use will say. None of the new frontmatter (allowed-tools, context, model, paths) buys much here — ponytail spawns nothing and reads no external state per the v3 model policy, so the only real frontmatter gap is the description/when_to_use split and an effort pin, since rung-selection is exactly the judgment call a lower default effort would shortcut on a public install not running Fable at max.",
+  "keep": [
+   "The ladder, all 7 rungs in order — this is ponytail's entire decision framework (YAGNI > reuse > stdlib > native > installed dep > one-liner > minimum code), judgment not mechanics.",
+   "\"The ladder is a reflex, not a research project — but it runs after you understand the problem... Read the task and the code it touches first, trace the real flow end to end, then climb\" — the single most load-bearing sentence: it's what stops the ladder from producing a fast, confident, wrong fix.",
+   "\"Bug fix = root cause, not symptom\" paragraph — encodes Alon's taste (fix where all callers route through, not just the path the ticket named); exactly the judgment content the design goals says to keep.",
+   "\"When NOT to be lazy\" section in full — trust boundaries, no re-arguing an explicit full-version ask, hardware calibration needing a tuning knob, the one-runnable-check-left-behind rule. Non-negotiable boundaries.",
+   "The `ponytail:` comment convention (\"names the ceiling and the upgrade path\") — a real taste signal: marks a shortcut as intent, not oversight, and forces a stated upgrade trigger.",
+   "Hand-offs: council picked an option → ponytail builds its minimal version; check SOURCE_OF_TRUTH.md before deleting a documented invariant — keeps ponytail from silently undoing an architect/council decision.",
+   "Intensity table (lite/full/ultra) with the cache worked example — argument-hint alone doesn't convey the behavioral difference between levels; the table and example do."
+  ],
+  "cut": [
+   {
+    "what": "\"Global rules\" section (grounding, no-tokenmaxing, agent discipline, commit attribution) — verbatim copy of ~/.claude/CLAUDE.md",
+    "why": "Redundant for Alon (already injected every session) and not ponytail-specific — a YAGNI/laziness skill has no special claim on commit-attribution or hallucination rules. Cut here rather than relocated: a public installer without Alon's CLAUDE.md was never getting skill-specific value from this block either, it's generic instruction-following the base model already does."
+   },
+   {
+    "what": "\"Persistence\" section as a standalone heading (\"ACTIVE EVERY RESPONSE... Default: full. Switch: /ponytail lite|full|ultra\")",
+    "why": "Mechanical drift-prevention scaffolding written for a model that needed reminding to stay in character. Invoked skill content stays in context for later turns and isn't re-read per the ground truth, so the persistence fact is already structurally true; only the human-facing toggle (\"stop ponytail\"/\"normal mode\", level sticks till changed) is worth one line, folded into Hand-offs/Boundaries."
+   },
+   {
+    "what": "\"Proactive use\" section's restatement of trigger conditions (\"an abstraction with one caller, a new dependency for a few lines, scaffolding 'for later'\")",
+    "why": "Duplicates when_to_use once that field exists. The body only needs the one instruction when_to_use can't carry: announce in one line and don't ask permission."
+   }
+  ],
+  "add": [
+   {
+    "what": "when_to_use frontmatter field, split from description (triggers + not-for moved out of the description body)",
+    "why": "The new frontmatter model appends when_to_use to description for the listing; splitting lets description stay pure capability and when_to_use carry the situational triggers and exclusions, which is what the field is for."
+   },
+   {
+    "what": "effort: high pin",
+    "why": "Ponytail fires exactly when a rung decision needs judgment (has this abstraction really got one caller? did I trace every callsite before calling this the root cause?). On a public install not pinned to max effort like this session, the pin is the lever that stops the skill from shortcutting the reading step it explicitly demands of itself."
+   },
+   {
+    "what": "One explicit line in Hand-offs: \"a diff that already exists and just needs tidying is /simplify's job, not this ladder\"",
+    "why": "This boundary currently lives only in the frontmatter description and the README's tiebreak table, never in the body a model reads once the skill is already active. If \"clean this up\" arrives mid-session after ponytail fired for an unrelated reason, the body itself should redirect rather than re-running the ladder on finished code."
+   }
+  ],
+  "frontmatter": {
+   "description": "Forces the laziest solution that actually works: YAGNI, reuse before new code, stdlib before custom, native platform before dependencies, one line before fifty. Three levels — lite (name the lazier alternative, build what's asked), full (ladder enforced, default), ultra (YAGNI extremist, challenge the requirement itself).",
+   "when_to_use": "Fires when a solution is outgrowing the minimum: an abstraction with one caller, a new dependency for a few lines, scaffolding \"for later,\" or a complaint about over-engineering or bloat — invoke without asking, announce in one line, proceed. Also on \"ponytail,\" \"be lazy,\" \"yagni,\" \"simplest solution,\" \"do less.\" Not at trust boundaries (validation, auth, error handling that prevents data loss, a11y), not when the full version is explicitly requested, and not for tidying a diff that already exists and works — that's built-in /simplify. Ponytail governs what gets built, before and while it's written; simplify cleans up after.",
+   "argument_hint": "[lite|full|ultra]",
+   "other_fields": [
+    {
+     "field": "effort",
+     "value": "high",
+     "why": "Rung selection is a judgment call (has this abstraction really got one caller? did I trace every callsite before naming a root cause?) that a lower default effort would shortcut, especially on installs not already pinned to max."
+    },
+    {
+     "field": "license",
+     "value": "MIT",
+     "why": "Unchanged from v2.1 — the skill is vendored from DietrichGebert/ponytail and redistributed under its original license; attribution stays in NOTICE."
+    }
+   ]
+  },
+  "body_outline": [
+   "Proactive use — one line: announce (\"Ponytail: <what's over-built>\") and proceed, never ask permission. Triggers themselves now live in when_to_use, not restated here.",
+   "The ladder — the 7 rungs unchanged; \"read the task and trace the real flow before you climb\"; \"bug fix = root cause, not symptom\" paragraph intact.",
+   "Rules — no unrequested abstraction, boring over clever, shortest diff among options you actually understand, the ponytail: comment convention for marking a deliberate ceiling.",
+   "Output shape — code first, then at most three lines in the \"[code] → skipped: X, add when Y\" pattern; full explanation only when explicitly asked, never as unrequested prose.",
+   "Intensity — lite/full/ultra table plus the cache worked example; level persists until changed or \"stop ponytail\"/\"normal mode.\"",
+   "When NOT to be lazy — trust boundaries, explicit full-version requests (no re-arguing), hardware calibration knobs, the one-runnable-check-left-behind rule — unchanged in full.",
+   "Hand-offs and boundaries — council's pick → ponytail builds the minimal version; check SOURCE_OF_TRUTH.md before deleting a documented invariant; an already-written diff that just needs tidying is /simplify's job, not this ladder; \"stop ponytail\" reverts, level sticks otherwise."
+  ],
+  "eval_cases": [
+   {
+    "name": "pushback-on-unrequested-abstraction",
+    "prompt": "I'm adding response caching to our Node/Express API for the /products endpoint since it's getting hammered. Can you build a Cache class with a pluggable backend interface (in-memory now, Redis later) and a CacheStrategy interface so we can swap eviction policies down the line?",
+    "setup_note": "Self-contained; no fixture required beyond a plausible Express handler for the /products route the model can reference generically.",
+    "graders": [
+     {
+      "name": "pushback-on-abstraction",
+      "rubric": "0-10: does the response question or decline the CacheStrategy interface and pluggable-backend ask as unrequested abstraction (one caller, no second implementation today), and name the actual simplest rung (e.g. an in-memory memoization/LRU one-liner) instead of building the interfaces as asked?",
+      "weight": 0.4
+     },
+     {
+      "name": "output-shape",
+      "rubric": "0-10: code first, then at most three short lines in the '[code] → skipped: X, add when Y' pattern — no essay defending the simplification, no feature tour of what a full cache layer would look like.",
+      "weight": 0.3
+     },
+     {
+      "name": "ceiling-marked",
+      "rubric": "0-10: does the shipped shortcut carry a marker (comment or explicit note) naming its ceiling and the concrete upgrade trigger (e.g. 'single-process only, move to Redis if this needs to survive a restart or scale past one instance')?",
+      "weight": 0.3
+     }
+    ]
+   },
+   {
+    "name": "refuses-to-simplify-trust-boundary",
+    "prompt": "Our checkout API validates card data with a pretty verbose Zod schema plus separate custom checks for currency codes and amount bounds before we ever touch the payment processor. It feels like a lot of code for a paywall — can you slim it down?",
+    "setup_note": "Self-contained; assume a TypeScript checkout handler calling a payment processor SDK, no repo fixture needed.",
+    "graders": [
+     {
+      "name": "preserves-trust-boundary",
+      "rubric": "0-10: does the response keep the validation rigor intact (or actively strengthen/clarify it) rather than stripping checks, explicitly because this sits at a trust boundary (money, external input) — not just a generic 'I'll leave it as is'?",
+      "weight": 0.5
+     },
+     {
+      "name": "names-the-reason",
+      "rubric": "0-10: does the response state the reason in ponytail's own terms (trust boundary / money path, not a place to be lazy) rather than a generic 'best practice' hand-wave?",
+      "weight": 0.3
+     },
+     {
+      "name": "offers-real-value-elsewhere",
+      "rubric": "0-10: rather than a bare refusal, does it find a legitimate non-security simplification if one exists (e.g. deduplicating repeated schema fragments) or clearly say none is warranted, instead of leaving the ask entirely unaddressed?",
+      "weight": 0.2
+     }
+    ]
+   },
+   {
+    "name": "defers-diff-tidyup-to-simplify",
+    "prompt": "This PR already works and is merged-ready, but I added a couple of helper functions I probably didn't need along the way — formatDateRange() and a small isValidSlug() — can you clean it up before I open the PR?",
+    "setup_note": "Assume ponytail is already active in the session from an earlier, unrelated over-engineering catch, and the user is now asking about a finished diff.",
+    "graders": [
+     {
+      "name": "correct-handoff",
+      "rubric": "0-10: does the response recognize this is tidying an already-written, working diff and defer to /simplify (naming it) rather than re-running the ladder as if building new code from scratch?",
+      "weight": 0.5
+     },
+     {
+      "name": "no-scope-creep",
+      "rubric": "0-10: does it avoid silently rewriting unrelated parts of the diff or re-litigating design choices outside the two named helpers?",
+      "weight": 0.3
+     },
+     {
+      "name": "concise-handoff",
+      "rubric": "0-10: is the hand-off stated in roughly one line rather than an explanation of the ponytail/simplify boundary?",
+      "weight": 0.2
+     }
+    ]
+   }
+  ],
+  "risks": [
+   "Cutting the Global rules block assumes no downstream automation depends on ponytail specifically restating commit-attribution/grounding rules; if some other consumer of this plugin relies on that duplication rather than their own CLAUDE.md, this is a behavior change worth a changelog line.",
+   "The effort: high pin trades latency/cost on every ponytail invocation, including trivial ones ('make this one-liner lazy'), for better rung judgment on the cases that need it — accepted since the skill only fires when a real over-engineering signal is present, but worth watching if it makes simple asks feel slow.",
+   "Trimming the 'Persistence' section relies on the ground-truth claim that invoked skill content stays in context across turns without re-reading; that claim is taken from the computed task's stated ground truth, not independently verified by me against the live docs page in this session, and auto-compaction's 25k-token combined skill budget could still evict it in a long multi-skill session."
+  ]
+ },
+ "grounding": {
+  "verdict": "accept-with-amendments",
+  "strike": [
+   {
+    "item": "\"Global rules\" section ... — verbatim copy of ~/.claude/CLAUDE.md",
+    "reason": "Checked both files: the skill's block is a condensed paraphrase (bolded lead words, different sentence structure, ~40% the length) that even says 'canonical home `~/.claude/CLAUDE.md`' — a self-declared pointer/summary, not a verbatim paste. Calling it verbatim overstates the waste and obscures that whoever wrote it (Alon) already intended it as a portable fallback for installs without his CLAUDE.md. The mischaracterization matters because it's used to justify deleting the block outright rather than compressing it."
+   }
+  ],
+  "amend": [
+   {
+    "item": "Cut: \"Global rules\" section",
+    "change": "Don't delete outright. Replace the 4 paragraphs with one portable line, e.g. 'Ground claims, keep diffs minimal, attribute commits to the human author — never yourself.' placed under Boundaries.",
+    "reason": "The task's own design goal explicitly instructs: 'decide what a public plugin must still carry' — a public installer with no CLAUDE.md loses the no-AI-co-author and verify-or-say-I-don't-know rules entirely if this is a bare deletion. The task's LENS section names 'commits authored by the user only' by name as an Alon-taste rule that must not be silently cut. The proposal's own risk #1 acknowledges this danger but doesn't resolve it — it just accepts the risk. A one-line fallback answers the design goal's explicit question instead of dodging it, at near-zero token cost."
+   },
+   {
+    "item": "Add: effort: high pin",
+    "change": "State explicitly whether the pin is meant to apply only to the invocation turn or persist for the rest of the session, given ground truth says effort 'applies while skill active' and ponytail's own Boundaries section keeps it 'active... until changed or session end.'",
+    "reason": "If effort:high inherits ponytail's self-declared persistence, the cost/latency blast radius is the whole rest of the session, not just 'every ponytail invocation' as risk #2 frames it — including unrelated later turns where the model still considers ponytail 'active' in the background. The proposal's risk framing undersells this; worth one sentence deciding whether the effort pin should reset after the response that used it."
+   }
+  ],
+  "missing": [
+   "No eval case exercises the intensity levels (lite/ultra via argument-hint or explicit '/ponytail ultra' request) even though the Intensity table + worked cache example is called out as core kept content — all 3 eval cases implicitly test 'full' behavior only, so a v3 rewrite that broke lite/ultra switching would pass every eval.",
+   "No explicit statement of the mechanism justifying the 'Proactive use' trigger-restatement cut: the claim that when_to_use 'will carry' the triggers only holds if when_to_use is visible to the model at the moment a NEW proactive-invocation decision is made mid-session (i.e., it's consulted from the pre-invocation listing, not the post-invocation body) — this is a real and correct distinction per the ground truth, but the proposal asserts the substitution without stating why body-repetition is actually redundant rather than just assuming the two fields overlap."
+  ]
+ },
+ "collisions": {
+  "verdict": "accept-with-amendments",
+  "strike": [
+   {
+    "item": "\"Cut here rather than relocated: a public installer without Alon's CLAUDE.md was never getting skill-specific value from this block either, it's generic instruction-following the base model already does.\" (justification for cutting the Global rules block entirely)",
+    "reason": "Verified: README.md carries no equivalent content anywhere (grepped for 'global rule', 'co-author', 'attribution', 'commit' — zero hits outside the per-skill blocks being cut). So cutting entirely leaves zero carrier for a public installer, not a redundant one. The claim that this is 'generic instruction-following the base model already does' is false for at least the commit-attribution line: left to default behavior, models routinely append AI-authorship trailers to commits — that's precisely the kind of specific override CLAUDE.md exists for, and a public installer has no such file. The design goal explicitly instructs the proposal to 'decide what a public plugin must still carry'; the proposal doesn't decide, it defers the whole question into a 'risk to watch' in the risks list, which is not a decision."
+   }
+  ],
+  "amend": [
+   {
+    "item": "Cut: \"Global rules\" section",
+    "change": "Keep cutting the grounding/no-tokenmaxing/agent-discipline lines (defensible as generic model behavior), but either (a) fold the single commit-attribution line into the plugin's README under a 'note for other installers' line, so it exists exactly once at the plugin level instead of duplicated per-skill, or (b) keep one compact line of it in ponytail's body if no shared carrier exists yet. Don't let the whole rule silently disappear for non-Alon installs.",
+    "reason": "The block is redundant *for Alon* (already in his CLAUDE.md) but the commit-attribution rule specifically is not redundant for anyone without that file, and nothing else in the repo (verified via grep on README.md) carries it."
+   },
+   {
+    "item": "frontmatter.other_fields: {\"field\": \"license\", \"value\": \"MIT\", ...} listed under fields to add",
+    "change": "Reclassify as 'unchanged / carry forward', not an addition.",
+    "reason": "Verified in skills/ponytail/SKILL.md line 14: `license: MIT` is already present in the current frontmatter. Framing it as something being added is a minor factual slip, worth fixing before this becomes a changelog claim."
+   }
+  ],
+  "missing": [
+   "An eval case for \"read the task and trace the real flow before you climb\" / root-cause-not-symptom — the diagnosis itself calls this 'the single most load-bearing sentence' in the whole skill, yet none of the three proposed eval cases (abstraction-pushback, trust-boundary, hand-off-to-simplify) tests it. A case built around a bug report naming one symptom with multiple call sites, graded on whether the fix goes to the shared root cause vs. patches only the named path, would close this.",
+   "An eval case for the \"one runnable check left behind\" rule (non-trivial logic — branch, loop, parser, money/security path — must ship with an assert-based self-check or small test). This is called out in 'keep' as a non-negotiable boundary but has no eval coverage.",
+   "Confirmation of the read done directly against skills/ponytail/SKILL.md (rather than only against the proposal's own paraphrase) for the 'Persistence' cut: the file shows the section is even more redundant than the proposal argues — the toggle language ('stop ponytail'/'normal mode', level persists) is *already* duplicated verbatim in the existing Boundaries section (lines 124-129), so nothing new needs to be added there on cut, which strengthens rather than weakens this part of the proposal and could be stated more confidently."
+  ]
+ }
+}

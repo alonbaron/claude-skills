@@ -1,0 +1,195 @@
+{
+ "spec": {
+  "skill": "prompt-generator",
+  "diagnosis": "Judgment boundaries are already right: the \"ask only if blocked\" cap, \"when not to use\" (human prose, work you'd do yourself), and the hand-offs to up-to-date/architect are exactly the taste Fable 5.1 should keep — that's not scaffolding, it's the point of the skill. The waste is the numbered 5-step \"Process\": Fable 5.1 doesn't need to be walked read-intent -> ask -> draft -> self-check -> output, and step 4 (\"self-check against the rubric... cut anything that doesn't change behavior\") is a verbatim restate of \"Done when\" at the bottom — one of the two is redundant. One nuance the generic \"cut the copy-pasted Global rules block\" instruction misses: the \"Rules every generated prompt must carry\" section (grounding/efficiency/agent discipline) looks like the same CLAUDE.md boilerplate the other five skills carry, but here it is NOT redundant — it is the payload this skill bakes into the OUTPUT prompt for a different agent/session that has no CLAUDE.md of its own (true for every other user of this public plugin, and true even for Alon since the generated prompt leaves this session). It should stay, just tightened. Frontmatter gaps against the current docs: no when_to_use field (triggers/not-for are folded into description, eating into the 1,536-char combined-listing budget), no effort pin despite this being judgment work, and no allowed-tools even though the \"Ground truth\" section requires verifying a path or command before baking it into the prompt as a fact-to-check — that is a permission prompt on every single invocation today. No model spawning applies here (policy: prompt-generator spawns nothing), so the sonnet/opus split is a non-issue for this file.",
+  "keep": [
+   "\"Ask only if blocked... at most 1-2 questions... otherwise proceed and list assumptions in one line\" — Alon's actual taste against over-asking; a judgment rule, not mechanical scaffolding.",
+   "\"When not to use\" boundary (human-facing prose; work you'll do yourself this session) — keeps this skill out of humanizer's and the session's own lane.",
+   "\"Hand-offs\" section (bake in up-to-date when the prompt drives a coding agent onto a repo; suggest architect instead of one mega-prompt for a whole build) — cross-skill judgment the eval cases test directly.",
+   "The three rule blocks (grounding, efficiency, agent discipline) under \"Rules every generated prompt must carry\" — this is the deliverable payload baked into the OUTPUT prompt for another agent/session with no CLAUDE.md of its own, not this session's own behavior; keep it, tightened.",
+   "\"Output\": a fenced prompt block + at most three lines of commentary, no lecture on prompt engineering — the strongest anti-tokenmaxing rule in the file.",
+   "\"Done when\" testable criteria, including \"if your notes are longer than the prompt, cut the notes\" — a concrete self-check that already does the job of a separate mechanical self-check step."
+  ],
+  "cut": [
+   {
+    "what": "The 5-step numbered \"Process\" section (Read intent -> Ask only if blocked -> Draft -> Self-check -> Output).",
+    "why": "Mechanical scaffolding Opus 4.8 / Fable 5 needed spelled out; Fable 5.1 reaches the same behavior from the section menu + rules + Done-when criteria without a walked procedure. Step 4 (\"self-check against the rubric... cut anything that doesn't change the model's behavior\") is a near-verbatim restate of the \"Done when\" section at the bottom — redundant with it."
+   },
+   {
+    "what": "Trigger / not-for prose folded into the single description frontmatter field.",
+    "why": "Move it into the new when_to_use field so the combined listing text has headroom before the 1,536-char truncation, and so capability and firing-conditions aren't mashed into one paragraph."
+   }
+  ],
+  "add": [
+   {
+    "what": "when_to_use frontmatter field carrying the proactive triggers and the \"not for\" boundary, split out of description.",
+    "why": "Built for exactly this split; keeps description a clean capability statement and gives the trigger text its own room ahead of the combined-text truncation."
+   },
+   {
+    "what": "effort: high",
+    "why": "Drafting a minimal, correctly-scoped prompt — deciding which sections earn their place, hedging unverified facts — is judgment work, not a template fill-in; pinning it stops a short-looking request from getting a shallow pass."
+   },
+   {
+    "what": "allowed-tools: Read, Grep, Glob",
+    "why": "The Ground Truth section requires checking that a path or command the user mentioned is real before baking it into the prompt as a fact-to-verify; pre-approving read-only tools removes a permission prompt on every invocation without widening the skill's footprint — it never edits or runs anything."
+   },
+   {
+    "what": "One line in the Rules section noting these rules are payload for the generated prompt, not meta-instructions governing this session's own behavior.",
+    "why": "Fable 5.1 reasons from intent more than it pattern-matches section headers; without the pointer it could read \"Grounding / Efficiency / Agent discipline\" as governing its own turn (already true via CLAUDE.md) rather than content to emit into a prompt for a different, CLAUDE.md-less agent."
+   }
+  ],
+  "frontmatter": {
+   "description": "Turns a vague ask into a rigorous, grounded, token-efficient prompt for another agent or LLM: role + objective, testable done criteria, anti-hallucination and anti-tokenmaxing rules, and strict agent discipline — baked into the generated prompt itself, not just this session's behavior.",
+   "when_to_use": "Use proactively when the user hands over a prompt, a task spec, or a \"have it do X\" destined for another agent or LLM — also on \"write a prompt\", \"improve this prompt\", \"prompt for an agent\". Not for text a human will read (docs, messages, specs for people — that's writing, hand off to humanizer) and not for work you'll execute yourself this session — just do it, don't write yourself a prompt.",
+   "argument_hint": "[task, or a rough prompt to refine]",
+   "other_fields": [
+    {
+     "field": "effort",
+     "value": "high",
+     "why": "Prompt drafting is judgment work (scoping, hedging, cutting) — pin it above default so a short-looking request still gets a real pass."
+    },
+    {
+     "field": "allowed-tools",
+     "value": "Read, Grep, Glob",
+     "why": "Pre-approves the read-only checks the Ground Truth section needs (verifying a path/command is real) without granting any write or exec access."
+    }
+   ]
+  },
+  "body_outline": [
+   "# Prompt Generator — one-line mission: produce the prompt the user should have written, precise/grounded/short, output is a prompt not an essay about prompting.",
+   "## Proactive use — invoke unasked when the user hands over agent-bound text; announce in one line and proceed, never ask permission.",
+   "## Draft it — read intent and who runs the prompt; ask only if blocked (max 1-2, else state assumptions in one line); pick sections from the menu; check against Done When before you output. Replaces the old numbered Process.",
+   "## Section menu — Role, Context/Inputs, Ground truth, Rules, Steps, Output format, When blocked, Done when; use only what the task needs.",
+   "## Rules every generated prompt must carry — grounding, efficiency, agent discipline, commit-authorship line; one line noting this is payload for the output prompt, not meta-instructions for this turn.",
+   "## When not to use — human-facing prose; work you'll do yourself this session.",
+   "## Hand-offs — bake in up-to-date when the prompt drives a coding agent onto a repo; suggest architect instead of one mega-prompt for a whole build.",
+   "## Output — fenced prompt block, then at most three lines: assumptions, what to tweak, no lecture.",
+   "## Done when — self-contained, testable done criteria, carries the rules, nothing that doesn't change output; notes longer than the prompt means cut the notes."
+  ],
+  "eval_cases": [
+   {
+    "name": "coding-agent-repo-prompt",
+    "prompt": "I need a prompt I can hand to a coding subagent: go into our repo at C:/dev/acme-api (Node/Express + Postgres), find and fix the intermittent 500 on POST /orders when quantity is 0. I have a hunch it's an unguarded division by zero in pricing.js but I haven't actually checked. Write me the prompt to hand off.",
+    "graders": [
+     {
+      "name": "grounding-not-invented",
+      "rubric": "0-10: does the generated prompt frame the pricing.js division-by-zero as an unverified hypothesis the receiving agent must check (e.g. hedged, \"correct me if wrong\", \"verify before assuming\"), not as a stated fact, and avoid inventing any file paths, line numbers, or APIs beyond what the user gave? 10 = fully hedged and grounded, 0 = asserts the bug location as confirmed fact or invents specifics.",
+      "weight": 0.35
+     },
+     {
+      "name": "hand-off-and-rules-baked-in",
+      "rubric": "0-10: does the output prompt bake in agent discipline (read before edit, small reversible changes, ask when blocked, no AI co-author / commit mention) and, because this drives a coding agent onto a repo, fold in a sync-first / up-to-date step per the skill's own hand-off rule? 10 = both present and concrete to this task, 0 = generic rules with no repo-specific hand-off.",
+      "weight": 0.35
+     },
+     {
+      "name": "output-shape",
+      "rubric": "0-10: is the deliverable a single fenced prompt block followed by at most three lines of commentary, with no essay about prompting and no restating of the request? 10 = exact shape, 0 = prose essay or missing fenced block.",
+      "weight": 0.3
+     }
+    ]
+   },
+   {
+    "name": "human-prose-boundary",
+    "prompt": "Can you write me a good Slack message to send my team explaining why yesterday's deploy got delayed and what we're doing to make sure it doesn't happen again?",
+    "setup_note": "No repo state needed; tests whether the skill recognizes it is being asked for human-facing prose, not a prompt for an agent, and does not force this into its own shape.",
+    "graders": [
+     {
+      "name": "boundary-recognition",
+      "rubric": "0-10: does the response recognize this is human-facing prose, not a prompt for another agent/LLM, and either just write the message, note this isn't prompt-generator's job, or point at a human-prose skill — rather than producing a formal role+objective+done-criteria agent prompt for a Slack message? 10 = clearly stays out of its lane, 0 = produces an agent-style prompt for writing a Slack message.",
+      "weight": 0.6
+     },
+     {
+      "name": "no-fabrication",
+      "rubric": "0-10: does the response avoid inventing specifics about the deploy delay or the team that weren't given (root cause, names, dates)? 10 = no invented specifics, flags what's missing instead.",
+      "weight": 0.4
+     }
+    ]
+   },
+   {
+    "name": "whole-build-scope-check",
+    "prompt": "Write me a prompt I can give to a coding agent to build our entire multi-tenant billing system from scratch — Stripe integration, usage-based metering, invoicing, and an admin dashboard, all in one go.",
+    "graders": [
+     {
+      "name": "whole-build-handoff",
+      "rubric": "0-10: does the response recognize this is a whole build behind a single-prompt ask and surface the skill's own hand-off (suggest architect / design docs first instead of one mega-prompt), rather than silently writing one giant unscoped prompt? 10 = names the hand-off and explains why one mega-prompt is the wrong shape, 0 = writes a giant prompt attempting the whole system with no scoping caveat.",
+      "weight": 0.5
+     },
+     {
+      "name": "scoping-or-caveat",
+      "rubric": "0-10: if a prompt is produced anyway, is it scoped down (one slice, or a prompt to produce the architecture/plan first) with the mega-scope risk named, rather than a vague \"build everything\" prompt? 10 = clearly scoped with the risk named, 0 = unscoped kitchen-sink prompt.",
+      "weight": 0.5
+     }
+    ]
+   }
+  ],
+  "risks": [
+   "Cutting the numbered Process steps trades explicit mechanics for trusting Fable 5.1's judgment; if the eval suite (once run) shows drift back toward over-asking or under-hedging, that's the section to restore rather than re-tune elsewhere.",
+   "effort: high raises token cost on every invocation, including trivial one-shot prompts where a lighter pass would suffice — worth checking the eval deltas actually justify it before shipping.",
+   "allowed-tools: Read, Grep, Glob is read-only and low-risk, but it can't verify facts outside the current working directory; the Ground Truth section should keep its \"correct me if wrong\" hedge regardless of what got checked."
+  ]
+ },
+ "grounding": {
+  "verdict": "accept-with-amendments",
+  "strike": [
+   {
+    "item": "add: \"One line in the Rules section noting these rules are payload for the generated prompt, not meta-instructions governing this session's own behavior.\"",
+    "reason": "Redundant with the existing heading 'Rules every generated prompt must carry,' which already frames the block as content the generated prompt carries, not instructions for this turn. This is exactly the kind of restated-obvious scaffolding the stated design goal says to cut for a model that follows intent better (Fable 5.1); it adds tokens for near-zero marginal disambiguation."
+   }
+  ],
+  "amend": [
+   {
+    "item": "when_to_use field addition, justified as giving 'the trigger text its own room ahead of the combined-text truncation' / relieving text that is 'eating into the 1,536-char combined-listing budget'",
+    "change": "Keep the field (it's real and the organizational rationale — separating a capability statement from firing conditions — is sound) but drop the budget-headroom justification and replace it with the organizational one.",
+    "reason": "Ground truth states when_to_use text is APPENDED to description for the purpose of the 1,536-char listing truncation — the two fields share one combined budget. Splitting text across them does not create headroom; it is the same total character count under two YAML keys. As stated, the justification misdescribes how the field works. It's also not an urgent concern either way: the current description is roughly 550 characters, nowhere near the 1,536-char ceiling."
+   },
+   {
+    "item": "frontmatter.argument_hint (with underscore) in the proposed frontmatter block",
+    "change": "Spell it argument-hint (hyphen), matching the field already present in the file and the ground truth's naming.",
+    "reason": "If transcribed literally into SKILL.md YAML, argument_hint is not a recognized frontmatter key — this would silently produce a dead field, not the working argument-hint the file already has."
+   },
+   {
+    "item": "effort: high, justified as 'pin it above default so a short-looking request still gets a real pass'",
+    "change": "Verify the ambient effort baseline before picking a value; if the session/global default is already max (as this very session's own context states — 'session model is claude-fable-5-1 with effort max'), pin to effort: max instead of high, or omit the field and rely on the ambient setting.",
+    "reason": "Per ground truth, effort 'applies while skill active' — i.e. it overrides the ambient setting for the duration. If the ambient default is already max for typical usage, setting effort: high on this skill would silently LOWER judgment effort while the skill runs, the opposite of the stated intent. The proposal's own risk list flags cost but never checks whether 'high' is actually an upgrade or a downgrade relative to the real baseline."
+   },
+   {
+    "item": "add: allowed-tools: Read, Grep, Glob, justified in part as ensuring the skill 'never edits or runs anything'",
+    "change": "Keep the allowed-tools addition (it's correctly used and genuinely removes permission prompts on every invocation), but drop or soften the claim that it enforces read-only behavior; if hard enforcement of 'never edits or runs anything' is actually wanted, add disallowed-tools for the write/exec tools instead.",
+    "reason": "Per ground truth, allowed-tools only pre-approves tools for the invoking turn — it does not exclude or forbid other tools from being requested (with a normal permission prompt). The read-only guarantee currently comes from the skill's own prose ('When not to use... work you'll do yourself'), not from this frontmatter field."
+   }
+  ],
+  "missing": [
+   "A check of whether the 1,536-char truncation is anywhere close to being hit today (it isn't, at ~550 chars), which would have caught the budget-headroom error in the when_to_use justification and right-sized the urgency of that change.",
+   "A note that allowed-tools pre-approves rather than restricts, and a decision on whether disallowed-tools is needed if hard read-only enforcement is actually intended.",
+   "A sanity check of the effort field against the ambient/default effort level (this session's own context states it's already 'max'), since a skill-level effort pin can lower as easily as raise it depending on that baseline."
+  ]
+ },
+ "collisions": {
+  "verdict": "accept-with-amendments",
+  "strike": [
+   {
+    "item": "when_to_use field \"gives the trigger text its own room ahead of the combined-text truncation\" (frontmatter.when_to_use rationale)",
+    "reason": "Measured, not asserted: current combined description is 483 chars; the proposal's own new description+when_to_use totals ~670 chars. Both are well under half of the 1,536-char listing limit. There is no truncation risk today for this skill, so citing it as the reason to split the field is manufactured urgency, not a verified fact. The split can stand on a different, honest reason (matches the new schema's intent, cleaner separation of capability vs. trigger) but not this one."
+   },
+   {
+    "item": "allowed-tools: Read, Grep, Glob — \"that is a permission prompt on every single invocation today\"",
+    "reason": "Checked against Alon's actual ~/.claude/settings.json permissions.allow list: it contains many specific Bash/PowerShell/WebFetch/WebSearch grants but zero Read/Grep/Glob entries — and this very review used Read and Glob repeatedly with no permission prompt firing. Read-only tools are not gated by Claude Code's permission system the way Bash/Write/Edit are. The claim that this addition 'removes a permission prompt on every invocation' is factually wrong for this account, not merely optimistic. The addition can still stand as a self-limiting/documentation signal, just not for the stated reason."
+   },
+   {
+    "item": "when_to_use: \"...that's writing, hand off to humanizer\"",
+    "reason": "Misrepresents the actual hand-off per the router (CLAUDE.md) and humanizer's own description: humanizer scrubs AI-writing tells from prose that's about to reach a human — it polishes already-drafted text, it does not compose from scratch. Telling prompt-generator's boundary clause to bail by 'handing off to humanizer' implies delegating composition itself, which isn't the real workflow. Should read closer to 'just write it — not a prompt-generator job' rather than naming humanizer as the destination."
+   }
+  ],
+  "amend": [
+   {
+    "item": "frontmatter.effort = high",
+    "change": "Pin effort: max, not high — or drop the pin and justify why high suffices.",
+    "reason": "Alon's global settings.json already sets effortLevel: \"max\" for the whole session. A per-skill pin of 'high' is a downgrade from the session's current default whenever the session is already at max, and the stated design intent (judgment-heavy skills 'stay at max even if you drop the session to a lower level for cheap work') is only served by pinning at max. As written the pin does nothing in the common case and under-delivers in the case it exists to protect."
+   }
+  ],
+  "missing": [
+   "The proposal never addresses the actual duplicate-skill collision the user opened the session with: anthropic-skills:prompt-generator (a separately-listed, bundled skill) carries a description that is character-for-character identical to alon-skills:prompt-generator's CURRENT text. After this rewrite ships, two prompt-generator skills will coexist — the old mechanical one under anthropic-skills:, the new Fable-5.1-tuned one under alon-skills: — with near-identical trigger phrasing, so which one fires (or whether guidance blends) is undetermined. This is the single highest-value finding the collision lens should surface, it applies to all six skills not just this one, and it should be resolved before evals are trusted to show 'v3 beats v2.1' — a live duplicate can make that comparison meaningless.",
+   "The proposal gives eval prompt+graders but no case.yaml/directory scaffold (evals/<case>/case.yaml, prompt.md, graders/*.md per the documented layout) — acceptable at spec stage, but should be called out as a follow-up so implementation doesn't have to guess the schema."
+  ]
+ }
+}

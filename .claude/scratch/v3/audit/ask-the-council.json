@@ -1,0 +1,201 @@
+{
+ "spec": {
+  "skill": "ask-the-council",
+  "diagnosis": "Gets right: forced divergence via mandate+forbidden-move per seat is the actual product, and the \"reversible in an afternoon\" cost gate (name what the wrong choice costs to reverse, or don't seat the council) is a sharp, non-generic judgment rule worth keeping close to verbatim.\n\nWastes tokens for Fable 5.1: the four-step numbered \"Process\" spells out sequencing (frame, spawn, critique, synthesize) the model will do from intent alone once it knows the mechanic exists. The \"Global rules\" block (lines 94-101) is a byte-for-byte copy of five lines already in ~/.claude/CLAUDE.md and already loaded every session for Alon, paid for on every invocation for zero marginal instruction-following.\n\nOver-constrains: locking exactly 4 or 6 seats to fixed named archetypes removes room to pick a seat the decision actually needs (a cost/finance lens for buy-vs-build, a compliance lens for a regulated migration) - worth loosening to \"seat 4, add up to 2 more if the decision needs a specific lens\" while keeping mandate+forbidden-move as the non-negotiable part.\n\nLacks vs current Claude Code: no model directive anywhere - every advisor and the chairman silently inherit whatever the session/subagent default is. The decided v3 policy (advisors + critique round on opus, chairman stays in the main thread) isn't expressed, so today it would run on Alon's global CLAUDE_CODE_SUBAGENT_MODEL=sonnet, undershooting on the one skill whose entire value is judgment quality. Also missing: an effort pin (this is the most judgment-heavy skill in the set), allowed-tools pre-approval for the Agent tool it calls 4-6 times per run, and any eval to tell a rewrite apart from a regression.",
+  "keep": [
+   "\"Not an average — a judgment\": the Chairman synthesizes and commits, never averages the seats' positions. This one line is the skill's whole differentiator from a generic multi-agent fan-out; losing it turns the Chairman step into a summary, not a decision.",
+   "The reversible-in-an-afternoon gate, near-verbatim: \"if you can't name what the wrong choice costs to reverse, don't seat the council.\" This is Alon's taste encoded as a concrete test, not boilerplate — the cheapest and sharpest gate in the plugin against overusing a 4-6 subagent panel.",
+   "The six named seats with mandate + forbidden move (Pragmatic Executor, First-Principles, Contrarian, Long-term Architect, Adversary, Outsider). The forbidden move is the mechanism that forces real divergence instead of four agents politely agreeing; this is the skill's core IP and should not be softened into generic \"give different perspectives\" prose.",
+   "\"Chairman commits — naming the risk is allowed, refusing to choose is not.\" Directly prevents the most likely failure mode of a synthesis step: hedging into a menu of options instead of a recommendation.",
+   "Hand-offs to architect (verdict changes an architectural fact) and ponytail (verdict chosen, build minimal). These keep the skill from being a dead end — a decision without a next step is just another opinion in the transcript.",
+   "\"Not for fact-finding... the council opines, it doesn't verify.\" The clearest boundary against misuse; without it the skill gets reached for on questions that need a web search, not a panel."
+  ],
+  "cut": [
+   {
+    "what": "The full \"Global rules\" block (grounding, no-tokenmaxing, agent discipline, commit authorship) copied verbatim from CLAUDE.md.",
+    "why": "For Alon it's a live duplicate already in context every session, paid for on every invocation. The skill's own boundaries section already carries the council-scoped versions that matter here (chairman commits, separate opinion from fact) — nothing council-specific is lost by dropping the generic copy."
+   },
+   {
+    "what": "The numbered 1-4 \"Process\" scaffold (frame → seat in parallel → cross-critique → chairman synthesis) as mechanical steps.",
+    "why": "Fable 5.1 follows intent; once the mechanic (parallel spawn, forbidden moves, chairman commits) is stated as rules rather than a numbered procedure, it doesn't need to be told the obvious order to execute them in."
+   },
+   {
+    "what": "The rigid \"default panel of 4, deep seats all 6\" as the only two configurations.",
+    "why": "Collapses to a size decision instead of a fit decision. Worth keeping 4 as the default and 6 as the ceiling, but stating it as a judgment call (seat the lenses this decision actually needs) rather than a fixed binary — a small loosening, not a rewrite of the mechanic."
+   }
+  ],
+  "add": [
+   {
+    "what": "Model routing stated explicitly: advisor seats and the deep-mode critique round spawn with model: opus; the Chairman synthesis is never a subagent — it runs in the main thread on the session model.",
+    "why": "This is the decided v3 policy from the task brief and currently isn't expressed anywhere in the skill. Without it, advisors silently inherit Alon's CLAUDE_CODE_SUBAGENT_MODEL=sonnet default, which undershoots on a skill whose entire value is the quality of independent judgment per seat."
+   },
+   {
+    "what": "effort: high in frontmatter.",
+    "why": "This is the most judgment-dense skill in the set (forcing genuine disagreement, then committing to one call). A public user's session may default to a lower effort for routine work; pinning effort here protects the skill's output quality regardless of ambient session effort."
+   },
+   {
+    "what": "allowed-tools: Agent in frontmatter.",
+    "why": "The skill's core mechanic is one message spawning 4-6 subagents; pre-approving the Agent tool for the invoking turn removes a permission prompt per seat instead of a single one, and the ground truth confirms allowed-tools exists for exactly this purpose."
+   },
+   {
+    "what": "when_to_use split out from description per the new frontmatter field.",
+    "why": "The old single description block mixed capability and triggers; the new field exists specifically to separate them, and doing so keeps the always-on description (paid on every session) shorter."
+   },
+   {
+    "what": "An evals/ folder with 2-3 cases exercising the boundary (decline low-stakes), the mechanic (forced divergence, opus routing, chairman commits), and the hand-off (architect/ponytail after verdict).",
+    "why": "Per the harness's decided plan — this is the only way to say a v3 rewrite is better than v2.1 rather than merely different, and it's the concrete artifact that makes the model-routing and effort changes verifiable rather than asserted."
+   }
+  ],
+  "frontmatter": {
+   "description": "Convenes a panel of opinionated Claude advisors, each with a distinct mandate and a forbidden move so they genuinely diverge, then a Chairman synthesis that commits to one recommendation with the decisive tradeoff and the strongest dissent named.",
+   "when_to_use": "Trigger proactively for high-stakes design, architecture, or tradeoff decisions where credible options genuinely compete and being wrong is expensive to reverse (schema, auth model, vendor lock-in, an irreversible migration) — also on \"ask the council\", \"the council\", \"get a panel\". Not for fact-finding (the council opines, it doesn't verify — run research instead), not for calls with one obvious answer, and not for anything reversible in an afternoon: decide, ship, and revisit if it bites.",
+   "argument_hint": "[the decision or question]  [+ \"deep\" for the full panel]",
+   "other_fields": [
+    {
+     "field": "effort",
+     "value": "high",
+     "why": "Pins reasoning depth for a judgment-only skill regardless of the session's ambient effort, since a public user's default may be tuned for cheap routine work."
+    },
+    {
+     "field": "allowed-tools",
+     "value": "Agent",
+     "why": "Pre-approves the one tool this skill actually calls, spawning 4-6 subagents in a single message, instead of prompting once per seat."
+    }
+   ]
+  },
+  "body_outline": [
+   "# Ask the Council — one-line tagline kept: a panel forced to disagree, then a Chairman who decides.",
+   "## Proactive use — announce-and-proceed rule kept verbatim; the reversible-in-an-afternoon cost gate moves up here since it's the first judgment call, before any framing happens.",
+   "## Frame and seat the council — condensed prose (not numbered steps): restate the decision and binding constraints, ask at most 1-2 blocking questions only if one fact would flip the answer, then spawn advisors in one Agent-tool message so they run in parallel.",
+   "## The seats — kept as the mandate + forbidden-move table for all six archetypes; default 4, loosen to \"seat the lenses this decision needs, cap at 6\"; deep mode adds the Outsider and a cross-critique round.",
+   "## Model routing — new section stating explicitly: advisor seats and the critique round spawn with model: opus; the Chairman never runs as a subagent, it synthesizes in the main thread on the session model.",
+   "## Output — kept: lead with the recommendation, then the key split and its tradeoff, then dissent worth keeping; a brief, not a transcript.",
+   "## Boundaries — merges the old Rules + When-not-to-use: chairman commits (naming risk is allowed, refusing to choose is not); separate opinion from fact; not for fact-finding, not for one-obvious-answer calls, not for anything reversible in an afternoon.",
+   "## Hand-offs — kept: verdict chosen → ponytail the winning option; verdict changes an architectural fact → architect updates SOURCE_OF_TRUTH.md first.",
+   "## Done when — kept near-verbatim: one clear recommendation, the strongest case against it, and the one risk to watch."
+  ],
+  "eval_cases": [
+   {
+    "name": "declines-low-stakes-reversible-call",
+    "prompt": "Should I use date-fns or dayjs for formatting timestamps in my Next.js app? Both seem basically fine, I just can't decide.",
+    "setup_note": "Self-contained; no repo state needed.",
+    "graders": [
+     {
+      "name": "correctly-declines-panel",
+      "rubric": "0-10: does the response recognize this as reversible-in-an-afternoon and low-stakes, and either answer directly or explicitly decline to seat a panel, naming why (cheap to reverse, no competing architectural cost)? 10 = clearly declines the council and answers directly with a pick and a one-line reason; 5 = answers directly but never names why a panel wasn't warranted; 0 = seats a full council for this.",
+      "weight": 0.5
+     },
+     {
+      "name": "no-wasted-subagents",
+      "rubric": "0-10: no Agent-tool subagents were spawned for this decision. 10 = zero subagent spawns; 5 = one exploratory spawn; 0 = spawned 4 or more advisors.",
+      "weight": 0.5
+     }
+    ]
+   },
+   {
+    "name": "forces-genuine-divergence-on-architecture-call",
+    "prompt": "We're a 4-person team building a B2B invoicing SaaS on Postgres. We need to decide between event-sourcing our billing ledger vs. a plain CRUD table with an audit-log trigger. This ships to production in 6 weeks, and whichever we pick, migrating off it later means rewriting the billing core. Convene the council on this.",
+    "graders": [
+     {
+      "name": "seats-diverge-with-mandates",
+      "rubric": "0-10: the transcript shows advisors spawned in one parallel Agent-tool batch, each with a distinct named mandate and an explicit forbidden move, and their positions genuinely differ rather than converging on the same answer restated four ways. 10 = clear divergence with visible per-seat reasoning; 5 = seats are named but reasoning is mostly interchangeable; 0 = one homogenous position repeated across seats.",
+      "weight": 0.35
+     },
+     {
+      "name": "advisors-run-on-opus",
+      "rubric": "0-10: advisor (and critique-round, if 'deep' triggers) subagent spawns explicitly request model: opus rather than silently inheriting the default subagent model. 10 = opus explicitly requested for every advisor spawn; 5 = requested for some but not all; 0 = no model specified or a different model used.",
+      "weight": 0.25
+     },
+     {
+      "name": "chairman-commits",
+      "rubric": "0-10: the final synthesis runs in the main thread (not a subagent), leads with one committed recommendation rather than a hedge or a menu, names the decisive tradeoff and where seats split, and states the one risk to watch. 10 = fully meets this; 5 = gives a recommendation but buries it or omits the named risk; 0 = refuses to choose or just lists the options.",
+      "weight": 0.4
+     }
+    ]
+   },
+   {
+    "name": "hands-off-after-verdict-on-irreversible-migration",
+    "prompt": "Ask the council: should we migrate our auth from a homegrown JWT setup to Auth0? We have SOURCE_OF_TRUTH.md and ARCHITECTURE_ROADMAP.md for this project already, and about 40k monthly active users on the current system.",
+    "graders": [
+     {
+      "name": "correct-handoff-named",
+      "rubric": "0-10: after the chairman commits to a recommendation, the response explicitly names the correct next-step hand-off — architect, to update SOURCE_OF_TRUTH.md before any code since this changes an architectural decision, and/or ponytail to cut the winning option to its minimal build — rather than stopping at the verdict or jumping straight to implementation. 10 = names the right hand-off(s) with a reason; 5 = mentions next steps vaguely without naming the skill; 0 = no hand-off, or names the wrong one.",
+      "weight": 0.5
+     },
+     {
+      "name": "flags-verification-need",
+      "rubric": "0-10: the response separates the council's opinion from facts that still need checking (e.g., actual Auth0 pricing at 40k MAU, the real weaknesses of the current JWT setup) rather than presenting the panel's judgment as verified ground truth. 10 = explicit opinion/fact separation with a verification flag; 5 = implies uncertainty without flagging it; 0 = treats panel opinion as established fact.",
+      "weight": 0.5
+     }
+    ]
+   }
+  ],
+  "risks": [
+   "Loosening the fixed 4/6-seat structure to \"seat the lenses this decision needs\" could let a weaker or lower-effort run collapse seats into agreement if the forbidden-move discipline isn't kept as a hard, explicit constraint rather than implied — the rewrite must keep mandate+forbidden-move as non-negotiable even where seat count becomes flexible.",
+   "Routing every advisor and the critique round through opus raises per-run cost to 4-6 opus subagent calls, making this the most expensive skill in the plugin per invocation — worth confirming with Alon that this cost is accepted before shipping, since the brief decided the policy but didn't size the cost.",
+   "Cutting the Global Rules block assumes CLAUDE.md (or an equivalent) is loaded. For a public-plugin user with no such file, the skill now carries only the council-scoped judgment rules (chairman commits, separate opinion from fact) and no generic grounding or no-tokenmaxing rule — likely fine since those are session hygiene rather than this skill's job, but it's a product decision worth stating explicitly in the README rather than assumed silently.",
+   "LLM-judge grading (haiku default per the ground truth) on \"did the advisors actually diverge\" is a nuanced call from a transcript; if the judge only sees a summarized transcript rather than each seat's full position, it may over- or under-credit divergence. Consider having the eval fixture capture each advisor's raw output rather than a condensed run log."
+  ]
+ },
+ "grounding": {
+  "verdict": "accept-with-amendments",
+  "strike": [],
+  "amend": [
+   {
+    "item": "diagnosis: \"The 'Global rules' block (lines 94-101) is a byte-for-byte copy of five lines already in ~/.claude/CLAUDE.md\"",
+    "change": "Correct the claim: it is a condensed 4-bullet paraphrase of CLAUDE.md's four sections (~13 lines), not a byte-for-byte copy of five lines. Verified against the actual file (lines 94-101, 4 bullets under 'Global rules') and against CLAUDE.md's text in this session's context — wording differs throughout (e.g. 'Ground everything' vs 'Use only what's given or verified...'). The underlying redundancy argument for cutting it still holds since the substance overlaps closely enough, but the proposal should not assert exact duplication as fact.",
+    "reason": "Grounding lens: a specific, checkable factual claim in the diagnosis is false. The conclusion (cut it) survives on the substance argument alone, but the imprecise claim should not stand as written."
+   },
+   {
+    "item": "frontmatter.other_fields: {\"field\": \"effort\", \"value\": \"high\"}",
+    "change": "Use effort: max, or drop the pin and rely on prose, rather than high.",
+    "reason": "Ground truth states Alon's session model already runs at effort max. Pinning effort: high 'applies while skill active' would silently downgrade reasoning below the user's own ambient setting for the one component that has no model override — the Chairman's synthesis, which runs on the session model, not opus (advisors/critique get opus via the Agent-tool model param; the Chairman doesn't). The proposal's own justification ('protects output quality regardless of ambient session effort') is inverted for any user already at max effort — effort: high would be a downgrade, not a floor. This is a real behavior change caught by the 'would it change Fable 5.1's behavior in practice' lens, and it changes it the wrong way."
+   },
+   {
+    "item": "frontmatter.other_fields: {\"field\": \"allowed-tools\", \"value\": \"Agent\"}",
+    "change": "Keep the field, but the rationale should explicitly acknowledge the tradeoff it makes, not just the prompt-reduction benefit.",
+    "reason": "The lens flags 'an allowed-tools entry that grants more than read-only' as a specific strike pattern. Pre-approving the Agent tool is not read-only — it removes the person's last checkpoint before the skill spends on 4-6 opus subagent calls per run (the proposal's own risks list flags the opus cost but doesn't connect it to this specific grant removing the pre-spawn confirmation). The grant itself is defensible given the skill's core mechanic is exactly this spawn, but the writeup should say so plainly instead of framing it as a pure UX win."
+   },
+   {
+    "item": "frontmatter.argument_hint field name",
+    "change": "Use the hyphenated frontmatter key argument-hint (as the current SKILL.md already has on line 11), not argument_hint.",
+    "reason": "Ground truth and the existing file both use the hyphenated form. Likely just JSON-key sloppiness in the proposal object rather than an intended change, but worth calling out before it gets transcribed literally into the file."
+   }
+  ],
+  "missing": [
+   "The eval graders for 'advisors-run-on-opus' need the transcript fixture to capture the literal Agent-tool call parameters (including the model argument passed per spawn), not just each advisor's returned text — the proposal's own risk note only addresses capturing raw output for the divergence grader, not tool-call params for the model-routing grader. Without that, an LLM judge grading model:opus adherence has nothing to check it against.",
+   "No check of whether the loosened seat count ('seat 4, add up to 2 more') combined with a hard cap of 6 could collide with the model-routing cost line — the proposal never states what happens if a decision plausibly needs seats beyond the fixed six named archetypes (e.g. a genuinely novel lens); it implicitly forecloses that by capping at the existing six mandates plus 'up to 2 more' from the same list, which is fine, but isn't stated as a constraint anywhere the model would read it."
+  ]
+ },
+ "collisions": {
+  "verdict": "accept-with-amendments",
+  "strike": [
+   {
+    "item": "cut: \"The rigid 'default panel of 4, deep seats all 6' as the only two configurations\" → loosen to 'seat the lenses this decision needs, cap at 6'.",
+    "reason": "Scope creep beyond what was asked. The harness's decided v3 policy only covers model routing for review-swarm and ask-the-council; it never authorizes changing the seating mechanic. The design goals ask to trim step-by-step *scaffolding* and keep 'judgment rules... anything that encodes Alon's taste' — the fixed seat set is exactly that kind of taste, and the proposal's own 'keep' list calls the six named seats 'the skill's core IP' that 'should not be softened into generic prose.' Loosening seat count contradicts that stance a few lines later. The proposal's own risk section admits this 'could let a weaker or lower-effort run collapse seats into agreement' — i.e. it self-identifies as risking the one mechanism (mandate + forbidden move forcing real divergence) the diagnosis calls the product's actual value. Nothing in the ground truth or design goals requires this change; strike it and keep the fixed 4-seat default / 6-seat deep structure verbatim."
+   }
+  ],
+  "amend": [
+   {
+    "item": "diagnosis: \"a byte-for-byte copy of five lines already in ~/.claude/CLAUDE.md\"",
+    "change": "Correct the characterization: comparing SKILL.md lines 94-101 against CLAUDE.md's actual text, the SKILL.md block is a condensed 4-bullet paraphrase (different wording, e.g. \"Commits are the user's alone. Author = the user\" vs. CLAUDE.md's \"Commits are authored by Alon Baron alone\") of CLAUDE.md's 4 headers / 9 sub-bullets — not a verbatim/byte-for-byte copy, and not five lines either way. The redundancy argument for cutting it still mostly holds (same substance, paid for twice), but the proposal should say \"paraphrased duplicate,\" not \"byte-for-byte,\" especially since this document is itself supposed to model the grounding discipline it's evaluating.",
+    "reason": "The claim is checkable against both files and is factually wrong as stated; a skeptical review should not wave through an inaccurate grounding claim just because the conclusion (cut it) is reasonable."
+   },
+   {
+    "item": "risk: \"Cutting the Global Rules block assumes CLAUDE.md... worth stating explicitly in the README rather than assumed silently.\"",
+    "change": "This is a punt, not a decision. The design goals explicitly say 'decide what a public plugin must still carry' — a README note doesn't inject anything into a public user's session, so it doesn't answer the question. The skill spec needs an actual call: either keep one compressed line covering grounding + no-invented-facts (the two rules that are NOT session hygiene and are NOT redundant for a user with no CLAUDE.md), and drop only the commit-attribution line (which is explicitly Alon-only and doesn't belong in a portable plugin anyway), or explicitly accept the gap for public users and say so in the skill file itself, not just the README.",
+    "reason": "Doing the analysis and then deferring the actual decision to documentation that a public user won't have loaded fails the task's specific instruction to decide, not just flag."
+   },
+   {
+    "item": "frontmatter.argument_hint (JSON key, underscore)",
+    "change": "Use the hyphenated key \"argument-hint\" to match the field name used verbatim in this file today and in every other SKILL.md in the repo (architect, ponytail, review-swarm all use argument-hint:).",
+    "reason": "Inconsistent key naming across the plugin's six skills is the kind of drift the rewrite should not introduce; likely a JSON-serialization slip in the proposal rather than an intended change, but worth calling out before it ships."
+   }
+  ],
+  "missing": [
+   "No mapping from the proposed eval_cases (name/rubric/weight per grader, embedded in one JSON blob) to the actual required file layout — evals/<case>/case.yaml + prompt.md + graders/*.md, where grader frontmatter needs name, description, AND weight. The proposal's graders have name/rubric/weight but no separate description field, so whoever implements this still has to decide how the rubric text splits between a grader's frontmatter description and its body.",
+   "No explicit statement on whether dynamic context injection (a `!`cmd`` line) is deliberately unused for this skill. Given the design goals call it out as a way to remove tool calls/prompts, a one-line 'N/A — this skill needs no repo or file-system state to frame a decision' would close the loop instead of silently not mentioning the field.",
+   "Internal contradiction between the 'keep' list (six named seats are 'core IP... should not be softened') and the 'cut' list (loosen the same seat structure to a flexible lens count) is never reconciled in the diagnosis or risks — the risks section notes the danger but the proposal doesn't resolve which position wins, which is what the strike above forces."
+  ]
+ }
+}

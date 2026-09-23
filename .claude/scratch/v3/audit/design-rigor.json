@@ -1,0 +1,130 @@
+{
+ "angle": "Review-rigor maximalist: the loop's whole value is that what it marks closed is actually correct, so the redesign concentrates new spend in the refute stage (evidence-weighted multi-lens review, an adversarial test-writer, a completeness critic, and a bounded opus arbiter for disputes) while making every other stage strictly portable — no repo, package-manager, or invariant-ID literals survive from the Liars! script.",
+ "summary": "Read C:/Users/alonb/Desktop/Code/Liars!/.claude/workflows/build-loop.js, its autobuild.ps1/build-status.ps1 wrapper, CLAUDE.md's \"Unattended build loop\" section, TODO_WORKFLOW.md's header/legend, docs/handoff.md, a real autobuild.log (a 429 usage-limit exit, a \"no eligible task\" stop, a finished 2.1 run), plus architect and review-swarm SKILL.md. The current script is sound in shape (plan→scout→spec→research→build→refute→fix→close, state in TODO_WORKFLOW.md/docs/handoff.md) but hardcodes pnpm/Overdue commands and Liars!-specific invariant IDs, has only 2 refute lenses with a blunt \"any uncited fail blocks\" rule, and ships a Windows-only, absolute-path-hardcoded headless wrapper. v2 keeps the 8-role skeleton, generalizes command/invariant discovery, and turns refute into a conditional, evidence-weighted, escalation-capable review engine sized to the diff.",
+ "stages": [
+  {
+   "name": "plan",
+   "model": "fable (override via args.models.plan)",
+   "effort": "high",
+   "does": "Picks the next eligible TODO_WORKFLOW.md row using architect's status legend and the row-eligibility rules already in the current script (status, phase-order, owner-action exclusion, decision-gating). NEW: on first invocation of a run (or when .claude/scratch/build-loop/commands.json is missing/stale vs the manifest's mtime), discovers the repo's install/test/lint commands from CLAUDE.md's Commands section if present, else from package.json/pyproject.toml/Makefile/Cargo.toml conventions, and caches them; never guesses when genuinely ambiguous — stops with a named reason instead. Opens the branch, marks IN PROGRESS.",
+   "reads": "TODO_WORKFLOW.md, git status/branch/log, CLAUDE.md, commands.json cache, repo manifest files",
+   "writes": "TODO_WORKFLOW.md status edit + commit; commands.json cache (first run only)",
+   "returns": "taskId, taskRow, branch, baseCommit, docsToRead, leftForThisTask, commands{install,test,lint,pm}, stopReason"
+  },
+  {
+   "name": "scout",
+   "model": "haiku",
+   "effort": "low",
+   "does": "Unchanged in spirit from the original: read-only location report (files, symbols, existing tests, doc sections) for the picked task. Already fully generic (grep/glob-based, no hardcoded paths) — no delta needed here beyond dropping the Liars!-specific convention notes (import style, packages/rules/test/helpers.ts) from its prompt.",
+   "reads": "repo source via grep/glob, docsToRead list",
+   "writes": "nothing",
+   "returns": "files[], tests[], docSections[], notes[]"
+  },
+  {
+   "name": "spec",
+   "model": "fable",
+   "effort": "high",
+   "does": "Docs-first per architect's sync protocol: update SOURCE_OF_TRUTH.md -> ARCHITECTURE_ROADMAP.md -> docs/architecture/NN-*.md before writing spec.md, ponytail-full scoping, same 8-section spec.md contract as today. Verification commands now come from plan's discovered commands object instead of a hardcoded pnpm filter string.",
+   "reads": "SOURCE_OF_TRUTH.md, scout's doc/file list, commands from plan",
+   "writes": "spec.md; doc commits if an architectural fact changed",
+   "returns": "specPath, docsChanged[], unverifiedApis[], packages/targets[], stopReason"
+  },
+  {
+   "name": "research",
+   "model": "sonnet",
+   "effort": "medium",
+   "does": "Unchanged: verifies unfamiliar library APIs the spec flagged, via context7 or installed package metadata. Skipped entirely when spec.unverifiedApis is empty (already conditional in the original).",
+   "reads": "spec.md, node_modules/installed package metadata, context7 MCP",
+   "writes": "research.md",
+   "returns": "researchPath, unverifiedRemaining[]"
+  },
+  {
+   "name": "build",
+   "model": "sonnet",
+   "effort": "default",
+   "does": "Implements the spec exactly, runs the discovered verification commands (not a hardcoded pnpm invocation), micro-commits. NEW: self-reports diffStats (files/lines changed), touchesTrustBoundary (auth/input-validation/secrets/network-handler paths touched), and docsOnly, so the orchestrator can gate refute lenses without a separate discovery call.",
+   "reads": "spec.md, research.md, files spec names",
+   "writes": "source + test files, commits",
+   "returns": "ok, commits[], testsPassed, lintPassed, deviations[], blockedReason, diffStats, touchesTrustBoundary, docsOnly"
+  },
+  {
+   "name": "refute",
+   "model": "sonnet for breadth lenses, fable for the completeness critic",
+   "effort": "high",
+   "does": "Fans out, in parallel, a diff-sized set of read-only lenses: correctness+tests (reruns the discovered test/lint commands itself, never trusts build's self-report) and acceptance-checklist-vs-spec.md-§7 run every round unconditionally; invariants+docs-sync runs every round if SOURCE_OF_TRUTH.md has an invariants table; ponytail-simplicity and the adversarial test-writer (writes and runs one new test designed to break the diff) run once, round 1 only, skipped when diffStats is tiny or docsOnly; security-at-trust-boundary runs only when build reported touchesTrustBoundary. A completeness critic (fable, round 1 only) separately checks spec.md against the original taskRow -- 'what did the spec itself miss' -- since no other lens second-guesses the spec. Findings are merged with evidence-weighted voting: any cited file:line finding blocks regardless of vote count; an uncited 'fail' verdict only blocks if >=2 independent lenses give one.",
+   "reads": "git diff baseCommit..HEAD, spec.md, build.md, SOURCE_OF_TRUTH.md invariants table, taskRow",
+   "writes": "nothing (read-only) except the adversarial test-writer's one new test file, left uncommitted for fix to claim",
+   "returns": "per-lens {verdict, testsRan, blocking[], advisory[]}; merged {blockingFindings[], advisoryFindings[], disagreement:boolean}"
+  },
+  {
+   "name": "arbiter",
+   "model": "opus",
+   "effort": "high",
+   "does": "CONDITIONAL, escalation-only: fires when a blocking finding that fix already disputed (notFixed) reappears in the next refute round, or when breadth lenses disagree (one verdict=pass, another=fail, with findings only on one side). Reads both the finding and the fixer's dispute and makes one binding call: real defect (stays blocking) or false positive (dropped). Bounded cost -- most tasks never invoke it.",
+   "reads": "the disputed finding, fix's notFixed reasoning, the diff",
+   "writes": "nothing",
+   "returns": "verdict per disputed finding: upheld | dismissed, with a one-line reason"
+  },
+  {
+   "name": "fix",
+   "model": "opus",
+   "effort": "high",
+   "does": "Unchanged in role from the original: addresses every blocking finding (post-arbiter, if it ran) with the smallest correct change, re-runs the discovered commands, commits, disputes wrong findings under notFixed. Capped at args.maxFixRounds (default 2, was a hardcoded constant).",
+   "reads": "blocking findings, spec.md",
+   "writes": "source/test fixes, commits",
+   "returns": "fixed[], notFixed[], commits[]"
+  },
+  {
+   "name": "close",
+   "model": "sonnet",
+   "effort": "low",
+   "does": "Unchanged: writes the TODO_WORKFLOW.md row (status + Left-for note) and a docs/handoff.md entry, commits both. Already fully generic in the original -- no delta needed.",
+   "reads": "build.md, spec.md sections 1+8, outcome object",
+   "writes": "TODO_WORKFLOW.md row, docs/handoff.md entry, commit",
+   "returns": "ok, commit"
+  }
+ ],
+ "repo_contract": "Hard requirements (loop refuses to guess past these): TODO_WORKFLOW.md using architect's exact status legend ([ ]/[IN PROGRESS]/[FINISHED - PENDING MERGE]/[MERGED/DONE]/[BLOCKED]) and row shape (# | Task | Architecture Ref | Status | Branch) -- verified this is exactly what claude-skills/skills/architect/SKILL.md's CLAUDE.md template and Liars!'s own TODO_WORKFLOW.md both produce. A CLAUDE.md with the git rules section (branch-first, micro-commit, owner-only authorship) -- the loop does not restate these in its own prompts, it just says 'follow this repo's CLAUDE.md git rules,' avoiding the copy-paste the current COMMON block does of facts CLAUDE.md already states.\n\nCommand discovery (no hardcoding, no guessing): plan checks, in order, (1) a `## Commands` section in CLAUDE.md naming install/test/lint explicitly, including any monorepo filter syntax -- this is the zero-ambiguity path and the one gap in architect's current CLAUDE.md template, which has no such section today; (2) failing that, standard manifest conventions -- package.json scripts.test/scripts.lint, pyproject.toml [tool.pytest]/[tool.ruff], Makefile test/lint targets, Cargo.toml. If more than one candidate exists (e.g. a monorepo with per-package scripts and no filter convention stated) it does not pick one -- it stops with stopReason naming the ambiguity, mirroring the 'never guess an API' rule CLAUDE.md already states for code. Discovered commands cache to .claude/scratch/build-loop/commands.json for the rest of the run.\n\nSoft/optional, used when present: SOURCE_OF_TRUTH.md §3 invariants table (invariants+docs-sync lens runs only if it exists); docs/architecture/NN-*.md + 00-index.md (docs-first sync target); docs/handoff.md (created by close if missing, append-only, newest-first, same shape as today).",
+ "args": "Same shape as today's opts, extended: {maxTasks: number (default 3), task: string|null (specific row id, forces maxTasks=1), models: {plan?,scout?,spec?,research?,build?,refute?,arbiter?,fix?,close?} per-stage override -- already the supported pattern in the current script (Object.assign over defaults), just now documented as the way to retune models per repo rather than editing the shipped file, dryRun: boolean, maxFixRounds: number (default 2, was the hardcoded MAX_FIX_ROUNDS constant), skipLenses: string[] (repo owner can permanently disable a lens they know is irrelevant, e.g. security on a rules-engine-only repo, instead of paying to have it self-skip every round)}.",
+ "quality_mechanisms": [
+  "Multi-lens breadth review (correctness+tests always, invariants+docs-sync when SoT has a table, ponytail round-1-only, security conditional on touchesTrustBoundary) -- prevents a single reviewer's blind spot from passing a bad diff; the original had only 2 lenses (correctness, architecture) and no simplicity or security check at all.",
+  "Acceptance-checklist-vs-spec.md-§7 checker, every round -- catches a builder silently skipping one bullet of the spec, a failure mode the original's free-form lenses (which judge quality, not literal coverage) could miss entirely.",
+  "Completeness critic, round 1 only, checks spec.md against the raw taskRow -- catches a spec that itself under-specified the ask; nothing in the original checks the spec against the original task, only against the diff, so a bad spec would sail through every refute round unquestioned.",
+  "Adversarial test-writer, round 1 only, skipped on tiny/docs-only diffs -- writes and runs one new test aimed at breaking the diff; 'tests pass' currently only means 'the tests that already exist happen to pass'; a caught bug ships with its own regression test for free.",
+  "Evidence-weighted majority voting -- a cited file:line finding always blocks; an uncited 'fail' verdict needs >=2 independent lenses agreeing. Replaces the original's blunt fallback (refute()'s `if (anyFail && !blocking.length)` synthesizes a generic blocking finding from ANY single uncited fail), which lets one off-day reviewer stall a task that a cited finding never would have blocked.",
+  "Opus arbiter, escalation-only (a disputed finding reappears, or lenses disagree) -- gives a disputed finding one binding read instead of looping fix rounds on it or blocking forever; the original has no tie-break, it just spends fix rounds until MAX_FIX_ROUNDS and then blocks even when the finding may have been wrong.",
+  "Command discovery from CLAUDE.md/manifest with a hard stop on genuine ambiguity, cached once per run -- prevents the single biggest portability bug in the current script (COMMON hardcodes 'corepack pnpm --filter @overdue/rules test'), which would run the wrong suite or none at all in any non-Overdue repo.",
+  "Diff-size/trust-boundary gating from build's self-reported diffStats/touchesTrustBoundary/docsOnly -- skips ponytail/security/adversarial-test-writer on trivial or internal-only diffs so the maximalist machinery only taxes tasks that actually need it; the original runs both its lenses at full cost on every task regardless of size."
+ ],
+ "stop_conditions": [
+  "No eligible TODO row under architect's status legend and the phase/decision-gating rules (unchanged from today).",
+  "Dirty working tree at plan time.",
+  "Commands genuinely ambiguous or undiscoverable from CLAUDE.md and the repo manifest (new).",
+  "Any stage returns null (agent killed/failed) -- loop stops and logs which stage.",
+  "Builder reports blockedReason (missing tool, unresolvable spec contradiction) -- task closes BLOCKED, loop stops.",
+  "Refute still has blocking findings after maxFixRounds AND, if the arbiter fired, it upheld the finding -- task closes BLOCKED, loop stops.",
+  "Remaining token budget below MIN_BUDGET_PER_TASK before starting a new task.",
+  "maxTasks reached -- the expected, non-error stop; autobuild's wrapper starts the next fresh session.",
+  "(headless wrapper) the `claude -p` process exits non-zero, or its JSON result carries an API error (observed live: a 429 'session limit -- resets 4pm' mid-spec on 2026-09-16) -- the wrapper stops the whole run rather than burning further sessions against a hard limit."
+ ],
+ "headless": "Ship the Workflow script itself at workflows/build-loop.js inside the alon-skills plugin, invoked in any repo as `/alon-skills:build-loop [maxTasks | taskId]` (namespaced per the plugin workflow convention) exactly like today's `/build-loop`. For the unattended loop (autobuild.ps1's role: one fresh `claude -p` process per task, watching progress, stopping on anything but 'reached maxTasks'), ship a portable driver alongside it in the plugin rather than the current Windows-only, absolute-path-hardcoded pair: the core loop (spawn `claude -p \"Use the Workflow tool with name alon-skills:build-loop and args {...}\" --permission-mode auto --output-format json`, parse stoppedBecause, repeat) is ~30 lines and OS-agnostic in intent, but the current build-status.ps1 scrapes an internal file the current script hardcodes to this one repo's absolute path (`.claude\\projects\\c--Users-alonb-Desktop-Code-Liars-\\*\\subagents\\workflows\\*\\journal.jsonl`) -- that path bakes in both the machine's project-journal layout and this repo's location, so it cannot ship in a public plugin as-is. Recommend deriving the project-journal directory at runtime (from the invoking repo's own path) if the journal.jsonl format is meant to stay the progress source, or switching the progress feed to `--output-format stream-json`'s documented event stream if it carries equivalent per-agent started/result events -- I did not verify the latter against docs, so that choice is an open question below rather than a decided design.",
+ "changes_from_liars": [
+  "Replaces the hardcoded COMMON block's pnpm/Overdue facts ('corepack pnpm --filter @overdue/rules test', 'Bare pnpm is NOT on PATH', the Math.random ban path list) with commands discovered from CLAUDE.md/manifest and cached to commands.json, because a public plugin cannot assume pnpm or Overdue's package layout exists in every repo -- the current script would silently run the wrong test command, or none, anywhere else.",
+  "Replaces the 2-lens refute (LENSES.correctness, LENSES.architecture) with a diff-sized, conditional lens set (adds ponytail-simplicity, security-at-trust-boundary, an acceptance-checklist checker, a completeness critic, and an adversarial test-writer) because the original has no simplicity or security check at all and always pays for both its lenses regardless of diff size.",
+  "Replaces the flat 'any lens verdict=fail -> synthesize a blocking finding' fallback in refute() (`if (anyFail && !blocking.length) blocking = [{file:'unknown', issue:'reviewer failed...'}]`) with evidence-weighted majority voting, because that fallback lets one uncited, possibly-wrong reviewer stall a task exactly as hard as a real cited defect would.",
+  "Adds an opus arbiter step that fires only when a disputed finding (fix()'s notFixed) reappears next round, or lenses disagree -- the original has no mechanism to reconsider a dispute; it just spends fix rounds until MAX_FIX_ROUNDS and blocks, even when the fixer was right that the finding was wrong.",
+  "Generalizes LENSES.architecture's hardcoded invariant IDs (I1 redact-only serializer, I2 injected PRNG, I3 persist-before-broadcast, I6 no client balance writes -- all Liars!/Overdue-specific SOURCE_OF_TRUTH.md §3 entries) into 'read whatever invariants table this repo's SOURCE_OF_TRUTH.md §3 actually lists,' since those literal IDs would be meaningless in another project's docs.",
+  "Adds diffStats/touchesTrustBoundary/docsOnly to BUILD_SCHEMA so the orchestrator can gate which refute lenses run without a separate discovery agent call -- the original runs identical review cost on a one-line doc fix and a full feature.",
+  "Moves MAX_FIX_ROUNDS from a module constant to args.maxFixRounds, and adds args.skipLenses, so a repo owner tunes rigor/cost without editing the shipped plugin file.",
+  "Replaces the Windows-only, absolute-path-hardcoded scripts/autobuild.ps1 + build-status.ps1 pair with a portable driver shipped inside the plugin (workflows/ or scripts/), because the current pair encodes both PowerShell-only syntax and this specific repo's journal path.",
+  "Documents opts.models (already present in the original as `Object.assign({defaults}, opts.models)`) as the supported per-repo model override, rather than a config path nobody outside this repo would find, and keeps the same defaults (fable for plan/spec, haiku for scout, sonnet for research/build/breadth-lenses, opus for arbiter/fix, sonnet for close).",
+  "Leaves close()'s TODO-row/handoff.md instructions functionally unchanged -- that part of the original was already generic against architect's doc contract (Status legend, 'Left for <id>' notes), so no delta was needed there."
+ ],
+ "open_questions": [
+  "Does `claude -p --output-format stream-json` emit per-agent started/result events equivalent to the internal journal.jsonl that build-status.ps1 currently scrapes? Not verified against docs -- needed before the progress-display rewrite can drop the hardcoded journal-file path.",
+  "Should the shipped default for plan/spec stay `fable`, given that name is tied to Alon's current session model and other plugin users may not have an equivalent configured -- or should the public default be `opus` with `fable` documented as Alon's override via args.models?",
+  "Is Node.js reliably available in every repo the plugin might run in, to justify a cross-platform scripts/autobuild.mjs driver over a POSIX-shell one (or shipping both)?",
+  "Should architect's own CLAUDE.md template gain a `## Commands` section (install/test/lint, monorepo filter syntax)? That's a change to the architect skill, out of this build-loop redesign's scope, but command auto-discovery has no zero-ambiguity path without it.",
+  "What diff-size threshold should count as 'tiny' for skipping the ponytail/security/adversarial-test-writer lenses -- I proposed a heuristic (e.g. under ~30 changed lines, or docs-only) but no validated cutoff exists yet; worth an eval case once the eval suite lands."
+ ]
+}

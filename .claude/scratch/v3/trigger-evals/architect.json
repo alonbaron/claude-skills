@@ -1,0 +1,82 @@
+[
+ {
+  "query": "kicking off a new microservice for TenderTrack's bid-scoring engine, nothing written yet — need the data model, invariants, and how it talks to the existing tender-ingestion service before anyone opens an editor",
+  "should_trigger": true
+ },
+ {
+  "query": "can you check if SOURCE_OF_TRUTH.md and TODO_WORKFLOW.md for shiftmanager still match the actual code? pretty sure we drifted after last sprint and I don't trust the docs anymore",
+  "should_trigger": true
+ },
+ {
+  "query": "spec this out before we build: multi-tenant billing module on the FastAPI backend, needs its own schema and a phased rollout plan",
+  "should_trigger": true
+ },
+ {
+  "query": "new repo, Godot + a small backend, building a co-op puzzle game from scratch. where do I even start before writing any scenes or scripts",
+  "should_trigger": true
+ },
+ {
+  "query": "the double-booking invariant in ShiftManager is only checked in the React form right now, nothing at the DB or API layer — before we touch more code I want it properly redesigned and enforced at the core",
+  "should_trigger": true
+ },
+ {
+  "query": "set up a CLAUDE.md for the tendertrack repo that keeps SOURCE_OF_TRUTH, the roadmap, and the todo tracker from drifting apart, plus the sync rules baked into it",
+  "should_trigger": true
+ },
+ {
+  "query": "this legacy Spring service has zero documentation. before we bolt on multi-region support I need someone to reverse-engineer the domain model, invariants, and API contracts and write it all up",
+  "should_trigger": true
+ },
+ {
+  "query": "before I write a single line for the new Cloudflare Worker that does Turnstile verification on TenderTrack's bid form, I want the data model, invariants and a phased rollout mapped out properly, not just jump into code",
+  "should_trigger": true
+ },
+ {
+  "query": "we're starting the overtime-calculation module for ShiftManager — need full docs: data model, invariants, phased plan, the works, before locking in any of the tradeoffs between the two calc approaches we're considering",
+  "should_trigger": true
+ },
+ {
+  "query": "can you architect the new notifications service for ShiftManager? no code written yet, just need the design docs",
+  "should_trigger": true
+ },
+ {
+  "query": "SOURCE_OF_TRUTH.md already documents the double-booking invariant, I just need to add the unique constraint migration for the shifts table in postgres now",
+  "should_trigger": false
+ },
+ {
+  "query": "TODO_WORKFLOW says phase 2 task 3 is next — implement the FastAPI endpoint per the API-contract table in section 3 of ARCHITECTURE_ROADMAP.md, docs are already done for this one",
+  "should_trigger": false
+ },
+ {
+  "query": "postgres vs dynamodb for TenderTrack's bid-history table, both viable, need a panel that actually argues it out and commits to one recommendation with the tradeoff named",
+  "should_trigger": false
+ },
+ {
+  "query": "review this PR before I merge, it adds pagination to the /schedules endpoint on ShiftManager, want a real diff review not just a design check",
+  "should_trigger": false
+ },
+ {
+  "query": "haven't touched the tendertrack repo in like two weeks, can you check what changed on origin and whether my branch is behind before I start anything today",
+  "should_trigger": false
+ },
+ {
+  "query": "do a security review of the auth middleware in the FastAPI service, that's literally the whole ask right now, nothing else",
+  "should_trigger": false
+ },
+ {
+  "query": "clean up this diff, there's a redundant abstraction layer wrapping one function call that should just be inline, already written and working",
+  "should_trigger": false
+ },
+ {
+  "query": "this feels over-engineered — we added a repository pattern and three interfaces just to write one row to postgres, simplify before we build the next feature",
+  "should_trigger": false
+ },
+ {
+  "query": "critique the RTL layout and accessibility of the ShiftManager schedule table for our Hebrew-speaking users, is the tab order even sane",
+  "should_trigger": false
+ },
+ {
+  "query": "I need to hand this off to a coding agent — write me a rigorous prompt for implementing the bid-scoring feature, with done criteria and ground-truth file paths it has to verify",
+  "should_trigger": false
+ }
+]
