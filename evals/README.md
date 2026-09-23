@@ -39,7 +39,9 @@ A case is a directory holding `prompt.md`, a `graders/` directory, and `case.yam
 
 One property per grader. A rubric that ANDs five conditions fails whenever a judge dislikes any one of them, and the score never tells you which one. That is how this suite first scored 18%. Split it up so each grader names one observable thing and carries its own PASS and FAIL sentence.
 
-Grade the right window. `focus: last_message` shows the judge only the final assistant message, and `focus: trace` shows the first and last twelve messages rather than the whole run. If the property lives in a file the model wrote, use a `regex` grader over `files` or point an `llm` grader at the path. If it lives in a tool call, use `tool_used`.
+Grade the right window. `focus: last_message` shows the judge only the final assistant message, and `focus: trace` shows the first and last twelve messages rather than the whole run. If it lives in a tool call, use `tool_used`.
+
+`target: files` is not file contents. The runner hands a `regex` grader the list of paths the run created, one per line, and `file_exists` globs the same list. A content pattern over `files` can never match, so a `not_contains` grader passes every run. To check what the model wrote, use `tool_used` with `tool: Write` and an `input_match` on the content, or point a grader at a known path with `target: {source: file, path: ...}`. Measured on 2026-09-23 against 2.1.280.
 
 Skip style. "Leads with code rather than an essay" is not something three judges will agree on twice.
 

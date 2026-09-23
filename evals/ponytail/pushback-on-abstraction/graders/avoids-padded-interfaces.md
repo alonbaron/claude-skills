@@ -1,6 +1,8 @@
 ---
-type: regex
-pattern: \b(class|interface)\s+\w*(Strategy|Backend)\b
-match: not_contains
-target: files
+type: tool_used
+tool: Write
+input_match: '\b(class|interface)\s+\w*(Strategy|Backend)\b'
+min: 0
+max: 0
+arm: both
 ---
