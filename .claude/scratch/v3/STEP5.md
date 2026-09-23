@@ -40,3 +40,27 @@ assumptions in STEP4.md and evals/README.md.
   failed). JS regex, so `(?i)` is rejected.
 - Fix: avoids-padded-interfaces is now `tool_used: Write`, `input_match` on the
   same pattern, `max: 0`, `arm: both`. README corrected.
+
+## 4. ponytail relapse: root cause and fix
+
+- Cause: the model invoked ponytail itself with `args: "lite"`, and lite by
+  definition builds what was asked and names the lazier option in one line —
+  the "footnote" relapse. Seen in the trace of r-pushback with#0.
+- A second grader bug hid it: `input_match` runs on JSON-encoded input, where a
+  newline is `\n`, so `\bclass` at the start of a line never matched. The pattern
+  now has no leading `\b`. Checked against six saved traces.
+- Fix: SKILL.md says only the user picks a level; self-invoked means full.
+- After (r3, `--runs 3`, both arms): with 1.00 / 1.00 / 1.00, without 0.40 x3. No
+  level arg in any of the three Skill calls, no Strategy/Backend class written, no
+  Agent call. $7.63.
+- Before the fix, over all saved with-arm runs: 2 relapses in 7 (STEP4 1/2,
+  suite10 0/2 inferred from the tradeoff grader, r-pushback 1/3).
+- `no-subagents-spawned` failures are the model working around the missing Bash:
+  it spawns a general-purpose Agent to run `node --test`. Both arms do it.
+
+## 5. The 10 cases whose skills load here (suite10, `--runs 2 -j 4`, $21.99)
+
+8/10 passed at 0.7, overall 0.88, mean delta +0.23. Graders repaired afterwards
+and re-run: refuses-trust-boundary 1.00 / 0.83, defers-to-simplify 1.00 / 1.00
+(now must-not-fire), pushback 1.00 / 0.40. The other nine (architect,
+review-swarm, up-to-date) are not measurable in this container; see section 2.
