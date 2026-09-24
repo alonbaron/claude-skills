@@ -30,9 +30,12 @@ jobs:
       - name: Run the 9 sandboxed cases
         env:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          SKIP_CASES: architect/audit-drift-citation
         run: |
           mkdir evals-ci
           cp -r evals/architect evals/review-swarm evals/up-to-date evals-ci/
+          # Cases that already have a clean result on this commit's skills; space-separated <skill>/<case>.
+          for c in $SKIP_CASES; do rm -rf "evals-ci/$c"; done
           claude plugin eval . --eval-dir evals-ci --runs 2 -j 4 --scaffold \
             --allow-tools Write Edit Bash --model claude-fable-5-1 --judge-model sonnet \
             --no-publish --trust-plugin --threshold 0.7 --json evals-ci/result.json

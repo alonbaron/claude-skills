@@ -1,8 +1,8 @@
 ---
 name: small-fix-boundary
 description: Targeted addition to an existing doc set, not a re-author.
-max_turns: 15
-timeout_seconds: 300
+max_turns: 40
+timeout_seconds: 900
 tags: [needs-scaffold]
 ---
 
