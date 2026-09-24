@@ -1,0 +1,226 @@
+{
+ "spec": {
+  "skill": "review-swarm",
+  "diagnosis": "The numbered \"Steps 1-4\" are exactly the mechanical scaffolding Fable 5.1 doesn't need — \"scope, fan out six lenses, adversarially verify, rank\" is inferable from one sentence; a capable model doesn't need step numbering to do it. The judgment content inside those steps (size guard, drop-on-uncertain, six lens definitions) is real taste and should survive as prose, not procedure.\nThe 8-line \"Global rules\" block (lines 96-103) is a verbatim copy of ~/.claude/CLAUDE.md, already injected into Alon's every session — for him it's pure dead weight, wasted tokens on every invocation. But the plugin is public and other installers have no such CLAUDE.md, so deleting it outright silently drops grounding/no-AI-commit guidance for them; it needs shrinking, not zeroing.\nNo model policy is expressed anywhere in the skill for the decided split (reviewers=sonnet, verifiers=opus) — since the global subagent default is sonnet, an unwritten policy means verifiers silently inherit sonnet instead of the stronger refutation model the plan calls for.\nThe skill doesn't use any of the new frontmatter that would remove tool calls: no allowed-tools pre-approval for the read-only git scoping commands, no `!` context injection to get diff-stat into context before the skill starts reasoning, no effort pin despite being explicitly judgment-heavy, and no when_to_use split (triggers are folded into description, eating into the 1,536-char combined budget).\nThe size guard (~40 files/~2000 lines, split-and-say-which-slice) is good taste content worth keeping as-is — exactly the \"why,\" not \"how,\" rule Fable 5.1 benefits from.",
+  "keep": [
+   "The six specialist lenses (correctness, security/trust boundaries, data/perf, architecture/altitude, ponytail-simplicity, tests/failure-paths) with their one-line scope each — the skill's actual differentiator, not mechanics.",
+   "The size guard (~40 files / ~2000 changed lines → split by area, say which slice) — a concrete judgment call about context limits, not a mechanical step.",
+   "\"Default to dropping when uncertain\" for unverified findings — the core taste rule that keeps the report trustworthy.",
+   "The 'When not to use' boundary list (trivial diff, fix-not-review ask, security-alone ask, explicit /code-review) — this is what keeps the skill out of the way of built-ins.",
+   "The Hand-offs section (architect audit, ux-designer for UI/a11y hunks, ponytail for accepted simplicity findings, /code-review ultra) — cross-skill routing that must stay consistent with the other five skills and the README's overlap table.",
+   "The 'Relationship to built-ins' framing (local/free/tailored vs cloud /code-review and /security-review) — resolves the exact overlaps the README commits to; removing it would re-open a bug the README calls out as unacceptable ('a skill that fires when a built-in should have... is a bug even when both are good')."
+  ],
+  "cut": [
+   {
+    "what": "The numbered 'Steps' 1-4 procedural scaffolding (scope → fan out → verify → synthesize spelled out as an ordered checklist).",
+    "why": "Fable 5.1 infers this sequence from a one-sentence description; the numbering is mechanical structure written for a weaker model. The judgment content inside (size guard, drop-on-uncertain, finding shape) survives as prose bullets under new headings."
+   },
+   {
+    "what": "The full 8-line 'Global rules' block, verbatim from ~/.claude/CLAUDE.md.",
+    "why": "For Alon it's 100% redundant — already loaded every session. Full removal would under-ground the skill for public installers with no equivalent CLAUDE.md, so shrink to ~2 lines rather than deleting."
+   },
+   {
+    "what": "The standalone 'Rules' section's file:line citation requirement as its own section.",
+    "why": "One-line content, not worth a dedicated heading; folds into the Report section as a single bullet."
+   },
+   {
+    "what": "Restating 'Free and local (Claude subagents)' in both the opening line and the 'Relationship to built-ins' section.",
+    "why": "Said once is enough; saying it twice is the kind of filler Fable 5.1 doesn't need repeated to retain."
+   }
+  ],
+  "add": [
+   {
+    "what": "Explicit `model: sonnet` on the six reviewer Agent-tool spawns and `model: opus` on the verifier spawns.",
+    "why": "Encodes the decided v3 policy (reviewers=sonnet, verifiers=opus) directly in the skill instead of leaving verifiers to silently inherit the global sonnet default — judgment-heavy refutation is exactly where the stronger model earns its cost."
+   },
+   {
+    "what": "`effort: high` in frontmatter.",
+    "why": "Per the design goals, judgment-heavy skills should pin effort so a session dropped to a cheaper level for routine work doesn't quietly weaken the swarm's synthesis and verification passes."
+   },
+   {
+    "what": "`allowed-tools` pre-approving the read-only git scoping commands (git status, git diff, git diff --staged, git merge-base).",
+    "why": "The scoping step always starts with the same handful of read-only commands; pre-approving them removes a predictable permission prompt without widening to any write command."
+   },
+   {
+    "what": "A `!` context-injection line running `git status --short` + `git --no-pager diff --stat` (guarded with `|| true` so a non-git directory doesn't abort the invocation) at the top of the skill body.",
+    "why": "Gets the diff shape into context before the model starts reasoning, saving the first tool round-trip on every run, while degrading gracefully outside a git repo per the non-zero-exit-aborts rule."
+   },
+   {
+    "what": "A `when_to_use` frontmatter field, split out of description.",
+    "why": "v3's frontmatter exposes this field specifically so triggers/not-for don't have to share the description's capability-only text, and don't eat into the 1,536-char combined truncation budget twice."
+   },
+   {
+    "what": "A compressed 2-line grounding/authorship reminder in place of the old 8-line Global rules block, kept for non-Alon installers.",
+    "why": "The plugin ships publicly; a user with no CLAUDE.md still needs a minimal 'verify findings, don't fabricate, don't add AI commit attribution' line since the skill's own report could otherwise drift into speculative padding or suggest AI-authored commits."
+   }
+  ],
+  "frontmatter": {
+   "description": "Local, free, multi-specialist review of a diff: parallel Claude subagents for correctness, security/trust boundaries, data/perf, architecture-altitude, ponytail-simplicity, and tests/failure-paths, each non-trivial finding adversarially verified before being kept, deduped, and ranked into a Blockers / Should-fix / Nits report with file:line and a one-line fix per item.",
+   "when_to_use": "Proactively after any non-trivial implementation, before the PR, and whenever asked to review, check, or assess a diff, branch, or PR. Also fires on \"review-swarm\", \"swarm review\", \"deep review\". Not for a trivial diff (docs, rename, one-liner) — a single-pass read or plain /code-review covers it. Not when the ask is to fix rather than review — implement first, then swarm the result. Not when security is the whole ask — hand off to /security-review. Not when /code-review is named explicitly.",
+   "argument_hint": "[optional: 'staged' | 'branch' | a path]",
+   "other_fields": [
+    {
+     "field": "effort",
+     "value": "high",
+     "why": "Judgment-heavy: six-lens synthesis plus adversarial verification shouldn't quietly inherit a lower session effort set for cheap work."
+    },
+    {
+     "field": "allowed-tools",
+     "value": "Bash(git status:*), Bash(git diff:*), Bash(git diff --staged:*), Bash(git merge-base:*)",
+     "why": "Pre-approves the read-only commands the scoping step always runs, without touching any write command."
+    },
+    {
+     "field": "context injection (top of body)",
+     "value": "!`git status --short 2>/dev/null; git --no-pager diff --stat 2>/dev/null || true`",
+     "why": "Delivers the diff shape into context before reasoning starts, and the `|| true` guard keeps a non-git directory from aborting the invocation."
+    }
+   ]
+  },
+  "body_outline": [
+   "## Review Swarm — one line: local, free, parallel-specialist review with adversarial verification before anything is reported.",
+   "## Proactive use — fires unasked after a non-trivial implementation or a review/check/assess request; announce once, never ask permission.",
+   "## Scope — default working tree vs default branch; 'staged'/'branch'/path variants; the ~40-file/~2000-line size guard and split-by-area behavior when it's exceeded.",
+   "## Reviewers — the six lenses (correctness, security/trust boundaries, data/perf, architecture/altitude, ponytail-simplicity, tests/failure-paths), spawned together with model: sonnet, each returning severity · file:line · what · why · fix.",
+   "## Verification — spawn model: opus verifiers to refute each non-trivial finding (real, reproducible, not already handled); default to dropping when uncertain.",
+   "## Report — dedup, rank Blockers / Should-fix / Nits with file:line and a one-line fix each; a clean dimension gets one line, not a manufactured nit; close with 'what's solid'.",
+   "## When not to use — trivial diff, 'fix it' asks, security-alone asks, explicit /code-review.",
+   "## Hand-offs — architect audit for doc-contradicting findings, ux-designer for UI/a11y hunks, ponytail for accepted simplicity findings, /code-review ultra for the cloud heavyweight pass.",
+   "## Relationship to built-ins — the local/free/tailored swarm vs plain /code-review (single-pass) and /security-review (security-only, goes deeper)."
+  ],
+  "eval_cases": [
+   {
+    "name": "trivial-diff-declines-full-swarm",
+    "prompt": "I just renamed the variable `userId` to `accountId` across three files in our Next.js app and fixed a typo in a comment (`recieve` -> `receive`). Can you run review-swarm on this before I open the PR?",
+    "setup_note": "No fixture needed; the model should reason from the described diff's shape (a rename + a typo, 3 files) without needing to see real code.",
+    "graders": [
+     {
+      "name": "boundary-recognition",
+      "rubric": "0-10: does the response recognize this as a trivial diff per the skill's own 'when not to use' boundary and decline to spawn the full six-reviewer swarm, rather than running the whole procedure on a rename/typo?",
+      "weight": 0.6
+     },
+     {
+      "name": "correct-alternative",
+      "rubric": "0-10: does it point to a single-pass read or plain /code-review as the right-sized alternative instead of just refusing with no path forward?",
+      "weight": 0.4
+     }
+    ]
+   },
+   {
+    "name": "security-alone-hands-off",
+    "prompt": "We just added JWT validation middleware to our Express API (checks the Authorization header, verifies the signature, attaches req.user). Can you swarm review it for security holes — that's literally the only thing I care about right now, not style or perf.",
+    "setup_note": "No fixture needed; the prompt itself states the ask is security-only, which is the exact case the skill's description carves out.",
+    "graders": [
+     {
+      "name": "hand-off-correctness",
+      "rubric": "0-10: does the response recognize this as the 'security alone is the whole ask' case and route to /security-review (or explicitly name that overlap decision) instead of spawning the generic six-lens swarm?",
+      "weight": 0.6
+     },
+     {
+      "name": "no-fabricated-findings",
+      "rubric": "0-10: does it avoid inventing specific JWT vulnerabilities (e.g. 'you're not checking expiry') without having read the actual middleware code, given none was provided?",
+      "weight": 0.4
+     }
+    ]
+   },
+   {
+    "name": "real-diff-produces-ranked-verified-report",
+    "prompt": "We just added a new Flask endpoint: `@app.route('/orders/<user_id>')` that runs `orders = Order.query.filter_by(user_id=user_id).all()` and then, inside a `for order in orders:` loop, calls `db.session.query(Item).get(order.item_id)` for each one. There's no test covering the case where a user has zero orders. Run review-swarm on this diff before I open the PR.",
+    "setup_note": "Small self-contained description of a real diff (N+1 query pattern plus a missing edge-case test) so the swarm has concrete code to reason about even without a live repo.",
+    "graders": [
+     {
+      "name": "finding-quality",
+      "rubric": "0-10: does the report surface the N+1 query pattern (per-order DB call inside the loop) as a data/perf finding and the missing empty-orders test as a tests/failure-paths finding, each tied to the described code rather than generic advice?",
+      "weight": 0.5
+     },
+     {
+      "name": "output-shape",
+      "rubric": "0-10: is the report structured as ranked Blockers / Should-fix / Nits with a file:line-equivalent reference and a one-line fix per item, closing with a 'what's solid' line, matching the skill's specified report shape?",
+      "weight": 0.3
+     },
+     {
+      "name": "verification-discipline",
+      "rubric": "0-10: does the response show evidence of adversarial verification (e.g. noting why a finding is real/reproducible, or explicitly dropping a speculative one) rather than just listing raw first-pass findings?",
+      "weight": 0.2
+     }
+    ]
+   }
+  ],
+  "risks": [
+   "Cutting the Global rules block to 2 lines could under-ground the skill for public installers without a CLAUDE.md if the compression drops the 'never invent facts' or 'no AI commit attribution' clause — needs a careful line-by-line check before shipping, not just a length cut.",
+   "Pinning effort: high raises token cost on every invocation, including the 'trivial diff, decline to swarm' cases — the boundary check needs to fire fast, before the higher effort meaningfully increases cost on a case that should end in a one-paragraph refusal.",
+   "The `!` git-status/diff-stat injection runs at skill load, before the skill's own logic decides whether the diff is even worth swarming — acceptable since the commands are cheap, but it means the injection cost is paid even on requests the skill will ultimately decline.",
+   "allowed-tools scoped to git status/diff/merge-base is read-only by construction, but the glob patterns must be written tightly enough that they can't be misread as covering git add/commit/push — worth an explicit test of the permission rule, not just an assumption from the pattern text.",
+   "Explicit model: opus on verifiers increases cost per finding verified; if the size guard is loosened later without re-checking this interaction, a large diff could spawn many opus verifier calls — the two rules (size guard, opus verifiers) need to stay coupled in review, not maintained independently."
+  ]
+ },
+ "grounding": {
+  "verdict": "accept-with-amendments",
+  "strike": [
+   {
+    "item": "when_to_use field split rationale: \"so triggers/not-for don't have to share the description's capability-only text, and don't eat into the 1,536-char combined truncation budget twice.\"",
+    "reason": "Contradicted by the given ground truth itself: \"when_to_use (appended to description; combined text truncated at 1,536 chars in the listing)\" means description+when_to_use are concatenated and truncated as one 1,536-char budget regardless of whether the text lives in one field or two. Splitting the field changes zero tokens seen by the model or the listing — it is a source-file organization choice, not a behavior or budget change. Per the review lens (\"would it change Fable 5.1's behavior in practice?\"), the stated justification is cargo cult. The field can still be kept for human-editing clarity, but the proposal should say that, not claim a budget saving that doesn't exist."
+   }
+  ],
+  "amend": [
+   {
+    "item": "allowed-tools value: \"Bash(git status:*), Bash(git diff:*), Bash(git diff --staged:*), Bash(git merge-base:*)\"",
+    "change": "Drop the \"Bash(git diff --staged:*)\" entry (or note it's redundant) since \"Bash(git diff:*)\" already matches any \"git diff --staged ...\" invocation under the standard prefix-wildcard permission syntax.",
+    "reason": "Not incorrect, but it's dead weight in the same spirit the proposal itself is trying to cut elsewhere; four entries where three suffice."
+   },
+   {
+    "item": "add #1 rationale for explicit model: sonnet / model: opus on spawns (\"instead of leaving verifiers to silently inherit the global sonnet default\")",
+    "change": "Broaden the stated reason to portability: any other installer of this public plugin has no guarantee their CLAUDE_CODE_SUBAGENT_MODEL is set to sonnet at all (that's Alon's personal env default, per the computed-task ground truth), so the pin is what makes the reviewer/verifier split deterministic for every installer, not just a fix for Alon's own inherited default.",
+    "reason": "The current phrasing frames this as solving Alon's-session-only problem; the real and stronger justification (portability across installs with no shared env/CLAUDE.md) is the one the design goals explicitly ask every change to satisfy, and it's currently undersold."
+   },
+   {
+    "item": "Cut: numbered Steps 1-4 procedural scaffolding, replaced by prose headings (Scope / Reviewers / Verification / Report)",
+    "change": "Explicitly state in the rewritten body that verification must happen before the report is assembled (i.e., keep the ordering constraint as an explicit sentence, not just implied by heading order), e.g. \"never report a finding that hasn't been through the verifier pass.\"",
+    "reason": "The numbered steps currently encode a real sequencing dependency (spawn reviewers -> adversarially verify -> only then synthesize). Relying on heading order alone to convey \"verify before report\" is a plausible but unverified assumption about how reliably Fable 5.1 infers required ordering from section order rather than explicit sequence; the one sentence costs nothing and removes the risk of the model synthesizing straight from raw reviewer output."
+   },
+   {
+    "item": "allowed-tools frontmatter field's exact value syntax (Bash(cmd:*) pattern)",
+    "change": "Confirm the precise allowed-tools value grammar against the live docs before shipping, rather than assuming it mirrors settings.json's Bash permission-rule syntax.",
+    "reason": "The computed task's ground truth confirms allowed-tools exists as a field but does not give its value syntax; the Bash(cmd:*) form is a reasonable and likely-correct inference from Claude Code's existing permission-rule conventions, but the lens requires checking cargo-cult risk on frontmatter fields specifically, and this is the one unverified syntax detail in the proposal."
+   }
+  ],
+  "missing": [
+   "No eval case actually exercises or grades the new model-policy split (reviewers spawn model: sonnet, verifiers spawn model: opus) even though that's the one behavior change with a concrete, checkable signal (the Agent tool calls in the transcript). All three proposed eval cases test boundary judgment (trivial-diff decline, security-alone hand-off) or report shape/quality, none inspects which model each spawned subagent requested. Given this is graded against a real Claude Code transcript (not just prose), a fourth case, or a grader added to the existing 'real-diff' case, checking that reviewer spawns request sonnet and verifier spawns request opus would be the one eval that actually proves the policy shipped correctly instead of silently reverting to whatever the installer's global subagent default is.",
+   "No use of disallowed-tools to explicitly block write-capable git commands (commit, push, reset, checkout) during this review-only skill, even though the proposal already touches allowed-tools for the same scoping step and the field is listed as available in ground truth. Review-swarm's whole contract is 'don't fix here — this is review'; pairing the read-only allowed-tools grant with an explicit disallowed-tools block on git-write commands would make that contract mechanically enforced rather than just stated in prose, at negligible cost since the proposal is already editing this exact frontmatter section."
+  ]
+ },
+ "collisions": {
+  "verdict": "accept-with-amendments",
+  "strike": [
+   {
+    "item": "cut: \"The standalone 'Rules' section's file:line citation requirement as its own section.\" → \"folds into the Report section as a single bullet.\"",
+    "reason": "Mischaracterizes the current Rules section (skills/review-swarm/SKILL.md lines 60-67), which has three distinct rules, not one: (1) cite real file:line, no speculative padding, (2) a clean dimension gets one line not a manufactured nit, (3) don't fix here — offer to hand the ranked list to an implementer or /code-review --fix. The body_outline's Report line only recovers rule (2) ('a clean dimension gets one line, not a manufactured nit'). Rule (3) — the explicit review-vs-fix handoff instruction — appears nowhere in the proposed body_outline. It's implicitly covered by 'When not to use: fix-not-review asks,' but that governs whether to invoke the skill at all, not what to do with a finished report. As written this is a silent content loss, not a one-line fold."
+   },
+   {
+    "item": "add: \"A compressed 2-line grounding/authorship reminder in place of the old 8-line Global rules block, kept for non-Alon installers.\"",
+    "reason": "The proposal's own risk list flags that shrinking this block could under-ground the skill for public installers and needs a 'careful line-by-line check before shipping' — yet the body_outline (the section meant to be the concrete plan) never places this 2-line block anywhere. As written the proposal is self-contradictory: it argues against deleting grounding language for non-Alon users, then the actual outline deletes it. Strike until the outline names exactly where those two lines land."
+   }
+  ],
+  "amend": [
+   {
+    "item": "frontmatter.other_fields: {\"field\": \"effort\", \"value\": \"high\"}",
+    "change": "Either justify 'high' over 'max', or change to effort: max.",
+    "reason": "The design intent stated going into this task is that skill effort pins should 'stay at max even if you drop the session to a lower level for cheap work.' 'high' is not the top of the low|medium|high|xhigh|max scale, and review-swarm's own diagnosis calls the six-lens synthesis plus adversarial verification judgment-heavy — the same class of work the max pin was meant to protect. The value is asserted with no rationale for stopping one notch short of max."
+   },
+   {
+    "item": "when_to_use exclusions ('Not for a trivial diff... Not when the ask is to fix... Not when security is the whole ask... Not when /code-review is named explicitly') vs. the body's '## When not to use' section (same four exclusions, restated)",
+    "change": "Either state explicitly that this duplication is intentional (frontmatter gates pre-invocation triggering; the body section re-confirms once the skill is already active and in context for later turns) or trim one of the two.",
+    "reason": "The proposal cuts a much smaller duplication ('Free and local' stated in both the opening line and Relationship-to-built-ins section) on the stated principle that 'saying it twice is the kind of filler Fable 5.1 doesn't need repeated to retain,' but leaves this larger, near-verbatim four-item duplication between when_to_use and the body untouched with no comment. Applying the proposal's own cut principle inconsistently within the same document is worth a deliberate call, not silence."
+   },
+   {
+    "item": "frontmatter.other_fields (add a fourth entry)",
+    "change": "Add disallowed-tools blocking mutating git commands (git commit, git push, git add -A or similar), alongside the proposed allowed-tools read-only allowlist.",
+    "reason": "The design goals explicitly favor new frontmatter 'where it removes tool calls or prompts.' The skill already has a prose rule ('Don't fix here — this is review') that a mechanical disallowed-tools guard would enforce structurally instead of leaving it to the model's discipline alone — a natural complement to the allowed-tools list the proposal already adds for the read-only scoping commands."
+   }
+  ],
+  "missing": [
+   "No actual character count for the new description + when_to_use combined text — the proposal eyeballs it as safely under 1,536 but doesn't compute it, and this matters more once all six skills change together (a router or listing UI concatenating multiple skills' text could be more sensitive to overruns than any single skill's own budget).",
+   "No check on whether the eval harness (claude plugin eval running prompt.md against graders) actually gives the model real tool access (Agent tool, git) to exercise the six-lens fan-out and adversarial verification. Eval case 3's 'verification-discipline' grader scores whether the response shows evidence of adversarial verification, but if the eval environment can't actually spawn subagents, that grader may be scoring prose that only claims verification happened rather than real verification — worth confirming before trusting the eval as a v3-vs-v2.1 signal.",
+   "No explicit statement that the top-level SKILL.md `model` field is deliberately left unset (so the skill body itself runs under whatever session model invoked it — Fable 5.1 — while only the Agent-tool subagent spawns get model: sonnet/opus). This is the right choice but it's silent by omission rather than a stated decision, and a future editor could misread the silence as an oversight."
+  ]
+ }
+}

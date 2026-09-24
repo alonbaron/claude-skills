@@ -1,13 +1,17 @@
 ---
 name: prompt-generator
-description: >
-  Turns a vague ask into a rigorous, grounded, token-efficient prompt: role +
-  objective, testable done criteria, anti-hallucination (verify or say "I don't
-  know"), anti-tokenmaxing (lead with the answer, output budget), strict agent
-  discipline. Use proactively when the user hands over a prompt or task spec
-  destined for another agent or LLM. Also on "write a prompt", "improve this
-  prompt", "prompt for an agent". Not for human-facing prose or work you'll
-  execute yourself this session.
+description: >-
+  Turns a vague ask into a rigorous, grounded, token-efficient prompt for
+  another agent or LLM: role and objective, testable done criteria,
+  anti-hallucination and anti-tokenmaxing rules baked into the generated
+  prompt itself, and strict agent discipline for coding-agent hand-offs.
+when_to_use: >-
+  Use proactively when the user hands over a prompt, a task spec, or a "have
+  it do X" destined for another agent or LLM — also on "write a prompt",
+  "improve this prompt", "prompt for an agent". Not for text a human will
+  read (docs, messages, specs for people) — just write it. Not for work
+  you'll execute yourself this session — just do it, don't write yourself a
+  prompt.
 argument-hint: "[task, or a rough prompt to refine]"
 ---
 
@@ -24,19 +28,15 @@ task spec, a "have it do X" — invoke this without being asked: announce in one
 line ("Tightening this into a rigorous prompt") and proceed. Never ask
 permission to run the skill.
 
-## Process
+## Draft it
 
-1. **Read the intent.** What outcome does the user actually want, and who runs
-   the prompt (a coding agent, a chat model, a one-shot task)?
-2. **Ask only if blocked.** At most 1–2 questions, and only when a missing fact
-   would change the prompt's structure. Otherwise proceed and list assumptions
-   in one line.
-3. **Draft** using the section menu — include only the sections the task needs
-   (a one-shot classifier doesn't need "When blocked").
-4. **Self-check** against the rubric below. Cut anything that doesn't change the
-   model's behavior.
-5. **Output** the finished prompt in a fenced block, then ≤3 lines on key
-   choices and what to tune.
+Read the intent: what outcome does the user actually want, and who runs the
+prompt — a coding agent, a chat model, a one-shot task? Ask only if blocked —
+at most 1–2 questions, and only when a missing fact would change the prompt's
+structure; otherwise proceed and list assumptions in one line. Pick sections
+from the menu below, only what the task needs — a one-shot classifier doesn't
+need "When blocked." Before you output, check the draft against Done When and
+cut anything that doesn't change the model's behavior.
 
 ## Section menu (use what the task needs)
 
@@ -74,12 +74,13 @@ permission to run the skill.
 - Make small, reversible changes. Don't refactor unasked.
 - When blocked or ambiguous, ask — don't guess and barrel ahead.
 - Report honestly: if a step failed or was skipped, say so.
-- Commits are the user's alone — author = the user; never add an AI co-author or `Co-Authored-By`/credit line, and don't mention AI in commit messages.
+- Commits are the user's alone — author = the user; never add an AI co-author
+  or `Co-Authored-By`/credit line, and don't mention AI in commit messages.
 
 ## When not to use
 
 - Text a human will read (docs, messages, specs for people) — that's writing,
-  not prompting.
+  not prompting; just write it.
 - Work you'll do yourself in this session — just do it; don't write yourself a
   prompt.
 

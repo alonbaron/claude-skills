@@ -1,0 +1,84 @@
+{
+ "scores": [
+  {
+   "design_index": 0,
+   "portability": 8,
+   "unattended_reliability": 5,
+   "review_rigor": 5,
+   "token_efficiency": 7,
+   "total": 25,
+   "notes": "Strongest at command-discovery portability (CLAUDE.md Commands table, drops the Liars'-only task-id regex, ships .sh+.ps1) and generalizes the architecture lens off hardcoded invariant IDs. But it never touches close()'s control flow — inherits the current script's real bug (3 of 4 early-break paths skip close(), rows stay IN PROGRESS forever) since neither its stage list nor quality_mechanisms mention a closeIfPossible-style fix. Review lenses stay exactly 2 (correctness, architecture), just reworded to read invariants generically — no rigor delta. New required CLAUDE.md Commands section is coupled to an unlanded architect-skill change, same coupling design 1 and 2 also take on."
+  },
+  {
+   "design_index": 1,
+   "portability": 8,
+   "unattended_reliability": 9,
+   "review_rigor": 6,
+   "token_efficiency": 7,
+   "total": 30,
+   "notes": "Only design grounded in a direct read of build-loop.js's control flow plus the real autobuild.log: names the actual bug (closeIfPossible on every break path, not just build-failure), the actual observed failure (429 mid-spec on row 0.5 becoming permanently unpickable because eligibility requires status exactly '[ ]'), and the actual observed race (two claude -p launches 3 minutes apart on the same tree) with a wrapper lock file. Per-stage JSON checkpointing plus a resume-priority rule in Plan is the concrete unattended-recovery mechanism the other two designs lack. Review side is unchanged from v2 (still 2 lenses, still the blunt uncited-fail-blocks fallback) so rigor is only mid-pack. Node-based cross-platform wrapper is a real portability fix over Windows-only .ps1, though the journal.jsonl progress-display dependency is left as an open question rather than solved."
+  },
+  {
+   "design_index": 2,
+   "portability": 8,
+   "unattended_reliability": 6,
+   "review_rigor": 9,
+   "token_efficiency": 6,
+   "total": 29,
+   "notes": "Most rigorous review engine: evidence-weighted voting (cited finding always blocks; uncited fail needs >=2 independent lenses) directly replaces the current script's actual fallback bug (`if (anyFail && !blocking.length)` synthesizes a blocking finding from one uncited fail) with something better-specified than either other design. Adds a genuinely new capability -- an escalation-only opus arbiter for disputed/disagreeing findings -- that neither design 0 nor 1 has, and a completeness critic that checks spec.md against the raw task row, catching a bad spec before it ever reaches refute. Gates the extra lenses (security, ponytail, adversarial test-writer) on build-reported diffStats/touchesTrustBoundary/docsOnly, which keeps token cost roughly proportional to diff size -- but that gate is self-attested by the same builder being reviewed, and does not itself fix the close()-skipped-on-break-path bug design 1 found by reading the code."
+  }
+ ],
+ "winner": 1,
+ "grafts": [
+  {
+   "from_design": 2,
+   "idea": "Evidence-weighted voting: a cited file:line finding always blocks; an uncited 'fail' verdict only blocks with >=2 independent lenses agreeing.",
+   "why": "Design 1 keeps the current script's blunt fallback (any single uncited fail synthesizes a generic blocking finding) unchanged -- this graft fixes the exact bug design 2 identified without needing design 2's full lens roster."
+  },
+  {
+   "from_design": 2,
+   "idea": "Escalation-only opus arbiter that fires only when a fix-round dispute (notFixed) reappears next round, or breadth lenses disagree.",
+   "why": "Design 1 has no tie-break for a disputed finding -- it just spends fix rounds until MAX_FIX_ROUNDS and blocks even when the fixer was right. The arbiter is bounded (most tasks never invoke it) so it doesn't blow up token_efficiency."
+  },
+  {
+   "from_design": 2,
+   "idea": "Gate extra review lenses (security, ponytail, adversarial test-writer) on build's self-reported diffStats/touchesTrustBoundary/docsOnly, run once (round 1 only).",
+   "why": "Keeps refute's cost proportional to diff size, addressing the brief's explicit flag on doubling token cost without proportional quality gain -- but pair it with a cheap, script-level diff-stat check (not solely the builder's self-report) so the gate isn't purely self-attested."
+  },
+  {
+   "from_design": 0,
+   "idea": "Have the workflow's own log() calls tee to a repo-local progress file (e.g. .claude/scratch/build-loop/progress.log) instead of depending on Claude Code's internal ~/.claude/projects/<slug>/.../journal.jsonl layout.",
+   "why": "Design 1 left the journal-scraping progress display as an open question; design 0 outright removes the dependency on an unverified, single-example internal path format, which is strictly safer for a public plugin."
+  },
+  {
+   "from_design": 0,
+   "idea": "Move the 'Left for <id>: ...' handoff-note convention into architect's own CLAUDE.md/TODO_WORKFLOW template text.",
+   "why": "It's currently only documented inside build-loop.js's close prompt; any repo using the doc contract without the workflow re-explaining the convention every run is cheaper and more discoverable."
+  }
+ ],
+ "fatal_flaws": [
+  {
+   "design_index": 0,
+   "flaw": "Never fixes (or even mentions) the real bug that 3 of 4 early-break paths skip close(), so a scout/spec/refute failure leaves the TODO row permanently '[IN PROGRESS]' with no docs/handoff.md entry -- a fatal gap for something whose entire premise is running unattended over many tasks."
+  },
+  {
+   "design_index": 1,
+   "flaw": "The resume-priority rule trusts <scratchDir>/*.json checkpoints to reconstruct where a killed run stopped, but doesn't fully specify validating that checkpoint state against the actual git log/HEAD before resuming -- a crash between a commit and a checkpoint write (or vice versa) could make Plan resume from the wrong stage against a stale baseCommit, corrupting the branch instead of safely restarting the task."
+  },
+  {
+   "design_index": 2,
+   "flaw": "The security-at-trust-boundary lens (and the other conditional lenses) are gated on the builder's own self-reported touchesTrustBoundary/diffStats -- trusting the agent under review to flag when it touched security-relevant code is a trust-boundary violation in a system explicitly designed to catch a lying or careless builder; a build stage that fails to notice it touched auth/secrets silently skips the one lens meant to catch that."
+  }
+ ],
+ "recommended_stage_list": [
+  "Plan -- opus (fable override via args.models.plan) -- picks the next eligible '[ ]' row or resumes a stale '[IN PROGRESS]' row via scratch-dir checkpoints validated against actual git HEAD, discovers/caches repo commands from CLAUDE.md's '## Commands' section, stops named if missing rather than guessing.",
+  "Scout -- haiku -- read-only file/symbol/test/doc location report, persisted to <scratchDir>/scout.json so a resumed task can skip re-scouting.",
+  "Spec -- opus -- docs-first (SOURCE_OF_TRUTH -> ARCHITECTURE_ROADMAP -> NN-*.md) before spec.md; keeps committed doc edits even if spec later stalls; pulls verification commands from Plan's discovered commands object.",
+  "Research -- sonnet -- skipped entirely when spec.unverifiedApis is empty; verifies external APIs via installed manifests/context7 only.",
+  "Build -- sonnet -- pre-build budget gate covering the full build+refute+fix+close tail before any file is touched; implements spec exactly, runs discovered commands, micro-commits, self-reports diffStats/touchesTrustBoundary as a hint (not sole gate).",
+  "Refute (parallel) -- sonnet for correctness+tests (reruns commands itself, never trusts build's self-report) and acceptance-checklist-vs-spec always; opus for architecture/invariants (whatever SOURCE_OF_TRUTH §3 lists) always; sonnet/fable conditional round-1-only lenses (ponytail, security-if-trust-boundary, adversarial test-writer) gated on diffStats plus a script-level diff-size check, not builder self-report alone -- findings merged by evidence-weighted voting (cited finding always blocks; uncited fail needs >=2 lenses).",
+  "Arbiter -- opus -- escalation-only: fires when a fix-round dispute (notFixed) reappears, or breadth lenses disagree; gives one binding upheld/dismissed verdict per disputed finding.",
+  "Fix -- opus -- addresses blocking findings (post-arbiter) with smallest correct change, re-runs commands, commits, capped at args.maxFixRounds (default 2); notFixed disputes propagate into the outcome object.",
+  "Close -- sonnet -- sole writer of TODO_WORKFLOW.md/docs/handoff.md, invoked via closeIfPossible() on every early-break path after Plan succeeds (scout-failed, spec-stopReason, build-blocked, refuters-died, fix-rounds-exhausted, budget-short), not just the build-failure path -- tolerates its own agent() call returning null by logging the row for next run's resume-priority pickup."
+ ]
+}

@@ -1,0 +1,7 @@
+# The eval fixtures and the workflow scripts are executed on Linux/macOS
+# runners. A CRLF checkout breaks a shebang, so pin them to LF regardless
+# of the committer's core.autocrlf.
+*.sh   text eol=lf
+*.mjs  text eol=lf
+*.js   text eol=lf
+*.py   text eol=lf

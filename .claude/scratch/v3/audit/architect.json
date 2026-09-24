@@ -1,0 +1,210 @@
+{
+ "spec": {
+  "skill": "architect",
+  "diagnosis": "architect's core contract (four artifacts, sync protocol, audit citation rule) is already judgment-dense prose, not step-by-step scaffolding — it doesn't need the Fable-5.1 trim other skills probably need. The one clear waste is the 4-line \"Global rules\" block: every point in it (grounding, no invented facts, small reversible changes) is already stated more specifically elsewhere in this same file (Rules section: \"never invent a constraint... you haven't confirmed\"; \"no code in this phase\") or in CLAUDE.md. It's copy-pasted redundancy on top of redundancy. What the file lacks versus current Claude Code capability: no when_to_use split (triggers are buried inside description, which is what's now truncated together at 1,536 chars), no allowed-tools pre-approval for the read-only doc/code scan architect always does first, no effort pin even though this is the single most judgment-heavy non-multiagent skill in the set, and no use of dynamic context injection to auto-detect create-mode vs audit-mode (does SOURCE_OF_TRUTH.md already exist? is the tree dirty?) instead of spending a tool round-trip finding out.",
+  "keep": [
+   "\"Never ship a change the docs don't yet describe\" — the docs-before-code sync rule is the entire point of the skill; it must survive verbatim.",
+   "\"No item without both is a finding — it's a hunch, and hunches don't go in the list\" — the audit mode's file:line-both-sides citation discipline; this is the exact bar the computed-task ground truth asks v3 to keep.",
+   "\"No code in this phase\" and the failure-mode-per-component rule — the boundary that keeps architect from turning into an implementation pass.",
+   "The full \"When not to use\" section verbatim — it's the boundary the README's proactive-by-default claim depends on not being a nuisance.",
+   "The Hand-offs section (up-to-date before, ask-the-council for competing options, review-swarm after, humanizer on prose-only passages) — the README's tiebreak table and CLAUDE.md router both assume these exact hand-off partners exist and fire in this order.",
+   "\"Ask 1–3 blocking questions only... state assumptions for the rest and proceed\" — the judgment rule that stops architect from stalling a session, which is exactly the kind of rule Fable 5.1 should be trusted to apply rather than have spelled out mechanically."
+  ],
+  "cut": [
+   {
+    "what": "The entire \"## Global rules\" section (4 bullets: ground everything, no tokenmaxing, agent discipline, commits are the user's alone).",
+    "why": "Triple redundant: CLAUDE.md already injects all four into every session; architect's own Rules section already says \"never invent a constraint, a number, or an API you haven't confirmed\" and \"no code in this phase\"; and commit authorship is a global git rule with nothing architect-specific to add. Paying for it twice per invocation (skill body + auto-loaded CLAUDE.md) is the copy-paste waste the task flagged."
+   },
+   {
+    "what": "The overlap between \"## Principles\" (\"design failure paths as deliberately as happy paths\") and \"## Rules\" (\"Every component has a defined responsibility and a failure mode\") — near-duplicate statements of the same rule in two sections.",
+    "why": "Fable 5.1 doesn't need the same judgment rule restated as both philosophy and checklist item; state it once in Principles and drop the Rules restatement, freeing a line without losing the rule."
+   }
+  ],
+  "add": [
+   {
+    "what": "Split description (capability only) from a new when_to_use field (triggers + \"not for\"), instead of cramming both into one description string.",
+    "why": "The combined text is what gets truncated at 1,536 chars in the skill listing; separating them lets the capability summary stay intact even if when_to_use grows, and matches the v3 design goal to use the new field where it removes ambiguity."
+   },
+   {
+    "what": "allowed-tools: Read, Grep, Glob (read-only).",
+    "why": "architect always starts by checking whether design docs already exist and, in audit mode, grepping code for architectural claims. Pre-approving read-only tools removes permission-prompt friction on the turn the skill is invoked, with no write risk since Edit/Write/Bash stay ungated by this list."
+   },
+   {
+    "what": "A dynamic context-injection line at the top of the skill body that checks, before the model sees anything, whether SOURCE_OF_TRUTH.md / ARCHITECTURE_ROADMAP.md / TODO_WORKFLOW.md already exist and whether the tree is dirty — something like `!`git status --porcelain 2>/dev/null | head -20; echo ---; for f in SOURCE_OF_TRUTH.md ARCHITECTURE_ROADMAP.md TODO_WORKFLOW.md CLAUDE.md; do [ -f \"$f\" ] && echo \"found: $f\"; done; true`` (trailing `true` forced so a normal \"nothing found\" case can't read as a failing exit code).",
+    "why": "This is exactly what architect currently spends its first Read/Glob calls figuring out (create vs. audit mode, is there uncommitted work to be careful of) — moving it to injection saves a tool round-trip on every invocation. Flagged as a risk below because the exact exit-code exception list in the ground truth only names grep-like commands, and `ls`/test failures on missing files are not obviously covered — needs to be tested, not assumed."
+   },
+   {
+    "what": "effort: high in frontmatter.",
+    "why": "Design goal explicitly calls for effort pins on judgment-heavy skills. architect is the deepest single-thread reasoning task in the set (whole-system invariants, two-boundary enforcement, phased sequencing) and the one most likely to get shallow output if invoked mid-session at a cost-saving lower effort dial for an unrelated cheap task."
+   },
+   {
+    "what": "One replacement line in Rules, in place of the cut Global-rules block: \"Be exact and brief — a design doc is a contract, not an essay; state the assumption instead of hedging around it.\"",
+    "why": "Preserves the one Global-rules point (no tokenmaxing) that wasn't already duplicated elsewhere in the file, in a single line scoped to what design docs specifically need, rather than a generic four-bullet block."
+   }
+  ],
+  "frontmatter": {
+   "description": "Produces Alon's design-doc system before code: SOURCE_OF_TRUTH.md, ARCHITECTURE_ROADMAP.md, TODO_WORKFLOW.md, CLAUDE.md (plus a modular docs/architecture set for larger projects). Model-first: data and invariants before framework, every invariant enforced at two boundaries, failure paths designed as deliberately as happy paths, one source of truth everything else links back to. Also runs in audit mode: verifies an existing doc set against the code and reports drift, cited on both sides.",
+   "when_to_use": "Use proactively, no permission asked, when a new app, feature, or workstream is starting and no design docs exist yet. Also run architect audit when docs might have drifted from code. Fires on \"architect\", \"design doc\", \"spec this out\", \"roadmap\", \"audit the docs\". Not for a small fix already covered by the current design — just do it. Not for pure implementation of an already-designed phase — code, don't re-spec.",
+   "argument_hint": "[what you're building]   ·   add 'audit' to check existing docs for drift",
+   "other_fields": [
+    {
+     "field": "effort",
+     "value": "high",
+     "why": "Pins deep reasoning for design-doc authoring regardless of what effort the surrounding session is dialed to for cheaper work — see the mirrored decision for review-swarm's verifiers and the council's critique round."
+    },
+    {
+     "field": "allowed-tools",
+     "value": "Read, Grep, Glob",
+     "why": "Pre-approves the read-only scan architect always runs first (does a doc set already exist? what does the code claim?) so it doesn't stall on a permission prompt for tools that can't write anything."
+    }
+   ]
+  },
+  "body_outline": [
+   "Principles — model first, invariants enforced at two boundaries, failure paths designed deliberately, one source of truth (absorbs the one Rules bullet that duplicated it)",
+   "Proactive use — one-line announce-and-proceed trigger rule; opens with the injected doc-existence/git-state context so create-vs-audit mode is already known",
+   "The four artifacts (+ modular set) — SOURCE_OF_TRUTH, ARCHITECTURE_ROADMAP, docs/architecture, TODO_WORKFLOW, CLAUDE.md, authority flows top-down",
+   "Sync protocol — docs-before-code, one fact one home, TODO tracks reality, the definition of \"synced\"",
+   "Audit mode — verify only, don't author; every drift item needs file:line on both sides or it's not a finding",
+   "CLAUDE.md template — the sync-protocol rules baked into the target project's own auto-loaded rules file",
+   "Before you start — 1-3 blocking questions max, state assumptions, scale doc depth to project size",
+   "Rules — no code this phase, defined failure mode per component, never invent a constraint/number/API, decision-dense not prose, be brief (replaces the cut Global-rules block)",
+   "When not to use — small fix already covered by current docs; pure implementation of an already-designed phase",
+   "Hand-offs — up-to-date before, ask-the-council for competing load-bearing decisions, review-swarm after implementation, humanizer on prose-only passages",
+   "Done when — the four docs exist, cross-link, agree with the planned code, and CLAUDE.md makes the sync protocol non-optional"
+  ],
+  "eval_cases": [
+   {
+    "name": "small-fix-boundary",
+    "prompt": "We already have SOURCE_OF_TRUTH.md and ARCHITECTURE_ROADMAP.md for our Cloudflare Workers auth service (Hono + D1). I need to add a rate limit of 100 requests/minute per IP on POST /login. Can you spec that out for me?",
+    "setup_note": "Fixture repo has a minimal SOURCE_OF_TRUTH.md and ARCHITECTURE_ROADMAP.md already describing the auth service and its invariants; no rate-limiting invariant exists yet.",
+    "graders": [
+     {
+      "name": "boundary-judgment",
+      "rubric": "0-10: does the response recognize this as a small fix already covered by existing design docs (per the skill's own 'When not to use') rather than regenerating the full four-artifact doc set from scratch? 10 = makes the targeted addition (e.g. one new invariant + its two enforcement boundaries) without re-deriving unrelated sections; 0 = full re-architecture treatment for a one-endpoint change.",
+      "weight": 0.5
+     },
+     {
+      "name": "invariant-enforcement",
+      "rubric": "0-10: if a new invariant is added, is it enforced at two boundaries (e.g. app-layer check and a durable/DB-backed counter), not just 'the code handles it'? 10 = both boundaries named and where; 0 = single-layer or hand-wavy.",
+      "weight": 0.3
+     },
+     {
+      "name": "no-invention",
+      "rubric": "0-10: does it avoid inventing rate-limiter tech, KV/D1 schema details, or numbers not given or already in the docs, flagging what it assumed instead? 10 = every non-given detail is flagged as an assumption or question; 0 = confidently invented specifics.",
+      "weight": 0.2
+     }
+    ]
+   },
+   {
+    "name": "right-sized-new-feature",
+    "prompt": "Starting a new feature on our Next.js + Postgres trip-planning app: users can export their itinerary as a PDF and email it to themselves. Nothing's written yet, no design docs exist for this app at all.",
+    "setup_note": "Empty/fresh repo, no SOURCE_OF_TRUTH.md, ARCHITECTURE_ROADMAP.md, TODO_WORKFLOW.md, or CLAUDE.md present.",
+    "graders": [
+     {
+      "name": "proactive-and-scaled",
+      "rubric": "0-10: does it invoke without being asked (one-line announce) and produce a right-sized doc set — SOURCE_OF_TRUTH + a light ARCHITECTURE_ROADMAP + TODO_WORKFLOW + CLAUDE.md — without scaffolding the docs/architecture/ modular set that's reserved for larger projects? 10 = correctly scoped; 0 = either silent (didn't proactively run) or over-scaffolded for a single feature.",
+      "weight": 0.4
+     },
+     {
+      "name": "blocking-questions-discipline",
+      "rubric": "0-10: does it ask at most 1-3 blocking questions (e.g. email delivery provider, PDF generation approach) and state assumptions for everything else instead of stalling on a long questionnaire? 10 = <=3 sharp questions plus explicit assumptions; 0 = either zero clarification on a genuinely underspecified point or an interrogation.",
+      "weight": 0.3
+     },
+     {
+      "name": "failure-paths-named",
+      "rubric": "0-10: are failure paths for the export/email flow (PDF generation fails, email bounces, oversized itinerary) designed as deliberately as the happy path, with a defined per-component failure mode? 10 = explicit failure handling per component; 0 = happy path only.",
+      "weight": 0.3
+     }
+    ]
+   },
+   {
+    "name": "audit-drift-citation",
+    "prompt": "Run architect audit on our repo. I think the docs are stale — we shipped a new /webhooks/stripe endpoint last week and I don't think it ever made it into the architecture roadmap or the API contract table.",
+    "setup_note": "Fixture repo: ARCHITECTURE_ROADMAP.md §3 has a backend API-contract table without a Stripe webhook row; actual code has a real route handler for POST /webhooks/stripe.",
+    "graders": [
+     {
+      "name": "citation-discipline",
+      "rubric": "0-10: does every reported drift item cite both sides — the file:line in code stating the fact, and the doc(+section/line) that should describe it and doesn't — per the skill's own 'no item without both is a finding' rule? 10 = 100% of findings cite both sides; 0 = any finding stated as a hunch without a code citation, a doc citation, or both.",
+      "weight": 0.5
+     },
+     {
+      "name": "verify-not-author",
+      "rubric": "0-10: does audit mode stay in verify-and-report form (prioritized fix list, offer to apply) rather than silently rewriting the docs itself? 10 = report + offer only; 0 = docs edited without being asked or offered first.",
+      "weight": 0.3
+     },
+     {
+      "name": "no-overreach",
+      "rubric": "0-10: does it stay scoped to the docs given (SOURCE_OF_TRUTH/ARCHITECTURE_ROADMAP/TODO_WORKFLOW/CLAUDE.md) and avoid pulling in ask-the-council or review-swarm for what's a straightforward single-endpoint drift finding? 10 = scoped correctly; 0 = unnecessary hand-off invoked for a decision that isn't actually contested.",
+      "weight": 0.2
+     }
+    ]
+   }
+  ],
+  "risks": [
+   "The proposed context-injection line (`ls`/`[ -f ]` checks for the four doc files) needs to force a zero exit code explicitly (trailing `true`) — the ground truth confirms only grep-like commands get an exit-1 exception, and a missing-file check that isn't grep-shaped could abort the whole invocation if not guarded. This needs to be tested against a real Claude Code build before shipping, not assumed from the docs summary alone.",
+   "The exact allowed-tools syntax for scoping to read-only tools (plain tool names vs. command-scoped patterns) wasn't independently re-verified against code.claude.com/docs/en/skills in this pass — confirm the syntax before publishing so it doesn't silently no-op.",
+   "Cutting the Global-rules block leans on CLAUDE.md being loaded for every user. The plugin is public: a user without Alon's CLAUDE.md now gets grounding/output-budget behavior only from what's implicit in Rules and Principles, not a stated block. Worth a one-line v3 changelog note since it's a visible behavior change for non-Alon installs, even though nothing in architect's own Rules section actually depended on the block.",
+   "effort: high is asserted as the right pin by design-goal inference, not benchmarked. Pair it with the new eval suite (esp. the invariant-enforcement and failure-paths-named graders above) run at effort: high vs. the session default before treating the pin as a proven win rather than a plausible one."
+  ]
+ },
+ "grounding": {
+  "verdict": "accept-with-amendments",
+  "strike": [
+   {
+    "item": "cut #2: \"The overlap between Principles ('design failure paths as deliberately as happy paths') and Rules ('Every component has a defined responsibility and a failure mode') — near-duplicate statements of the same rule in two sections.\"",
+    "reason": "Checked against the file: line 22 (Principles) is a design-mindset statement about failure paths; line 128 (Rules) asserts two separate things — 'defined responsibility' AND 'a failure mode' per component. Calling this a near-duplicate overstates the overlap. Collapsing it into Principles-only drops the 'defined responsibility' half of the rule, which nothing else in the file restates. This is a real content loss dressed as a redundancy cut."
+   }
+  ],
+  "amend": [
+   {
+    "item": "add: dynamic context-injection line running `git status --porcelain` plus the four-file existence check",
+    "change": "Scope the injection to the doc-existence check only (does SOURCE_OF_TRUTH.md/ARCHITECTURE_ROADMAP.md/TODO_WORKFLOW.md/CLAUDE.md exist), and drop the git-status probe from architect's own injection.",
+    "reason": "The skill's own Hand-offs section already assigns pre-flight git-state checking to `up-to-date` ('Repo with a remote → run up-to-date first'). Running git status inside architect's injection duplicates that hand-off's job and blurs which skill owns dirty-tree awareness. The exit-code guard (trailing `true`) is correctly designed and should stay for whichever probe remains."
+   },
+   {
+    "item": "cut #2 (Principles/Rules overlap)",
+    "change": "If a merge is still wanted, keep both clauses of the Rules line — 'Every component has a defined responsibility and a failure mode' — and only trim the Principles line's restatement of 'failure paths deliberately', not the reverse.",
+    "reason": "Preserves the 'defined responsibility per component' requirement that the current cut proposal would silently delete; see strike above."
+   },
+   {
+    "item": "frontmatter.argument_hint key in the proposal's JSON",
+    "change": "Use the hyphenated field name `argument-hint` to match both the ground truth's field list and the current file's actual frontmatter key (line 11 of the file).",
+    "reason": "Minor, but this proposal is meant to ship literally into YAML frontmatter; an underscore vs. hyphen mismatch is exactly the kind of cargo-cult-by-typo the grounding lens asks to catch before it silently no-ops."
+   }
+  ],
+  "missing": [
+   "No acknowledgment that the eval format in the ground truth (case.yaml + prompt.md + graders/*.md) is not confirmed to support seeding a fixture repo or working directory per case. All three eval_cases rely on a 'fixture repo' with pre-existing files (SOURCE_OF_TRUTH.md, a Stripe webhook route, etc.), but nothing in the ground truth describes how `claude plugin eval` provisions per-case repo state. This should be flagged as a risk alongside the other unverified-syntax risks already listed (allowed-tools syntax, injection exit codes), not silently assumed to work.",
+   "No consideration of what the no-plugin baseline arm actually does with the 'audit-drift-citation' case: without the skill loaded, 'architect audit' has no defined behavior, so that arm likely scores near-zero on all three graders by default rather than by genuine comparison. Worth a one-line note on whether that baseline is a meaningful control for this case or just a floor."
+  ]
+ },
+ "collisions": {
+  "verdict": "accept-with-amendments",
+  "strike": [
+   {
+    "item": "cut[1]: \"The overlap between '## Principles' ('design failure paths as deliberately as happy paths') and '## Rules' ('Every component has a defined responsibility and a failure mode') ... state it once in Principles and drop the Rules restatement, freeing a line without losing the rule.\"",
+    "reason": "This directly contradicts the proposal's own body_outline, which lists 'Rules — no code this phase, defined failure mode per component, never invent a constraint/number/API, decision-dense not prose, be brief' — i.e. body_outline keeps the exact line cut[1] says to remove. Worse, the proposal's own new eval grader 'failure-paths-named' (right-sized-new-feature case) explicitly rewards 'a defined per-component failure mode,' which is the Rules wording ('every component'), not the Principles wording (a general philosophy statement with no per-component completeness claim). Cutting the more actionable, audit-able line and keeping the vaguer philosophical one works against the proposal's own grading criteria. These are not true duplicates: Principles states a design attitude, Rules states a completeness requirement (every component, no exceptions)."
+   },
+   {
+    "item": "frontmatter.argument_hint: \"[what you're building]   ·   add 'audit' to check existing docs for drift\"",
+    "reason": "The actual frontmatter field, per both the ground truth field list and the current architect/SKILL.md (line 11), is hyphenated `argument-hint`, not `argument_hint`. If shipped as written this key would not bind to the real field and the hint would silently not show. `when_to_use` is correctly underscored per the ground truth, but `argument-hint` is not — the proposal conflates the two conventions."
+   }
+  ],
+  "amend": [
+   {
+    "item": "add[2]: the `!`git status --porcelain ...; for f in SOURCE_OF_TRUTH.md ...; do [ -f \"$f\" ] && echo \"found: $f\"; done; true`` injection line",
+    "change": "Anchor the file checks and git status to ${CLAUDE_PROJECT_DIR} explicitly (e.g. `[ -f \"${CLAUDE_PROJECT_DIR}/$f\" ]` and `git -C \"${CLAUDE_PROJECT_DIR}\" status --porcelain`), and declare a `shell:` frontmatter value rather than leaving it implicit.",
+    "reason": "The design goal explicitly says 'keep every skill portable' and the ground truth explicitly lists ${CLAUDE_PROJECT_DIR} and a `shell` frontmatter field as available precisely for this problem. A POSIX `[ -f ]`/`for` script with no shell pin and no project-root anchor is exactly the kind of unverified portability risk the design goal is trying to prevent, and the proposal's own 'risks' section only questions the exit-code behavior, not the missing project-root anchor or missing shell declaration — both are fixable now, not just 'needs testing.'"
+   },
+   {
+    "item": "\"keep\": ... \"The full 'When not to use' section verbatim\"",
+    "change": "Add one clause (or a short new sentence) distinguishing 'a small fix already covered by current docs' from 'a small, scoped addition to a system that already has docs but doesn't yet cover this fact' — e.g. for the latter, add the one new invariant/section rather than re-authoring the doc set.",
+    "reason": "The proposal's own eval case 'small-fix-boundary' (auth service already has SOURCE_OF_TRUTH + ARCHITECTURE_ROADMAP, but no rate-limiting invariant yet — user says 'spec that out') sits exactly on the seam the current boundary wording doesn't resolve: the fix is NOT 'already covered by current design docs' (the literal condition in the kept text), so a strict reading argues for full re-authoring, while the grader wants a targeted addition. Keeping this section verbatim leaves the exact near-miss the computed task's lens asks about (\"'spec this out' for a tiny fix\") unresolved by the skill body itself."
+   }
+  ],
+  "missing": [
+   "No proposed wording change to close the small-fix-vs-new-invariant-on-an-existing-system ambiguity described above — this is the single near-miss case the proposal's own eval suite was built to catch, and the fix belongs in the skill body (When not to use / Before you start), not just in the eval.",
+   "No mention of `disable-model-invocation` or `user-invocable` fields even to explicitly reject them — architect is proactive-by-default and spawns nothing, so this is a low-priority gap, but the review lens asked about frontmatter choices generally and the proposal only picked two of the newly available fields (effort, allowed-tools) without saying why the others (paths, hooks, context) don't apply.",
+   "No check of whether the four other Global-rules-bearing skills (ask-the-council, ponytail, review-swarm, up-to-date) would need the identical cut-and-replace treatment for consistency, or whether architect is meant to be the pilot; the proposal treats architect in isolation while the diagnosis frames the redundancy as a cross-file (five-of-six-files) problem."
+  ]
+ }
+}

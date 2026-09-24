@@ -1,0 +1,82 @@
+[
+ {
+  "query": "ponytail this: need to add rate limiting to the ShiftManager API, whats the laziest way that actually holds up",
+  "should_trigger": true
+ },
+ {
+  "query": "Building out the TenderTrack notifications feature and I already sketched an abstract NotificationProvider interface with an EmailProvider and a stub SmsProvider we're not using yet, feels like a lot for something that only ever sends email right now",
+  "should_trigger": true
+ },
+ {
+  "query": "need to slugify tender titles for the TenderTrack URLs, was gonna npm install slugify unless theres something built into node already",
+  "should_trigger": true
+ },
+ {
+  "query": "about to start the shift-swap approval flow in ShiftManager and my instinct is a full state machine library, is that overkill for like 4 states",
+  "should_trigger": true
+ },
+ {
+  "query": "yagni check - do i need a generic Repository<T> pattern for this Django app or can the ORM just do it",
+  "should_trigger": true
+ },
+ {
+  "query": "whats the simplest solution for deduping these CSV rows before import, dont want to build a whole pipeline",
+  "should_trigger": true
+ },
+ {
+  "query": "need a date range picker for the FastAPI admin panel, was about to pull in a react date library, is there a native input for that",
+  "should_trigger": true
+ },
+ {
+  "query": "need to check if a string is a valid email for the TenderTrack signup form and started writing a 40-line validation class with a builder pattern, is there something simpler already in Django",
+  "should_trigger": true
+ },
+ {
+  "query": "before I implement the retry logic for the Cloudflare Worker email sender, should I write my own backoff class or is there something simpler, dont want to over-build it",
+  "should_trigger": true
+ },
+ {
+  "query": "starting the invoice PDF export for TenderTrack tomorrow, before I sketch the whole plugin architecture for future export formats can we just ship CSV only for now",
+  "should_trigger": true
+ },
+ {
+  "query": "clean up this diff, theres a UserFactory class with one caller and a config object for a value that never changes, tidy it before I push",
+  "should_trigger": false
+ },
+ {
+  "query": "swarm review the shift-swap PR, flag anything over-engineered or unnecessary abstractions along with the usual correctness pass",
+  "should_trigger": false
+ },
+ {
+  "query": "we're kicking off a new multi-tenant billing system for TenderTrack, write the full design doc with invariants and API contracts before anyone touches code",
+  "should_trigger": false
+ },
+ {
+  "query": "this is the payments webhook handler, I know it adds lines but build the full enterprise-grade retry and dead-letter-queue handling, no shortcuts",
+  "should_trigger": false
+ },
+ {
+  "query": "the ShiftManager login endpoint validation feels like a lot of checks, can we drop half of them to cut the diff size",
+  "should_trigger": false
+ },
+ {
+  "query": "the settings page in TenderTrack has too many clicks to save a filter, can we make it simpler for the user",
+  "should_trigger": false
+ },
+ {
+  "query": "the auth middleware on TenderTrack has ballooned to 6 different validator classes and feels bloated, can you do a full security review on it before we touch anything",
+  "should_trigger": false
+ },
+ {
+  "query": "going through ShiftManager's employee CSV export, need to reverse the date format from ISO to DD/MM/YYYY before it hits the printer service, then write the result to a new file for the accountant",
+  "should_trigger": false
+ },
+ {
+  "query": "this README is way too wordy and sounds like a corporate press release, tighten it up",
+  "should_trigger": false
+ },
+ {
+  "query": "the login button throws a null pointer when the session expires, can you fix it",
+  "should_trigger": false
+ }
+]

@@ -1,15 +1,22 @@
 ---
 name: ponytail
-description: >
-  Forces the laziest solution that actually works — YAGNI, reuse before new
+description: >-
+  Forces the laziest solution that actually works: YAGNI, reuse before new
   code, stdlib before custom, native platform before dependencies, one line
-  before fifty. Levels: lite/full/ultra. Use proactively when a solution is
-  growing beyond the minimum: new abstractions, dependencies, scaffolding "for
-  later", or complaints about over-engineering or bloat. Also on "ponytail",
-  "be lazy", "yagni", "simplest solution", "do less". Not at trust boundaries,
-  not when the full version is explicitly asked, and not for tidying an
-  already-written diff — that is built-in "simplify". Ponytail governs what
-  gets built, before and while it is written; simplify cleans up after.
+  before fifty. Three levels — lite (name the lazier alternative, build what's
+  asked), full (ladder enforced, default), ultra (YAGNI extremist, challenge
+  the requirement itself).
+when_to_use: >-
+  Fires when a solution is outgrowing the minimum: an abstraction with one
+  caller, a new dependency for a few lines, scaffolding "for later," a
+  question whether the stdlib or platform already covers it, or a complaint
+  about over-engineering or bloat — invoke without asking, announce
+  in one line, proceed. Also on "ponytail", "be lazy", "yagni", "simplest
+  solution", "do less". Never to weaken a trust boundary (validation, auth,
+  error handling that prevents data loss, a11y), not once the user has heard the
+  lazier option and reaffirmed the full one, and not for tidying a diff
+  that already exists and works — that's built-in /simplify. Ponytail
+  governs what gets built, before and while it's written; simplify cleans up after.
 argument-hint: "[lite|full|ultra]"
 license: MIT
 ---
@@ -22,16 +29,9 @@ code is the code never written.
 
 ## Proactive use
 
-If the solution taking shape is outgrowing the minimum — an abstraction with
-one caller, a new dependency for a few lines, scaffolding "for later" — invoke
-this without being asked: announce in one line ("Ponytail: <what's over-built>")
-and proceed. Never ask permission to run it.
-
-## Persistence
-
-ACTIVE EVERY RESPONSE. No drift back to over-building. Still active if
-unsure. Off only: "stop ponytail" / "normal mode". Default: **full**.
-Switch: `/ponytail lite|full|ultra`.
+Invoke without being asked whenever a solution is outgrowing the minimum:
+announce in one line ("Ponytail: <what's over-built>") and proceed. Never ask
+permission to run it.
 
 ## The ladder
 
@@ -94,8 +94,14 @@ Example: "Add a cache for these API responses."
 ## When NOT to be lazy
 
 Never simplify away: input validation at trust boundaries, error handling
-that prevents data loss, security measures, accessibility basics, anything
-explicitly requested. User insists on the full version → build it, no
+that prevents data loss, security measures, accessibility basics.
+
+Asking for an abstraction is not insisting on it. "Build me a pluggable
+backend interface and a swappable strategy" IS the trigger, not an exemption
+from it — ship the lazy version as the deliverable and name what you skipped.
+The exemption starts one turn later: the user has heard the lazier option and
+still wants the full one, or names a reason it is needed today (a second
+consumer that exists now, a contract, a compliance rule). Then build it, no
 re-arguing.
 
 Never lazy about understanding the problem. The ladder shortens the
@@ -120,18 +126,24 @@ test, YAGNI applies to tests too.
 - The council picked an option → this skill builds its minimal version.
 - The simplification touches an invariant or documented decision → check
   `SOURCE_OF_TRUTH.md` (architect's docs) before deleting it.
+- A diff that already exists and just needs tidying is `/simplify`'s job, not
+  this ladder — don't re-run the ladder on finished, working code.
 
 ## Boundaries
 
+This skill spawns nothing. No subagents, no parallel fan-out — reaching for
+a swarm to answer a question one agent can read the code and answer is the
+same bloat the ladder exists to refuse.
+
 Ponytail governs what you build, not how you talk. "stop ponytail" /
-"normal mode": revert. Level persists until changed or session end.
+"normal mode": revert to normal. Otherwise the level persists until changed
+or session end. Default: **full**. Switch: `/ponytail lite|full|ultra`.
+Only the user picks a level. When you invoke this skill on your own, pass no
+level and run full; lite is never yours to choose, since it builds what the
+ladder would refuse.
 
 The shortest path to done is the right path.
 
-## Global rules
-
-Apply on every run — canonical home `~/.claude/CLAUDE.md`:
-- **Ground everything.** Only what's given or verified; never invent files, APIs, or facts. Unknown → say "I don't know" or state the assumption.
-- **No tokenmaxing.** Lead with the answer; keep an output budget; no filler, no restating the question.
-- **Agent discipline.** Read before you edit; small reversible changes; ask when blocked, don't guess; report failures honestly.
-- **Commits are the user's alone.** Author = the user; never add an AI co-author or `Co-Authored-By`/credit line, and don't mention AI in commit messages.
+Verify or say you don't know; never invent a path, API, number, or fact.
+Commits are the repo owner's alone: no AI co-author trailer, no AI mention in
+messages.
