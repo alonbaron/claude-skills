@@ -32,6 +32,7 @@ Read it; don't re-run those commands as tool calls. Only run one again if the bl
 
 - The `rev-parse` line errored → not a git repo; say so and stop, there's nothing to sync.
 - `git remote -v` came back empty → no remote; say so in one line and start the task. Skip divergence and PR/issue checks entirely.
+- The `@{upstream}` count errored (branch never pushed, or detached HEAD) → say there is no upstream, never report that as "in sync", then run `git rev-list --left-right --count origin/HEAD...HEAD` (`origin/main` or `origin/master` if `origin/HEAD` is missing) and brief against the default branch. The brief still happens before any work.
 - The `rev-list` line failed (fresh local branch, detached HEAD) → say so plainly, note the branch is unpushed, and fall back to comparing against `origin/<default-branch>`. Never report "in sync" from a failed command.
 - `gh pr list` / `gh issue list` errored or came back empty (no `gh`, unauthenticated, non-GitHub remote) → skip that section and say so; don't guess at open work.
 
