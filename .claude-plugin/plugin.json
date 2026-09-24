@@ -1,6 +1,6 @@
 {
   "name": "alon-skills",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Architecture, code review, prompting, and decision-making skills tuned to Alon Baron's engineering style: model-first, failure-path-aware, YAGNI. v3: six skills rewritten for Claude Fable 5.1 as judgment rules, a build-loop workflow that builds TODO_WORKFLOW.md rows unattended, and a claude plugin eval suite.",
   "author": {
     "name": "Alon Baron",
