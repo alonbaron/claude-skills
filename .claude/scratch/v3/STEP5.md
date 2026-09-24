@@ -123,3 +123,30 @@ Valid results (with / without, runs that completed):
 
 Reading results: artifacts cannot be downloaded from this container (blob
 storage is blocked); the Summary step prints them to the job log instead.
+
+## 9. Opus 5.5 runner passes (2026-09-24), plan limits permitting
+
+Runner evals now use `--model claude-opus-5-5`, off the owner's Fable allowance.
+
+- Root cause of review-swarm never loading: in don't-ask mode a skill that
+  carries allowed-tools/disallowed-tools is refused unless Skill is
+  pre-approved. Measured with `claude -p --permission-mode dontAsk` (haiku):
+  architect loads, review-swarm is denied; with `--allowedTools Skill` both
+  load. The review-swarm cases had no allowed_tools line; fixed (cf52034).
+  The `--no-pager` edit (62fa248) was not the cause; kept, harmless.
+- real-diff-ranked-report after the fix: 0.90 / 0.40. Sonnet reviewers and
+  Opus verifiers spawned, ranked report. One with-run judge lost to the limit.
+- security-alone-hands-off, trivial-diff-declines: review-swarm correctly did
+  not fire (its when_to_use excludes both). Cases rewritten to must-not-fire;
+  the security rubric's "invented claim" example was true of the fixture
+  (7191077). Not yet re-run.
+- up-to-date on Opus: no-remote-boundary 1.00 / 0.75. fresh-branch-no-upstream
+  failed: the SKILL.md body never named the no-upstream fallback its
+  description promised; added (dc7b04e), not yet re-run. dirty-and-behind
+  result failed 0/2 on Opus; reason not visible in the truncated evidence.
+- small-fix-boundary on Opus: fails no-invention and two-boundary-enforcement
+  in both arms again. The runs state "429 with Retry-After: 60" and "fails
+  open" as decided without flagging them; that reads as a real skill miss
+  against architect's verify-or-flag rule, not a grader bug.
+- Still to run: security-alone-hands-off, trivial-diff-declines,
+  fresh-branch-no-upstream, dirty-and-behind. Plan limit resets 10:10 UTC.
