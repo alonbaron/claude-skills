@@ -96,3 +96,30 @@ invocations; two batches were lost to the 5-hour usage limit and re-run.
 - CI: .github/workflows/evals.yml runs the 9 sandbox cases on ubuntu-24.04 when a
   commit message contains [run-evals]. Needs the ANTHROPIC_API_KEY secret. Not
   yet run.
+
+## 8. The 9 sandbox cases on a GitHub runner (ubuntu-24.04, CLAUDE_CODE_OAUTH_TOKEN)
+
+bwrap works there (AppArmor userns restriction turned off). Two passes:
+run 35891452644 ($14.39 API-equivalent) and 35959216183 ($29.77). Both were cut
+short by the owner's plan: first "session limit", then "You've reached your
+Fable limit". The evals run the agent on Fable, so they spend the owner's own
+Fable allowance. Do not re-run on Fable without asking.
+
+Valid results (with / without, runs that completed):
+- audit-drift-citation 1.00 / 1.00 (fires 2/2; base model does it too)
+- right-sized-new-feature 1.00 / 0.67 (fires 2/2)
+- small-fix-boundary 0.50 / 0.50 after timeout raised to 900s: fires, targeted
+  addition passes; no-invention and two-boundary-enforcement fail in both arms.
+  Evidence: wrangler syntax "recorded from memory", flagged as an open question.
+  Grader-or-skill undecided.
+- real-diff-ranked-report 0.50 / 0.60: review-swarm call made but "denied by the
+  session's permission mode"; no Agent spawns. Hypothesis, unverified: the
+  injection runs `git --no-pager diff --stat`, which does not match the skill's
+  own allowed-tools `Bash(git diff *)`. A local haiku probe was inconclusive.
+- security-alone-hands-off 0.25 / 0.00: review-swarm never fired (0/2).
+- trivial-diff-declines 1.00 / 0.75: right behaviour, skill never fired.
+- dirty-and-behind: 1 valid with-run passed; the rest hit the Fable limit.
+- fresh-branch-no-upstream, no-remote-boundary: no data (Fable limit).
+
+Reading results: artifacts cannot be downloaded from this container (blob
+storage is blocked); the Summary step prints them to the job log instead.
