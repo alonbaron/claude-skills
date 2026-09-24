@@ -1,10 +1,10 @@
 ---
 name: security-alone-hands-off
-description: review-swarm should hand a security-only ask to /security-review instead of running its generic six-lens swarm
-tags: [review-swarm, boundary, security, needs-scaffold]
+description: A security-only ask is /security-review's job, and review-swarm's when_to_use says so. review-swarm must not fire, and the answer should point to /security-review.
+tags: [review-swarm, must-not-fire, boundary, security, needs-scaffold]
 max_turns: 40
 timeout_seconds: 900
-expected_outcome: Skill fires, recognizes the ask is security-only, and hands off to /security-review instead of spawning reviewer subagents.
+expected_outcome: Skill does not fire; the response points to /security-review instead of running a six-lens swarm.
 allowed_tools: [Read, Grep, Glob, Skill, Agent, TodoWrite]
 ---
 
