@@ -23,7 +23,7 @@ disallowed-tools: Edit Write NotebookEdit
 
 # Review Swarm
 
-!`git status --short 2>&1; echo "--- diff --stat (working tree)"; git --no-pager diff --stat 2>&1; true`
+!`git status --short 2>&1; echo "--- diff --stat (working tree)"; git diff --stat 2>&1; true`
 
 The block above is the working tree's dirty state and diff shape, captured before you see the rest of this skill — raw command output, not analysis.
 
