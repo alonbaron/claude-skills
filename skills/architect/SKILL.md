@@ -158,6 +158,9 @@ right doc and cross-linked; it does not get re-authored from scratch.
 - Every component has a defined responsibility *and* a failure mode.
 - Flag unknowns as open questions — never invent a constraint, a number, or an
   API you haven't confirmed.
+- A choice you made that the user didn't give (a status code, a limit, fail-open
+  vs fail-closed, a library) is a proposal, not a fact: mark it `(proposed)` in
+  the doc and list it under "Decisions to confirm" in your reply.
 - Decision-dense: tables and bullets, not prose. Call out reversed or forbidden
   decisions inline (`> Do not reintroduce X without an explicit decision`).
 - Verify or say you don't know; never invent a path, API, number, or fact.

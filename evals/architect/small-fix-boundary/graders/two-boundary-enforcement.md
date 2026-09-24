@@ -1,12 +1,13 @@
 ---
 type: llm
-focus: last_message
+focus:
+  source: file
+  path: SOURCE_OF_TRUTH.md
 ---
 
-PASS if the new rate-limit invariant is specified as enforced at two
-boundaries — e.g. an app-layer check in Hono middleware AND a durable counter
-(D1 or another store) backing it — not just "add rate limiting" as a single
-hand-waved layer. Both boundaries must be named explicitly.
+PASS if SOURCE_OF_TRUTH.md states the new login rate-limit invariant and names
+two places it is enforced, e.g. a Hono middleware check AND a platform or
+storage layer behind it (a Workers Rate Limiting binding, D1, KV, a Durable
+Object). Both must be named, not just "rate limiting is applied".
 
-FAIL if only one enforcement layer is named, or enforcement is described
-without saying where it actually lives.
+FAIL if the invariant is missing, or only one enforcement point is named.
