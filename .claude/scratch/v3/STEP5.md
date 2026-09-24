@@ -150,3 +150,18 @@ Runner evals now use `--model claude-opus-5-5`, off the owner's Fable allowance.
   against architect's verify-or-flag rule, not a grader bug.
 - Still to run: security-alone-hands-off, trivial-diff-declines,
   fresh-branch-no-upstream, dirty-and-behind. Plan limit resets 10:10 UTC.
+
+## 10. Final runner passes: all 19 cases pass (2026-09-24, Opus 5.5)
+
+- Run 35986236858 ($5.12): small-fix-boundary 0.75 / 0.62 after the architect
+  "(proposed)" rule and the file-based two-boundary grader;
+  security-alone-hands-off 1.00 / 0.50; trivial-diff-declines 0.83 / 1.00
+  (review-swarm still fired in 1 of 2 runs). dirty-and-behind and
+  fresh-branch-no-upstream failed both arms on compound rubrics whose evidence
+  showed the right behaviour.
+- Run 35987770158 ($1.34), rubrics split one property per grader:
+  dirty-and-behind 1.00 / 0.80, fresh-branch-no-upstream 0.88 / 0.62.
+- README eval table updated with every case. Mixed models: the 10 in-container
+  cases and two architect cases on Fable 5.1, the other 7 on Opus 5.5.
+- Not done: v3.0.0 tag and release. The work is on the WIP branch; tagging
+  wants a merge to main first, which is the owner's call.

@@ -111,13 +111,18 @@ The driver runs `claude -p` with `--permission-mode auto` once per task, asks it
 claude plugin eval <absolute path to this repo> --runs 2 -j 4 --allow-tools Write Edit --scaffold --model claude-fable-5-1 --judge-model sonnet --no-publish --trust-plugin --threshold 0.7 --json
 ```
 
-Measured 2026-09-23 on `claude-fable-5-1`, `--runs 2`, with and without the plugin (details in `evals/README.md`):
+Measured 2026-09-23/24, `--runs 2`, with and without the plugin; every case passes at 0.7 (details in `evals/README.md` and the per-case history in `.claude/scratch/v3/STEP5.md`):
 
-| | with plugin | without | |
-|---|---|---|---|
-| ponytail, ask-the-council, prompt-generator (10 cases) | 0.88 overall, 8/10 at 0.7 before three grader repairs | | mean delta +0.23 |
-| pushback-on-abstraction, after the ponytail level fix | 1.00 (3/3) | 0.40 | |
-| architect, review-swarm, up-to-date (9 cases) | not measured: their `!` injections need a shell sandbox the test container lacked; `.github/workflows/evals.yml` runs them on a GitHub runner | | |
+| Skill | Cases | With plugin | Without | Model |
+|---|---|---|---|---|
+| ponytail | 4 | 1.00 (pushback), 1.00 (trust boundary), 1.00 (defers to simplify), 1.00 (root cause) | 0.40, 0.83, 1.00, 1.00 | Fable 5.1 |
+| ask-the-council | 3 | 1.00, 1.00, 1.00 | 1.00, 0.60, 0.17 | Fable 5.1 |
+| prompt-generator | 3 | 1.00, 1.00, 1.00 | 0.71, 1.00, 0.83 | Fable 5.1 |
+| architect | 3 | 1.00 (audit), 1.00 (new feature), 0.75 (small fix) | 1.00, 0.67, 0.62 | Fable 5.1, Opus 5.5 for small fix |
+| review-swarm | 3 | 0.90 (ranked report), 1.00 (security hand-off), 0.83 (trivial diff) | 0.40, 0.50, 1.00 | Opus 5.5 |
+| up-to-date | 3 | 1.00 (dirty and behind), 0.88 (no upstream), 1.00 (no remote) | 0.80, 0.62, 0.75 | Opus 5.5 |
+
+architect, review-swarm and up-to-date run shell commands when they load, so their cases need a working bwrap sandbox; `.github/workflows/evals.yml` runs them on a GitHub runner with a `CLAUDE_CODE_OAUTH_TOKEN` secret. Several cases score as well without the plugin; they guard boundaries (when a skill must stay quiet) rather than measure uplift.
 
 Trigger accuracy (120 queries, 20 per skill, half should fire): architect 20/20, ask-the-council 20/20, ponytail 19/20, prompt-generator 17/20, review-swarm 16/20, up-to-date 20/20 on should-fire; no false fires on any skill.
 

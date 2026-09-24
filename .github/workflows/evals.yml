@@ -30,7 +30,7 @@ jobs:
       - name: Run the 9 sandboxed cases
         env:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          SKIP_CASES: architect review-swarm up-to-date/no-remote-boundary
+          SKIP_CASES: ""
         run: |
           mkdir evals-ci
           cp -r evals/architect evals/review-swarm evals/up-to-date evals-ci/
@@ -51,19 +51,3 @@ jobs:
             evals-ci/result.json
             evals-ci/results/
 
-  # Reads a finished run's artifact on GitHub's side and prints it, for readers who cannot download artifacts.
-  print-results:
-    if: contains(github.event.head_commit.message, '[print-evals]')
-    runs-on: ubuntu-24.04
-    permissions:
-      actions: read
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          name: eval-results
-          run-id: 35891452644
-          github-token: ${{ github.token }}
-          path: prev
-      - run: python3 .github/scripts/eval-summary.py prev/result.json
