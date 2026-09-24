@@ -1,10 +1,10 @@
 ---
 name: trivial-diff-declines
-description: A rename-plus-typo diff is trivial, and review-swarm's when_to_use excludes it. review-swarm must not fire, and no six-lens swarm runs.
-tags: [review-swarm, must-not-fire, boundary, trivial-diff, needs-scaffold]
+description: The user names review-swarm on a rename-plus-typo diff. Loading the skill or not are both fine; what matters is that no six-lens swarm runs and a single-pass read or /code-review is offered instead.
+tags: [review-swarm, boundary, trivial-diff, needs-scaffold]
 max_turns: 40
 timeout_seconds: 900
-expected_outcome: Skill does not fire; the response does a single pass or points to /code-review.
+expected_outcome: No specialist swarm; a single-pass read or /code-review instead, whether or not the skill loads.
 allowed_tools: [Read, Grep, Glob, Skill, Agent, TodoWrite]
 ---
 

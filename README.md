@@ -99,7 +99,7 @@ The driver runs `claude -p` with `--permission-mode auto` once per task, asks it
 
 **Unattended runs and review-swarm.** A skill that sets its own tool rules (review-swarm, up-to-date) is refused in don't-ask mode unless the Skill tool is pre-approved, e.g. `--allowedTools Skill`. Interactive sessions just ask. Measured 2026-09-24.
 
-**Measured once, 2026-09-23:** `autobuild.mjs --tasks 1` on a throwaway Node repo with a two-row TODO built row 1.1 in about four minutes: plan, scout, spec, build (two commits, tests green), measure, four refute lenses (all pass, five advisory notes), close. The driver reported $1.75 for the session. One stage commit carried a `Co-Authored-By` trailer despite the no-attribution rule, because the host environment's own attribution instruction won; if Claude Code adds attribution on your machine, turn it off in its settings before running the loop unattended.
+**Measured once, 2026-09-23:** `autobuild.mjs --tasks 1` on a throwaway Node repo with a two-row TODO built row 1.1 in about four minutes: plan, scout, spec, build (two commits, tests green), measure, four refute lenses (all pass, five advisory notes), close. The driver reported $1.75 for the session. The driver runs every session with `{"attribution": {"commit": "", "pr": "", "sessionUrl": false}}`, so its commits carry no `Co-Authored-By` or `Claude-Session` trailer (measured: 3/3 commits had both without it, 0/3 with it, and a second build-loop task came out clean). Running `/alon-skills:build-loop` in your own session uses your settings instead; put the same `attribution` block in `~/.claude/settings.json` to get owner-only commits there too.
 
 ---
 
