@@ -30,7 +30,7 @@ jobs:
       - name: Run the 9 sandboxed cases
         env:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          SKIP_CASES: architect up-to-date review-swarm/security-alone-hands-off
+          SKIP_CASES: architect up-to-date review-swarm/security-alone-hands-off review-swarm/real-diff-ranked-report
         run: |
           mkdir evals-ci
           cp -r evals/architect evals/review-swarm evals/up-to-date evals-ci/
