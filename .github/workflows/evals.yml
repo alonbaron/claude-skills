@@ -36,6 +36,9 @@ jobs:
           claude plugin eval . --eval-dir evals-ci --runs 2 -j 4 --scaffold \
             --allow-tools Write Edit Bash --model claude-fable-5-1 --judge-model sonnet \
             --no-publish --trust-plugin --threshold 0.7 --json evals-ci/result.json
+      - name: Summary
+        if: always()
+        run: python3 .github/scripts/eval-summary.py evals-ci/result.json
       - name: Upload results
         if: always()
         uses: actions/upload-artifact@v4
@@ -44,3 +47,20 @@ jobs:
           path: |
             evals-ci/result.json
             evals-ci/results/
+
+  # Reads a finished run's artifact on GitHub's side and prints it, for readers who cannot download artifacts.
+  print-results:
+    if: contains(github.event.head_commit.message, '[print-evals]')
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: eval-results
+          run-id: 35891452644
+          github-token: ${{ github.token }}
+          path: prev
+      - run: python3 .github/scripts/eval-summary.py prev/result.json
