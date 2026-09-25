@@ -1,17 +1,19 @@
 <p align="center">
-  <img src="./assets/hero.svg" alt="alon-skills — six Claude Code skills, one install" width="900">
+  <img src="./assets/hero.svg" alt="alon-skills — Claude Code skills that prove they work, with eval scores for each skill with and without the plugin" width="900">
 </p>
 
 <p align="center">
   <img alt="Claude Code plugin" src="https://img.shields.io/badge/Claude_Code-plugin-0891B2?style=flat-square&labelColor=0F1E33">&nbsp;
   <img alt="6 skills + 1 workflow" src="https://img.shields.io/badge/skills-6_+_1_workflow-4F46E5?style=flat-square&labelColor=0F1E33">&nbsp;
-  <img alt="version" src="https://img.shields.io/badge/version-v3.0.0-7C3AED?style=flat-square&labelColor=0F1E33">&nbsp;
+  <img alt="version" src="https://img.shields.io/badge/version-v3.0.1-7C3AED?style=flat-square&labelColor=0F1E33">&nbsp;
+  <a href="#-evals"><img alt="evals: 19/19 passing" src="https://img.shields.io/badge/evals-19%2F19_passing-16A34A?style=flat-square&labelColor=0F1E33"></a>&nbsp;
   <img alt="MIT license" src="https://img.shields.io/badge/license-MIT-059669?style=flat-square&labelColor=0F1E33">&nbsp;
   <a href="https://github.com/alonbaron"><img alt="by alonbaron" src="https://img.shields.io/badge/by-alonbaron-C026D3?style=flat-square&labelColor=0F1E33&logo=github&logoColor=white"></a>
 </p>
 
 <p align="center">
   <b>Six Claude Code skills and one unattended build loop, tuned to one engineering style: model-first, failure-path-aware, YAGNI.</b><br>
+  <sub>Every skill is measured with and without the plugin, so the uplift is a number, not a promise.</sub><br>
   <sub>One install. Usable in the Claude Code CLI and the VS Code / JetBrains extensions.</sub>
 </p>
 
@@ -24,7 +26,25 @@
 /plugin install alon-skills@alonbaron
 ```
 
-Pull updates anytime with `/plugin marketplace update alonbaron` — the marketplace tracks `main`, so you're always on the latest. Tagged releases like [`v3.0.0`](https://github.com/alonbaron/claude-skills/releases) mark the milestones.
+Pull updates anytime with `/plugin marketplace update alonbaron` — the marketplace tracks `main`, so you're always on the latest. [Tagged releases](https://github.com/alonbaron/claude-skills/releases) mark the milestones.
+
+---
+
+## ◢ Proof, not promises
+
+Most skill packs ask you to trust them. This one runs each skill through a [`claude plugin eval`](https://code.claude.com/docs/en/plugin-evals) suite twice, once with the plugin and once without, and reports both. A few of the 19 cases:
+
+| The situation | With the plugin | Without |
+|---|---|---|
+| A real diff with an N+1 query goes to **review-swarm**: parallel reviewers, verifiers, ranked report | **1.00** | 0.40 |
+| Someone asks for a pluggable-backend cache interface with one caller; **ponytail** ships the simple version and names the upgrade trigger | **1.00** | 0.40 |
+| **ask-the-council** reaches a verdict and hands the build to the right skill, separating opinion from fact | **1.00** | 0.17 |
+| A feature spec from scratch: **architect** asks the few questions that matter and right-sizes the docs | **1.00** | 0.67 |
+| A branch that was never pushed: **up-to-date** says so and compares against `main` instead of faking a sync | **0.88** | 0.62 |
+
+All 19 cases pass. Across 120 trigger prompts, each skill fired on 80–100% of the ones meant for it and never on the ones that weren't. Full table and method under [Evals](#-evals).
+
+<!-- GIF: a 20-second recording of review-swarm spawning its reviewers on a real diff goes here. -->
 
 ---
 
