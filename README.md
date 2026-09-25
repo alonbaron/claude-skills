@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./assets/hero.svg" alt="alon-skills — six Claude Code skills, one install" width="900">
+  <img src="./assets/hero.svg" alt="alon-skills — Claude Code skills that prove they work, with eval scores for each skill with and without the plugin" width="900">
 </p>
 
 <p align="center">
