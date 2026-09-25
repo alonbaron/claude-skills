@@ -165,3 +165,18 @@ Runner evals now use `--model claude-opus-5-5`, off the owner's Fable allowance.
   cases and two architect cases on Fable 5.1, the other 7 on Opus 5.5.
 - Not done: v3.0.0 tag and release. The work is on the WIP branch; tagging
   wants a merge to main first, which is the owner's call.
+
+## 11. v3.0.1: the two known issues
+
+- Build-loop attribution: Claude Code adds Co-Authored-By by default and a
+  Claude-Session trailer in web/Remote Control sessions (settings
+  `attribution.commit`, `attribution.pr`, `attribution.sessionUrl`, found in
+  the CLI schema). Sonnet probe: 3/3 commits had both by default, 0/3 with
+  `{"attribution":{"commit":"","pr":"","sessionUrl":false}}`. autobuild.mjs
+  now writes that to <scratch>/session-settings.json and passes --settings.
+  Build-loop task 1.2 on the fixture: 4 commits, no trailers.
+- review-swarm on a trivial diff: the case names the skill, so "fires when
+  named" and "not for a trivial diff" collided. Rule now: named on one, do the
+  single pass yourself and spawn nothing. Case grades no-swarm + a review.
+  Runner (Opus 5.5): trivial-diff-declines 1.00 / 1.00,
+  real-diff-ranked-report 1.00 / 0.40 as the regression check.

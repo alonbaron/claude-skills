@@ -66,6 +66,11 @@ const stateDir = join(repo, ".claude", "scratch", "build-loop");
 mkdirSync(stateDir, { recursive: true });
 const logPath = join(stateDir, "autobuild.log");
 const lockPath = join(stateDir, ".lock");
+// Commits are the repo owner's alone. Claude Code adds a Co-Authored-By trailer by default, and a
+// Claude-Session trailer in web and Remote Control sessions; a prompt rule alone did not stop either
+// (measured 2026-09-24: 3/3 commits carried both by default, 0/3 with this file).
+const settingsPath = join(stateDir, "session-settings.json");
+writeFileSync(settingsPath, JSON.stringify({ attribution: { commit: "", pr: "", sessionUrl: false } }), "utf8");
 const stamp = () => {
   const d = new Date();
   const two = (n) => String(n).padStart(2, "0");
@@ -248,7 +253,9 @@ function runSession(wfArgs) {
   return new Promise((done) => {
     const prompt = `Use the Workflow tool with name alon-skills:build-loop and args ${JSON.stringify(wfArgs)}. Wait for it to finish. Reply with only the JSON object it returned, no prose.`;
     const cliArgs = ["-p", "--model", "fable", "--permission-mode", "auto", "--allowedTools", "Workflow", "--output-format", "json"];
-    if (pluginDir) cliArgs.push("--plugin-dir", process.platform === "win32" ? JSON.stringify(resolve(pluginDir)) : resolve(pluginDir));
+    const quote = (p) => (process.platform === "win32" ? JSON.stringify(p) : p);
+    cliArgs.push("--settings", quote(settingsPath));
+    if (pluginDir) cliArgs.push("--plugin-dir", quote(resolve(pluginDir)));
     const env = { ...process.env, CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS: process.env.CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS || "7200000" };
     // On Windows `claude` is a .cmd shim, which Node only runs through a shell; one command string avoids
     // the args-with-shell deprecation. Every arg is a plain token or JSON-quoted there; elsewhere no shell, no quotes.

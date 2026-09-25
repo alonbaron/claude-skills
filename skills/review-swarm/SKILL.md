@@ -12,7 +12,7 @@ when_to_use: >-
   whenever asked to review, check, or assess a diff, branch, or PR. Also
   fires on "review-swarm", "swarm review", "deep review". Not for a trivial
   diff (docs, rename, one-liner) — a single-pass read or plain /code-review
-  covers it. Not when the ask is to fix rather than review — implement
+  covers it; if named on one anyway, do that read and spawn nothing. Not when the ask is to fix rather than review — implement
   first, then swarm the result. Not when security is the whole ask — hand
   off to /security-review. Not when /code-review is named explicitly.
 argument-hint: "[optional: 'staged' | 'branch' | a path]"
@@ -71,7 +71,7 @@ Dedup overlaps, then rank: **Blockers → Should-fix → Nits**, each with file:
 
 ## When not to use
 
-- A trivial diff (docs, rename, one-liner) — a single-pass read or plain `/code-review` covers it; a swarm is overkill.
+- A trivial diff (docs, rename, one-liner) — a single-pass read or plain `/code-review` covers it; a swarm is overkill. Invoked by name on one anyway: say so in one line, do the single-pass read yourself, and spawn no specialists.
 - The ask is "fix it", not "review it" — implement, then swarm the result.
 - Security is the whole ask → `/security-review`.
 - `/code-review` is named explicitly.

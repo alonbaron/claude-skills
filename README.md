@@ -99,7 +99,7 @@ The driver runs `claude -p` with `--permission-mode auto` once per task, asks it
 
 **Unattended runs and review-swarm.** A skill that sets its own tool rules (review-swarm, up-to-date) is refused in don't-ask mode unless the Skill tool is pre-approved, e.g. `--allowedTools Skill`. Interactive sessions just ask. Measured 2026-09-24.
 
-**Measured once, 2026-09-23:** `autobuild.mjs --tasks 1` on a throwaway Node repo with a two-row TODO built row 1.1 in about four minutes: plan, scout, spec, build (two commits, tests green), measure, four refute lenses (all pass, five advisory notes), close. The driver reported $1.75 for the session. One stage commit carried a `Co-Authored-By` trailer despite the no-attribution rule, because the host environment's own attribution instruction won; if Claude Code adds attribution on your machine, turn it off in its settings before running the loop unattended.
+**Measured once, 2026-09-23:** `autobuild.mjs --tasks 1` on a throwaway Node repo with a two-row TODO built row 1.1 in about four minutes: plan, scout, spec, build (two commits, tests green), measure, four refute lenses (all pass, five advisory notes), close. The driver reported $1.75 for the session. The driver runs every session with `{"attribution": {"commit": "", "pr": "", "sessionUrl": false}}`, so its commits carry no `Co-Authored-By` or `Claude-Session` trailer (measured: 3/3 commits had both without it, 0/3 with it, and a second build-loop task came out clean). Running `/alon-skills:build-loop` in your own session uses your settings instead; put the same `attribution` block in `~/.claude/settings.json` to get owner-only commits there too.
 
 ---
 
@@ -119,7 +119,7 @@ Measured 2026-09-23/24, `--runs 2`, with and without the plugin; every case pass
 | ask-the-council | 3 | 1.00, 1.00, 1.00 | 1.00, 0.60, 0.17 | Fable 5.1 |
 | prompt-generator | 3 | 1.00, 1.00, 1.00 | 0.71, 1.00, 0.83 | Fable 5.1 |
 | architect | 3 | 1.00 (audit), 1.00 (new feature), 0.75 (small fix) | 1.00, 0.67, 0.62 | Fable 5.1, Opus 5.5 for small fix |
-| review-swarm | 3 | 0.90 (ranked report), 1.00 (security hand-off), 0.83 (trivial diff) | 0.40, 0.50, 1.00 | Opus 5.5 |
+| review-swarm | 3 | 1.00 (ranked report), 1.00 (security hand-off), 1.00 (trivial diff) | 0.40, 0.50, 1.00 | Opus 5.5 |
 | up-to-date | 3 | 1.00 (dirty and behind), 0.88 (no upstream), 1.00 (no remote) | 0.80, 0.62, 0.75 | Opus 5.5 |
 
 architect, review-swarm and up-to-date run shell commands when they load, so their cases need a working bwrap sandbox; `.github/workflows/evals.yml` runs them on a GitHub runner with a `CLAUDE_CODE_OAUTH_TOKEN` secret. Several cases score as well without the plugin; they guard boundaries (when a skill must stay quiet) rather than measure uplift.
