@@ -36,11 +36,11 @@ Most skill packs ask you to trust them. This one runs each skill through a [`cla
 
 | The situation | With the plugin | Without |
 |---|---|---|
-| A real diff with an N+1 query goes to **review-swarm**: parallel reviewers, verifiers, ranked report | **1.00** | 0.40 |
+| A real diff with an N+1 query goes to **review-swarm**: parallel reviewers, verifiers, ranked report | **0.90** | 0.40 |
 | Someone asks for a pluggable-backend cache interface with one caller; **ponytail** ships the simple version and names the upgrade trigger | **1.00** | 0.40 |
 | **ask-the-council** reaches a verdict and hands the build to the right skill, separating opinion from fact | **1.00** | 0.17 |
 | A feature spec from scratch: **architect** asks the few questions that matter and right-sizes the docs | **1.00** | 0.67 |
-| A branch that was never pushed: **up-to-date** says so and compares against `main` instead of faking a sync | **0.88** | 0.62 |
+| A branch that was never pushed: **up-to-date** says so and compares against `main` instead of faking a sync | **1.00** | 0.50 |
 
 All 19 cases pass. Across 120 trigger prompts, each skill fired on 80–100% of the ones meant for it and never on the ones that weren't. Full table and method under [Evals](#-evals).
 
@@ -131,16 +131,16 @@ The driver runs `claude -p` with `--permission-mode auto` once per task, asks it
 claude plugin eval <absolute path to this repo> --runs 2 -j 4 --allow-tools Write Edit --scaffold --model claude-fable-5-1 --judge-model sonnet --no-publish --trust-plugin --threshold 0.7 --json
 ```
 
-Measured 2026-09-23/24, `--runs 2`, with and without the plugin; every case passes at 0.7 (details in `evals/README.md` and the per-case history in `.claude/scratch/v3/STEP5.md`):
+`--runs 2`, with and without the plugin; every case passes at 0.7. ponytail, ask-the-council and prompt-generator were measured 2026-09-23/24 in a container without a shell sandbox; architect, review-swarm and up-to-date on 2026-09-29 on the GitHub runner, after the `sonnet` alias moved to Sonnet 5.5 (judge and review-swarm's reviewers). Details in `evals/README.md`, per-case history in `.claude/scratch/v3/STEP5.md`:
 
 | Skill | Cases | With plugin | Without | Model |
 |---|---|---|---|---|
 | ponytail | 4 | 1.00 (pushback), 1.00 (trust boundary), 1.00 (defers to simplify), 1.00 (root cause) | 0.40, 0.83, 1.00, 1.00 | Fable 5.1 |
 | ask-the-council | 3 | 1.00, 1.00, 1.00 | 1.00, 0.60, 0.17 | Fable 5.1 |
 | prompt-generator | 3 | 1.00, 1.00, 1.00 | 0.71, 1.00, 0.83 | Fable 5.1 |
-| architect | 3 | 1.00 (audit), 1.00 (new feature), 0.75 (small fix) | 1.00, 0.67, 0.62 | Fable 5.1, Opus 5.5 for small fix |
-| review-swarm | 3 | 1.00 (ranked report), 1.00 (security hand-off), 1.00 (trivial diff) | 0.40, 0.50, 1.00 | Opus 5.5 |
-| up-to-date | 3 | 1.00 (dirty and behind), 0.88 (no upstream), 1.00 (no remote) | 0.80, 0.62, 0.75 | Opus 5.5 |
+| architect | 3 | 1.00 (audit), 1.00 (new feature), 0.88 (small fix) | 1.00, 0.67, 0.75 | Opus 5.5 |
+| review-swarm | 3 | 0.90 (ranked report), 0.83 (security hand-off), 1.00 (trivial diff) | 0.40, 0.50, 1.00 | Opus 5.5 |
+| up-to-date | 3 | 1.00 (dirty and behind), 1.00 (no upstream), 1.00 (no remote) | 0.80, 0.50, 1.00 | Opus 5.5 |
 
 architect, review-swarm and up-to-date run shell commands when they load, so their cases need a working bwrap sandbox; `.github/workflows/evals.yml` runs them on a GitHub runner with a `CLAUDE_CODE_OAUTH_TOKEN` secret. Several cases score as well without the plugin; they guard boundaries (when a skill must stay quiet) rather than measure uplift.
 

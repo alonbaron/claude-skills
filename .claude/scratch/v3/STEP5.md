@@ -200,3 +200,41 @@ Runner evals now use `--model claude-opus-5-5`, off the owner's Fable allowance.
   36529160605. "Before" is the README table from 2026-09-24 (judge on Sonnet 5,
   review-swarm reviewers on Sonnet 5, agent on Opus 5.5 for the same 9 cases
   except audit-drift-citation and right-sized-new-feature, which were Fable 5.1).
+- Result, run 36529160605 (16 min, $19.78 API-equivalent, all runs completed,
+  no limit hit): 9/9 pass at 0.7, overall 0.96, mean delta +0.22. The cost was
+  above the $15 line the owner set; the estimate came from the earlier Opus
+  passes, which were shorter because runs had been cut off by the plan limit.
+
+  | case | before with / without | after with / without |
+  |---|---|---|
+  | audit-drift-citation | 1.00 / 1.00 (Fable 5.1) | 1.00 / 1.00 |
+  | right-sized-new-feature | 1.00 / 0.67 (Fable 5.1) | 1.00 / 0.67 |
+  | small-fix-boundary | 0.75 / 0.62 | 0.88 / 0.75 |
+  | real-diff-ranked-report | 1.00 / 0.40 | 0.90 / 0.40 |
+  | security-alone-hands-off | 1.00 / 0.50 | 0.83 / 0.50 |
+  | trivial-diff-declines | 1.00 / 1.00 | 1.00 / 1.00 |
+  | dirty-and-behind | 1.00 / 0.80 | 1.00 / 0.80 |
+  | fresh-branch-no-upstream | 0.88 / 0.62 | 1.00 / 0.50 |
+  | no-remote-boundary | 1.00 / 0.75 | 1.00 / 1.00 |
+
+- The three with-arm graders that failed one run each (the artifact cannot be
+  fetched from the container, so this is the 700-char evidence in the job log):
+  real-diff-ranked-report `ranked-report-shape` with#0: reviewers on sonnet and
+  verifiers on opus both spawned (process graders 2/2), report opens with a
+  "Don't open the PR yet" verdict and a `## Blockers` section; the judges voted
+  FAIL 3/3, reason not visible in the excerpt. security-alone-hands-off
+  `hands-off-to-security-review` with#0: the skill correctly stayed quiet, the
+  model did the security read itself ("I reviewed auth.js myself instead of
+  launching a swarm") and never pointed at /security-review. small-fix-boundary
+  `two-boundary-enforcement` with#0: the SoT edit carried a "(proposed)"
+  non-goal and a roadmap link; judges FAIL 3/3, excerpt ends before the reason.
+  None of the three is a Sonnet 5.5 regression on its face: the reviewers and
+  verifiers spawned as specified, and the two rubric misses are judged by the
+  new Sonnet 5.5 judge on Opus 5.5 output. Left as is; a skill change wants the
+  full transcripts, which need a machine that can download the artifact.
+- Not re-run: the 10 in-container cases (ponytail, ask-the-council,
+  prompt-generator). Only the judge changed for them (no sonnet subagents), and
+  a `--runs 2` pass on Fable 5.1 cost $21.99 last time, over the $15 line.
+  Their README rows keep the 2026-09-23/24 numbers and say so.
+- Banner: review-swarm and up-to-date rows and the desc updated in hero.svg;
+  social-preview.png re-rendered from it with the runner's chromium.
