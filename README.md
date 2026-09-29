@@ -78,7 +78,7 @@ Each skill also triggers from plain language — e.g. *"spec this out before we 
 
 ## ◢ The build loop
 
-`/alon-skills:build-loop` builds `TODO_WORKFLOW.md` rows one at a time without supervision, in any repo that carries the architect doc set. Each stage is a fresh subagent with an empty context; state between runs lives in the repo, never in chat. Fable 5.1 makes the calls everything downstream inherits (which row, what done means, who wins a dispute), Opus 5.5 reviews and repairs, Sonnet 5 builds, Haiku 4.5 searches and counts. Stages name model aliases, so each follows the newest model of its tier.
+`/alon-skills:build-loop` builds `TODO_WORKFLOW.md` rows one at a time without supervision, in any repo that carries the architect doc set. Each stage is a fresh subagent with an empty context; state between runs lives in the repo, never in chat. Fable 5.1 makes the calls everything downstream inherits (which row, what done means, who wins a dispute), Opus 5.5 reviews and repairs, Sonnet 5.5 builds, Haiku 4.5 searches and counts. Stages name model aliases, so each follows the newest model of its tier.
 
 | Stage | Model | Reads | Writes | Returns | Stops the loop when |
 |---|---|---|---|---|---|

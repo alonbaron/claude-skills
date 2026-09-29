@@ -67,7 +67,8 @@ if (opts.task && !(args && typeof args === "object" && "maxTasks" in args)) opts
 opts.scratch = String(opts.scratch).replace(/\/+$/, "");
 
 // Model tiers. Aliases, not pinned IDs, so each stage follows the newest model of its tier
-// (measured 2026-09-23 on CLI 2.1.280: fable = Fable 5.1, opus = Opus 5.5, sonnet = Sonnet 5, haiku = Haiku 4.5).
+// (measured 2026-09-29 on CLI 2.1.284: fable = Fable 5.1, opus = Opus 5.5, sonnet = Sonnet 5.5, haiku = Haiku 4.5;
+// on 2026-09-23, CLI 2.1.280, sonnet still resolved to Sonnet 5).
 //   fable  - the decisions everything downstream inherits: which row, what "done" means, who is right in a dispute
 //   opus   - deep review and repair: invariants, what the spec missed, fixing what the builder got wrong
 //   sonnet - volume work: building, broad review lenses, research, bookkeeping
