@@ -180,3 +180,23 @@ Runner evals now use `--model claude-opus-5-5`, off the owner's Fable allowance.
   single pass yourself and spawn nothing. Case grades no-swarm + a review.
   Runner (Opus 5.5): trivial-diff-declines 1.00 / 1.00,
   real-diff-ranked-report 1.00 / 0.40 as the regression check.
+
+## 12. v3.0.2: the sonnet alias moved to Sonnet 5.5 (2026-09-29)
+
+- Premise checked before any edit. On 2026-09-23 (CLI 2.1.280) `sonnet`
+  resolved to Sonnet 5. On 2026-09-29, CLI 2.1.284, `claude -p --model <alias>
+  --output-format json` reports `modelUsage` keys: sonnet = claude-sonnet-5-5,
+  opus = claude-opus-5-5, haiku = claude-haiku-4-5-20251001. Three probes, one
+  word each, $0.36 total.
+- What that changes: nothing in code. review-swarm's reviewers (`model: sonnet`),
+  the build loop's research/build/refute/close stages, and every eval's judge
+  (`--judge-model sonnet`) now run on Sonnet 5.5 through the alias. The eval
+  grader `reviewers-sonnet` matches the alias string, so it still passes.
+- Edits: README (build-loop paragraph said "Sonnet 5 builds"), the tier comment in
+  `workflows/build-loop.js`, version 3.0.2 in plugin.json and the README badge.
+  No tier was moved between models; that stays an owner decision with evidence.
+- Runner pass for the before/after: the 9 sandbox cases on ubuntu-24.04, agent
+  `--model claude-opus-5-5`, judge `sonnet` (now 5.5), `--runs 2 -j 4`, run
+  36529160605. "Before" is the README table from 2026-09-24 (judge on Sonnet 5,
+  review-swarm reviewers on Sonnet 5, agent on Opus 5.5 for the same 9 cases
+  except audit-drift-citation and right-sized-new-feature, which were Fable 5.1).
