@@ -201,9 +201,10 @@ Runner evals now use `--model claude-opus-5-5`, off the owner's Fable allowance.
   review-swarm reviewers on Sonnet 5, agent on Opus 5.5 for the same 9 cases
   except audit-drift-citation and right-sized-new-feature, which were Fable 5.1).
 - Result, run 36529160605 (16 min, $19.78 API-equivalent, all runs completed,
-  no limit hit): 9/9 pass at 0.7, overall 0.96, mean delta +0.22. The cost was
-  above the $15 line the owner set; the estimate came from the earlier Opus
-  passes, which were shorter because runs had been cut off by the plan limit.
+  no limit hit): 9/9 pass at 0.7, overall 0.96, mean delta +0.22. The runner
+  bills the owner's plan through CLAUDE_CODE_OAUTH_TOKEN, so the dollar figure
+  is the runner's estimate, not a charge; the 5-hour session window is the
+  only budget that matters.
 
   | case | before with / without | after with / without |
   |---|---|---|
@@ -232,9 +233,9 @@ Runner evals now use `--model claude-opus-5-5`, off the owner's Fable allowance.
   verifiers spawned as specified, and the two rubric misses are judged by the
   new Sonnet 5.5 judge on Opus 5.5 output. Left as is; a skill change wants the
   full transcripts, which need a machine that can download the artifact.
-- Not re-run: the 10 in-container cases (ponytail, ask-the-council,
-  prompt-generator). Only the judge changed for them (no sonnet subagents), and
-  a `--runs 2` pass on Fable 5.1 cost $21.99 last time, over the $15 line.
-  Their README rows keep the 2026-09-23/24 numbers and say so.
+- Not re-run, by the owner's decision: the 10 in-container cases (ponytail,
+  ask-the-council, prompt-generator). Only the judge changed for them (no
+  sonnet subagents), so there is nothing new to measure. Their README rows
+  keep the 2026-09-23/24 numbers and say so.
 - Banner: review-swarm and up-to-date rows and the desc updated in hero.svg;
   social-preview.png re-rendered from it with the container's headless chromium (1280x800 shot, cropped to 640).
