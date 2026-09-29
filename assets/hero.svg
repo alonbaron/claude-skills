@@ -3,28 +3,28 @@
 <desc id="d">Banner for the alon-skills Claude Code plugin. Left: the wordmark alon-skills, the line "Claude Code skills that prove they work", and the six slash commands. Right: an eval card comparing each skill with and without the plugin: review-swarm 0.90 vs 0.40, ponytail 1.00 vs 0.40, ask-the-council 1.00 vs 0.17, architect 1.00 vs 0.67, up-to-date 1.00 vs 0.50. Footer: 19 of 19 evals passing.</desc>
 <defs>
   <linearGradient id="bg" x1="0" y1="0" x2="1280" y2="640" gradientUnits="userSpaceOnUse">
-    <stop stop-color="#070B18"/><stop offset=".55" stop-color="#0B1024"/><stop offset="1" stop-color="#120B2A"/>
+    <stop stop-color="#F5F9FD"/><stop offset=".55" stop-color="#EFF4FB"/><stop offset="1" stop-color="#EAF0FA"/>
   </linearGradient>
   <radialGradient id="glowA" cx="250" cy="170" r="420" gradientUnits="userSpaceOnUse">
-    <stop stop-color="#0EA5E9" stop-opacity=".22"/><stop offset="1" stop-color="#0EA5E9" stop-opacity="0"/>
+    <stop stop-color="#0EA5E9" stop-opacity=".10"/><stop offset="1" stop-color="#0EA5E9" stop-opacity="0"/>
   </radialGradient>
   <radialGradient id="glowB" cx="1040" cy="520" r="460" gradientUnits="userSpaceOnUse">
-    <stop stop-color="#7C3AED" stop-opacity=".26"/><stop offset="1" stop-color="#7C3AED" stop-opacity="0"/>
+    <stop stop-color="#7C3AED" stop-opacity=".10"/><stop offset="1" stop-color="#7C3AED" stop-opacity="0"/>
   </radialGradient>
   <linearGradient id="brand" x1="80" y1="0" x2="600" y2="0" gradientUnits="userSpaceOnUse">
-    <stop stop-color="#22D3EE"/><stop offset=".45" stop-color="#6366F1"/><stop offset="1" stop-color="#C084FC"/>
+    <stop stop-color="#0891B2"/><stop offset=".45" stop-color="#4F46E5"/><stop offset="1" stop-color="#6D28D9"/>
   </linearGradient>
   <linearGradient id="bar" x1="0" y1="0" x2="1" y2="0">
-    <stop stop-color="#22D3EE"/><stop offset=".55" stop-color="#6366F1"/><stop offset="1" stop-color="#A855F7"/>
+    <stop stop-color="#0891B2"/><stop offset=".55" stop-color="#4F46E5"/><stop offset="1" stop-color="#7C3AED"/>
   </linearGradient>
   <linearGradient id="card" x1="0" y1="0" x2="0" y2="1">
-    <stop stop-color="#141B35" stop-opacity=".92"/><stop offset="1" stop-color="#0E1329" stop-opacity=".92"/>
+    <stop stop-color="#FFFFFF" stop-opacity=".92"/><stop offset="1" stop-color="#FFFFFF" stop-opacity=".86"/>
   </linearGradient>
   <linearGradient id="cardEdge" x1="0" y1="0" x2="1" y2="1">
-    <stop stop-color="#38BDF8" stop-opacity=".55"/><stop offset=".5" stop-color="#6366F1" stop-opacity=".25"/><stop offset="1" stop-color="#A855F7" stop-opacity=".55"/>
+    <stop stop-color="#0891B2" stop-opacity=".35"/><stop offset=".5" stop-color="#4F46E5" stop-opacity=".15"/><stop offset="1" stop-color="#7C3AED" stop-opacity=".35"/>
   </linearGradient>
   <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
-    <path d="M32 0H0V32" fill="none" stroke="#8B9CC8" stroke-opacity=".07" stroke-width="1"/>
+    <path d="M32 0H0V32" fill="none" stroke="#C4D3E6" stroke-opacity=".5" stroke-width="1"/>
   </pattern>
   <filter id="soft" x="-20%" y="-40%" width="140%" height="180%">
     <feGaussianBlur stdDeviation="14"/>
@@ -36,51 +36,51 @@
 <rect width="1280" height="640" rx="28" fill="url(#grid)"/>
 <rect width="1280" height="640" rx="28" fill="url(#glowA)"/>
 <rect width="1280" height="640" rx="28" fill="url(#glowB)"/>
-<rect x=".75" y=".75" width="1278.5" height="638.5" rx="27.5" fill="none" stroke="#FFFFFF" stroke-opacity=".08" stroke-width="1.5"/>
+<rect x=".75" y=".75" width="1278.5" height="638.5" rx="27.5" fill="none" stroke="#D2DFEE" stroke-width="1.5"/>
 
 <!-- left: identity -->
 <g font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif">
   <g transform="translate(80 108)">
-    <rect width="238" height="34" rx="17" fill="#22D3EE" fill-opacity=".10" stroke="#22D3EE" stroke-opacity=".35"/>
-    <circle cx="20" cy="17" r="5" fill="#34D399"/>
-    <text x="34" y="22.5" font-size="14" font-weight="600" letter-spacing="1.6" fill="#A5F3FC">CLAUDE CODE PLUGIN</text>
+    <rect width="252" height="34" rx="17" fill="#22D3EE" fill-opacity=".10" stroke="#22D3EE" stroke-opacity=".35"/>
+    <circle cx="20" cy="17" r="5" fill="#059669"/>
+    <text x="34" y="22.5" font-size="14" font-weight="600" letter-spacing="1.6" fill="#0E7490">CLAUDE CODE PLUGIN</text>
   </g>
 
   <text x="76" y="238" font-size="92" font-weight="800" letter-spacing="-3" fill="url(#brand)">alon-skills</text>
-  <text x="76" y="238" font-size="92" font-weight="800" letter-spacing="-3" fill="url(#brand)" opacity=".35" filter="url(#soft)">alon-skills</text>
+  <text x="76" y="238" font-size="92" font-weight="800" letter-spacing="-3" fill="url(#brand)" opacity=".15" filter="url(#soft)">alon-skills</text>
 
-  <text x="80" y="300" font-size="32" font-weight="700" fill="#F1F5F9">Claude Code skills that</text>
-  <text x="80" y="342" font-size="32" font-weight="700" fill="#F1F5F9">prove they work.</text>
+  <text x="80" y="300" font-size="32" font-weight="700" fill="#233A57">Claude Code skills that</text>
+  <text x="80" y="342" font-size="32" font-weight="700" fill="#233A57">prove they work.</text>
 
-  <text x="80" y="392" font-size="19" fill="#94A3B8">6 skills + an unattended build loop, each measured</text>
-  <text x="80" y="418" font-size="19" fill="#94A3B8">with and without the plugin.</text>
+  <text x="80" y="392" font-size="19" fill="#5B6B86">6 skills + an unattended build loop, each measured</text>
+  <text x="80" y="418" font-size="19" fill="#5B6B86">with and without the plugin.</text>
 </g>
 
 <!-- left: commands -->
 <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="16" font-weight="500">
   <g transform="translate(80 470)">
-    <rect width="132" height="36" rx="10" fill="#FFFFFF" fill-opacity=".05" stroke="#FFFFFF" stroke-opacity=".12"/>
-    <text x="66" y="23.5" text-anchor="middle" fill="#67E8F9">/architect</text>
+    <rect width="132" height="36" rx="10" fill="#FFFFFF" fill-opacity=".85" stroke="#C9D6EA"/>
+    <text x="66" y="23.5" text-anchor="middle" fill="#0891B2">/architect</text>
   </g>
   <g transform="translate(222 470)">
-    <rect width="162" height="36" rx="10" fill="#FFFFFF" fill-opacity=".05" stroke="#FFFFFF" stroke-opacity=".12"/>
-    <text x="81" y="23.5" text-anchor="middle" fill="#7DD3FC">/review-swarm</text>
+    <rect width="162" height="36" rx="10" fill="#FFFFFF" fill-opacity=".85" stroke="#C9D6EA"/>
+    <text x="81" y="23.5" text-anchor="middle" fill="#0284C7">/review-swarm</text>
   </g>
   <g transform="translate(394 470)">
-    <rect width="196" height="36" rx="10" fill="#FFFFFF" fill-opacity=".05" stroke="#FFFFFF" stroke-opacity=".12"/>
-    <text x="98" y="23.5" text-anchor="middle" fill="#A5B4FC">/ask-the-council</text>
+    <rect width="196" height="36" rx="10" fill="#FFFFFF" fill-opacity=".85" stroke="#C9D6EA"/>
+    <text x="98" y="23.5" text-anchor="middle" fill="#4F46E5">/ask-the-council</text>
   </g>
   <g transform="translate(80 516)">
-    <rect width="196" height="36" rx="10" fill="#FFFFFF" fill-opacity=".05" stroke="#FFFFFF" stroke-opacity=".12"/>
-    <text x="98" y="23.5" text-anchor="middle" fill="#A5B4FC">/prompt-generator</text>
+    <rect width="196" height="36" rx="10" fill="#FFFFFF" fill-opacity=".85" stroke="#C9D6EA"/>
+    <text x="98" y="23.5" text-anchor="middle" fill="#4F46E5">/prompt-generator</text>
   </g>
   <g transform="translate(286 516)">
-    <rect width="146" height="36" rx="10" fill="#FFFFFF" fill-opacity=".05" stroke="#FFFFFF" stroke-opacity=".12"/>
-    <text x="73" y="23.5" text-anchor="middle" fill="#C4B5FD">/up-to-date</text>
+    <rect width="146" height="36" rx="10" fill="#FFFFFF" fill-opacity=".85" stroke="#C9D6EA"/>
+    <text x="73" y="23.5" text-anchor="middle" fill="#6D28D9">/up-to-date</text>
   </g>
   <g transform="translate(442 516)">
-    <rect width="122" height="36" rx="10" fill="#FFFFFF" fill-opacity=".05" stroke="#FFFFFF" stroke-opacity=".12"/>
-    <text x="61" y="23.5" text-anchor="middle" fill="#D8B4FE">/ponytail</text>
+    <rect width="122" height="36" rx="10" fill="#FFFFFF" fill-opacity=".85" stroke="#C9D6EA"/>
+    <text x="61" y="23.5" text-anchor="middle" fill="#7C3AED">/ponytail</text>
   </g>
 </g>
 
@@ -90,50 +90,50 @@
   <rect x=".75" y=".75" width="498.5" height="454.5" rx="21.25" fill="none" stroke="url(#cardEdge)" stroke-width="1.5"/>
 
   <g font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif">
-    <text x="32" y="50" font-size="15" font-weight="700" letter-spacing="1.8" fill="#94A3B8">EVAL SCORES</text>
+    <text x="32" y="50" font-size="15" font-weight="700" letter-spacing="1.8" fill="#5B6B86">EVAL SCORES</text>
     <g transform="translate(300 37)">
       <rect width="14" height="14" rx="4" fill="url(#bar)"/>
-      <text x="22" y="12" font-size="14" fill="#CBD5E1">with</text>
-      <rect x="74" width="14" height="14" rx="4" fill="#475569"/>
-      <text x="96" y="12" font-size="14" fill="#CBD5E1">without</text>
+      <text x="22" y="12" font-size="14" fill="#5B6B86">with</text>
+      <rect x="74" width="14" height="14" rx="4" fill="#B8C4D6"/>
+      <text x="96" y="12" font-size="14" fill="#5B6B86">without</text>
     </g>
-    <line x1="32" y1="72" x2="468" y2="72" stroke="#FFFFFF" stroke-opacity=".08"/>
+    <line x1="32" y1="72" x2="468" y2="72" stroke="#E2E9F3"/>
   </g>
 
   <!-- rows: label at y, with-bar at y+14, without-bar at y+32; bar scale 340px = 1.00 -->
   <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="15">
     <g transform="translate(32 104)">
-      <text y="0" fill="#E2E8F0" font-weight="600">review-swarm</text>
-      <rect y="12" width="306" height="10" rx="5" fill="url(#bar)"/><text x="356" y="22" fill="#F1F5F9" font-weight="700">0.90</text>
-      <rect y="28" width="136" height="10" rx="5" fill="#475569"/><text x="356" y="38" fill="#8193AC">0.40</text>
+      <text y="0" fill="#233A57" font-weight="600">review-swarm</text>
+      <rect y="12" width="306" height="10" rx="5" fill="url(#bar)"/><text x="356" y="22" fill="#233A57" font-weight="700">0.90</text>
+      <rect y="28" width="136" height="10" rx="5" fill="#B8C4D6"/><text x="356" y="38" fill="#8A99B2">0.40</text>
     </g>
     <g transform="translate(32 174)">
-      <text y="0" fill="#E2E8F0" font-weight="600">ponytail</text>
-      <rect y="12" width="340" height="10" rx="5" fill="url(#bar)"/><text x="356" y="22" fill="#F1F5F9" font-weight="700">1.00</text>
-      <rect y="28" width="136" height="10" rx="5" fill="#475569"/><text x="356" y="38" fill="#8193AC">0.40</text>
+      <text y="0" fill="#233A57" font-weight="600">ponytail</text>
+      <rect y="12" width="340" height="10" rx="5" fill="url(#bar)"/><text x="356" y="22" fill="#233A57" font-weight="700">1.00</text>
+      <rect y="28" width="136" height="10" rx="5" fill="#B8C4D6"/><text x="356" y="38" fill="#8A99B2">0.40</text>
     </g>
     <g transform="translate(32 244)">
-      <text y="0" fill="#E2E8F0" font-weight="600">ask-the-council</text>
-      <rect y="12" width="340" height="10" rx="5" fill="url(#bar)"/><text x="356" y="22" fill="#F1F5F9" font-weight="700">1.00</text>
-      <rect y="28" width="58" height="10" rx="5" fill="#475569"/><text x="356" y="38" fill="#8193AC">0.17</text>
+      <text y="0" fill="#233A57" font-weight="600">ask-the-council</text>
+      <rect y="12" width="340" height="10" rx="5" fill="url(#bar)"/><text x="356" y="22" fill="#233A57" font-weight="700">1.00</text>
+      <rect y="28" width="58" height="10" rx="5" fill="#B8C4D6"/><text x="356" y="38" fill="#8A99B2">0.17</text>
     </g>
     <g transform="translate(32 314)">
-      <text y="0" fill="#E2E8F0" font-weight="600">architect</text>
-      <rect y="12" width="340" height="10" rx="5" fill="url(#bar)"/><text x="356" y="22" fill="#F1F5F9" font-weight="700">1.00</text>
-      <rect y="28" width="228" height="10" rx="5" fill="#475569"/><text x="356" y="38" fill="#8193AC">0.67</text>
+      <text y="0" fill="#233A57" font-weight="600">architect</text>
+      <rect y="12" width="340" height="10" rx="5" fill="url(#bar)"/><text x="356" y="22" fill="#233A57" font-weight="700">1.00</text>
+      <rect y="28" width="228" height="10" rx="5" fill="#B8C4D6"/><text x="356" y="38" fill="#8A99B2">0.67</text>
     </g>
     <g transform="translate(32 384)">
-      <text y="0" fill="#E2E8F0" font-weight="600">up-to-date</text>
-      <rect y="12" width="340" height="10" rx="5" fill="url(#bar)"/><text x="356" y="22" fill="#F1F5F9" font-weight="700">1.00</text>
-      <rect y="28" width="170" height="10" rx="5" fill="#475569"/><text x="356" y="38" fill="#8193AC">0.50</text>
+      <text y="0" fill="#233A57" font-weight="600">up-to-date</text>
+      <rect y="12" width="340" height="10" rx="5" fill="url(#bar)"/><text x="356" y="22" fill="#233A57" font-weight="700">1.00</text>
+      <rect y="28" width="170" height="10" rx="5" fill="#B8C4D6"/><text x="356" y="38" fill="#8A99B2">0.50</text>
     </g>
   </g>
 </g>
 
 <!-- footer strip -->
 <g font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="15">
-  <circle cx="712" cy="584" r="5" fill="#34D399"/>
-  <text x="726" y="589" fill="#A7F3D0" font-weight="600">19/19 evals passing</text>
-  <text x="1200" y="589" text-anchor="end" fill="#64748B">github.com/alonbaron/claude-skills</text>
+  <circle cx="712" cy="584" r="5" fill="#059669"/>
+  <text x="726" y="589" fill="#047857" font-weight="600">19/19 evals passing</text>
+  <text x="1200" y="589" text-anchor="end" fill="#6B7C98">github.com/alonbaron/claude-skills</text>
 </g>
 </svg>
