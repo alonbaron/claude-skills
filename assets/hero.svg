@@ -1,6 +1,6 @@
 <svg width="1280" height="640" viewBox="0 0 1280 640" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t d">
 <title id="t">alon-skills — Claude Code skills that prove they work</title>
-<desc id="d">Banner for the alon-skills Claude Code plugin. Left: the wordmark alon-skills, the line "Claude Code skills that prove they work", and the six slash commands. Right: an eval card comparing each skill with and without the plugin: review-swarm 1.00 vs 0.40, ponytail 1.00 vs 0.40, ask-the-council 1.00 vs 0.17, architect 1.00 vs 0.67, up-to-date 0.88 vs 0.62. Footer: 19 of 19 evals passing.</desc>
+<desc id="d">Banner for the alon-skills Claude Code plugin. Left: the wordmark alon-skills, the line "Claude Code skills that prove they work", and the six slash commands. Right: an eval card comparing each skill with and without the plugin: review-swarm 0.90 vs 0.40, ponytail 1.00 vs 0.40, ask-the-council 1.00 vs 0.17, architect 1.00 vs 0.67, up-to-date 1.00 vs 0.50. Footer: 19 of 19 evals passing.</desc>
 <defs>
   <linearGradient id="bg" x1="0" y1="0" x2="1280" y2="640" gradientUnits="userSpaceOnUse">
     <stop stop-color="#070B18"/><stop offset=".55" stop-color="#0B1024"/><stop offset="1" stop-color="#120B2A"/>
@@ -104,7 +104,7 @@
   <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="15">
     <g transform="translate(32 104)">
       <text y="0" fill="#E2E8F0" font-weight="600">review-swarm</text>
-      <rect y="12" width="340" height="10" rx="5" fill="url(#bar)"/><text x="356" y="22" fill="#F1F5F9" font-weight="700">1.00</text>
+      <rect y="12" width="306" height="10" rx="5" fill="url(#bar)"/><text x="356" y="22" fill="#F1F5F9" font-weight="700">0.90</text>
       <rect y="28" width="136" height="10" rx="5" fill="#475569"/><text x="356" y="38" fill="#8193AC">0.40</text>
     </g>
     <g transform="translate(32 174)">
@@ -124,8 +124,8 @@
     </g>
     <g transform="translate(32 384)">
       <text y="0" fill="#E2E8F0" font-weight="600">up-to-date</text>
-      <rect y="12" width="299" height="10" rx="5" fill="url(#bar)"/><text x="356" y="22" fill="#F1F5F9" font-weight="700">0.88</text>
-      <rect y="28" width="211" height="10" rx="5" fill="#475569"/><text x="356" y="38" fill="#8193AC">0.62</text>
+      <rect y="12" width="340" height="10" rx="5" fill="url(#bar)"/><text x="356" y="22" fill="#F1F5F9" font-weight="700">1.00</text>
+      <rect y="28" width="170" height="10" rx="5" fill="#475569"/><text x="356" y="38" fill="#8193AC">0.50</text>
     </g>
   </g>
 </g>
