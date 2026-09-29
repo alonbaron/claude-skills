@@ -237,4 +237,4 @@ Runner evals now use `--model claude-opus-5-5`, off the owner's Fable allowance.
   a `--runs 2` pass on Fable 5.1 cost $21.99 last time, over the $15 line.
   Their README rows keep the 2026-09-23/24 numbers and say so.
 - Banner: review-swarm and up-to-date rows and the desc updated in hero.svg;
-  social-preview.png re-rendered from it with the runner's chromium.
+  social-preview.png re-rendered from it with the container's headless chromium (1280x800 shot, cropped to 640).
