@@ -10,12 +10,9 @@
 # interactive sessions), not an API key.
 name: evals
 on:
-  # One-off schedules for the two Fable passes of 2026-10-04 (UTC); remove after they ran.
-  # GitHub starts scheduled jobs a few minutes late under load. Each run publishes its summary
+  # No schedule: on 2026-10-04 a one-off cron fired 4 h 49 min late, inside a closed plan window,
+  # so starts are explicit (a push marker or the Actions tab). Each run still publishes its summary
   # to the eval-results branch (results/<run id>.txt and .json), readable without a token.
-  schedule:
-    - cron: "41 10 4 10 *"
-    - cron: "41 15 4 10 *"
   workflow_dispatch:
     inputs:
       model:
@@ -30,7 +27,7 @@ on:
     branches: ["claude/**"]
 jobs:
   sandboxed-cases:
-    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' || contains(github.event.head_commit.message, '[run-evals')
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[run-evals')
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     permissions:
@@ -55,7 +52,7 @@ jobs:
           SKIP_CASES: ""
           # The agent under test. A push runs Fable 5.1 (the model the skills are written for); workflow_dispatch can pick another.
           MODEL: ${{ github.event.inputs.model || 'claude-fable-5-1' }}
-          CASES: "${{ github.event.inputs.cases || (github.event.schedule == '41 15 4 10 *' && 'in-container') || (contains(github.event.head_commit.message, '[run-evals: all]') && 'all') || (contains(github.event.head_commit.message, '[run-evals: in-container]') && 'in-container') || 'sandboxed' }}"
+          CASES: "${{ github.event.inputs.cases || (contains(github.event.head_commit.message, '[run-evals: all]') && 'all') || (contains(github.event.head_commit.message, '[run-evals: in-container]') && 'in-container') || 'sandboxed' }}"
         run: |
           mkdir evals-ci
           case "$CASES" in
@@ -76,7 +73,7 @@ jobs:
       - name: Publish the summary to the eval-results branch
         if: always()
         env:
-          CASES: "${{ github.event.inputs.cases || (github.event.schedule == '41 15 4 10 *' && 'in-container') || (contains(github.event.head_commit.message, '[run-evals: all]') && 'all') || (contains(github.event.head_commit.message, '[run-evals: in-container]') && 'in-container') || 'sandboxed' }}"
+          CASES: "${{ github.event.inputs.cases || (contains(github.event.head_commit.message, '[run-evals: all]') && 'all') || (contains(github.event.head_commit.message, '[run-evals: in-container]') && 'in-container') || 'sandboxed' }}"
           MODEL: ${{ github.event.inputs.model || 'claude-fable-5-1' }}
         run: |
           # The branch is CI's own record, written by the Actions bot, never merged: main stays the owner's.
