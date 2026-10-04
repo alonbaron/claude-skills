@@ -62,3 +62,32 @@ each run publishes `results/<run id>.txt` and `.json` to the `eval-results` bran
   resets at 15:40 UTC. The first cron did not fire, so whoever reports pass 2 should start the
   job by `workflow_dispatch` with cases `in-container` if no scheduled run exists by about
   15:50 UTC, and should not run anything else on the plan while it runs.
+
+## Fable pass 2 of 2: in-container cases (run 37218381217, 2026-10-04 16:52 UTC)
+
+- Started by workflow_dispatch from the owner's main session (the Routine-started reporter
+  session had no repository, no GitHub access and ran on Sonnet; it reported that and stopped,
+  $0.19). Commit 5542448 on main, model claude-fable-5-1, cases in-container (10), 12 minutes,
+  $25.13 API-equivalent, job success. Aggregates: 10 of 10 at 0.7, overall 0.956, mean delta +0.20.
+  Summary: results/37218381217.txt on the eval-results branch.
+
+  | case | with / without |
+  |---|---|
+  | declines-low-stakes | 1.00 / 1.00 |
+  | forces-divergence | 1.00 / 0.70 |
+  | hands-off-after-verdict | 0.83 / 0.17 (handoff-named failed with#1: the chairman committed and named the risk but no hand-off) |
+  | defers-to-simplify | 1.00 / 1.00 |
+  | pushback-on-abstraction | 0.80 / 0.30 (both with-runs: "Reached maximum number of turns (15)"; names-upgrade-trigger failed both) |
+  | refuses-trust-boundary | 1.00 / 0.83 (skill-fired 0x in both with-runs; behaviour right anyway) |
+  | root-cause | 1.00 / 1.00 (skill-fired 0x in both with-runs) |
+  | coding-agent-repo-prompt | 0.93 / 0.71 (result-no-invented-facts failed with#0: ground truth written as claims to verify, judged as invention) |
+  | human-prose-boundary | 1.00 / 1.00 |
+  | whole-build-scope-check | 1.00 / 0.83 |
+
+- Schedule post-mortem: the 10:41 UTC cron fired at 15:30 UTC (4 h 49 min late, inside the
+  closed window): run 37213238188, sandboxed set, every call refused, $0.00. The 15:41 cron never
+  fired. Both cron entries removed (#7). Routine-started sessions carry no repository and no
+  GitHub connector, so they cannot start a run or push; a session the owner starts from the web
+  with the repository attached can (the first pass's reporter, branch claude/sharp-lovelace-lfvivz).
+- Window arithmetic, measured: the sandboxed set alone (36 agent runs, $47) closes a five-hour
+  window; the in-container set ($25) fits with room. Two windows for the full suite.
