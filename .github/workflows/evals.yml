@@ -10,6 +10,12 @@
 # interactive sessions), not an API key.
 name: evals
 on:
+  # One-off schedules for the two Fable passes of 2026-10-04 (UTC); remove after they ran.
+  # GitHub starts scheduled jobs a few minutes late under load. Each run publishes its summary
+  # to the eval-results branch (results/<run id>.txt and .json), readable without a token.
+  schedule:
+    - cron: "41 10 4 10 *"
+    - cron: "41 15 4 10 *"
   workflow_dispatch:
     inputs:
       model:
@@ -24,9 +30,11 @@ on:
     branches: ["claude/**"]
 jobs:
   sandboxed-cases:
-    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[run-evals')
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' || contains(github.event.head_commit.message, '[run-evals')
     runs-on: ubuntu-24.04
     timeout-minutes: 120
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -45,9 +53,9 @@ jobs:
         env:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           SKIP_CASES: ""
-          CASES: "${{ github.event.inputs.cases || (contains(github.event.head_commit.message, '[run-evals: all]') && 'all') || (contains(github.event.head_commit.message, '[run-evals: in-container]') && 'in-container') || 'sandboxed' }}"
           # The agent under test. A push runs Fable 5.1 (the model the skills are written for); workflow_dispatch can pick another.
           MODEL: ${{ github.event.inputs.model || 'claude-fable-5-1' }}
+          CASES: "${{ github.event.inputs.cases || (github.event.schedule == '41 15 4 10 *' && 'in-container') || (contains(github.event.head_commit.message, '[run-evals: all]') && 'all') || (contains(github.event.head_commit.message, '[run-evals: in-container]') && 'in-container') || 'sandboxed' }}"
         run: |
           mkdir evals-ci
           case "$CASES" in
@@ -64,7 +72,35 @@ jobs:
             --no-publish --trust-plugin --threshold 0.7 --json evals-ci/result.json
       - name: Summary
         if: always()
-        run: python3 .github/scripts/eval-summary.py evals-ci/result.json
+        run: python3 .github/scripts/eval-summary.py evals-ci/result.json | tee evals-ci/summary.txt
+      - name: Publish the summary to the eval-results branch
+        if: always()
+        env:
+          CASES: "${{ github.event.inputs.cases || (github.event.schedule == '41 15 4 10 *' && 'in-container') || (contains(github.event.head_commit.message, '[run-evals: all]') && 'all') || (contains(github.event.head_commit.message, '[run-evals: in-container]') && 'in-container') || 'sandboxed' }}"
+          MODEL: ${{ github.event.inputs.model || 'claude-fable-5-1' }}
+        run: |
+          # The branch is CI's own record, written by the Actions bot, never merged: main stays the owner's.
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git fetch origin eval-results; then
+            git worktree add results-wt origin/eval-results -B eval-results
+          else
+            git worktree add --orphan -b eval-results results-wt
+          fi
+          mkdir -p results-wt/results
+          {
+            echo "run: ${{ github.run_id }} https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            echo "event: ${{ github.event_name }}  commit: ${{ github.sha }}  ref: ${{ github.ref_name }}"
+            echo "model: $MODEL  cases: $CASES  job status at publish: ${{ job.status }}"
+            echo "started: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo
+            cat evals-ci/summary.txt 2>/dev/null || echo "(no summary: the eval step wrote no result.json)"
+          } > "results-wt/results/${{ github.run_id }}.txt"
+          cp evals-ci/result.json "results-wt/results/${{ github.run_id }}.json" 2>/dev/null || true
+          cd results-wt
+          git add -A
+          git commit -m "eval run ${{ github.run_id }}: $CASES on $MODEL (${{ job.status }})"
+          git push origin eval-results
       - name: Upload results
         if: always()
         uses: actions/upload-artifact@v4
@@ -73,4 +109,3 @@ jobs:
           path: |
             evals-ci/result.json
             evals-ci/results/
-
