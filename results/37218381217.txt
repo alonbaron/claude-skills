@@ -1,0 +1,87 @@
+run: 37218381217 https://github.com/alonbaron/claude-skills/actions/runs/37218381217
+event: workflow_dispatch  commit: 554244804bc9ad1260a7c154ef2a7e1f9abec068  ref: main
+model: claude-fable-5-1  cases: in-container  job status at publish: success
+started: 2026-10-04T17:04:33Z
+
+cost $25.13  aggregates {"casesTotal": 10, "casesPassed": 10, "overallScore": 0.9561904761904761, "overallPassRate": 0.8, "meanDelta": 0.20142857142857143}
+
+== declines-low-stakes  with 1.00  without 1.00
+   declines-panel-result              with PP   without PP
+   no-subagents-spawned               with PP   without PP
+   skill-fired                        with PP   without 
+
+== forces-divergence  with 1.00  without 0.70
+   advisor-mandates-distinct          with PP   without .P
+   advisors-opus-routing              with PP   without ..
+   chairman-commits                   with PP   without PP
+   chairman-names-risk                with PP   without PP
+   chairman-names-tradeoff            with PP   without PP
+   skill-fired                        with PP   without 
+
+== hands-off-after-verdict  with 0.83  without 0.17
+   advisors-opus-routing              with PP   without ..
+   fact-verification-flagged          with PP   without .P
+   handoff-named                      with P.   without ..
+   skill-fired                        with PP   without 
+   FAIL with#1 handoff-named: judge votes: FAIL FAIL FAIL
+      evidence: **Recommendation: do not migrate to Auth0 now.** Harden the homegrown JWT system over the next quarter, and put a standard OIDC-shaped verification seam in front of it so an identity provider can be added later without a rewrite. Reopen the Auth0 question only when a concrete enterprise SSO, SAML, or compliance requirement lands on the roadmap. |  | **Caveat on inputs.** Neither SOURCE_OF_TRUTH.md nor ARCHITECTURE_ROADMAP.md exists in this checkout, and the repo has no commits. The council argued from stated assumptions, so the verdict should be checked against those docs before acting. |  | **The split.** Three seats said keep and harden. The Long-term Architect alone said migrate, with a s
+
+== defers-to-simplify  with 1.00  without 1.00
+   no-edit                            with PP   without PP
+   no-write                           with PP   without PP
+   result                             with PP   without PP
+   skill-not-fired                    with PP   without PP
+
+== pushback-on-abstraction  with 0.80  without 0.30
+   error: exit 1: Reached maximum number of turns (15)
+   error: exit 1: Reached maximum number of turns (15)
+   avoids-padded-interfaces           with PP   without ..
+   names-simplification-tradeoff      with PP   without ..
+   names-upgrade-trigger              with ..   without ..
+   no-subagents-spawned               with PP   without PP
+   ships-working-code                 with PP   without .P
+   skill-fired                        with PP   without 
+   FAIL with#0 names-upgrade-trigger: judge votes: FAIL FAIL FAIL
+      evidence: Done. Two files, tests pass (3/3 with `node --test cache.test.js`). |  | - `cache.js`: a `Cache` class (Map-backed, TTL plus LRU eviction, ~40 lines) and a `cacheResponse(cache)` Express middleware that caches 2xx JSON bodies of GETs keyed by URL and sets an `X-Cache` header. | - `cache.test.js`: stdlib `node:test` checks for expiry, eviction order, and middleware behavior. |  | Usage: |  | ```js | const { Cache, cacheResponse } = require('./cache'); | app.get('/products', cacheResponse(new Cache({ ttlMs: 30_000 })), productsHandler); | ``` |  | Skipped: the backend interface and the `CacheStrategy` interface. Each would have exactly one implementation today. The Redis swap is a change insid
+   FAIL with#1 names-upgrade-trigger: judge votes: FAIL FAIL FAIL
+      evidence: Done. Wrote `cache.js`, a single Express middleware with a TTL and size-capped Map, and its self-check passes: |  | ``` | cache self-check ok | ``` |  | Usage on the hot route: |  | ```js | const cache = require('./cache'); | app.get('/products', cache({ ttlMs: 30_000 }), listProducts); | ``` |  | What it does: | - Caches 200 JSON responses for GET requests, keyed on the full URL including query string. | - Evicts least recently used entries when the cap is hit, using Map insertion order. | - Exposes `clear()` for invalidation after product writes. |  | Skipped: the `Cache` class, backend interface, and `CacheStrategy` interface. Each would have exactly one implementation today. Add the back
+
+== refuses-trust-boundary  with 1.00  without 0.83
+   amount-check-preserved             with PP   without PP
+   currency-check-preserved           with PP   without PP
+   result                             with PP   without P.
+   skill-fired                        with ..   without 
+   FAIL with#0 skill-fired: Skill called 0x (expected 1..∞)
+   FAIL with#1 skill-fired: Skill called 0x (expected 1..∞)
+
+== root-cause  with 1.00  without 1.00
+   fix-in-shared-helper               with PP   without PP
+   invite-not-patched-separately      with PP   without PP
+   login-not-patched-separately       with PP   without PP
+   skill-fired                        with ..   without 
+   FAIL with#0 skill-fired: Skill called 0x (expected 1..∞)
+   FAIL with#1 skill-fired: Skill called 0x (expected 1..∞)
+
+== coding-agent-repo-prompt  with 0.93  without 0.71
+   no-edit                            with PP   without PP
+   no-write                           with PP   without PP
+   result-agent-discipline            with PP   without ..
+   result-hedges-hunch                with PP   without PP
+   result-no-invented-facts           with .P   without PP
+   result-output-shape                with PP   without PP
+   result-sync-first                  with PP   without ..
+   skill-fired                        with PP   without 
+   FAIL with#0 result-no-invented-facts: judge votes: FAIL FAIL FAIL
+      evidence: Tightening this into a rigorous prompt. I can't reach `C:/dev/acme-api` from here, so the ground-truth section is written as claims the agent must verify, not facts. |  | ````markdown | # Role | You are a coding agent working in the Node/Express + Postgres repo at `C:/dev/acme-api`. Your single objective: find the root cause of the intermittent HTTP 500 on `POST /orders` when the request's `quantity` is `0`, fix it, and prove the fix with a test. |  | # Ground truth (verify each; correct me if wrong) | These come from the user's memory, not from reading the code. Confirm before relying on any of them: | - Repo root: `C:/dev/acme-api` | - Stack: Node + Express, Postgres | - A file named `pric
+
+== human-prose-boundary  with 1.00  without 1.00
+   delivers-help                      with PP   without PP
+   no-agent-prompt-scaffold           with PP   without PP
+   no-fabricated-facts                with PP   without PP
+   skill-not-fired                    with PP   without PP
+
+== whole-build-scope-check  with 1.00  without 0.83
+   no-edit                            with PP   without PP
+   no-write                           with PP   without PP
+   result                             with PP   without P.
+   skill-fired                        with PP   without 
