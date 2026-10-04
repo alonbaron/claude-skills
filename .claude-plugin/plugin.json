@@ -1,7 +1,7 @@
 {
   "name": "alon-skills",
-  "version": "3.0.2",
-  "description": "Architecture, code review, prompting, and decision-making skills tuned to Alon Baron's engineering style: model-first, failure-path-aware, YAGNI. v3: six skills rewritten for Claude Fable 5.1 as judgment rules, a build-loop workflow that builds TODO_WORKFLOW.md rows unattended, and a claude plugin eval suite.",
+  "version": "3.1.0",
+  "description": "Architecture, code review, prompting, and decision-making skills tuned to Alon Baron's engineering style: model-first, failure-path-aware, YAGNI. v3: six skills rewritten for Claude Fable 5.1 as judgment rules, a build-loop workflow that builds TODO_WORKFLOW.md rows unattended, a claude plugin eval suite, and (3.1) a tracker for any workflow run plus the workflow-watch mod that draws it live.",
   "author": {
     "name": "Alon Baron",
     "url": "https://github.com/alonbaron"
@@ -11,12 +11,14 @@
   "license": "MIT",
   "keywords": [
     "architecture",
-    "code-review",
-    "prompt-engineering",
-    "yagni",
+    "build-loop",
     "claude-code",
+    "code-review",
+    "mod",
+    "prompt-engineering",
     "skills",
+    "tracker",
     "workflow",
-    "build-loop"
+    "yagni"
   ]
 }

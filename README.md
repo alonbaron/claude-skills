@@ -5,7 +5,7 @@
 <p align="center">
   <img alt="Claude Code plugin" src="https://img.shields.io/badge/Claude_Code-plugin-0891B2?style=flat-square&labelColor=0F1E33">&nbsp;
   <img alt="6 skills + 1 workflow" src="https://img.shields.io/badge/skills-6_+_1_workflow-4F46E5?style=flat-square&labelColor=0F1E33">&nbsp;
-  <img alt="version" src="https://img.shields.io/badge/version-v3.0.2-7C3AED?style=flat-square&labelColor=0F1E33">&nbsp;
+  <img alt="version" src="https://img.shields.io/badge/version-v3.1.0-7C3AED?style=flat-square&labelColor=0F1E33">&nbsp;
   <a href="#-evals"><img alt="evals: 19/19 passing" src="https://img.shields.io/badge/evals-19%2F19_passing-16A34A?style=flat-square&labelColor=0F1E33"></a>&nbsp;
   <img alt="MIT license" src="https://img.shields.io/badge/license-MIT-059669?style=flat-square&labelColor=0F1E33">&nbsp;
   <a href="https://github.com/alonbaron"><img alt="by alonbaron" src="https://img.shields.io/badge/by-alonbaron-C026D3?style=flat-square&labelColor=0F1E33&logo=github&logoColor=white"></a>
@@ -107,6 +107,8 @@ The only stop that means "run again" is `reached maxTasks`. Everything else mean
 
 Args and defaults: `maxTasks` 3 · `task` null · `models` {} (per-stage overrides: plan, scout, spec, research, build, measure, refute, invariants, critic, arbiter, fix, close) · `dryRun` false · `maxFixRounds` 2 · `skipLenses` [] · `scratch` `.claude/scratch/build-loop`.
 
+One thing to know about in-session runs (measured 2026-10-04, CLI 2.1.289): the Workflow harness hands every subagent the prompt that started the turn, verbatim and with priority over the script's text. Start the loop from a message that says to run it; a message such as "wait for my approval" reaches the planner, which obeys it and stops before opening a branch. The headless driver below is unaffected, since its prompt is the driver's own.
+
 **Unattended, one fresh process per task:**
 
 ```text
@@ -123,6 +125,19 @@ The driver runs `claude -p` with `--permission-mode auto` once per task, asks it
 
 ---
 
+## ◢ Watching a run
+
+<p align="center"><img alt="The tracker for one build-loop run: 21 stages, each with its model, effort, tokens, timeline and result" src="assets/tracker.png" width="900"></p>
+
+Every subagent a workflow spawns is one row: phase, outcome, label, the model alias the script asked for and the id it resolved to, the effort it ran at, output tokens, how long it took, where it sat on the run's timeline, and either the tool it is calling right now or its result in one line. Two ways to get it:
+
+- **`scripts/tracker.mjs`**, from any shell: `node <plugin-root>/scripts/tracker.mjs [--run <dir> | --session <id>] [--out tracker.html] [--png tracker.png] [--watch]`. It reads the run's own files under `~/.claude/projects/<project>/<session>/subagents/workflows/<run>/` and writes a page; `--png` adds a screenshot when Playwright with Chromium is reachable (`--playwright <path>` otherwise). `--watch` re-renders every five seconds until the run ends.
+- **`mods/workflow-watch`**, inside Claude Code: a mod (a plugin of function hooks) that follows the session's newest run and draws the same rows live in a pane, a band above the prompt while stages run, the status line, and a toast as each stage finishes. `/plugin install workflow-watch@alonbaron`, or `claude --plugin-dir mods/workflow-watch` for one session; `/workflow-watch` opens the pane and prints the report as text. The pane and band are drawn by the terminal and the desktop app; the mobile app shows the text report only.
+
+The picture above is the run that shaped v3.1: the build loop on a throwaway Node repo whose `npm test` script was broken before the loop touched it. The builder fixed it as a deviation, the invariants lens blocked that as outside the spec, the fixer reverted and disputed, two lenses then failed the reverted tree, the arbiter checked `HEAD` itself and upheld the finding, and the row closed as `[BLOCKED]` with the reason in `TODO_WORKFLOW.md` and `docs/handoff.md`. 21 stages, 8.5 minutes, 14.6k output tokens, all seven commits authored by the owner with no trailer. That run also showed two things the loop now does differently: the fixer is told which findings the arbiter upheld and may not dispute them again, and the build stage names its effort (`medium`) instead of inheriting whatever the launching session runs at. Every alias resolved as documented: fable → `claude-fable-5-1`, opus → `claude-opus-5-5`, sonnet → `claude-sonnet-5-5`, haiku → `claude-haiku-4-5-20251001`, and Haiku 4.5 records no effort level because it takes none.
+
+---
+
 ## ◢ Evals
 
 `evals/` is a [`claude plugin eval`](https://code.claude.com/docs/en/plugin-evals) suite: 19 behavioral cases, three per skill (four for ponytail), each with a skill-fired grader, a PASS/FAIL rubric on the result, and a process grader wherever the behavior is a tool fact (which model a subagent was spawned with, that no file was edited). Fixtures are real git repos built by `fixture.sh` scaffolds.
@@ -131,18 +146,20 @@ The driver runs `claude -p` with `--permission-mode auto` once per task, asks it
 claude plugin eval <absolute path to this repo> --runs 2 -j 4 --allow-tools Write Edit --scaffold --model claude-fable-5-1 --judge-model sonnet --no-publish --trust-plugin --threshold 0.7 --json
 ```
 
-`--runs 2`, with and without the plugin; every case passes at 0.7. ponytail, ask-the-council and prompt-generator were measured 2026-09-23/24 in a container without a shell sandbox; architect, review-swarm and up-to-date on 2026-09-29 on the GitHub runner, after the `sonnet` alias moved to Sonnet 5.5 (judge and review-swarm's reviewers). Details in `evals/README.md`, per-case history in `.claude/scratch/v3/STEP5.md`:
+`--runs 2`, with and without the plugin; 18 of 19 cases pass at 0.7, all on Fable 5.1. ponytail, ask-the-council and prompt-generator were measured 2026-09-23/24 in a container without a shell sandbox; architect, review-swarm and up-to-date on 2026-10-04 on the GitHub runner (run 37188685382: overall 0.91, mean uplift +0.26, $36.55 API-equivalent). Details in `evals/README.md`, per-case history in `.claude/scratch/v3/STEP5.md` and `STEP6.md`:
 
 | Skill | Cases | With plugin | Without | Model |
 |---|---|---|---|---|
 | ponytail | 4 | 1.00 (pushback), 1.00 (trust boundary), 1.00 (defers to simplify), 1.00 (root cause) | 0.40, 0.83, 1.00, 1.00 | Fable 5.1 |
 | ask-the-council | 3 | 1.00, 1.00, 1.00 | 1.00, 0.60, 0.17 | Fable 5.1 |
 | prompt-generator | 3 | 1.00, 1.00, 1.00 | 0.71, 1.00, 0.83 | Fable 5.1 |
-| architect | 3 | 1.00 (audit), 1.00 (new feature), 0.88 (small fix) | 1.00, 0.67, 0.75 | Opus 5.5 |
-| review-swarm | 3 | 0.90 (ranked report), 0.83 (security hand-off), 1.00 (trivial diff) | 0.40, 0.50, 1.00 | Opus 5.5 |
-| up-to-date | 3 | 1.00 (dirty and behind), 1.00 (no upstream), 1.00 (no remote) | 0.80, 0.50, 1.00 | Opus 5.5 |
+| architect | 3 | 1.00 (audit), 0.83 (new feature), 1.00 (small fix) | 1.00, 0.67, 0.62 | Fable 5.1 |
+| review-swarm | 3 | 0.80 (ranked report), **0.67** (security hand-off), 1.00 (trivial diff) | 0.40, 0.67, 1.00 | Fable 5.1 |
+| up-to-date | 3 | 0.90 (dirty and behind), 1.00 (no upstream), 1.00 (no remote) | 0.50, 0.50, 0.50 | Fable 5.1 |
 
-architect, review-swarm and up-to-date run shell commands when they load, so their cases need a working bwrap sandbox; `.github/workflows/evals.yml` runs them on a GitHub runner with a `CLAUDE_CODE_OAUTH_TOKEN` secret. Several cases score as well without the plugin; they guard boundaries (when a skill must stay quiet) rather than measure uplift.
+architect, review-swarm and up-to-date run shell commands when they load, so their cases need a working bwrap sandbox; `.github/workflows/evals.yml` runs them on a GitHub runner with a `CLAUDE_CODE_OAUTH_TOKEN` secret, on Fable 5.1 by default (`workflow_dispatch` takes a model for a comparison run; the 2026-09-29 Opus 5.5 pass is in `STEP5.md`). Several cases score as well without the plugin; they guard boundaries (when a skill must stay quiet) rather than measure uplift.
+
+The one case under 0.7 on Fable is security-alone-hands-off, 0.67 in both arms: review-swarm stayed quiet and spawned nothing, as its `when_to_use` says, and Fable then wrote the security review itself, accurately, instead of naming `/security-review`. The skill is not the variable there, so the rubric stays as written and the number stands. Two other readings of that run: both with-plugin runs of real-diff-ranked-report hit the case's 900 s timeout mid-swarm (six specialists plus Opus verifiers take Fable longer than that; the process graders still passed), and the without-plugin runs of no-remote-boundary were lost to the plan's session limit, so its 0.50 is one run, not two.
 
 Trigger accuracy (120 queries, 20 per skill, half should fire): architect 20/20, ask-the-council 20/20, ponytail 19/20, prompt-generator 17/20, review-swarm 16/20, up-to-date 20/20 on should-fire; no false fires on any skill.
 
@@ -174,6 +191,13 @@ Not shipped here and not mine. Two third-party skills the hand-offs above are wr
 One catch worth knowing about humanizer: as of v2.9.1 the plugin puts `SKILL.md` at its root instead of `skills/humanizer/SKILL.md`. Claude Code installs it, reports it enabled, and never loads it. Copy `SKILL.md` out of `~/.claude/plugins/cache/humanizer/humanizer/<version>/` into `~/.claude/skills/humanizer/` and it works.
 
 ---
+
+## ◢ What's new in v3.1
+
+- `scripts/tracker.mjs` renders any workflow run as the stage table above, HTML or PNG, live with `--watch`.
+- `mods/workflow-watch`, a second plugin in this marketplace: the same table drawn live inside Claude Code (pane, band, status line, toasts, `/workflow-watch`).
+- build-loop: the fixer is told which findings the arbiter upheld and cannot dispute them twice; the build stage names its effort; the in-session caveat about the harness relaying the turn's prompt is documented in the script and above.
+- The eval CI runs the nine sandboxed cases on Fable 5.1 (`workflow_dispatch` takes a model input for comparison runs); the table above now carries Fable numbers for every skill.
 
 ## ◢ What's new in v3
 

@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "alonbaron",
-  "description": "Alon Baron's Claude Code skills — architecture, code review, prompting, and decision tooling.",
+  "description": "Alon Baron's Claude Code skills \u2014 architecture, code review, prompting, decision tooling, and a live tracker for agentic workflows.",
   "owner": {
     "name": "Alon Baron",
     "url": "https://github.com/alonbaron"
@@ -10,7 +10,13 @@
     {
       "name": "alon-skills",
       "source": "./",
-      "description": "Six skills (architect, review-swarm, ask-the-council, prompt-generator, up-to-date, ponytail) and one workflow (build-loop) that builds TODO rows unattended.",
+      "description": "Six skills (architect, review-swarm, ask-the-council, prompt-generator, up-to-date, ponytail), the build-loop workflow that builds TODO rows unattended, and the tracker script that renders any workflow run.",
+      "category": "productivity"
+    },
+    {
+      "name": "workflow-watch",
+      "source": "./mods/workflow-watch",
+      "description": "Mod: a live pane, band, status line and toasts following the session's running Workflow, with each stage's model, effort, tokens and result.",
       "category": "productivity"
     }
   ]

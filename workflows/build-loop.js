@@ -15,6 +15,10 @@
 // Repo contract (the architect skill's templates carry all of it): TODO_WORKFLOW.md with the five status
 // strings, SOURCE_OF_TRUTH.md, a "## Commands" table in CLAUDE.md, "Left for <id>: ..." notes, docs/handoff.md.
 // State between runs lives in the repo (TODO_WORKFLOW.md, docs/handoff.md, <scratch>/<id>/), never in chat.
+// In-session caveat (measured 2026-10-04, CLI 2.1.289): the Workflow harness hands every subagent the user prompt
+// that started the turn, verbatim and above this script's text. A chat message such as "wait for my approval"
+// therefore reaches the planner and stops the run; a turn started by a task notification relays nothing. The
+// headless driver is unaffected: its prompt is the driver's own.
 
 export const meta = {
   name: "build-loop",
@@ -410,7 +414,9 @@ Don't:
 - Add dependencies, abstractions, or files the spec does not name. Mark nothing done that the tests do not prove.
 If you cannot proceed (missing tool, a spec contradiction you cannot resolve with a small deviation), stop, leave the tree committed or clean, and set blockedReason.
 Write ${dir}/build.md: commits made, test and lint results (last lines only), deviations, doubts. Under 60 lines.`,
-    { label: `build:${p.taskId}`, phase: "Build", model: M.build, schema: BUILD_SCHEMA },
+    // effort named: an agent() without one inherits the launching session's effort (measured 2026-10-04: "high" from a
+    // high-effort session), so the build stage would otherwise cost whatever the person's own setting is.
+    { label: `build:${p.taskId}`, phase: "Build", model: M.build, effort: "medium", schema: BUILD_SCHEMA },
   );
 }
 
@@ -524,7 +530,7 @@ Return one ruling per key, with a one-line reason.`,
   );
 }
 
-async function fix(p, sp, blocking, round) {
+async function fix(p, sp, blocking, round, upheld = []) {
   return agent(
     `${COMMON}
 
@@ -535,6 +541,7 @@ Findings (the key in brackets is file:line; use it in fixed/notFixed):
 ${blocking.map(fmtFinding).join("\n")}
 
 Do: fix each finding with the smallest correct change; add or repair the test that proves it. If an uncommitted test file is sitting in the tree (left by the adversarial lens), adopt it: make it pass and commit it with the fix. Run the verification commands; commit "fix(<area>): <what>" (or test:/docs: as fits). If a finding is wrong, say so under notFixed with its key and a one-line reason instead of changing code.
+${upheld.length ? `Upheld by the arbiter, so not disputable again (fix them, or say under notFixed why no change inside this task can satisfy them): ${upheld.join(", ")}. When the spec forbids the only fix (a "Do not" item blocks a verification command from passing), make the smallest change that lets the command pass, say so in the commit, and list the spec item under notFixed as "spec amendment needed".` : ""}
 Don't: refactor, widen scope, touch TODO_WORKFLOW.md or docs/handoff.md.`,
     { label: `fix:${p.taskId}:r${round}`, phase: "Fix", model: M.fix, effort: "high", schema: FIX_SCHEMA },
   );
@@ -667,6 +674,7 @@ for (let n = 0; n < opts.maxTasks; n++) {
   const advisory = [];
   const disputes = new Map(); // finding key -> fixer's reason, from the previous round
   const dismissed = new Set();
+  const upheld = new Set(); // finding keys the arbiter ruled on and kept: the fixer may not dispute them a second time
   let carriedLenses = [];
   let passed = false;
   let failedReason = null;
@@ -700,7 +708,7 @@ for (let n = 0; n < opts.maxTasks; n++) {
         if (r.ruling === "dismissed") {
           for (const f of reappeared) if (findingKey(f) === r.key) dismissed.add(findingId(f));
           advisory.push({ file: r.key.split(":")[0], line: null, issue: `arbiter dismissed: ${r.reason}`, fix: "none", lens: "arbiter" });
-        }
+        } else upheld.add(r.key);
       }
       blocking = blocking.filter((f) => !dismissed.has(findingId(f)));
       log(`arbiter ruled on ${reappeared.length}: ${a ? a.rulings.filter((r) => r.ruling === "dismissed").length : 0} dismissed`);
@@ -713,7 +721,7 @@ for (let n = 0; n < opts.maxTasks; n++) {
     carriedLenses = [...new Set(blocking.map((f) => f.lens))];
     log(`refute round ${round} on ${p.taskId}: ${blocking.length} blocking, ${advisory.length} advisory`);
     if (round > MAX_FIX_ROUNDS) break;
-    const f = await fix(p, sp, blocking, round);
+    const f = await fix(p, sp, blocking, round, blocking.filter((b) => upheld.has(findingKey(b))).map(findingKey));
     disputes.clear();
     if (f) for (const d of f.notFixed) disputes.set(d.key, d.reason);
     if (f && f.notFixed.length) log(`fixer disputed ${f.notFixed.length}: ${f.notFixed.map((d) => d.key).join(", ")}`);
