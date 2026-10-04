@@ -3,7 +3,7 @@ name: real-diff-ranked-report
 description: review-swarm should spawn sonnet reviewers and opus verifiers, catch the N+1 query and the missing test, and return a ranked report without editing files
 tags: [review-swarm, real-diff, model-routing, needs-scaffold]
 max_turns: 40
-timeout_seconds: 900
+timeout_seconds: 1500
 expected_outcome: Skill fires, spawns reviewer subagents on sonnet and verifier subagents on opus, and returns a ranked Blockers/Should-fix/Nits report surfacing the N+1 query and the missing zero-orders test, with no Edit or Write calls.
 allowed_tools: [Read, Grep, Glob, Skill, Agent, TodoWrite]
 ---

@@ -1,8 +1,13 @@
-# Runs the eval cases that need a working shell sandbox (architect, review-swarm,
-# up-to-date: their skills run `!` git commands when they load). Start it by
+# Runs the eval suite on a GitHub runner with a working shell sandbox (architect,
+# review-swarm and up-to-date run `!` git commands when they load). Start it by
 # pushing a commit whose message contains [run-evals], or from the Actions tab.
+#   [run-evals]                 the 9 sandboxed cases (architect, review-swarm, up-to-date)
+#   [run-evals: in-container]   the 10 others (ponytail, ask-the-council, prompt-generator)
+#   [run-evals: all]            all 19 in one job (about an hour; more than one five-hour
+#                               plan window held on 2026-10-04, so prefer two runs)
 # Needs the repository secret CLAUDE_CODE_OAUTH_TOKEN (from `claude setup-token`),
-# so the runs count against the owner's Claude plan, not an API key.
+# so the runs count against the owner's Claude plan (the same five-hour window as
+# interactive sessions), not an API key.
 name: evals
 on:
   workflow_dispatch:
@@ -11,13 +16,17 @@ on:
         description: "Model the agent under test runs on"
         default: "claude-fable-5-1"
         required: false
+      cases:
+        description: "sandboxed, in-container, or all"
+        default: "sandboxed"
+        required: false
   push:
     branches: ["claude/**"]
 jobs:
   sandboxed-cases:
-    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[run-evals]')
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[run-evals')
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -32,15 +41,22 @@ jobs:
           bwrap --ro-bind / / --dev /dev --proc /proc --unshare-all true && echo "bwrap works"
       - name: Install Claude Code
         run: npm install -g @anthropic-ai/claude-code && claude --version
-      - name: Run the 9 sandboxed cases
+      - name: Run the cases
         env:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           SKIP_CASES: ""
+          CASES: "${{ github.event.inputs.cases || (contains(github.event.head_commit.message, '[run-evals: all]') && 'all') || (contains(github.event.head_commit.message, '[run-evals: in-container]') && 'in-container') || 'sandboxed' }}"
           # The agent under test. A push runs Fable 5.1 (the model the skills are written for); workflow_dispatch can pick another.
           MODEL: ${{ github.event.inputs.model || 'claude-fable-5-1' }}
         run: |
           mkdir evals-ci
-          cp -r evals/architect evals/review-swarm evals/up-to-date evals-ci/
+          case "$CASES" in
+            sandboxed)    cp -r evals/architect evals/review-swarm evals/up-to-date evals-ci/ ;;
+            in-container) cp -r evals/ponytail evals/ask-the-council evals/prompt-generator evals-ci/ ;;
+            all)          cp -r evals/architect evals/review-swarm evals/up-to-date evals/ponytail evals/ask-the-council evals/prompt-generator evals-ci/ ;;
+            *) echo "unknown CASES=$CASES"; exit 2 ;;
+          esac
+          echo "cases: $CASES ($(ls -d evals-ci/*/* | wc -l))"
           # Cases that already have a clean result on this commit's skills; space-separated <skill>/<case>.
           for c in $SKIP_CASES; do rm -rf "evals-ci/$c"; done
           claude plugin eval . --eval-dir evals-ci --runs 2 -j 4 --scaffold \
