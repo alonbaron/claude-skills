@@ -1,0 +1,10 @@
+{
+  "name": "workflow-watch",
+  "version": "0.1.0",
+  "description": "Live view of a running Workflow: each stage as it starts and finishes, with what it is doing right now, in a pane, a band above the prompt and the status line.",
+  "types": "./types/index.d.ts",
+  "author": {
+    "name": "Alon Baron",
+    "url": "https://github.com/alonbaron"
+  }
+}

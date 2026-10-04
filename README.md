@@ -5,7 +5,7 @@
 <p align="center">
   <img alt="Claude Code plugin" src="https://img.shields.io/badge/Claude_Code-plugin-0891B2?style=flat-square&labelColor=0F1E33">&nbsp;
   <img alt="6 skills + 1 workflow" src="https://img.shields.io/badge/skills-6_+_1_workflow-4F46E5?style=flat-square&labelColor=0F1E33">&nbsp;
-  <img alt="version" src="https://img.shields.io/badge/version-v3.0.2-7C3AED?style=flat-square&labelColor=0F1E33">&nbsp;
+  <img alt="version" src="https://img.shields.io/badge/version-v3.1.0-7C3AED?style=flat-square&labelColor=0F1E33">&nbsp;
   <a href="#-evals"><img alt="evals: 19/19 passing" src="https://img.shields.io/badge/evals-19%2F19_passing-16A34A?style=flat-square&labelColor=0F1E33"></a>&nbsp;
   <img alt="MIT license" src="https://img.shields.io/badge/license-MIT-059669?style=flat-square&labelColor=0F1E33">&nbsp;
   <a href="https://github.com/alonbaron"><img alt="by alonbaron" src="https://img.shields.io/badge/by-alonbaron-C026D3?style=flat-square&labelColor=0F1E33&logo=github&logoColor=white"></a>
@@ -107,6 +107,8 @@ The only stop that means "run again" is `reached maxTasks`. Everything else mean
 
 Args and defaults: `maxTasks` 3 · `task` null · `models` {} (per-stage overrides: plan, scout, spec, research, build, measure, refute, invariants, critic, arbiter, fix, close) · `dryRun` false · `maxFixRounds` 2 · `skipLenses` [] · `scratch` `.claude/scratch/build-loop`.
 
+One thing to know about in-session runs (measured 2026-10-04, CLI 2.1.289): the Workflow harness hands every subagent the prompt that started the turn, verbatim and with priority over the script's text. Start the loop from a message that says to run it; a message such as "wait for my approval" reaches the planner, which obeys it and stops before opening a branch. The headless driver below is unaffected, since its prompt is the driver's own.
+
 **Unattended, one fresh process per task:**
 
 ```text
@@ -120,6 +122,19 @@ The driver runs `claude -p` with `--permission-mode auto` once per task, asks it
 **Unattended runs and review-swarm.** A skill that sets its own tool rules (review-swarm, up-to-date) is refused in don't-ask mode unless the Skill tool is pre-approved, e.g. `--allowedTools Skill`. Interactive sessions just ask. Measured 2026-09-24.
 
 **Measured once, 2026-09-23:** `autobuild.mjs --tasks 1` on a throwaway Node repo with a two-row TODO built row 1.1 in about four minutes: plan, scout, spec, build (two commits, tests green), measure, four refute lenses (all pass, five advisory notes), close. The driver reported $1.75 for the session. The driver runs every session with `{"attribution": {"commit": "", "pr": "", "sessionUrl": false}}`, so its commits carry no `Co-Authored-By` or `Claude-Session` trailer (measured: 3/3 commits had both without it, 0/3 with it, and a second build-loop task came out clean). Running `/alon-skills:build-loop` in your own session uses your settings instead; put the same `attribution` block in `~/.claude/settings.json` to get owner-only commits there too.
+
+---
+
+## ◢ Watching a run
+
+<p align="center"><img alt="The tracker for one build-loop run: 21 stages, each with its model, effort, tokens, timeline and result" src="assets/tracker.png" width="900"></p>
+
+Every subagent a workflow spawns is one row: phase, outcome, label, the model alias the script asked for and the id it resolved to, the effort it ran at, output tokens, how long it took, where it sat on the run's timeline, and either the tool it is calling right now or its result in one line. Two ways to get it:
+
+- **`scripts/tracker.mjs`**, from any shell: `node <plugin-root>/scripts/tracker.mjs [--run <dir> | --session <id>] [--out tracker.html] [--png tracker.png] [--watch]`. It reads the run's own files under `~/.claude/projects/<project>/<session>/subagents/workflows/<run>/` and writes a page; `--png` adds a screenshot when Playwright with Chromium is reachable (`--playwright <path>` otherwise). `--watch` re-renders every five seconds until the run ends.
+- **`mods/workflow-watch`**, inside Claude Code: a mod (a plugin of function hooks) that follows the session's newest run and draws the same rows live in a pane, a band above the prompt while stages run, the status line, and a toast as each stage finishes. `/plugin install workflow-watch@alonbaron`, or `claude --plugin-dir mods/workflow-watch` for one session; `/workflow-watch` opens the pane and prints the report as text. The pane and band are drawn by the terminal and the desktop app; the mobile app shows the text report only.
+
+The picture above is the run that shaped v3.1: the build loop on a throwaway Node repo whose `npm test` script was broken before the loop touched it. The builder fixed it as a deviation, the invariants lens blocked that as outside the spec, the fixer reverted and disputed, two lenses then failed the reverted tree, the arbiter checked `HEAD` itself and upheld the finding, and the row closed as `[BLOCKED]` with the reason in `TODO_WORKFLOW.md` and `docs/handoff.md`. 21 stages, 8.5 minutes, 14.6k output tokens, all seven commits authored by the owner with no trailer. That run also showed two things the loop now does differently: the fixer is told which findings the arbiter upheld and may not dispute them again, and the build stage names its effort (`medium`) instead of inheriting whatever the launching session runs at. Every alias resolved as documented: fable → `claude-fable-5-1`, opus → `claude-opus-5-5`, sonnet → `claude-sonnet-5-5`, haiku → `claude-haiku-4-5-20251001`, and Haiku 4.5 records no effort level because it takes none.
 
 ---
 
@@ -174,6 +189,13 @@ Not shipped here and not mine. Two third-party skills the hand-offs above are wr
 One catch worth knowing about humanizer: as of v2.9.1 the plugin puts `SKILL.md` at its root instead of `skills/humanizer/SKILL.md`. Claude Code installs it, reports it enabled, and never loads it. Copy `SKILL.md` out of `~/.claude/plugins/cache/humanizer/humanizer/<version>/` into `~/.claude/skills/humanizer/` and it works.
 
 ---
+
+## ◢ What's new in v3.1
+
+- `scripts/tracker.mjs` renders any workflow run as the stage table above, HTML or PNG, live with `--watch`.
+- `mods/workflow-watch`, a second plugin in this marketplace: the same table drawn live inside Claude Code (pane, band, status line, toasts, `/workflow-watch`).
+- build-loop: the fixer is told which findings the arbiter upheld and cannot dispute them twice; the build stage names its effort; the in-session caveat about the harness relaying the turn's prompt is documented in the script and above.
+- The eval CI runs the nine sandboxed cases on Fable 5.1 (`workflow_dispatch` takes a model input for comparison runs).
 
 ## ◢ What's new in v3
 
