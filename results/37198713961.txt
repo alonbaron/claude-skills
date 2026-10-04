@@ -1,0 +1,75 @@
+run: 37198713961 https://github.com/alonbaron/claude-skills/actions/runs/37198713961
+event: workflow_dispatch  commit: 554244804bc9ad1260a7c154ef2a7e1f9abec068  ref: main
+model: claude-fable-5-1  cases: sandboxed  job status at publish: failure
+started: 2026-10-04T11:52:55Z
+
+cost $47.41  aggregates {"casesTotal": 9, "casesPassed": 8, "overallScore": 0.8916666666666665, "overallPassRate": 0.6666666666666666, "meanDelta": 0.22777777777777775}
+
+== audit-drift-citation  with 1.00  without 1.00
+   citation-discipline                with PP   without PP
+   no-edit                            with PP   without PP
+   no-write                           with PP   without PP
+   skill-fired                        with PP   without 
+
+== right-sized-new-feature  with 0.83  without 0.67
+   no-modular-set                     with PP   without PP
+   no-subagents                       with PP   without PP
+   right-sized-process                with .P   without ..
+   skill-fired                        with PP   without 
+   FAIL with#0 right-sized-process: judge votes: FAIL FAIL PASS
+      evidence: {"type":"system","subtype":"init","cwd":"/tmp/claude-eval-4tY3dy/home/cwd","session_id":"26e873b7-c0aa-4ac2-a051-9c396a45d699","tools":["Task","Bash","Edit","NotebookEdit","Read","Skill","TaskStop","ToolSearch","Write"],"mcp_servers":[],"model":"claude-fable-5-1","permissionMode":"dontAsk","slash_commands":["deep-research","alon-skills:build-loop","alon-skills:architect","alon-skills:ask-the-council","alon-skills:ponytail","alon-skills:prompt-generator","alon-skills:review-swarm","alon-skills:up-to-date","dataviz","update-config","verify","debug","code-review","simplify","batch","fewer-permission-prompts","doctor","loop","schedule","claude-api","workflow-authoring","run","run-skill-generator
+
+== small-fix-boundary  with 0.88  without 0.75
+   no-invention                       with PP   without ..
+   no-subagents                       with PP   without PP
+   skill-fired                        with PP   without 
+   targeted-addition                  with PP   without PP
+   two-boundary-enforcement           with P.   without PP
+   FAIL with#1 two-boundary-enforcement: judge votes: FAIL PASS FAIL
+      evidence: # Source of Truth — Auth Service |  | ## Scope | Cloudflare Workers auth service (Hono + D1). Issues and validates session | tokens for POST /login, POST /logout, GET /session. Throttles POST /login per | client IP as an abuse guard (Invariant 3); this ships before password reset | (ARCHITECTURE_ROADMAP.md §5, Phase 2a). |  | ### Non-goals (rate limiting) | - Per-account lockout after failed attempts — a separate control, not designed yet. | - Globally exact counting across Cloudflare locations — see Decision 2. | - Limits on POST /logout or GET /session. |  | ## Domain model | - `users` (D1): id, email, password_hash, created_at | - `sessions` (D1): id, user_id, token, expires_at | - Rate-l
+
+== real-diff-ranked-report  with 0.90  without 0.40
+   error: exit 1: You've hit your session limit · resets 3:40pm (UTC)
+   no-edit-calls                      with PP   without PP
+   no-write-calls                     with PP   without PP
+   ranked-report-shape                with .P   without ..
+   reviewers-sonnet                   with PP   without ..
+   skill-fired                        with PP   without 
+   verifiers-opus                     with PP   without ..
+   FAIL with#0 ranked-report-shape: grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)
+
+== security-alone-hands-off  with 0.67  without 0.33
+   hands-off-to-security-review       with ..   without ..
+   no-swarm-spawn                     with PP   without ..
+   skill-not-fired                    with PP   without PP
+   FAIL with#0 hands-off-to-security-review: judge votes: FAIL FAIL FAIL
+      evidence: The file is 12 lines, so I reviewed it in a single pass instead of spawning a swarm. Nothing else in the repo touches auth yet, and there is no package.json or node_modules, so I could not confirm which jsonwebtoken version you're on. That matters for the first finding. |  | **Blockers** |  | - **Auth bypass if `JWT_SECRET` is unset** at `src/middleware/auth.js:6`. On jsonwebtoken 8.5.1 and earlier, calling verify with an undefined secret and no `algorithms` option accepts unsigned tokens with `alg: none` (CVE-2022-23540). Any attacker can then forge `req.user` with arbitrary claims. On 9.x it throws instead, which fails closed but takes every request down with a 500. Fix: read the secret on
+   FAIL with#1 hands-off-to-security-review: judge votes: FAIL FAIL FAIL
+      evidence: Review done. The file is 11 lines, so one careful read covers it fully. No `package.json` or lockfile exists in the repo, so I could not confirm the `jsonwebtoken` version, and one finding depends on it. |  | **Blocker** |  | - **Unsigned tokens can pass when the secret is missing** at `src/middleware/auth.js:6`. The call pins no `algorithms`. If `JWT_SECRET` is unset in some environment, `jsonwebtoken` 8.x and earlier accepts a token with `alg: none` and no signature, which is full authentication bypass. Version 9 closed this, but nothing here guarantees v9, and nothing fails fast at boot when the secret is absent. Fix: read the secret once at module load and throw if it is empty, and pass 
+
+== trivial-diff-declines  with 1.00  without 1.00
+   agent-spawn-limit                  with PP   without PP
+   declines-with-alternative          with PP   without PP
+
+== dirty-and-behind  with 1.00  without 0.70
+   leaves-decision-to-user            with PP   without P.
+   no-pull-run                        with PP   without PP
+   no-subagents                       with PP   without PP
+   reports-behind                     with PP   without ..
+   reports-dirty                      with PP   without PP
+   skill-fired                        with PP   without 
+
+== fresh-branch-no-upstream  with 1.00  without 0.62
+   falls-back-to-default-branch       with PP   without ..
+   no-in-sync-claim                   with PP   without PP
+   no-subagents                       with PP   without PP
+   says-no-upstream                   with PP   without .P
+   skill-fired                        with PP   without 
+
+== no-remote-boundary  with 0.75  without 0.50
+   error: exit 1: You've hit your session limit · resets 3:40pm (UTC)
+   error: exit 1: You've hit your session limit · resets 3:40pm (UTC)
+   no-subagents                       with PP   without PP
+   result                             with P.   without ..
+   skill-fired                        with PP   without 
+   FAIL with#1 result: grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)
