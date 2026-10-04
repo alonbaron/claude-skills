@@ -1,0 +1,144 @@
+run: 37213238188 https://github.com/alonbaron/claude-skills/actions/runs/37213238188
+event: schedule  commit: 554244804bc9ad1260a7c154ef2a7e1f9abec068  ref: main
+model: claude-fable-5-1  cases: sandboxed  job status at publish: failure
+started: 2026-10-04T15:30:56Z
+
+cost $0.00  aggregates {"casesTotal": 9, "casesPassed": 0, "overallScore": 0.47777777777777775, "overallPassRate": 0, "meanDelta": 0}
+
+== audit-drift-citation  with 0.67  without 0.67
+   error: exit 1: You've hit your session limit · resets 3:40pm (UTC)
+   error: exit 1: You've hit your session limit · resets 3:40pm (UTC)
+   error: exit 1: You've hit your session limit · resets 3:40pm (UTC)
+   error: exit 1: You've hit your session limit · resets 3:40pm (UTC)
+   citation-discipline                with ..   without ..
+   no-edit                            with PP   without PP
+   no-write                           with PP   without PP
+   skill-fired                        with ..   without 
+   FAIL with#0 citation-discipline: grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)
+   FAIL with#0 skill-fired: Skill called 0x (expected 1..∞)
+   FAIL with#1 citation-discipline: grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)
+   FAIL with#1 skill-fired: Skill called 0x (expected 1..∞)
+
+== right-sized-new-feature  with 0.67  without 0.67
+   error: exit 1: You've hit your session limit · resets 3:40pm (UTC)
+   error: exit 1: You've hit your session limit · resets 3:40pm (UTC)
+   error: exit 1: You've hit your session limit · resets 3:40pm (UTC)
+   error: exit 1: You've hit your session limit · resets 3:40pm (UTC)
+   no-modular-set                     with PP   without PP
+   no-subagents                       with PP   without PP
+   right-sized-process                with ..   without ..
+   skill-fired                        with ..   without 
+   FAIL with#0 right-sized-process: grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)
+   FAIL with#0 skill-fired: Skill called 0x (expected 1..∞)
+   FAIL with#1 right-sized-process: grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)
+   FAIL with#1 skill-fired: Skill called 0x (expected 1..∞)
+
+== small-fix-boundary  with 0.25  without 0.25
+   error: exit 1: You've hit your session limit · resets 3:40pm (UTC)
+   error: exit 1: You've hit your session limit · resets 3:40pm (UTC)
+   error: exit 1: You've hit your session limit · resets 3:40pm (UTC)
+   error: exit 1: You've hit your session limit · resets 3:40pm (UTC)
+   no-invention                       with ..   without ..
+   no-subagents                       with PP   without PP
+   skill-fired                        with ..   without 
+   targeted-addition                  with ..   without ..
+   two-boundary-enforcement           with ..   without ..
+   FAIL with#0 no-invention: grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)
+   FAIL with#0 skill-fired: Skill called 0x (expected 1..∞)
+   FAIL with#0 targeted-addition: grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)
+   FAIL with#0 two-boundary-enforcement: grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)
+   FAIL with#1 no-invention: grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)
+   FAIL with#1 skill-fired: Skill called 0x (expected 1..∞)
+   FAIL with#1 targeted-addition: grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)
+   FAIL with#1 two-boundary-enforcement: grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)
+
+== real-diff-ranked-report  with 0.40  without 0.40
+   error: exit 1: You've hit your session limit · resets 3:40pm (UTC)
+   error: exit 1: You've hit your session limit · resets 3:40pm (UTC)
+   error: exit 1: You've hit your session limit · resets 3:40pm (UTC)
+   error: exit 1: You've hit your session limit · resets 3:40pm (UTC)
+   no-edit-calls                      with PP   without PP
+   no-write-calls                     with PP   without PP
+   ranked-report-shape                with ..   without ..
+   reviewers-sonnet                   with ..   without ..
+   skill-fired                        with ..   without 
+   verifiers-opus                     with ..   without ..
+   FAIL with#0 ranked-report-shape: grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)
+   FAIL with#0 reviewers-sonnet: Agent called 0x (expected 4..∞)
+   FAIL with#0 skill-fired: Skill called 0x (expected 1..∞)
+   FAIL with#0 verifiers-opus: Agent called 0x (expected 1..∞)
+   FAIL with#1 ranked-report-shape: grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)
+   FAIL with#1 reviewers-sonnet: Agent called 0x (expected 4..∞)
+   FAIL with#1 skill-fired: Skill called 0x (expected 1..∞)
+   FAIL with#1 verifiers-opus: Agent called 0x (expected 1..∞)
+
+== security-alone-hands-off  with 0.67  without 0.67
+   error: exit 1: You've hit your session limit · resets 3:40pm (UTC)
+   error: exit 1: You've hit your session limit · resets 3:40pm (UTC)
+   error: exit 1: You've hit your session limit · resets 3:40pm (UTC)
+   error: exit 1: You've hit your session limit · resets 3:40pm (UTC)
+   hands-off-to-security-review       with ..   without ..
+   no-swarm-spawn                     with PP   without PP
+   skill-not-fired                    with PP   without PP
+   FAIL with#0 hands-off-to-security-review: grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)
+   FAIL with#1 hands-off-to-security-review: grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)
+
+== trivial-diff-declines  with 0.50  without 0.50
+   error: exit 1: You've hit your session limit · resets 3:40pm (UTC)
+   error: exit 1: You've hit your session limit · resets 3:40pm (UTC)
+   error: exit 1: You've hit your session limit · resets 3:40pm (UTC)
+   error: exit 1: You've hit your session limit · resets 3:40pm (UTC)
+   agent-spawn-limit                  with PP   without PP
+   declines-with-alternative          with ..   without ..
+   FAIL with#0 declines-with-alternative: grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)
+   FAIL with#1 declines-with-alternative: grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)
+
+== dirty-and-behind  with 0.40  without 0.40
+   error: exit 1: You've hit your session limit · resets 3:40pm (UTC)
+   error: exit 1: You've hit your session limit · resets 3:40pm (UTC)
+   error: exit 1: You've hit your session limit · resets 3:40pm (UTC)
+   error: exit 1: You've hit your session limit · resets 3:40pm (UTC)
+   leaves-decision-to-user            with ..   without ..
+   no-pull-run                        with PP   without PP
+   no-subagents                       with PP   without PP
+   reports-behind                     with ..   without ..
+   reports-dirty                      with ..   without ..
+   skill-fired                        with ..   without 
+   FAIL with#0 leaves-decision-to-user: grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)
+   FAIL with#0 reports-behind: grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)
+   FAIL with#0 reports-dirty: grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)
+   FAIL with#0 skill-fired: Skill called 0x (expected 1..∞)
+   FAIL with#1 leaves-decision-to-user: grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)
+   FAIL with#1 reports-behind: grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)
+   FAIL with#1 reports-dirty: grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)
+   FAIL with#1 skill-fired: Skill called 0x (expected 1..∞)
+
+== fresh-branch-no-upstream  with 0.25  without 0.25
+   error: exit 1: You've hit your session limit · resets 3:40pm (UTC)
+   error: exit 1: You've hit your session limit · resets 3:40pm (UTC)
+   error: exit 1: You've hit your session limit · resets 3:40pm (UTC)
+   error: exit 1: You've hit your session limit · resets 3:40pm (UTC)
+   falls-back-to-default-branch       with ..   without ..
+   no-in-sync-claim                   with ..   without ..
+   no-subagents                       with PP   without PP
+   says-no-upstream                   with ..   without ..
+   skill-fired                        with ..   without 
+   FAIL with#0 falls-back-to-default-branch: grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)
+   FAIL with#0 no-in-sync-claim: grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)
+   FAIL with#0 says-no-upstream: grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)
+   FAIL with#0 skill-fired: Skill called 0x (expected 1..∞)
+   FAIL with#1 falls-back-to-default-branch: grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)
+   FAIL with#1 no-in-sync-claim: grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)
+   FAIL with#1 says-no-upstream: grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)
+   FAIL with#1 skill-fired: Skill called 0x (expected 1..∞)
+
+== no-remote-boundary  with 0.50  without 0.50
+   error: exit 1: You've hit your session limit · resets 3:40pm (UTC)
+   error: exit 1: You've hit your session limit · resets 3:40pm (UTC)
+   error: exit 1: You've hit your session limit · resets 3:40pm (UTC)
+   error: exit 1: You've hit your session limit · resets 3:40pm (UTC)
+   no-subagents                       with PP   without PP
+   result                             with ..   without ..
+   skill-fired                        with PP   without 
+   FAIL with#0 result: grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)
+   FAIL with#1 result: grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)

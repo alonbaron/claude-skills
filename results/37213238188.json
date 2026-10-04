@@ -1,0 +1,2246 @@
+{
+  "schemaVersion": 1,
+  "claudeVersion": "2.1.289",
+  "startedAt": "2026-10-04T15:30:29.871Z",
+  "durationSeconds": 21,
+  "costUsd": 0,
+  "partial": false,
+  "suite": {
+    "root": "/home/runner/work/claude-skills/claude-skills",
+    "ablation": "with-without",
+    "modelOverride": "claude-fable-5-1",
+    "judgeModel": "sonnet",
+    "threshold": 0.7,
+    "concurrency": 4,
+    "plugins": [
+      {
+        "name": "alon-skills",
+        "version": "3.1.0",
+        "path": "/home/runner/work/claude-skills/claude-skills"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "audit-drift-citation",
+      "dir": "evals-ci/architect/audit-drift-citation",
+      "source": "mixed",
+      "promptMarkdown": "Run architect audit on our repo. I think the docs are stale — we shipped a\nStripe webhook endpoint last week (POST /webhooks/stripe) and I don't think\nit ever made it into the architecture roadmap or the API contract table.",
+      "runsPerCase": 3,
+      "timeoutSeconds": 300,
+      "maxTurns": 15,
+      "graders": [
+        {
+          "name": "citation-discipline",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the response reports the drift as a finding that cites both sides:\nthe code that states the fact (the POST /webhooks/stripe handler in\nsrc/routes/webhooks.js) AND the doc + section that should describe it and\ndoesn't (ARCHITECTURE_ROADMAP.md §3's API contract table). It stays in\nverify-and-report form — a prioritized fix list with an offer to apply it —\nrather than treating the finding as settled without pointing at the actual\ncode location, and it does not pull in an unrelated hand-off (ask-the-council,\nreview-swarm) for what is a single straightforward drift item.\n\nFAIL if any drift is reported as a hunch without citing both the code\nlocation and the doc location, if it fabricates a file/line that isn't in the\nrepo, or if it goes further than a report (e.g. claims the docs are now\nfixed) without ever actually changing them.",
+          "config": {
+            "criteria": "PASS if the response reports the drift as a finding that cites both sides:\nthe code that states the fact (the POST /webhooks/stripe handler in\nsrc/routes/webhooks.js) AND the doc + section that should describe it and\ndoesn't (ARCHITECTURE_ROADMAP.md §3's API contract table). It stays in\nverify-and-report form — a prioritized fix list with an offer to apply it —\nrather than treating the finding as settled without pointing at the actual\ncode location, and it does not pull in an unrelated hand-off (ask-the-council,\nreview-swarm) for what is a single straightforward drift item.\n\nFAIL if any drift is reported as a hunch without citing both the code\nlocation and the doc location, if it fabricates a file/line that isn't in the\nrepo, or if it goes further than a report (e.g. claims the docs are now\nfixed) without ever actually changing them.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "no-edit",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Edit",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "no-write",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Write",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "skill-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?architect\""
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 2,
+            "startedAt": "2026-10-04T15:30:29.977Z",
+            "error": "exit 1: You've hit your session limit · resets 3:40pm (UTC)",
+            "tracePath": "/tmp/claude-eval-AmjmmU/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "citation-discipline",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-edit",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Edit called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-write",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Write called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 1..∞)",
+                "withOnly": true,
+                "scored": false
+              }
+            ]
+          },
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 2,
+            "startedAt": "2026-10-04T15:30:29.977Z",
+            "error": "exit 1: You've hit your session limit · resets 3:40pm (UTC)",
+            "tracePath": "/tmp/claude-eval-My3v9R/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "citation-discipline",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-edit",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Edit called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-write",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Write called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 1..∞)",
+                "withOnly": true,
+                "scored": false
+              }
+            ]
+          }
+        ],
+        "without": [
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 2,
+            "startedAt": "2026-10-04T15:30:29.977Z",
+            "error": "exit 1: You've hit your session limit · resets 3:40pm (UTC)",
+            "tracePath": "/tmp/claude-eval-zQF9R7/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "citation-discipline",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-edit",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Edit called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-write",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Write called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 2,
+            "startedAt": "2026-10-04T15:30:29.977Z",
+            "error": "exit 1: You've hit your session limit · resets 3:40pm (UTC)",
+            "tracePath": "/tmp/claude-eval-JuezBw/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "citation-discipline",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-edit",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Edit called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-write",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Write called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 0.6666666666666666,
+        "passRate": 0,
+        "scoreWithout": 0.6666666666666666,
+        "passRateWithout": 0,
+        "delta": 0
+      }
+    },
+    {
+      "name": "right-sized-new-feature",
+      "dir": "evals-ci/architect/right-sized-new-feature",
+      "source": "prose",
+      "promptMarkdown": "Starting a new feature on our Next.js + Postgres trip-planning app: users\nshould be able to export their itinerary as a PDF and email it to\nthemselves. This is a brand new repo, nothing's written yet, no design docs\nat all yet.",
+      "runsPerCase": 3,
+      "timeoutSeconds": 900,
+      "maxTurns": 40,
+      "graders": [
+        {
+          "name": "no-modular-set",
+          "type": "file_exists",
+          "weight": 1,
+          "config": {
+            "path": "docs/architecture/**",
+            "exists": false
+          }
+        },
+        {
+          "name": "no-subagents",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "right-sized-process",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if all of the following hold across the conversation:\n- It announces in one short line that it's running architect (or equivalent)\n  and proceeds without asking permission to start.\n- It creates a right-sized doc set for a single feature — SOURCE_OF_TRUTH.md,\n  a light ARCHITECTURE_ROADMAP.md, TODO_WORKFLOW.md, and CLAUDE.md — and does\n  NOT scaffold the modular docs/architecture/ set, which is reserved for\n  larger projects.\n- It asks at most 3 blocking questions (e.g. PDF generation approach, email\n  delivery provider, itinerary size limits) and states explicit assumptions\n  for anything else instead of stalling on a long questionnaire.\n- Failure paths for the export/email flow (PDF generation fails, email\n  bounces, an oversized itinerary) are designed with a defined failure mode\n  per component, not just the happy path.\n\nFAIL if it stays silent instead of proactively running, over-scaffolds the\nmodular doc set for a single feature, asks more than 3 blocking questions\nwithout stating assumptions, or only describes the happy path.",
+          "config": {
+            "criteria": "PASS if all of the following hold across the conversation:\n- It announces in one short line that it's running architect (or equivalent)\n  and proceeds without asking permission to start.\n- It creates a right-sized doc set for a single feature — SOURCE_OF_TRUTH.md,\n  a light ARCHITECTURE_ROADMAP.md, TODO_WORKFLOW.md, and CLAUDE.md — and does\n  NOT scaffold the modular docs/architecture/ set, which is reserved for\n  larger projects.\n- It asks at most 3 blocking questions (e.g. PDF generation approach, email\n  delivery provider, itinerary size limits) and states explicit assumptions\n  for anything else instead of stalling on a long questionnaire.\n- Failure paths for the export/email flow (PDF generation fails, email\n  bounces, an oversized itinerary) are designed with a defined failure mode\n  per component, not just the happy path.\n\nFAIL if it stays silent instead of proactively running, over-scaffolds the\nmodular doc set for a single feature, asks more than 3 blocking questions\nwithout stating assumptions, or only describes the happy path.",
+            "focus": "trace"
+          }
+        },
+        {
+          "name": "skill-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?architect\""
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 2,
+            "startedAt": "2026-10-04T15:30:32.247Z",
+            "error": "exit 1: You've hit your session limit · resets 3:40pm (UTC)",
+            "tracePath": "/tmp/claude-eval-U6kvaA/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-modular-set",
+                "passed": true,
+                "weight": 1,
+                "explanation": "docs/architecture/** absent as expected",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "right-sized-process",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 1..∞)",
+                "withOnly": true,
+                "scored": false
+              }
+            ]
+          },
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 2,
+            "startedAt": "2026-10-04T15:30:32.248Z",
+            "error": "exit 1: You've hit your session limit · resets 3:40pm (UTC)",
+            "tracePath": "/tmp/claude-eval-uTI24T/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-modular-set",
+                "passed": true,
+                "weight": 1,
+                "explanation": "docs/architecture/** absent as expected",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "right-sized-process",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 1..∞)",
+                "withOnly": true,
+                "scored": false
+              }
+            ]
+          }
+        ],
+        "without": [
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 2,
+            "startedAt": "2026-10-04T15:30:32.275Z",
+            "error": "exit 1: You've hit your session limit · resets 3:40pm (UTC)",
+            "tracePath": "/tmp/claude-eval-Y9E25g/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-modular-set",
+                "passed": true,
+                "weight": 1,
+                "explanation": "docs/architecture/** absent as expected",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "right-sized-process",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 2,
+            "startedAt": "2026-10-04T15:30:32.295Z",
+            "error": "exit 1: You've hit your session limit · resets 3:40pm (UTC)",
+            "tracePath": "/tmp/claude-eval-mtLYnB/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-modular-set",
+                "passed": true,
+                "weight": 1,
+                "explanation": "docs/architecture/** absent as expected",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "right-sized-process",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 0.6666666666666666,
+        "passRate": 0,
+        "scoreWithout": 0.6666666666666666,
+        "passRateWithout": 0,
+        "delta": 0
+      }
+    },
+    {
+      "name": "small-fix-boundary",
+      "dir": "evals-ci/architect/small-fix-boundary",
+      "source": "mixed",
+      "promptMarkdown": "We already have SOURCE_OF_TRUTH.md and ARCHITECTURE_ROADMAP.md for our Cloudflare Workers auth service (Hono + D1). Product wants a rate limit of 100 requests/minute per IP on POST /login before we ship password reset next sprint. Can you spec that out?",
+      "runsPerCase": 3,
+      "timeoutSeconds": 900,
+      "maxTurns": 40,
+      "graders": [
+        {
+          "name": "no-invention",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the response does not state invented specifics — a specific\nrate-limiting library, a counter schema, an exact HTTP status/header\nconvention — as settled fact when they were not given and are not already in\nthe docs. Naming a concrete option while flagging it as an assumption or open\nquestion is fine.\n\nFAIL if it presents invented implementation details as decided fact with no\nflag that they are an assumption.",
+          "config": {
+            "criteria": "PASS if the response does not state invented specifics — a specific\nrate-limiting library, a counter schema, an exact HTTP status/header\nconvention — as settled fact when they were not given and are not already in\nthe docs. Naming a concrete option while flagging it as an assumption or open\nquestion is fine.\n\nFAIL if it presents invented implementation details as decided fact with no\nflag that they are an assumption.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "no-subagents",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "skill-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?architect\""
+          }
+        },
+        {
+          "name": "targeted-addition",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the response treats this as a targeted addition to the auth service's\nexisting design docs: it adds the new rate-limiting invariant (100\nrequests/minute per IP on POST /login), says where it lives (e.g. wired into\nSOURCE_OF_TRUTH.md's invariants table and ARCHITECTURE_ROADMAP.md), and does\nthis without re-authoring or regenerating the whole SOURCE_OF_TRUTH.md /\nARCHITECTURE_ROADMAP.md / TODO_WORKFLOW.md / CLAUDE.md set from scratch. It\nshould build on the existing login/logout/session model and D1 schema rather\nthan re-deriving unrelated sections.\n\nFAIL if it re-authors the whole doc set for a one-endpoint change, ignores the\ndocs that already exist, or jumps straight to implementation code instead of\na design addition.",
+          "config": {
+            "criteria": "PASS if the response treats this as a targeted addition to the auth service's\nexisting design docs: it adds the new rate-limiting invariant (100\nrequests/minute per IP on POST /login), says where it lives (e.g. wired into\nSOURCE_OF_TRUTH.md's invariants table and ARCHITECTURE_ROADMAP.md), and does\nthis without re-authoring or regenerating the whole SOURCE_OF_TRUTH.md /\nARCHITECTURE_ROADMAP.md / TODO_WORKFLOW.md / CLAUDE.md set from scratch. It\nshould build on the existing login/logout/session model and D1 schema rather\nthan re-deriving unrelated sections.\n\nFAIL if it re-authors the whole doc set for a one-endpoint change, ignores the\ndocs that already exist, or jumps straight to implementation code instead of\na design addition.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "two-boundary-enforcement",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if SOURCE_OF_TRUTH.md states the new login rate-limit invariant and names\ntwo places it is enforced, e.g. a Hono middleware check AND a platform or\nstorage layer behind it (a Workers Rate Limiting binding, D1, KV, a Durable\nObject). Both must be named, not just \"rate limiting is applied\".\n\nFAIL if the invariant is missing, or only one enforcement point is named.",
+          "config": {
+            "criteria": "PASS if SOURCE_OF_TRUTH.md states the new login rate-limit invariant and names\ntwo places it is enforced, e.g. a Hono middleware check AND a platform or\nstorage layer behind it (a Workers Rate Limiting binding, D1, KV, a Durable\nObject). Both must be named, not just \"rate limiting is applied\".\n\nFAIL if the invariant is missing, or only one enforcement point is named.",
+            "focus": {
+              "source": "file",
+              "path": "SOURCE_OF_TRUTH.md"
+            }
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 0.25,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 3,
+            "startedAt": "2026-10-04T15:30:34.392Z",
+            "error": "exit 1: You've hit your session limit · resets 3:40pm (UTC)",
+            "tracePath": "/tmp/claude-eval-5wailj/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-invention",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 1..∞)",
+                "withOnly": true,
+                "scored": false
+              },
+              {
+                "name": "targeted-addition",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "two-boundary-enforcement",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.25,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 3,
+            "startedAt": "2026-10-04T15:30:34.408Z",
+            "error": "exit 1: You've hit your session limit · resets 3:40pm (UTC)",
+            "tracePath": "/tmp/claude-eval-buyVEb/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-invention",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 1..∞)",
+                "withOnly": true,
+                "scored": false
+              },
+              {
+                "name": "targeted-addition",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "two-boundary-enforcement",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ],
+        "without": [
+          {
+            "score": 0.25,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 3,
+            "startedAt": "2026-10-04T15:30:34.545Z",
+            "error": "exit 1: You've hit your session limit · resets 3:40pm (UTC)",
+            "tracePath": "/tmp/claude-eval-jk7OWw/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-invention",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "targeted-addition",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "two-boundary-enforcement",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.25,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 3,
+            "startedAt": "2026-10-04T15:30:34.558Z",
+            "error": "exit 1: You've hit your session limit · resets 3:40pm (UTC)",
+            "tracePath": "/tmp/claude-eval-Xqp2nB/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-invention",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "targeted-addition",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "two-boundary-enforcement",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 0.25,
+        "passRate": 0,
+        "scoreWithout": 0.25,
+        "passRateWithout": 0,
+        "delta": 0
+      }
+    },
+    {
+      "name": "real-diff-ranked-report",
+      "dir": "evals-ci/review-swarm/real-diff-ranked-report",
+      "source": "mixed",
+      "promptMarkdown": "I added a new `/orders/<user_id>` endpoint in `app/routes.py`: it pulls a user's orders with `Order.query.filter_by(user_id=user_id).all()`, then loops over them and calls `db.session.query(Item).get(order.item_id)` once per order. There's no test covering a user with zero orders. Haven't committed it yet. Run review-swarm on this diff before I open the PR.",
+      "runsPerCase": 3,
+      "timeoutSeconds": 1500,
+      "maxTurns": 40,
+      "graders": [
+        {
+          "name": "no-edit-calls",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Edit",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "no-write-calls",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Write",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "ranked-report-shape",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final report: (1) surfaces the N+1 query pattern in `app/routes.py` (one `Item` lookup per order inside the `for order in orders` loop) as a data/performance finding, (2) surfaces the missing test for the zero-orders case as a tests/failure-paths finding, (3) is structured as a ranked Blockers / Should-fix / Nits report with a file:line-style reference and a one-line fix for each item, and (4) shows evidence of adversarial verification (e.g. explains why a finding is real and reproducible, or explicitly drops a speculative one) rather than only listing raw first-pass findings.\n\nFAIL if the report misses either the N+1 pattern or the missing-test finding, is not organized into a ranked Blockers/Should-fix/Nits structure, or shows no sign that findings were verified before being reported.",
+          "config": {
+            "criteria": "PASS if the final report: (1) surfaces the N+1 query pattern in `app/routes.py` (one `Item` lookup per order inside the `for order in orders` loop) as a data/performance finding, (2) surfaces the missing test for the zero-orders case as a tests/failure-paths finding, (3) is structured as a ranked Blockers / Should-fix / Nits report with a file:line-style reference and a one-line fix for each item, and (4) shows evidence of adversarial verification (e.g. explains why a finding is real and reproducible, or explicitly drops a speculative one) rather than only listing raw first-pass findings.\n\nFAIL if the report misses either the N+1 pattern or the missing-test finding, is not organized into a ranked Blockers/Should-fix/Nits structure, or shows no sign that findings were verified before being reported.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "reviewers-sonnet",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "input_match": "\"model\"\\s*:\\s*\"sonnet\"",
+            "min": 4
+          }
+        },
+        {
+          "name": "skill-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?review-swarm\""
+          }
+        },
+        {
+          "name": "verifiers-opus",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "input_match": "\"model\"\\s*:\\s*\"opus\"",
+            "min": 1
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 0.4,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 2,
+            "startedAt": "2026-10-04T15:30:36.975Z",
+            "error": "exit 1: You've hit your session limit · resets 3:40pm (UTC)",
+            "tracePath": "/tmp/claude-eval-feZVkg/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-edit-calls",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Edit called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-write-calls",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Write called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "ranked-report-shape",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "reviewers-sonnet",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 4..∞)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 1..∞)",
+                "withOnly": true,
+                "scored": false
+              },
+              {
+                "name": "verifiers-opus",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.4,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 2,
+            "startedAt": "2026-10-04T15:30:37.066Z",
+            "error": "exit 1: You've hit your session limit · resets 3:40pm (UTC)",
+            "tracePath": "/tmp/claude-eval-Q27W8D/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-edit-calls",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Edit called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-write-calls",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Write called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "ranked-report-shape",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "reviewers-sonnet",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 4..∞)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 1..∞)",
+                "withOnly": true,
+                "scored": false
+              },
+              {
+                "name": "verifiers-opus",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ],
+        "without": [
+          {
+            "score": 0.4,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 2,
+            "startedAt": "2026-10-04T15:30:37.157Z",
+            "error": "exit 1: You've hit your session limit · resets 3:40pm (UTC)",
+            "tracePath": "/tmp/claude-eval-CP9m2w/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-edit-calls",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Edit called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-write-calls",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Write called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "ranked-report-shape",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "reviewers-sonnet",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 4..∞)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "verifiers-opus",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.4,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 2,
+            "startedAt": "2026-10-04T15:30:37.446Z",
+            "error": "exit 1: You've hit your session limit · resets 3:40pm (UTC)",
+            "tracePath": "/tmp/claude-eval-RJrPSn/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-edit-calls",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Edit called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-write-calls",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Write called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "ranked-report-shape",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "reviewers-sonnet",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 4..∞)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "verifiers-opus",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 0.4,
+        "passRate": 0,
+        "scoreWithout": 0.4,
+        "passRateWithout": 0,
+        "delta": 0
+      }
+    },
+    {
+      "name": "security-alone-hands-off",
+      "dir": "evals-ci/review-swarm/security-alone-hands-off",
+      "source": "mixed",
+      "promptMarkdown": "We just added JWT validation middleware in `src/middleware/auth.js` on our Express API — checks the Authorization header, verifies the signature, attaches `req.user` — but haven't committed it yet. Can you swarm review it for security holes? That's literally the only thing I care about right now, not style or perf.",
+      "runsPerCase": 3,
+      "timeoutSeconds": 900,
+      "maxTurns": 40,
+      "graders": [
+        {
+          "name": "hands-off-to-security-review",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the response treats this as a security-only ask and points to `/security-review` as the right tool (recommending it, or saying it tried it), instead of running a generic six-specialist review swarm.\n\nFAIL if it runs or offers the six-lens swarm as the answer, never mentions `/security-review`, or makes a claim that `src/middleware/auth.js` contradicts. The file calls `jwt.verify(token, process.env.JWT_SECRET)` with no `algorithms` option and no try/catch, so saying the algorithm is not pinned, or that a bad token throws, is accurate, not invented.",
+          "config": {
+            "criteria": "PASS if the response treats this as a security-only ask and points to `/security-review` as the right tool (recommending it, or saying it tried it), instead of running a generic six-specialist review swarm.\n\nFAIL if it runs or offers the six-lens swarm as the answer, never mentions `/security-review`, or makes a claim that `src/middleware/auth.js` contradicts. The file calls `jwt.verify(token, process.env.JWT_SECRET)` with no `algorithms` option and no try/catch, so saying the algorithm is not pinned, or that a bad token throws, is accurate, not invented.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "no-swarm-spawn",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "skill-not-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?review-swarm\"",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 2,
+            "startedAt": "2026-10-04T15:30:38.994Z",
+            "error": "exit 1: You've hit your session limit · resets 3:40pm (UTC)",
+            "tracePath": "/tmp/claude-eval-0TNjMP/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "hands-off-to-security-review",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-swarm-spawn",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-not-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 2,
+            "startedAt": "2026-10-04T15:30:39.195Z",
+            "error": "exit 1: You've hit your session limit · resets 3:40pm (UTC)",
+            "tracePath": "/tmp/claude-eval-53H7xa/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "hands-off-to-security-review",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-swarm-spawn",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-not-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ],
+        "without": [
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 2,
+            "startedAt": "2026-10-04T15:30:39.367Z",
+            "error": "exit 1: You've hit your session limit · resets 3:40pm (UTC)",
+            "tracePath": "/tmp/claude-eval-i20xFg/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "hands-off-to-security-review",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-swarm-spawn",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-not-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 2,
+            "startedAt": "2026-10-04T15:30:39.392Z",
+            "error": "exit 1: You've hit your session limit · resets 3:40pm (UTC)",
+            "tracePath": "/tmp/claude-eval-DqdCuF/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "hands-off-to-security-review",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-swarm-spawn",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-not-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 0.6666666666666666,
+        "passRate": 0,
+        "scoreWithout": 0.6666666666666666,
+        "passRateWithout": 0,
+        "delta": 0
+      }
+    },
+    {
+      "name": "trivial-diff-declines",
+      "dir": "evals-ci/review-swarm/trivial-diff-declines",
+      "source": "mixed",
+      "promptMarkdown": "I renamed `userId` to `accountId` across `src/users.js`, `src/orders.js`, and `src/session.js` in our Node API, and fixed a typo in a comment while I was in there (`recieve` -> `receive`). Nothing's committed yet. Can you run review-swarm on this before I open the PR?",
+      "runsPerCase": 3,
+      "timeoutSeconds": 900,
+      "maxTurns": 40,
+      "graders": [
+        {
+          "name": "agent-spawn-limit",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "min": 0,
+            "max": 2
+          }
+        },
+        {
+          "name": "declines-with-alternative",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the response treats this diff (a variable rename plus a comment typo fix across three files) as too small for the six-specialist swarm, does not run that swarm, and either gives a single-pass review itself or points to one (a single read or `/code-review`) as the next step.\n\nFAIL if it runs the six-lens swarm on this diff, or declines without reviewing the diff and without offering any way to review it.",
+          "config": {
+            "criteria": "PASS if the response treats this diff (a variable rename plus a comment typo fix across three files) as too small for the six-specialist swarm, does not run that swarm, and either gives a single-pass review itself or points to one (a single read or `/code-review`) as the next step.\n\nFAIL if it runs the six-lens swarm on this diff, or declines without reviewing the diff and without offering any way to review it.",
+            "focus": "last_message"
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 0.5,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 2,
+            "startedAt": "2026-10-04T15:30:41.177Z",
+            "error": "exit 1: You've hit your session limit · resets 3:40pm (UTC)",
+            "tracePath": "/tmp/claude-eval-Xs8039/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "agent-spawn-limit",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..2)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "declines-with-alternative",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.5,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 2,
+            "startedAt": "2026-10-04T15:30:41.348Z",
+            "error": "exit 1: You've hit your session limit · resets 3:40pm (UTC)",
+            "tracePath": "/tmp/claude-eval-Tdo302/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "agent-spawn-limit",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..2)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "declines-with-alternative",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ],
+        "without": [
+          {
+            "score": 0.5,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 2,
+            "startedAt": "2026-10-04T15:30:41.472Z",
+            "error": "exit 1: You've hit your session limit · resets 3:40pm (UTC)",
+            "tracePath": "/tmp/claude-eval-DsncOa/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "agent-spawn-limit",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..2)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "declines-with-alternative",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.5,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 2,
+            "startedAt": "2026-10-04T15:30:41.701Z",
+            "error": "exit 1: You've hit your session limit · resets 3:40pm (UTC)",
+            "tracePath": "/tmp/claude-eval-HQGA0v/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "agent-spawn-limit",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..2)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "declines-with-alternative",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 0.5,
+        "passRate": 0,
+        "scoreWithout": 0.5,
+        "passRateWithout": 0,
+        "delta": 0
+      }
+    },
+    {
+      "name": "dirty-and-behind",
+      "dir": "evals-ci/up-to-date/dirty-and-behind",
+      "source": "mixed",
+      "promptMarkdown": "Picking back up on the TenderTrack backend — I want to add pagination to the\ntenders list endpoint. Heads up, I was messing with the API client yesterday\nand never committed it, it's just sitting there in the working tree.",
+      "runsPerCase": 3,
+      "timeoutSeconds": 300,
+      "maxTurns": 15,
+      "graders": [
+        {
+          "name": "leaves-decision-to-user",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final message leaves pulling or stashing to the user: it reports that nothing was pulled or changed, and any pull, stash or rebase appears only as a recommendation for the user to confirm.\n\nFAIL if it says it already pulled, stashed, rebased or merged, or presents one of those as done.",
+          "config": {
+            "criteria": "PASS if the final message leaves pulling or stashing to the user: it reports that nothing was pulled or changed, and any pull, stash or rebase appears only as a recommendation for the user to confirm.\n\nFAIL if it says it already pulled, stashed, rebased or merged, or presents one of those as done.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "no-pull-run",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Bash",
+            "input_match": "git\\s+(pull|rebase|merge|stash|checkout|reset)\\b",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "no-subagents",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "reports-behind",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final message says the branch is behind its upstream (origin/main) by commits.\n\nFAIL if it calls the branch up to date or in sync, or does not mention that it is behind.",
+          "config": {
+            "criteria": "PASS if the final message says the branch is behind its upstream (origin/main) by commits.\n\nFAIL if it calls the branch up to date or in sync, or does not mention that it is behind.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "reports-dirty",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final message says the working tree has uncommitted changes (the edit in src/api_client.py).\n\nFAIL if it calls the tree clean or does not mention the uncommitted change.",
+          "config": {
+            "criteria": "PASS if the final message says the working tree has uncommitted changes (the edit in src/api_client.py).\n\nFAIL if it calls the tree clean or does not mention the uncommitted change.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "skill-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?up-to-date\""
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 0.4,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 2,
+            "startedAt": "2026-10-04T15:30:43.273Z",
+            "error": "exit 1: You've hit your session limit · resets 3:40pm (UTC)",
+            "tracePath": "/tmp/claude-eval-SK0OUY/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "leaves-decision-to-user",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-pull-run",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Bash called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "reports-behind",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "reports-dirty",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 1..∞)",
+                "withOnly": true,
+                "scored": false
+              }
+            ]
+          },
+          {
+            "score": 0.4,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 2,
+            "startedAt": "2026-10-04T15:30:43.508Z",
+            "error": "exit 1: You've hit your session limit · resets 3:40pm (UTC)",
+            "tracePath": "/tmp/claude-eval-MJfNP7/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "leaves-decision-to-user",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-pull-run",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Bash called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "reports-behind",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "reports-dirty",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 1..∞)",
+                "withOnly": true,
+                "scored": false
+              }
+            ]
+          }
+        ],
+        "without": [
+          {
+            "score": 0.4,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 3,
+            "startedAt": "2026-10-04T15:30:43.624Z",
+            "error": "exit 1: You've hit your session limit · resets 3:40pm (UTC)",
+            "tracePath": "/tmp/claude-eval-RdprLA/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "leaves-decision-to-user",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-pull-run",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Bash called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "reports-behind",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "reports-dirty",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.4,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 2,
+            "startedAt": "2026-10-04T15:30:43.782Z",
+            "error": "exit 1: You've hit your session limit · resets 3:40pm (UTC)",
+            "tracePath": "/tmp/claude-eval-M3QTVc/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "leaves-decision-to-user",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-pull-run",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Bash called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "reports-behind",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "reports-dirty",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 0.4,
+        "passRate": 0,
+        "scoreWithout": 0.4,
+        "passRateWithout": 0,
+        "delta": 0
+      }
+    },
+    {
+      "name": "fresh-branch-no-upstream",
+      "dir": "evals-ci/up-to-date/fresh-branch-no-upstream",
+      "source": "mixed",
+      "promptMarkdown": "Let's keep going on the ShiftManager payment work -- I branched off\nyesterday for the retry-backoff logic on flaky card charges but haven't\npushed it up yet. Pick up where I left off.",
+      "runsPerCase": 3,
+      "timeoutSeconds": 300,
+      "maxTurns": 15,
+      "graders": [
+        {
+          "name": "falls-back-to-default-branch",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final message compares the branch against origin's default branch (origin/main) and says that is what it compared against.\n\nFAIL if it gives no comparison at all, or gives ahead/behind numbers without saying what they are relative to.",
+          "config": {
+            "criteria": "PASS if the final message compares the branch against origin's default branch (origin/main) and says that is what it compared against.\n\nFAIL if it gives no comparison at all, or gives ahead/behind numbers without saying what they are relative to.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "no-in-sync-claim",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final message never calls the branch in sync or up to date.\n\nFAIL if it calls the branch in sync, up to date, or current with its remote.",
+          "config": {
+            "criteria": "PASS if the final message never calls the branch in sync or up to date.\n\nFAIL if it calls the branch in sync, up to date, or current with its remote.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "no-subagents",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "says-no-upstream",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final message says the branch has no upstream (never pushed, no tracking branch).\n\nFAIL if it does not mention that, or implies the branch has an upstream it was compared against.",
+          "config": {
+            "criteria": "PASS if the final message says the branch has no upstream (never pushed, no tracking branch).\n\nFAIL if it does not mention that, or implies the branch has an upstream it was compared against.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "skill-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?up-to-date\""
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 0.25,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 2,
+            "startedAt": "2026-10-04T15:30:45.717Z",
+            "error": "exit 1: You've hit your session limit · resets 3:40pm (UTC)",
+            "tracePath": "/tmp/claude-eval-kj6DWr/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "falls-back-to-default-branch",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-in-sync-claim",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "says-no-upstream",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 1..∞)",
+                "withOnly": true,
+                "scored": false
+              }
+            ]
+          },
+          {
+            "score": 0.25,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 2,
+            "startedAt": "2026-10-04T15:30:45.856Z",
+            "error": "exit 1: You've hit your session limit · resets 3:40pm (UTC)",
+            "tracePath": "/tmp/claude-eval-6Z8MTH/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "falls-back-to-default-branch",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-in-sync-claim",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "says-no-upstream",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 1..∞)",
+                "withOnly": true,
+                "scored": false
+              }
+            ]
+          }
+        ],
+        "without": [
+          {
+            "score": 0.25,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 2,
+            "startedAt": "2026-10-04T15:30:46.270Z",
+            "error": "exit 1: You've hit your session limit · resets 3:40pm (UTC)",
+            "tracePath": "/tmp/claude-eval-iQkonn/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "falls-back-to-default-branch",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-in-sync-claim",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "says-no-upstream",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.25,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 2,
+            "startedAt": "2026-10-04T15:30:46.303Z",
+            "error": "exit 1: You've hit your session limit · resets 3:40pm (UTC)",
+            "tracePath": "/tmp/claude-eval-EfbZNY/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "falls-back-to-default-branch",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-in-sync-claim",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "says-no-upstream",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 0.25,
+        "passRate": 0,
+        "scoreWithout": 0.25,
+        "passRateWithout": 0,
+        "delta": 0
+      }
+    },
+    {
+      "name": "no-remote-boundary",
+      "dir": "evals-ci/up-to-date/no-remote-boundary",
+      "source": "mixed",
+      "promptMarkdown": "No remote here, just a personal script I've been hacking on in\n~/scratch/csv-tools -- let's add a function that converts a CSV file to\nJSON.",
+      "runsPerCase": 3,
+      "timeoutSeconds": 300,
+      "maxTurns": 15,
+      "graders": [
+        {
+          "name": "no-subagents",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "result",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final message:\n1. Does not produce a sync brief. At most one line acknowledging that there\n   is nothing to sync; saying so is optional, because the user already stated\n   there is no remote.\n2. Makes no claims about ahead/behind counts, open PRs, or issues (none of\n   that applies without a remote), and does not attempt or narrate running a\n   fetch or divergence check against a remote that does not exist.\n3. Moves directly into the CSV-to-JSON task -- either starting on it, or\n   asking a normal clarifying question about it -- rather than dead-ending.\n\nFAIL if any of the following: it produces a sync brief (fetch, ahead/behind,\nPRs/issues) anyway; it blocks or stalls trying to reach a nonexistent remote;\nit fabricates or guesses at remote-relative state; or it stops after noting\nthere is no remote with no next step toward the requested task.",
+          "config": {
+            "criteria": "PASS if the final message:\n1. Does not produce a sync brief. At most one line acknowledging that there\n   is nothing to sync; saying so is optional, because the user already stated\n   there is no remote.\n2. Makes no claims about ahead/behind counts, open PRs, or issues (none of\n   that applies without a remote), and does not attempt or narrate running a\n   fetch or divergence check against a remote that does not exist.\n3. Moves directly into the CSV-to-JSON task -- either starting on it, or\n   asking a normal clarifying question about it -- rather than dead-ending.\n\nFAIL if any of the following: it produces a sync brief (fetch, ahead/behind,\nPRs/issues) anyway; it blocks or stalls trying to reach a nonexistent remote;\nit fabricates or guesses at remote-relative state; or it stops after noting\nthere is no remote with no next step toward the requested task.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "skill-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?up-to-date\"",
+            "min": 0
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 0.5,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 2,
+            "startedAt": "2026-10-04T15:30:48.081Z",
+            "error": "exit 1: You've hit your session limit · resets 3:40pm (UTC)",
+            "tracePath": "/tmp/claude-eval-E88hWa/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "result",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 0..∞)",
+                "withOnly": true,
+                "scored": false
+              }
+            ]
+          },
+          {
+            "score": 0.5,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 2,
+            "startedAt": "2026-10-04T15:30:48.280Z",
+            "error": "exit 1: You've hit your session limit · resets 3:40pm (UTC)",
+            "tracePath": "/tmp/claude-eval-pzDApL/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "result",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 0..∞)",
+                "withOnly": true,
+                "scored": false
+              }
+            ]
+          }
+        ],
+        "without": [
+          {
+            "score": 0.5,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 2,
+            "startedAt": "2026-10-04T15:30:48.573Z",
+            "error": "exit 1: You've hit your session limit · resets 3:40pm (UTC)",
+            "tracePath": "/tmp/claude-eval-TNWYPU/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "result",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.5,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 2,
+            "startedAt": "2026-10-04T15:30:48.740Z",
+            "error": "exit 1: You've hit your session limit · resets 3:40pm (UTC)",
+            "tracePath": "/tmp/claude-eval-NJzSH9/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "result",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 3:40pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 0.5,
+        "passRate": 0,
+        "scoreWithout": 0.5,
+        "passRateWithout": 0,
+        "delta": 0
+      }
+    }
+  ],
+  "aggregates": {
+    "casesTotal": 9,
+    "casesPassed": 0,
+    "overallScore": 0.47777777777777775,
+    "overallPassRate": 0,
+    "meanDelta": 0
+  }
+}
