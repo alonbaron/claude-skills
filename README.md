@@ -146,20 +146,20 @@ The picture above is the run that shaped v3.1: the build loop on a throwaway Nod
 claude plugin eval <absolute path to this repo> --runs 2 -j 4 --allow-tools Write Edit --scaffold --model claude-fable-5-1 --judge-model sonnet --no-publish --trust-plugin --threshold 0.7 --json
 ```
 
-`--runs 2`, with and without the plugin; 18 of 19 cases pass at 0.7, all on Fable 5.1. ponytail, ask-the-council and prompt-generator were measured 2026-09-23/24 in a container without a shell sandbox; architect, review-swarm and up-to-date on 2026-10-04 on the GitHub runner (run 37188685382: overall 0.91, mean uplift +0.26, $36.55 API-equivalent). Details in `evals/README.md`, per-case history in `.claude/scratch/v3/STEP5.md` and `STEP6.md`:
+`--runs 2`, with and without the plugin; 18 of 19 cases pass at 0.7, all on Fable 5.1. ponytail, ask-the-council and prompt-generator were measured 2026-09-23/24 in a container without a shell sandbox; architect, review-swarm and up-to-date on 2026-10-04 on the GitHub runner (run 37198713961: overall 0.89, mean uplift +0.23, $47.41 API-equivalent, 8 of 9 at 0.7). Details in `evals/README.md`, per-case history in `.claude/scratch/v3/STEP5.md` and `STEP6.md`:
 
 | Skill | Cases | With plugin | Without | Model |
 |---|---|---|---|---|
 | ponytail | 4 | 1.00 (pushback), 1.00 (trust boundary), 1.00 (defers to simplify), 1.00 (root cause) | 0.40, 0.83, 1.00, 1.00 | Fable 5.1 |
 | ask-the-council | 3 | 1.00, 1.00, 1.00 | 1.00, 0.60, 0.17 | Fable 5.1 |
 | prompt-generator | 3 | 1.00, 1.00, 1.00 | 0.71, 1.00, 0.83 | Fable 5.1 |
-| architect | 3 | 1.00 (audit), 0.83 (new feature), 1.00 (small fix) | 1.00, 0.67, 0.62 | Fable 5.1 |
-| review-swarm | 3 | 0.80 (ranked report), **0.67** (security hand-off), 1.00 (trivial diff) | 0.40, 0.67, 1.00 | Fable 5.1 |
-| up-to-date | 3 | 0.90 (dirty and behind), 1.00 (no upstream), 1.00 (no remote) | 0.50, 0.50, 0.50 | Fable 5.1 |
+| architect | 3 | 1.00 (audit), 0.83 (new feature), 0.88 (small fix) | 1.00, 0.67, 0.75 | Fable 5.1 |
+| review-swarm | 3 | 0.90 (ranked report), **0.67** (security hand-off), 1.00 (trivial diff) | 0.40, 0.33, 1.00 | Fable 5.1 |
+| up-to-date | 3 | 1.00 (dirty and behind), 1.00 (no upstream), 0.75 (no remote) | 0.70, 0.62, 0.50 | Fable 5.1 |
 
 architect, review-swarm and up-to-date run shell commands when they load, so their cases need a working bwrap sandbox; `.github/workflows/evals.yml` runs them on a GitHub runner with a `CLAUDE_CODE_OAUTH_TOKEN` secret, on Fable 5.1 by default (`workflow_dispatch` takes a model for a comparison run; the 2026-09-29 Opus 5.5 pass is in `STEP5.md`). Several cases score as well without the plugin; they guard boundaries (when a skill must stay quiet) rather than measure uplift.
 
-The one case under 0.7 on Fable is security-alone-hands-off, 0.67 in both arms: review-swarm stayed quiet and spawned nothing, as its `when_to_use` says, and Fable then wrote the security review itself, accurately, instead of naming `/security-review`. The skill is not the variable there, so the rubric stays as written and the number stands. Two other readings of that run: both with-plugin runs of real-diff-ranked-report hit the case's 900 s timeout mid-swarm (six specialists plus Opus verifiers take Fable longer than that; the process graders still passed), and the without-plugin runs of no-remote-boundary were lost to the plan's session limit, so its 0.50 is one run, not two.
+The one case under 0.7 on Fable is still security-alone-hands-off, 0.67 with the plugin and 0.33 without. With the plugin, review-swarm stayed quiet and spawned nothing in both runs, as its `when_to_use` says, and Fable then reviewed the twelve-line auth middleware itself, accurately, instead of naming `/security-review`. Without the plugin Fable spawned three subagents for the same file, so the plugin now shows uplift on that case even though the hand-off grader fails in every arm. The skill is not the variable in the hand-off miss, so the rubric stays as written and the number stands. real-diff-ranked-report no longer times out: with the case limit raised to 1500 s both with-plugin runs finished (the longer one in 956 s, reviewers on sonnet and verifiers on opus both spawned), and the only mark it lost was one judge call. That judge call, one more on no-remote-boundary and both without-plugin runs of no-remote-boundary were lost to the plan's session limit, which the run reached about 25 minutes in, so no-remote-boundary's 0.75 is one judged run and its 0.50 without the plugin is the process grader alone.
 
 Trigger accuracy (120 queries, 20 per skill, half should fire): architect 20/20, ask-the-council 20/20, ponytail 19/20, prompt-generator 17/20, review-swarm 16/20, up-to-date 20/20 on should-fire; no false fires on any skill.
 
