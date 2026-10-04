@@ -6,6 +6,11 @@
 name: evals
 on:
   workflow_dispatch:
+    inputs:
+      model:
+        description: "Model the agent under test runs on"
+        default: "claude-fable-5-1"
+        required: false
   push:
     branches: ["claude/**"]
 jobs:
@@ -31,13 +36,15 @@ jobs:
         env:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           SKIP_CASES: ""
+          # The agent under test. A push runs Fable 5.1 (the model the skills are written for); workflow_dispatch can pick another.
+          MODEL: ${{ github.event.inputs.model || 'claude-fable-5-1' }}
         run: |
           mkdir evals-ci
           cp -r evals/architect evals/review-swarm evals/up-to-date evals-ci/
           # Cases that already have a clean result on this commit's skills; space-separated <skill>/<case>.
           for c in $SKIP_CASES; do rm -rf "evals-ci/$c"; done
           claude plugin eval . --eval-dir evals-ci --runs 2 -j 4 --scaffold \
-            --allow-tools Write Edit Bash --model claude-opus-5-5 --judge-model sonnet \
+            --allow-tools Write Edit Bash --model "$MODEL" --judge-model sonnet \
             --no-publish --trust-plugin --threshold 0.7 --json evals-ci/result.json
       - name: Summary
         if: always()
