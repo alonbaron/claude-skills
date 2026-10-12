@@ -2,7 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 
 import type { Stage, Watch } from '../types'
-import { EMPTY, applyEntries, elapsed, finished, groupByPhase, parseLines, readMeta, readTranscript, report, running, stageLine, statusLine } from './journal'
+import { EMPTY, applyEntries, finished, parseLines, phaseRuns, readMeta, readTranscript, report, running, stageDetail, stageResult, stageTitle, state, statusLine, tone } from './journal'
 
 const PANE = 'workflow-watch'
 const watch = atom({ plugin: 'workflow-watch', key: 'watch' } as const, EMPTY)
@@ -85,7 +85,7 @@ async function tick($: Engine): Promise<void> {
 
   const wasDone = new Set(base.filter(s => s.endedAt !== null).map(s => s.key))
   const justDone = stages.filter(s => s.endedAt !== null && !wasDone.has(s.key))
-  for (const s of justDone) $.ui.toast(`${s.isEmpty ? '✗' : '✓'} ${s.phase}: ${s.label} — ${s.summary ?? ''}`.slice(0, 120))
+  for (const s of justDone) $.ui.toast(`${state(s)}: ${s.label} — ${s.summary ?? ''}`.slice(0, 120))
   if (!sameRun && stages.length) {
     $.ui.toast(`workflow-watch: following run ${found.run}`)
     void openPane($)
@@ -131,20 +131,32 @@ export const register: Register = on => {
     const live = running(w)
     const done = finished(w)
     const tokens = w.stages.reduce((n, s) => n + s.outputTokens, 0)
+    const fit = (text: string, room = width - 2): string => text.slice(0, Math.max(0, room))
+    // One block per stage in run order: the state and who ran it, then the result and the details
+    // indented under it; a divider each time the phase changes.
     return (
       <Box flexDirection="column" paddingX={1}>
-        <Text bold>
-          {w.run} · {live.length} running · {done.length} done · {(tokens / 1000).toFixed(1)}k output tokens
+        <Text bold wrap="truncate-end">
+          {fit(`${w.run} · ${live.length} running · ${done.length} done · ${(tokens / 1000).toFixed(1)}k output tokens`)}
         </Text>
-        {groupByPhase(w.stages).map(g => (
-          <Box key={`phase-${g.phase}`} flexDirection="column" marginTop={1}>
-            <Text bold dimColor={g.stages.every(s => s.endedAt !== null)}>
-              {g.phase || '(no phase)'}
+        {phaseRuns(w.stages).map((g, i) => (
+          <Box key={`phase-${i}`} flexDirection="column" marginTop={1}>
+            <Text bold dimColor wrap="truncate-end">
+              {fit(`── ${g.phase || '(no phase)'}`)}
             </Text>
             {g.stages.map(s => (
-              <Text key={s.key} dimColor={s.endedAt !== null} wrap="truncate-end">
-                {`  ${stageLine(s, w.now)}`.slice(0, width - 2)}
-              </Text>
+              <Box key={s.key} flexDirection="column">
+                <Text wrap="truncate-end">
+                  <Text color={tone(s)} bold>
+                    {state(s)}
+                  </Text>
+                  {fit(`  ${stageTitle(s)}`, width - 2 - state(s).length)}
+                </Text>
+                <Text wrap="truncate-end">{fit(`    ${stageResult(s)}`)}</Text>
+                <Text dimColor wrap="truncate-end">
+                  {fit(`    ${stageDetail(s, w.now)}`)}
+                </Text>
+              </Box>
             ))}
           </Box>
         ))}
@@ -159,15 +171,28 @@ export const register: Register = on => {
     if (isQuiet) return next(e)
     const { Box, Text } = $.ui.resolve(e)
     const width = Math.max(40, e.props.bodyColumns ?? 80)
+    const fit = (text: string, room = width): string => text.slice(0, Math.max(0, room))
     const head = `${w.run}: ${finished(w).length} done · ${live.length} running`
+    // A running stage has no result yet, so its block is the head line and the live details under it.
     return (
       <Box flexDirection="column">
-        <Text bold wrap="truncate-end">{head}</Text>
+        <Text bold wrap="truncate-end">
+          {fit(head)}
+        </Text>
         {live.slice(0, 4).map(s => (
-          <Text key={s.key} dimColor wrap="truncate-end">
-            {`  ▶ ${elapsed(w.now - s.startedAt)} ${s.label} [${s.model ?? s.alias ?? '?'} ${s.effort ?? ''}]${s.lastTool ? ' · ' + s.lastTool : ''}`.slice(0, width)}
-          </Text>
+          <Box key={s.key} flexDirection="column">
+            <Text wrap="truncate-end">
+              <Text color={tone(s)} bold>
+                {state(s)}
+              </Text>
+              {fit(`  ${stageTitle(s)}`, width - state(s).length)}
+            </Text>
+            <Text dimColor wrap="truncate-end">
+              {fit(`    ${stageDetail(s, w.now)}`)}
+            </Text>
+          </Box>
         ))}
+        {live.length > 4 && <Text dimColor>{`  +${live.length - 4} more running`}</Text>}
       </Box>
     )
   })

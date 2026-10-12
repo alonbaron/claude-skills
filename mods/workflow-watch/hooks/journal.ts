@@ -48,6 +48,7 @@ export function applyEntries(prev: Stage[], entries: Entry[], now: number): Stag
           endedAt: null,
           summary: null,
           isEmpty: false,
+          isFailed: false,
           alias: null,
           model: null,
           effort: null,
@@ -63,7 +64,7 @@ export function applyEntries(prev: Stage[], entries: Entry[], now: number): Stag
       if (!known) continue
       if (known.endedAt !== null) continue
       const isEmpty = e.result === null || e.result === undefined
-      byKey.set(e.key, { ...known, endedAt: now, isEmpty, summary: isEmpty ? '(no result)' : summarize(known.label, e.result) })
+      byKey.set(e.key, { ...known, endedAt: now, isEmpty, isFailed: !isEmpty && isFailure(e.result), summary: isEmpty ? '(no result)' : summarize(known.label, e.result) })
     }
   }
   return order.map(k => byKey.get(k) as Stage)
@@ -71,6 +72,12 @@ export function applyEntries(prev: Stage[], entries: Entry[], now: number): Stag
 
 type Rec = Record<string, unknown>
 const rec = (r: unknown): Rec => (r && typeof r === 'object' ? (r as Rec) : {})
+
+/** A result that reports a failure: a failing verdict, `ok: false`, or findings the fixer left disputed. */
+export function isFailure(result: unknown): boolean {
+  const r = rec(result)
+  return r.verdict === 'fail' || r.ok === false || (Array.isArray(r.notFixed) && r.notFixed.length > 0)
+}
 
 /** What a transcript (agent-<id>.jsonl) says about its stage so far. */
 export type TranscriptFacts = { model: string | null; effort: string | null; outputTokens: number; calls: number; lastTool: string | null }
@@ -161,60 +168,99 @@ export function summarize(label: string, result: unknown): string {
   }
 }
 
-/** Stages in journal order, grouped by phase in first-seen order. */
-export function groupByPhase(stages: Stage[]): Array<{ phase: string; stages: Stage[] }> {
-  const groups: Array<{ phase: string; stages: Stage[] }> = []
+/**
+ * Stages in run order, cut where the phase changes: each stretch of one phase
+ * gets its own divider, so a second refute round is not folded into the first.
+ */
+export function phaseRuns(stages: Stage[]): Array<{ phase: string; stages: Stage[] }> {
+  const runs: Array<{ phase: string; stages: Stage[] }> = []
   for (const s of stages) {
-    const g = groups.find(x => x.phase === s.phase)
-    if (g) g.stages.push(s)
-    else groups.push({ phase: s.phase, stages: [s] })
+    const last = runs[runs.length - 1]
+    if (last && last.phase === s.phase) last.stages.push(s)
+    else runs.push({ phase: s.phase, stages: [s] })
   }
-  return groups
+  return runs
 }
 
 export const running = (w: Watch): Stage[] => w.stages.filter(s => s.endedAt === null)
 export const finished = (w: Watch): Stage[] => w.stages.filter(s => s.endedAt !== null)
+const failed = (w: Watch): Stage[] => w.stages.filter(s => s.endedAt !== null && (s.isEmpty || s.isFailed === true))
 
+/** `0:46`, `15:03`: minutes unpadded. */
 export function elapsed(ms: number): string {
   const s = Math.max(0, Math.round(ms / 1000))
-  const m = Math.floor(s / 60)
-  return `${String(m).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 }
 
-/** `fable→claude-fable-5-1 high 0.8k`: what ran the stage and what it cost. */
+const many = (n: number, one: string, more: string): string => `${n} ${n === 1 ? one : more}`
+
+/** The stage's state as a glyph and a word, so it never rests on color alone. */
+export function state(s: Stage): string {
+  if (s.endedAt === null) return '▶ running'
+  if (s.isEmpty) return '✗ no result'
+  if (s.isFailed === true) return '! failed'
+  return '✓ done'
+}
+
+/** The theme color that goes with the state. */
+export function tone(s: Stage): 'warning' | 'error' | 'success' {
+  if (s.endedAt === null) return 'warning'
+  return s.isEmpty || s.isFailed === true ? 'error' : 'success'
+}
+
+/** `fable→claude-fable-5-1 high`: what ran the stage, at which effort (`n/a` for a model that records none). */
 export function who(s: Stage): string {
   const model = s.alias && s.model ? `${s.alias}→${s.model}` : (s.model ?? s.alias ?? '?')
-  const tokens = s.outputTokens >= 1000 ? `${(s.outputTokens / 1000).toFixed(1)}k` : String(s.outputTokens)
-  return `${model} ${s.effort ?? 'n/a'} ${tokens}`
+  return `${model} ${s.effort ?? 'n/a'}`
 }
 
-/** One stage as a line: glyph, time, label, who ran it, then the live tool or the result. */
-export function stageLine(s: Stage, now: number): string {
+/** The head of a stage's block after its state: `build:1.2  sonnet→claude-sonnet-5-5 medium`. */
+export function stageTitle(s: Stage): string {
+  return `${s.label}  ${who(s)}`
+}
+
+/** The result in one line, or `no result yet` while the stage runs. */
+export function stageResult(s: Stage): string {
+  return s.endedAt === null ? 'no result yet' : (s.summary ?? '')
+}
+
+/**
+ * The details as one compact line, the element tables having no fold:
+ * `Ran for 0:46 · 5 tools · 0.8k tokens`, or `Running for 0:12 · 3 calls · Bash npm test`.
+ */
+export function stageDetail(s: Stage, now: number): string {
   const isLive = s.endedAt === null
-  const glyph = isLive ? '▶' : s.isEmpty ? '✗' : '✓'
   const time = elapsed((isLive ? now : (s.endedAt as number)) - s.startedAt)
-  const tail = isLive ? (s.lastTool ? `${s.calls} calls · ${s.lastTool}` : 'starting…') : (s.summary ?? '')
-  return `${glyph} ${time}  ${s.label}  [${who(s)}]  ${tail}`
+  if (isLive) return `Running for ${time} · ${many(s.calls, 'call', 'calls')} · ${s.lastTool ?? 'starting…'}`
+  return `Ran for ${time} · ${many(s.calls, 'tool', 'tools')} · ${(s.outputTokens / 1000).toFixed(1)}k tokens`
 }
 
-/** The one-line status: what runs now, and the tally. */
+/** One stage as a block: the head line, then its result and its details indented under it. */
+export function stageLines(s: Stage, now: number): string[] {
+  return [`${state(s)}  ${stageTitle(s)}`, `    ${stageResult(s)}`, `    ${stageDetail(s, now)}`]
+}
+
+/** The one-line status: the state as glyph and word, what runs now, and the tally. */
 export function statusLine(w: Watch): string | undefined {
   if (!w.run || w.stages.length === 0) return undefined
   const live = running(w)
-  const done = finished(w).length
-  if (live.length === 0) return `${w.run}: done, ${done} stages`
+  const bad = failed(w).length
+  const tally = `${finished(w).length} done${bad ? `, ${bad} failed` : ''}`
+  if (live.length === 0) return `${w.run}: ${bad ? '!' : '✓'} finished, ${tally}`
+  const first = live[0] as Stage
+  if (live.length === 1) return `${w.run}: ▶ running ${first.label} (${who(first)}), ${tally}`
   const names = live.map(s => s.label).join(', ')
-  return `${w.run}: ${live.length} running (${names.slice(0, 60)}${names.length > 60 ? '…' : ''}), ${done} done`
+  return `${w.run}: ▶ ${live.length} running (${names.slice(0, 60)}${names.length > 60 ? '…' : ''}), ${tally}`
 }
 
-/** The whole picture as plain text: what the command prints, the same lines the pane draws. */
+/** The whole picture as plain text: what the command prints, the same blocks the pane draws. */
 export function report(w: Watch): string {
   const live = running(w)
   const done = finished(w)
   const lines = [`${w.run}: ${live.length} running, ${done.length} done`]
-  for (const g of groupByPhase(w.stages)) {
-    lines.push(`${g.phase || '(no phase)'}:`)
-    for (const s of g.stages) lines.push(`  ${stageLine(s, w.now)}`)
+  for (const g of phaseRuns(w.stages)) {
+    lines.push(`── ${g.phase || '(no phase)'}`)
+    for (const s of g.stages) lines.push(...stageLines(s, w.now))
   }
   return lines.join('\n')
 }

@@ -13,6 +13,8 @@ export type Stage = {
   summary: string | null
   /** True when the journal recorded a null result (skipped or died). */
   isEmpty: boolean
+  /** True when the result reports a failure: a failing verdict, `ok: false`, or findings left disputed. */
+  isFailed: boolean
   /** The model alias the script asked for (from the agent's meta.json), or null. */
   alias: string | null
   /** The model id the engine resolved the alias to, from the transcript, or null. */
