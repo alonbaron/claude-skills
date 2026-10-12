@@ -37,10 +37,10 @@ Most skill packs ask you to trust them. This one runs each skill through a [`cla
 | The situation | With the plugin | Without |
 |---|---|---|
 | A real diff with an N+1 query goes to **review-swarm**: parallel reviewers, verifiers, ranked report | **0.90** | 0.40 |
-| Someone asks for a pluggable-backend cache interface with one caller; **ponytail** ships the simple version and names the upgrade trigger | **1.00** | 0.40 |
-| **ask-the-council** reaches a verdict and hands the build to the right skill, separating opinion from fact | **1.00** | 0.17 |
-| A feature spec from scratch: **architect** asks the few questions that matter and right-sizes the docs | **1.00** | 0.67 |
-| A branch that was never pushed: **up-to-date** says so and compares against `main` instead of faking a sync | **1.00** | 0.50 |
+| Someone asks for a pluggable-backend cache interface with one caller; **ponytail** ships the simple version | **0.80** | 0.30 |
+| **ask-the-council** reaches a verdict and hands the build to the right skill, separating opinion from fact | **0.83** | 0.17 |
+| A feature spec from scratch: **architect** asks the few questions that matter and right-sizes the docs | **0.83** | 0.67 |
+| A branch that was never pushed: **up-to-date** says so and compares against `main` instead of faking a sync | **1.00** | 0.62 |
 
 18 of 19 cases pass at the 0.7 threshold; review-swarm's security hand-off scored 0.67, and the Evals section says why. Across 120 trigger prompts, each skill fired on 80–100% of the ones meant for it and never on the ones that weren't. Full table and method under [Evals](#-evals).
 
@@ -163,7 +163,7 @@ Two readings of the in-container run: pushback-on-abstraction scored 0.80 becaus
 
 The one case under 0.7 on Fable is still security-alone-hands-off, 0.67 with the plugin and 0.33 without. With the plugin, review-swarm stayed quiet and spawned nothing in both runs, as its `when_to_use` says, and Fable then reviewed the twelve-line auth middleware itself, accurately, instead of naming `/security-review`. Without the plugin Fable spawned three subagents for the same file, so the plugin now shows uplift on that case even though the hand-off grader fails in every arm. The skill is not the variable in the hand-off miss, so the rubric stays as written and the number stands. real-diff-ranked-report no longer times out: with the case limit raised to 1500 s both with-plugin runs finished (the longer one in 956 s, reviewers on sonnet and verifiers on opus both spawned), and the only mark it lost was one judge call. That judge call, one more on no-remote-boundary and both without-plugin runs of no-remote-boundary were lost to the plan's session limit, which the run reached about 25 minutes in, so no-remote-boundary's 0.75 is one judged run and its 0.50 without the plugin is the process grader alone.
 
-Trigger accuracy (120 queries, 20 per skill, half should fire): architect 20/20, ask-the-council 20/20, ponytail 19/20, prompt-generator 17/20, review-swarm 16/20, up-to-date 20/20 on should-fire; no false fires on any skill.
+Trigger accuracy (120 queries, 20 per skill, half should fire, each run twice): architect 20/20, ask-the-council 20/20, ponytail 19/20, prompt-generator 17/20, review-swarm 16/20, up-to-date 20/20 on should-fire; no false fires on any skill.
 
 ---
 
