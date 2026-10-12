@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./assets/hero.svg" alt="alon-skills — Claude Code skills that prove they work, with eval scores for each skill with and without the plugin" width="900">
+  <img src="./assets/hero.svg" alt="alon-skills — Claude Code skills that prove they work, one selected eval case per skill with and without the plugin" width="900">
 </p>
 
 <p align="center">
@@ -32,7 +32,7 @@ Pull updates anytime with `/plugin marketplace update alonbaron` — the marketp
 
 ## ◢ Proof, not promises
 
-Most skill packs ask you to trust them. This one runs each skill through a [`claude plugin eval`](https://code.claude.com/docs/en/plugin-evals) suite twice, once with the plugin and once without, and reports both. A few of the 19 cases:
+Most skill packs ask you to trust them. This one runs each skill through a [`claude plugin eval`](https://code.claude.com/docs/en/plugin-evals) suite twice, once with the plugin and once without, and reports both. One selected eval case per skill:
 
 | The situation | With the plugin | Without |
 |---|---|---|
@@ -163,7 +163,7 @@ Two readings of the in-container run: pushback-on-abstraction scored 0.80 becaus
 
 The one case under 0.7 on Fable is still security-alone-hands-off, 0.67 with the plugin and 0.33 without. With the plugin, review-swarm stayed quiet and spawned nothing in both runs, as its `when_to_use` says, and Fable then reviewed the twelve-line auth middleware itself, accurately, instead of naming `/security-review`. Without the plugin Fable spawned three subagents for the same file, so the plugin now shows uplift on that case even though the hand-off grader fails in every arm. The skill is not the variable in the hand-off miss, so the rubric stays as written and the number stands. real-diff-ranked-report no longer times out: with the case limit raised to 1500 s both with-plugin runs finished (the longer one in 956 s, reviewers on sonnet and verifiers on opus both spawned), and the only mark it lost was one judge call. That judge call, one more on no-remote-boundary and both without-plugin runs of no-remote-boundary were lost to the plan's session limit, which the run reached about 25 minutes in, so no-remote-boundary's 0.75 is one judged run and its 0.50 without the plugin is the process grader alone.
 
-Trigger accuracy (120 queries, 20 per skill, half should fire, each run twice): architect 20/20, ask-the-council 20/20, ponytail 19/20, prompt-generator 17/20, review-swarm 16/20, up-to-date 20/20 on should-fire; no false fires on any skill.
+Trigger accuracy (120 queries, 20 per skill, half should fire, each run twice): architect 20/20, ask-the-council 20/20, ponytail fired on 19 of 20 trigger prompts, prompt-generator 17/20, review-swarm 16/20, up-to-date 20/20 on should-fire; no false fires on any skill.
 
 ---
 

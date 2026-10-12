@@ -1,6 +1,6 @@
 <svg width="1280" height="640" viewBox="0 0 1280 640" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t d">
 <title id="t">alon-skills — Claude Code skills that prove they work</title>
-<desc id="d">Banner for the alon-skills Claude Code plugin. Left: the wordmark alon-skills, the line "Claude Code skills that prove they work", and the six slash commands. Right: an eval card comparing each skill with and without the plugin: review-swarm 0.90 vs 0.40, ponytail 0.80 vs 0.30, ask-the-council 0.83 vs 0.17, architect 0.83 vs 0.67, up-to-date 1.00 vs 0.62. Footer: 18 of 19 evals passing.</desc>
+<desc id="d">Banner for the alon-skills Claude Code plugin. Left: the wordmark alon-skills, the line "Claude Code skills that prove they work", and the six slash commands. Right: an eval card for the selected eval case per skill with and without the plugin: review-swarm 0.90 vs 0.40, ponytail (vendored) 0.80 vs 0.30, ask-the-council 0.83 vs 0.17, architect 0.83 vs 0.67, up-to-date 1.00 vs 0.62. Footer: 18 of 19 evals passing.</desc>
 <defs>
   <linearGradient id="bg" x1="0" y1="0" x2="1280" y2="640" gradientUnits="userSpaceOnUse">
     <stop stop-color="#F5F9FD"/><stop offset=".55" stop-color="#EFF4FB"/><stop offset="1" stop-color="#EAF0FA"/>
@@ -79,8 +79,8 @@
     <text x="73" y="23.5" text-anchor="middle" fill="#6D28D9">/up-to-date</text>
   </g>
   <g transform="translate(442 516)">
-    <rect width="122" height="36" rx="10" fill="#FFFFFF" fill-opacity=".85" stroke="#C9D6EA"/>
-    <text x="61" y="23.5" text-anchor="middle" fill="#7C3AED">/ponytail</text>
+    <rect width="232" height="36" rx="10" fill="#FFFFFF" fill-opacity=".85" stroke="#C9D6EA"/>
+    <text x="116" y="23.5" text-anchor="middle" fill="#7C3AED">/ponytail (vendored)</text>
   </g>
 </g>
 
@@ -90,39 +90,40 @@
   <rect x=".75" y=".75" width="498.5" height="454.5" rx="21.25" fill="none" stroke="url(#cardEdge)" stroke-width="1.5"/>
 
   <g font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif">
-    <text x="32" y="50" font-size="15" font-weight="700" letter-spacing="1.8" fill="#5B6B86">EVAL SCORES</text>
-    <g transform="translate(300 37)">
+    <text x="32" y="40" font-size="15" font-weight="700" letter-spacing="1.8" fill="#5B6B86">EVAL SCORES</text>
+    <g transform="translate(300 27)">
       <rect width="14" height="14" rx="4" fill="url(#bar)"/>
       <text x="22" y="12" font-size="14" fill="#5B6B86">with</text>
       <rect x="74" width="14" height="14" rx="4" fill="#B8C4D6"/>
       <text x="96" y="12" font-size="14" fill="#5B6B86">without</text>
     </g>
-    <line x1="32" y1="72" x2="468" y2="72" stroke="#E2E9F3"/>
+    <text x="32" y="66" font-size="14" fill="#5B6B86">Selected eval case per skill · with / without plugin</text>
+    <line x1="32" y1="84" x2="468" y2="84" stroke="#E2E9F3"/>
   </g>
 
   <!-- rows: label at y, with-bar at y+14, without-bar at y+32; bar scale 340px = 1.00 -->
   <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="15">
-    <g transform="translate(32 104)">
+    <g transform="translate(32 116)">
       <text y="0" fill="#233A57" font-weight="600">review-swarm</text>
       <rect y="12" width="306" height="10" rx="5" fill="url(#bar)"/><text x="356" y="22" fill="#233A57" font-weight="700">0.90</text>
       <rect y="28" width="136" height="10" rx="5" fill="#B8C4D6"/><text x="356" y="38" fill="#8A99B2">0.40</text>
     </g>
-    <g transform="translate(32 174)">
-      <text y="0" fill="#233A57" font-weight="600">ponytail</text>
+    <g transform="translate(32 184)">
+      <text y="0" fill="#233A57" font-weight="600">ponytail (vendored)</text>
       <rect y="12" width="272" height="10" rx="5" fill="url(#bar)"/><text x="356" y="22" fill="#233A57" font-weight="700">0.80</text>
       <rect y="28" width="102" height="10" rx="5" fill="#B8C4D6"/><text x="356" y="38" fill="#8A99B2">0.30</text>
     </g>
-    <g transform="translate(32 244)">
+    <g transform="translate(32 252)">
       <text y="0" fill="#233A57" font-weight="600">ask-the-council</text>
       <rect y="12" width="282" height="10" rx="5" fill="url(#bar)"/><text x="356" y="22" fill="#233A57" font-weight="700">0.83</text>
       <rect y="28" width="58" height="10" rx="5" fill="#B8C4D6"/><text x="356" y="38" fill="#8A99B2">0.17</text>
     </g>
-    <g transform="translate(32 314)">
+    <g transform="translate(32 320)">
       <text y="0" fill="#233A57" font-weight="600">architect</text>
       <rect y="12" width="282" height="10" rx="5" fill="url(#bar)"/><text x="356" y="22" fill="#233A57" font-weight="700">0.83</text>
       <rect y="28" width="228" height="10" rx="5" fill="#B8C4D6"/><text x="356" y="38" fill="#8A99B2">0.67</text>
     </g>
-    <g transform="translate(32 384)">
+    <g transform="translate(32 388)">
       <text y="0" fill="#233A57" font-weight="600">up-to-date</text>
       <rect y="12" width="340" height="10" rx="5" fill="url(#bar)"/><text x="356" y="22" fill="#233A57" font-weight="700">1.00</text>
       <rect y="28" width="211" height="10" rx="5" fill="#B8C4D6"/><text x="356" y="38" fill="#8A99B2">0.62</text>
