@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Questions and ideas
+    url: https://github.com/alonbaron/claude-skills/discussions
+    about: How to use a skill, whether one fits your workflow, or an idea for a new one.
+  - name: Claude Code itself
+    url: https://github.com/anthropics/claude-code/issues
+    about: Bugs in the CLI, the plugin system or `claude plugin eval` belong upstream.

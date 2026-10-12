@@ -1,0 +1,58 @@
+name: Skill misfire
+description: A skill fired when it shouldn't have, or stayed quiet when it should have fired.
+title: "[misfire] "
+labels: ["bug"]
+body:
+  - type: dropdown
+    id: direction
+    attributes:
+      label: What went wrong
+      options:
+        - Fired when it shouldn't have
+        - Didn't fire when it should have
+    validations:
+      required: true
+  - type: dropdown
+    id: skill
+    attributes:
+      label: Skill
+      options:
+        - architect
+        - review-swarm
+        - ask-the-council
+        - prompt-generator
+        - up-to-date
+        - ponytail
+        - build-loop (workflow)
+    validations:
+      required: true
+  - type: textarea
+    id: prompt
+    attributes:
+      label: Prompt
+      description: The message you sent, verbatim. Trim anything private, but keep the wording; one word can change whether a skill fires.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected
+      description: Which skill should have run, or that none should have.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual
+      description: What fired or stayed quiet, and what Claude said. A one-line "Running review-swarm" announcement counts.
+    validations:
+      required: true
+  - type: input
+    id: claude-code-version
+    attributes:
+      label: Claude Code version
+      description: Output of `claude --version`.
+      placeholder: 2.1.296 (Claude Code)
+    validations:
+      required: true
