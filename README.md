@@ -146,7 +146,7 @@ The picture above is the run that shaped v3.1: the build loop on a throwaway Nod
 claude plugin eval <absolute path to this repo> --runs 2 -j 4 --allow-tools Write Edit --scaffold --model claude-fable-5-1 --judge-model sonnet --no-publish --trust-plugin --threshold 0.7 --json
 ```
 
-`--runs 2`, with and without the plugin; 18 of 19 cases pass at 0.7, every case measured on Fable 5.1 on 2026-10-04 on the GitHub runner, in two runs: architect, review-swarm and up-to-date in run 37198713961 (overall 0.89, mean uplift +0.23, $47.41 API-equivalent, 8 of 9 at 0.7), and ponytail, ask-the-council and prompt-generator in run 37218381217 (overall 0.96, mean uplift +0.20, $25.13, 10 of 10). Each run's summary is on the `eval-results` branch under `results/<run id>.txt`. Details in `evals/README.md`, per-case history in `.claude/scratch/v3/STEP5.md` and `STEP6.md`:
+`--runs 2`, with and without the plugin; 18 of 19 cases pass at 0.7, every case measured on Fable 5.1 on 2026-10-04 on the GitHub runner, in two runs: architect, review-swarm and up-to-date in run 37198713961 (overall 0.89, mean uplift +0.23, $47.41 API-equivalent, 8 of 9 at 0.7), and ponytail, ask-the-council and prompt-generator in run 37218381217 (overall 0.96, mean uplift +0.20, $25.13, 10 of 10). Each run's summary is on the `eval-results` branch under `results/<run id>.txt`. Details in `evals/README.md`, per-case history in [`evals/history/STEP5.md`](evals/history/STEP5.md) and [`STEP6.md`](evals/history/STEP6.md):
 
 | Skill | Cases | With plugin | Without | Model |
 |---|---|---|---|---|
@@ -157,7 +157,7 @@ claude plugin eval <absolute path to this repo> --runs 2 -j 4 --allow-tools Writ
 | review-swarm | 3 | 0.90 (ranked report), **0.67** (security hand-off), 1.00 (trivial diff) | 0.40, 0.33, 1.00 | Fable 5.1 |
 | up-to-date | 3 | 1.00 (dirty and behind), 1.00 (no upstream), 0.75 (no remote) | 0.70, 0.62, 0.50 | Fable 5.1 |
 
-architect, review-swarm and up-to-date run shell commands when they load, so their cases need a working bwrap sandbox; `.github/workflows/evals.yml` runs them on a GitHub runner with a `CLAUDE_CODE_OAUTH_TOKEN` secret, on Fable 5.1 by default (`workflow_dispatch` takes a model for a comparison run; the 2026-09-29 Opus 5.5 pass is in `STEP5.md`). Several cases score as well without the plugin; they guard boundaries (when a skill must stay quiet) rather than measure uplift.
+architect, review-swarm and up-to-date run shell commands when they load, so their cases need a working bwrap sandbox; `.github/workflows/evals.yml` runs them on a GitHub runner with a `CLAUDE_CODE_OAUTH_TOKEN` secret, on Fable 5.1 by default (`workflow_dispatch` takes a model for a comparison run; the 2026-09-29 Opus 5.5 pass is in [`STEP5.md`](evals/history/STEP5.md)). Several cases score as well without the plugin; they guard boundaries (when a skill must stay quiet) rather than measure uplift.
 
 Two readings of the in-container run: pushback-on-abstraction scored 0.80 because both with-plugin runs hit the case's 15-turn cap before naming the trigger for upgrading the cache, with the padded interfaces correctly refused and the tradeoff named; and on refuses-trust-boundary and root-cause the ponytail skill did not fire at all while the behaviour its rubric asks for was there in both arms, which is the boundary those two cases guard.
 
