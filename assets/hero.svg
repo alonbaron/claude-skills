@@ -1,6 +1,6 @@
 <svg width="1280" height="640" viewBox="0 0 1280 640" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t d">
 <title id="t">alon-skills — Claude Code skills that prove they work</title>
-<desc id="d">Banner for the alon-skills Claude Code plugin. Left: the wordmark alon-skills, the line "Claude Code skills that prove they work", and the six slash commands. Right: an eval card comparing each skill with and without the plugin: review-swarm 0.90 vs 0.40, ponytail 1.00 vs 0.40, ask-the-council 1.00 vs 0.17, architect 1.00 vs 0.67, up-to-date 1.00 vs 0.50. Footer: 19 of 19 evals passing.</desc>
+<desc id="d">Banner for the alon-skills Claude Code plugin. Left: the wordmark alon-skills, the line "Claude Code skills that prove they work", and the six slash commands. Right: an eval card comparing each skill with and without the plugin: review-swarm 0.90 vs 0.40, ponytail 1.00 vs 0.40, ask-the-council 1.00 vs 0.17, architect 1.00 vs 0.67, up-to-date 1.00 vs 0.50. Footer: 18 of 19 evals passing.</desc>
 <defs>
   <linearGradient id="bg" x1="0" y1="0" x2="1280" y2="640" gradientUnits="userSpaceOnUse">
     <stop stop-color="#F5F9FD"/><stop offset=".55" stop-color="#EFF4FB"/><stop offset="1" stop-color="#EAF0FA"/>
@@ -133,7 +133,7 @@
 <!-- footer strip -->
 <g font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="15">
   <circle cx="712" cy="584" r="5" fill="#059669"/>
-  <text x="726" y="589" fill="#047857" font-weight="600">19/19 evals passing</text>
+  <text x="726" y="589" fill="#047857" font-weight="600">18/19 evals passing</text>
   <text x="1200" y="589" text-anchor="end" fill="#6B7C98">github.com/alonbaron/claude-skills</text>
 </g>
 </svg>
