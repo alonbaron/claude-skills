@@ -3,7 +3,7 @@
 // subagent in run order, with a divider where the phase changes. A card shows its status (glyph and
 // word), label, model alias and the id it resolved to, effort, and its result in one line; its fold
 // says how long it ran with how many tools and tokens, and opens onto the full result, the stage's
-// bar on the run's timeline and its numbers. Failed and running stages start open.
+// bar on the run's timeline and its numbers. Only running stages start open; a failed one says so in its header.
 // Rendered from the run's own files under ~/.claude/projects/<project>/<session>/subagents/workflows/<run>/:
 // journal.jsonl (stages and results), agent-<id>.meta.json (the alias asked for) and agent-<id>.jsonl
 // (what actually ran). That layout is Claude Code internal; when it moves, this script says so instead of guessing.
@@ -217,7 +217,7 @@ function card(s, t0, total) {
 <div class="top"><span class="st"><span aria-hidden="true">${esc(GLYPH[v])}</span> ${esc(WORD[v])}</span><span class="lb">${esc(s.label)}</span></div>
 <div class="who"><span class="m ${esc(s.alias)}">${esc(s.alias)}</span><span>→</span><span class="id">${esc(s.model)}</span><span class="ef ${esc(effortClass(s.effort))}">${esc(s.effort)}</span></div>
 <p class="res">${esc(line.slice(0, 220))}</p>
-<details${v === "ok" ? "" : " open"}><summary>${esc(fold)}</summary><div class="more">
+<details${v === "run" ? " open" : ""}><summary>${esc(fold)}</summary><div class="more">
 <div class="tl"><div class="track"><div class="fill" style="left:${esc(left.toFixed(1))}%;width:${esc(width.toFixed(1))}%"></div></div><span>${esc(span)}</span></div>
 <dl class="nums">${nums}</dl>
 <pre tabindex="0">${esc(fullResult(s))}</pre>
