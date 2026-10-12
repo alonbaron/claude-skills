@@ -19,35 +19,30 @@ the `assistant` record's `message.model` and `effort` fields. All four replied `
 Change since `STEP5.md` section 12 (2026-09-29, CLI 2.1.284): `haiku` moved from
 `claude-haiku-4-5-20251001`, which records no effort, to `claude-haiku-5-5`, which does.
 
-## 2. P1 progress (2026-10-12)
+## 2. P1 steps
 
-| step | status | evidence |
+| step | status | commits |
 |---|---|---|
-| 1 branch | done | `v3.2-models-tracker-evals` from `main` 838df70, equal to `origin/main`, clean |
-| 2 aliases | done | section 1, commit 42bc757 |
-| 3 model text | done | 33fa4f8 (README build-loop paragraph, `build-loop.js` tier comment). Remaining `git grep -n -i -E 'haiku\|4\.5\|4-5'` hits outside `evals/history/`: the `haiku, low` alias cells, the `.m.haiku` CSS class, `454.5` (an SVG coordinate in `hero.svg`), README.md:137 (the v3.1 run, rewritten in step 7), the kept Haiku 4.5 test case |
-| 4 tracker | done | b6ce419 |
+| 1 branch | done | from `main` 838df70, equal to `origin/main`, clean |
+| 2 aliases | done | 42bc757 |
+| 3 model text | done | 33fa4f8; README.md:137 rewritten in 6f65a43 |
+| 4 tracker | done | b6ce419, 06077d3 (fold change, section 5) |
 | 5 mod | done | 77a3faa (workflow-watch 0.2.0) |
-| 6 fresh build-loop run | blocked | section 3 |
-| 7-11 | not started | |
+| 6 fresh build-loop run | done after the fixture decision | none in this repo (section 3, 4) |
+| 7 screenshot, README | done | 6f65a43 |
+| 8 harness | done | f6bcb77 (summary), f10205f (workflow) |
+| 9 version, checks | done | 2afa356 |
+| 10 this file, PR | done | this commit; draft PR |
 
-Checks so far:
+Step 3 grep, `git grep -n -i -E 'haiku|4\.5|4-5'` outside `evals/history/`, after all edits: the hits left are
+alias cells (`haiku, low`), the `.m.haiku` CSS class, `454.5` (an SVG coordinate in `hero.svg`), the
+`build-loop.js:75` note that says haiku resolved to Haiku 4.5 on 2026-09-29, and the kept Haiku 4.5 test case
+in `journal.test.ts` (the no-effort path; a Haiku 5.5 case with `low` sits next to it). None presents Haiku 4.5 as current.
 
-- `node scripts/tracker.mjs --help`: prints the header comment, exit 0. The slice now ends at the first non-comment line.
-- Tracker on `wf_ec0355da-6ea` (`~/.claude/projects/…/e2e9eb96-33c7-4463-9b61-e829e5407973/subagents/workflows/`): 19 cards, the 5 failed ones open, `--png` gives 1616x9846. Playwright 1.61.1 (its Chromium is the installed build 1228) from the scratch directory: `scrollWidth <= clientWidth` at 390 px and at 900 px, folds as rendered and all opened; 0 `<script>` elements, 0 external `src`/`href`. Footer: `~/.claude/projects/…/e2e9eb96-33c7-4463-9b61-e829e5407973/subagents/workflows/wf_ec0355da-6ea`.
-- Injection copy (scratch copy of that run, first journal result set to the string `<img src=x onerror=alert(1)>`): the page contains `&lt;img src=x onerror=alert(1)&gt;` twice (result line, full result) and `<img` zero times.
-- Variant copy (last result dropped so one stage runs, two transcripts' effort set to `xhigh` and `max`): effort classes low, medium, high, xhigh, max and na all rendered.
-- `claude plugin validate mods/workflow-watch`: "✔ Validation passed".
-- `claude plugin test mods/workflow-watch`: 15 pass, 0 fail (13 in `journal.test.ts`, 2 new in `render.test.tsx`, which mount the Pane and the AbovePrompt band on terminal and desktop).
-- `tsc -p mods/workflow-watch`: not runnable as written (no session has laid `.claude-plugin/types/` beside the mod; no global tsc). Run instead with the types file header's tsconfig kept in the scratch directory, `include` = the plugin-authoring skill's `types/claude-code.d.ts` plus the mod's `hooks`, `types`, `tests`; TypeScript 7.0.2 in scratch: exit 0, all five mod files listed by `--listFiles`.
-- Mod fold: the 2.1.296 element tables (`Elements`: Box, Text, Button, Input, Select, Link, Code, Markdown, Client, Raster, Image, Svg) have no disclosure element, so a stage's details are one compact line.
-
-Model usage in P1 so far: the four alias probes ($0.77). Nothing else.
-
-## 3. Blocker: the old fixture cannot be cloned (P1 step 6)
+## 3. The old fixture and its rebuild (P1 step 6)
 
 - `git clone <scratch of session f2cf451d>/build-loop-fixture <scratch>/clone-attempt`: `fatal: '…/build-loop-fixture' does not appear to be a git repository`, exit 128.
-- What is left: `.git` has no HEAD, config, index or ref file (`refs/heads/feature/` and `logs/refs/heads/feature/` are empty folders), and the working tree has no files (`docs/`, `src/`, `test/`, `.claude/scratch/build-loop/` are empty folders). 50 loose objects remain: 11 commits, 19 trees, 20 blobs. A read-only survey (each object inflated, each commit's tree walked) finds every commit's tree complete. The commits form one chain:
+- What was left: `.git` had no HEAD, config, index or ref file, and the working tree had no files (empty `docs/`, `src/`, `test/`, `.claude/scratch/build-loop/` folders). 50 loose objects remained: 11 commits, 19 trees, 20 blobs. A read-only survey (each object inflated, each commit's tree walked) found every commit's tree complete, in one chain:
 
 | commit | parent | subject | TODO rows |
 |---|---|---|---|
@@ -63,8 +58,88 @@ Model usage in P1 so far: the four alias probes ($0.77). Nothing else.
 | 3e8b53c | 27a933f | test: pin ASCII-only slugify behavior for non-ASCII input | 1.1 [IN PROGRESS], 1.2 [ ] |
 | 6707bad | 3e8b53c | docs: TODO 1.1 blocked | 1.1 [BLOCKED], 1.2 [ ] |
 
-- Decision needed (owner), one of:
-  a. rebuild a fixture from these objects at the clone path (new repository, objects copied, a branch at a commit the owner names, e.g. 6707bad whose row 1.2 is `[ ]`); the old folder is not touched;
-  b. name another fixture to clone;
-  c. make a new throwaway repo from the architect templates.
-- Not done until then (P1 steps 6-11): the fresh run and its facts, the new `assets/tracker.png` with README.md:130 and :137, the harness (`eval-summary.py`, `evals.yml`), plugin.json 3.2.0 and its checks, this file's eval plan for P2-P5, the draft PR.
+- Owner's decision (option a): rebuild at `<fixture>` (a folder outside the user profile) from copies of those objects, branch `main` at 6707bad, the old folder never written to.
+- Done: `git init -b main <fixture>`, the 50 object files copied into its `.git/objects/`, `git update-ref refs/heads/main 6707bad7bfc8592fd97a7f49343ee06fe898a482`, `git checkout -f main`. `git fsck --full`: no output, exit 0. `git status`: clean on `main`. `.gitignore` holds `node_modules/` and `.claude/scratch/`. Row 1.2 (`truncateSlug(slug, max)` in `src/slug.js` with tests) is `[ ]`, so no row was added.
+
+## 4. Fresh build-loop run (P1 step 6, 2026-10-12)
+
+`node scripts/autobuild.mjs --tasks 1 --repo <fixture> --plugin-dir <this repo>`, run in the background.
+Run directory `~/.claude/projects/…/ec2458db-8062-40a0-94e1-b356adf8ffe7/subagents/workflows/wf_8972b6c6-4a2`.
+Alias from each `agent-<id>.meta.json`, resolved id and effort from each `agent-<id>.jsonl`.
+
+| phase | stage | alias | resolved id | effort | assistant records with effort | output tokens | tool calls | seconds | outcome |
+|---|---|---|---|---|---|---|---|---|---|
+| Plan | plan | fable | claude-fable-5-1 | high | 9/9 | 773 | 6 | 42 | done |
+| Scout | scout:1.2 | haiku | claude-haiku-5-5 | low | 11/11 | 2654 | 8 | 14 | done |
+| Spec | spec:1.2 | fable | claude-fable-5-1 | high | 28/28 | 990 | 19 | 161 | done |
+| Build | build:1.2 | sonnet | claude-sonnet-5-5 | medium | 7/7 | 340 | 5 | 20 | done |
+| Measure | measure:1.2 | haiku | claude-haiku-5-5 | low | 3/3 | 194 | 2 | 4 | done |
+| Refute | refute:invariants:1.2:r1 | opus | claude-opus-5-5 | high | 9/9 | 728 | 6 | 52 | done |
+| Refute | refute:correctness:1.2:r1 | sonnet | claude-sonnet-5-5 | medium | 5/5 | 597 | 4 | 11 | done |
+| Refute | refute:critic:1.2:r1 | opus | claude-opus-5-5 | high | 10/10 | 930 | 6 | 41 | done |
+| Refute | refute:acceptance:1.2:r1 | sonnet | claude-sonnet-5-5 | medium | 4/4 | 720 | 3 | 9 | done |
+| Refute | refute:adversary:1.2:r1 | sonnet | claude-sonnet-5-5 | medium | 6/6 | 436 | 5 | 15 | done |
+| Close | close:1.2 | sonnet | claude-sonnet-5-5 | low | 4/4 | 101 | 3 | 13 | done |
+
+- Scout and measure: `claude-haiku-5-5` at `low`, as required.
+- 11 stages, 14:48:37.594Z to 14:54:07.379Z (5:29, as the tracker header shows), 8,463 output tokens. No research stage (the spec listed 0 unverified APIs), no arbiter or fix (every lens passed, 0 blocking, 11 advisory).
+- Outcome: driver reply `{"tasks":[{"taskId":"1.2","branch":"feature/slug","status":"[FINISHED - PENDING MERGE]","reason":null,"fixRounds":0,"closed":true}],"stoppedBecause":"reached maxTasks=1",...}`; driver log `session ec2458db-8062-40a0-94e1-b356adf8ffe7 cost $4.29 turns 1`. That is over the "about $2" the plan expected.
+- Commits on `feature/slug` (`main..feature/slug`): 6 (8203376, bf452ff, 1274bb6, 83c18e0, a599b31, 50c1bf1), all authored by the owner's git identity. Attribution lines (`co-authored-by|claude-session|generated with|anthropic|claude.ai|claude.com`) in their bodies: 0; git-parsed trailers: 0.
+- No usage or limit message.
+
+## 5. Tracker: fold change and checks (P1 steps 4 and 7)
+
+- Owner's spec change after the first cut: failed cards start folded too; only running cards start open. A failed card's header still says `! failed` (glyph and word) and shows its one-line result. Commit 06077d3.
+- Playwright 1.61.1 from the scratch directory (its Chromium build 1228 is the one installed); first `--png` attempt succeeded.
+- `node scripts/tracker.mjs --run <wf_8972b6c6-4a2> --png assets/tracker.png`: 11 cards, 0 open, PNG 1616x4010. Privacy check on what the PNG shows (the page's rendered `innerText` with folds as rendered, and a look at the image): 0 lines with a drive path, `/Users/`, `/home/`, `AppData`, the user name, this repo's folder name or the fixture's; footer `~/.claude/projects/…/ec2458db-8062-40a0-94e1-b356adf8ffe7/subagents/workflows/wf_8972b6c6-4a2`. The page's folded full results do hold absolute `<fixture>` paths; the HTML is not committed and the PNG does not show them.
+- `wf_ec0355da-6ea` (2026-09-22, 19 stages): renders, 0 of 19 open, 5 `! failed` headers; injection copy (first journal result set to `<img src=x onerror=alert(1)>`): `&lt;img src=x onerror=alert(1)&gt;` twice, `<img` zero times; variant copy (one stage running, efforts `xhigh` and `max`): 1 of 19 open, all six effort classes (low, medium, high, xhigh, max, na) rendered.
+- `scrollWidth <= clientWidth` at 390 px for the fresh run, the old run, the injection copy and the variant copy, with folds as rendered and with all opened; 0 `<script>`, 0 external `src`/`href`.
+
+## 6. Harness (P1 step 8)
+
+`.github/scripts/eval-summary.py` now prints, first, `valid N of M` (with the TRUNCATED cases named) and `re-run: <skill>/<case> ...`
+(`none` when clean); then the runner's aggregates labelled with how many INVALID cases they include, and valid-only
+aggregates when any case is INVALID. A case is INVALID when a run has an `error` other than its own budget stop, when
+a grader's explanation starts `grader threw`, or when `skippedPaidGraders` is true; each line quotes the error and names
+arm and run. TRUNCATED: a run whose error is `Reached maximum number of turns (N)` with N = the case's `maxTurns`, or
+`timed out after Ns` with N = its `timeoutSeconds`. The timeout text comes from the 2.1.296 binary's eval runner; none of
+the three published runs has one. The JSON is now read as UTF-8 (read in cp1252 on Windows, one evidence excerpt came out 6 characters short).
+
+Against the published JSON (`git show origin/eval-results:results/<id>.json`):
+
+| run | first two lines | expected (STEP6) | match |
+|---|---|---|---|
+| 37198713961 | `valid 7 of 9` / `re-run: review-swarm/real-diff-ranked-report up-to-date/no-remote-boundary` | INVALID exactly those two | yes |
+| 37213238188 | `valid 0 of 9` / `re-run:` all nine sandboxed cases | all INVALID | yes |
+| 37218381217 | `valid 10 of 10 (1 TRUNCATED: ponytail/pushback-on-abstraction)` / `re-run: none` | none INVALID, pushback TRUNCATED | yes, with one difference |
+
+- The difference: in 37218381217 the two runs that hit pushback-on-abstraction's 15-turn cap are `without#0` and `without#1` (16 turns each, `exit 1: Reached maximum number of turns (15)`). The with-plugin runs finished (8 and 7 turns, `error: null`) and lost names-upgrade-trigger on judge votes (FAIL FAIL FAIL). `STEP6.md` and README.md:162 say the with-plugin runs hit the cap; the old summary printed `error:` lines without the arm. The JSON wins. P5's README rewrite takes this from here.
+- Valid-only aggregates for 37198713961: score 0.91, mean delta +0.19, 6 of 7 at 0.7 (runner's over all 9: 0.89, +0.23, 8 of 9).
+- Everything else in the summary is unchanged: the diff of the new output against the published `.txt` bodies holds only the new lines, the INVALID/TRUNCATED flags, and the `error:` lines they replace.
+- `evals.yml`: `workflow_dispatch` input `only` (space-separated `<skill>/<case>`; when set, only those cases are copied into `evals-ci/`; a name that is not `evals/<skill>/<case>` stops the job with exit 2); the published header gains `only: <list>` when set and `cli: <claude --version>`. Tested locally on the step's own script, the eval call cut off: `only="review-swarm/real-diff-ranked-report up-to-date/no-remote-boundary"` copies 2 cases; `ponytail/nope`, `../etc` and `*` each exit 2 with `not a case`; no `only` and `cases=sandboxed` copies 9; `cases=in-container` copies 10. The YAML parses (PyYAML 6.0.3) with inputs `model, cases, only`.
+
+## 7. Checks (P1 step 9)
+
+| command | result |
+|---|---|
+| `claude plugin validate .` | marketplace manifest: "✔ Validation passed" |
+| `claude plugin validate .claude-plugin/plugin.json` | plugin manifest, version 3.2.0: "✔ Validation passed" |
+| `claude plugin validate mods/workflow-watch` | "✔ Validation passed" |
+| `claude plugin test mods/workflow-watch` | 15 pass, 0 fail (13 in `journal.test.ts`, 2 in the new `render.test.tsx`: Pane and AbovePrompt on terminal and desktop) |
+| `tsc -p mods/workflow-watch` | not runnable as written: no session has laid `.claude-plugin/types/` beside the mod, and there is no global tsc. Run instead with the types file header's tsconfig kept in scratch (`include`: the plugin-authoring skill's `types/claude-code.d.ts` plus the mod's `hooks`, `types`, `tests`), TypeScript 7.0.2: exit 0, all five mod files listed |
+| `node scripts/tracker.mjs --help` | exit 0, prints the 17-line header comment |
+| `git log main..HEAD --format='%an%n%b' \| grep -i -E 'co-authored-by\|generated with\|anthropic'` | nothing |
+
+The mod pane has no fold: the 2.1.296 element tables (`Elements`: Box, Text, Button, Input, Select, Link, Code, Markdown,
+Client, Raster, Image, Svg) carry no disclosure element, so a stage's details are one compact line.
+
+Model usage in P1: alias probes $0.77, the build-loop run $4.29 (driver-reported). No eval dispatch.
+
+## 8. Eval plan, P2-P5
+
+| phase | set | where | estimated cost | entry condition | status | run id |
+|---|---|---|---|---|---|---|
+| P2 | in-container (10 cases: ponytail, ask-the-council, prompt-generator) | CI: `gh workflow run evals.yml --ref v3.2-models-tracker-evals -f cases=in-container -f model=claude-fable-5-1` | about $25 API-equivalent (37218381217: $25.13); fits a window with room | the owner's go, in the current window; nothing else on the plan while it runs | pending | - |
+| P3 | sandboxed (9 cases: architect, review-swarm, up-to-date) | CI: same with `-f cases=sandboxed` | about $47 (37198713961: $47.41); fills a fresh window alone | the owner says the window is fresh | pending | - |
+| P4 | trigger suite (120 local cases in `evals-trigger/`) | local, detached: `claude plugin eval <repo> --eval-dir evals-trigger --runs 2 -j 4 --ablation none --model claude-fable-5-1 --no-publish --trust-plugin --json <scratch>/trigger.json` | not measured for a clean pass; `STEP5.md` section 6: about $115 over four invocations, two of them re-runs after the 5-hour limit | the owner says the window is fresh | pending | - |
+| P5 | re-runs of INVALID cases (at most two attempts each), then the README write-up | CI `-f only="<skill>/<case> ..."`; trigger `--case` | depends on what P2-P4 leave INVALID | the owner says the window is fresh | pending | - |
