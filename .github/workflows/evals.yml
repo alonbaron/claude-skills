@@ -23,6 +23,10 @@ on:
         description: "sandboxed, in-container, or all"
         default: "sandboxed"
         required: false
+      only:
+        description: "Space-separated <skill>/<case> (e.g. the summary's re-run line); when set, only those cases run"
+        default: ""
+        required: false
   push:
     branches: ["claude/**"]
 jobs:
@@ -53,15 +57,26 @@ jobs:
           # The agent under test. A push runs Fable 5.1 (the model the skills are written for); workflow_dispatch can pick another.
           MODEL: ${{ github.event.inputs.model || 'claude-fable-5-1' }}
           CASES: "${{ github.event.inputs.cases || (contains(github.event.head_commit.message, '[run-evals: all]') && 'all') || (contains(github.event.head_commit.message, '[run-evals: in-container]') && 'in-container') || 'sandboxed' }}"
+          ONLY: ${{ github.event.inputs.only }}
         run: |
           mkdir evals-ci
-          case "$CASES" in
-            sandboxed)    cp -r evals/architect evals/review-swarm evals/up-to-date evals-ci/ ;;
-            in-container) cp -r evals/ponytail evals/ask-the-council evals/prompt-generator evals-ci/ ;;
-            all)          cp -r evals/architect evals/review-swarm evals/up-to-date evals/ponytail evals/ask-the-council evals/prompt-generator evals-ci/ ;;
-            *) echo "unknown CASES=$CASES"; exit 2 ;;
-          esac
-          echo "cases: $CASES ($(ls -d evals-ci/*/* | wc -l))"
+          if [ -n "$ONLY" ]; then
+            # Named cases only, e.g. the ones a summary listed as INVALID; a name that is not evals/<skill>/<case> stops the job.
+            set -f
+            for c in $ONLY; do
+              [[ "$c" =~ ^[a-z0-9-]+/[a-z0-9-]+$ && -d "evals/$c" ]] || { echo "not a case: $c"; exit 2; }
+              mkdir -p "evals-ci/${c%/*}" && cp -r "evals/$c" "evals-ci/$c"
+            done
+            set +f
+          else
+            case "$CASES" in
+              sandboxed)    cp -r evals/architect evals/review-swarm evals/up-to-date evals-ci/ ;;
+              in-container) cp -r evals/ponytail evals/ask-the-council evals/prompt-generator evals-ci/ ;;
+              all)          cp -r evals/architect evals/review-swarm evals/up-to-date evals/ponytail evals/ask-the-council evals/prompt-generator evals-ci/ ;;
+              *) echo "unknown CASES=$CASES"; exit 2 ;;
+            esac
+          fi
+          echo "cases: ${ONLY:-$CASES} ($(ls -d evals-ci/*/* | wc -l))"
           # Cases that already have a clean result on this commit's skills; space-separated <skill>/<case>.
           for c in $SKIP_CASES; do rm -rf "evals-ci/$c"; done
           claude plugin eval . --eval-dir evals-ci --runs 2 -j 4 --scaffold \
@@ -75,6 +90,7 @@ jobs:
         env:
           CASES: "${{ github.event.inputs.cases || (contains(github.event.head_commit.message, '[run-evals: all]') && 'all') || (contains(github.event.head_commit.message, '[run-evals: in-container]') && 'in-container') || 'sandboxed' }}"
           MODEL: ${{ github.event.inputs.model || 'claude-fable-5-1' }}
+          ONLY: ${{ github.event.inputs.only }}
         run: |
           # The branch is CI's own record, written by the Actions bot, never merged: main stays the owner's.
           git config user.name "github-actions[bot]"
@@ -89,6 +105,8 @@ jobs:
             echo "run: ${{ github.run_id }} https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             echo "event: ${{ github.event_name }}  commit: ${{ github.sha }}  ref: ${{ github.ref_name }}"
             echo "model: $MODEL  cases: $CASES  job status at publish: ${{ job.status }}"
+            if [ -n "$ONLY" ]; then echo "only: $ONLY"; fi
+            echo "cli: $(claude --version 2>&1 || echo unknown)"
             echo "started: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
             echo
             cat evals-ci/summary.txt 2>/dev/null || echo "(no summary: the eval step wrote no result.json)"
