@@ -1,0 +1,66 @@
+run: 38523993370 https://github.com/alonbaron/claude-skills/actions/runs/38523993370
+event: workflow_dispatch  commit: 7917825ad4aab41c9ffc93ae3bbd5acb63c5c2af  ref: v3.2-models-tracker-evals
+model: claude-fable-5-1  cases: sandboxed  job status at publish: failure
+cli: 2.1.299 (Claude Code)
+started: 2026-10-14T06:56:21Z
+
+valid 1 of 9
+re-run: architect/right-sized-new-feature architect/small-fix-boundary review-swarm/real-diff-ranked-report review-swarm/security-alone-hands-off review-swarm/trivial-diff-declines up-to-date/dirty-and-behind up-to-date/fresh-branch-no-upstream up-to-date/no-remote-boundary
+cost $14.08  runner aggregates over the 9 cases in the results, 8 of them INVALID: {"casesTotal": 9, "casesPassed": 1, "overallScore": 0.16666666666666666, "overallPassRate": 0.16666666666666666, "meanDelta": 0}
+valid-only aggregates (1 cases): score 1.00  mean delta +0.00  1 of 1 at 0.7
+
+== audit-drift-citation  with 1.00  without 1.00
+   citation-discipline                with PP   without PP
+   no-edit                            with PP   without PP
+   no-write                           with PP   without PP
+   skill-fired                        with PP   without 
+
+== right-sized-new-feature  with 0.00  without 0.67  INVALID
+   INVALID with#0 run: exit 1: You've hit your session limit · resets 10:30am (UTC)
+   INVALID with#1 run: exit 1: You've hit your session limit · resets 10:30am (UTC)
+
+== small-fix-boundary  with 0.50  without 0.00  INVALID
+   INVALID with#1 run: exit 1: You've hit your session limit · resets 10:30am (UTC)
+   INVALID without#0 run: exit 1: You've hit your session limit · resets 10:30am (UTC)
+   INVALID without#1 run: exit 1: You've hit your session limit · resets 10:30am (UTC)
+   no-invention                       with P    without 
+   no-subagents                       with P    without 
+   skill-fired                        with P    without 
+   targeted-addition                  with P    without 
+   two-boundary-enforcement           with P    without 
+
+== real-diff-ranked-report  with 0.00  without 0.00  INVALID
+   INVALID with#0 run: exit 1: You've hit your session limit · resets 10:30am (UTC)
+   INVALID with#1 run: exit 1: You've hit your session limit · resets 10:30am (UTC)
+   INVALID without#0 run: exit 1: You've hit your session limit · resets 10:30am (UTC)
+   INVALID without#1 run: exit 1: You've hit your session limit · resets 10:30am (UTC)
+
+== security-alone-hands-off  with 0.00  without 0.00  INVALID
+   INVALID with#0 run: exit 1: You've hit your session limit · resets 10:30am (UTC)
+   INVALID with#1 run: exit 1: You've hit your session limit · resets 10:30am (UTC)
+   INVALID without#0 run: exit 1: You've hit your session limit · resets 10:30am (UTC)
+   INVALID without#1 run: exit 1: You've hit your session limit · resets 10:30am (UTC)
+
+== trivial-diff-declines  with 0.00  without 0.00  INVALID
+   INVALID with#0 run: exit 1: You've hit your session limit · resets 10:30am (UTC)
+   INVALID with#1 run: exit 1: You've hit your session limit · resets 10:30am (UTC)
+   INVALID without#0 run: exit 1: You've hit your session limit · resets 10:30am (UTC)
+   INVALID without#1 run: exit 1: You've hit your session limit · resets 10:30am (UTC)
+
+== dirty-and-behind  with 0.00  without 0.00  INVALID
+   INVALID with#0 run: exit 1: You've hit your session limit · resets 10:30am (UTC)
+   INVALID with#1 run: exit 1: You've hit your session limit · resets 10:30am (UTC)
+   INVALID without#0 run: exit 1: You've hit your session limit · resets 10:30am (UTC)
+   INVALID without#1 run: exit 1: You've hit your session limit · resets 10:30am (UTC)
+
+== fresh-branch-no-upstream  with 0.00  without 0.00  INVALID
+   INVALID with#0 run: exit 1: You've hit your session limit · resets 10:30am (UTC)
+   INVALID with#1 run: exit 1: You've hit your session limit · resets 10:30am (UTC)
+   INVALID without#0 run: exit 1: You've hit your session limit · resets 10:30am (UTC)
+   INVALID without#1 run: exit 1: You've hit your session limit · resets 10:30am (UTC)
+
+== no-remote-boundary  with 0.00  without 0.00  INVALID
+   INVALID with#0 run: exit 1: You've hit your session limit · resets 10:30am (UTC)
+   INVALID with#1 run: exit 1: You've hit your session limit · resets 10:30am (UTC)
+   INVALID without#0 run: exit 1: You've hit your session limit · resets 10:30am (UTC)
+   INVALID without#1 run: exit 1: You've hit your session limit · resets 10:30am (UTC)
