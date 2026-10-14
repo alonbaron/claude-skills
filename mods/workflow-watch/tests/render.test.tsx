@@ -25,7 +25,10 @@ describe('render', () => {
         requestId: 'workflow-watch',
         props: { title: 'Workflow', isFocused: false, bodyColumns: 120, placement: 'dock', ...SITE },
       })
-      expect(await ui.find({ type: 'Text', text: '── Refute' })).toBeDefined()
+      expect(await ui.find({ type: 'Text', text: 'wf_1 · 1 done · 1 failed · 1 running · 0.0k output tokens' })).toBeDefined()
+      expect(await ui.find({ type: 'Text', text: /^── Refute · round 1$/ })).toBeDefined()
+      const heads = await ui.findAll({ type: 'Text', text: /^(▶ running|✓ done|! failed) {2}\S+ {2}/ })
+      expect(heads.map(h => h.text.split('  ')[1])).toEqual(['build:1.2', 'refute:invariants:1.2:r1', 'refute:correctness:1.2:r1'])
       expect(await ui.find({ type: 'Text', text: /^! failed {2}refute:invariants:1\.2:r1 {2}haiku→claude-haiku-5-5 low$/ })).toBeDefined()
       expect(await ui.find({ type: 'Text', text: '    FAIL blocking=1 advisory=0 testsRan=false | src/a.js: off by one' })).toBeDefined()
       expect(await ui.find({ type: 'Text', text: /^ {4}Running for 0:12 · 0 calls · starting…$/ })).toBeDefined()
@@ -43,9 +46,9 @@ describe('render', () => {
         component: 'AbovePrompt',
         props: { hasSurvey: false, isWorking: true, maxRows: 12, bodyColumns: 100, ...SITE },
       })
-      expect(await ui.find({ type: 'Text', text: 'wf_1: 2 done · 1 running' })).toBeDefined()
+      expect(await ui.find({ type: 'Text', text: /^wf_1: 1 done · 1 failed · 1 running$/ })).toBeDefined()
       expect(await ui.find({ type: 'Text', text: /^▶ running {2}refute:correctness:1\.2:r1 {2}haiku→claude-haiku-5-5 low$/ })).toBeDefined()
-      expect(await ui.find({ type: 'Text', text: /failed/ })).toBe(undefined)
+      expect(await ui.find({ type: 'Text', text: /^! failed/ })).toBe(undefined)
       await ui.unmount()
     }
   })
