@@ -139,7 +139,7 @@ Model usage in P1: alias probes $0.77, the build-loop run $4.29 (driver-reported
 
 | phase | set | where | estimated cost | entry condition | status | run id |
 |---|---|---|---|---|---|---|
-| P2 | in-container (10 cases: ponytail, ask-the-council, prompt-generator) | CI: `gh workflow run evals.yml --ref v3.2-models-tracker-evals -f cases=in-container -f model=claude-fable-5-1` | about $25 API-equivalent (37218381217: $25.13); fits a window with room | the owner's go, in the current window; nothing else on the plan while it runs | pending | - |
+| P2 | in-container (10 cases: ponytail, ask-the-council, prompt-generator) | CI: `gh workflow run evals.yml --ref v3.2-models-tracker-evals -f cases=in-container -f model=claude-fable-5-1` | about $25 API-equivalent (37218381217: $25.13); fits a window with room | the owner's go, in the current window; nothing else on the plan while it runs | done 2026-10-14 (section 10): valid 10 of 10 (2 TRUNCATED), re-run none, $34.03; job red, hands-off-after-verdict 0.67 under `--threshold 0.7` | 38520925302 |
 | P3 | sandboxed (9 cases: architect, review-swarm, up-to-date) | CI: same with `-f cases=sandboxed` | about $47 (37198713961: $47.41); fills a fresh window alone | the owner says the window is fresh | pending | - |
 | P4 | trigger suite (120 local cases in `evals-trigger/`) | local, detached: `claude plugin eval <repo> --eval-dir evals-trigger --runs 2 -j 4 --ablation none --model claude-fable-5-1 --no-publish --trust-plugin --json <scratch>/trigger.json` | not measured for a clean pass; `STEP5.md` section 6: about $115 over four invocations, two of them re-runs after the 5-hour limit | the owner says the window is fresh | pending | - |
 | P5 | re-runs of INVALID cases (at most two attempts each), then the README write-up | CI `-f only="<skill>/<case> ..."`; trigger `--case` | depends on what P2-P4 leave INVALID | the owner says the window is fresh | pending | - |
@@ -169,3 +169,55 @@ Review of P1 (10 reviewers and verifiers, every finding through an opus refutati
 
 Checks after the fixes: `claude plugin test mods/workflow-watch` 20 pass, 0 fail; `tsc` (section 7 setup, TypeScript 7.0.2) exit 0
 on all five mod files; `assets/tracker.png` re-rendered from `wf_8972b6c6-4a2` (changes: header tally, `REFUTE · ROUND 1`).
+
+## 10. P2 in-container (2026-10-14)
+
+| field | value |
+|---|---|
+| run | 38520925302, https://github.com/alonbaron/claude-skills/actions/runs/38520925302 |
+| dispatch | 06:13:08Z, `gh workflow run evals.yml --ref v3.2-models-tracker-evals -f cases=in-container -f model=claude-fable-5-1` |
+| tested commit | e5b73dc (header `commit: e5b73dcdcd475c06ffcb1d78ec5cde4ecd37916a  ref: v3.2-models-tracker-evals`) |
+| model, judge | claude-fable-5-1, sonnet; `--runs 2 -j 4 --threshold 0.7` |
+| CLI | 2.1.299 (baseline 37218381217: 2.1.289) |
+| duration | eval 1297 s (`durationSeconds`; baseline 692 s); run created 06:13:09Z, completed 06:35:29Z |
+| cost | $34.03 (`costUsd` 34.032882; baseline $25.13) |
+| job | conclusion `failure`: `Run the cases` exit 1 after `Wrote evals-ci/result.json`; Summary, Publish, Upload green. Runner `casesPassed` 9 of 10; the one case under 0.7 is hands-off-after-verdict (0.67). 37198713961 and 37213238188 (`casesPassed` < `casesTotal`) were also published as `failure` |
+| aggregates | overallScore 0.903 (baseline 0.956), overallPassRate 0.7 (0.8), meanDelta +0.14 (+0.20) |
+| usage or limit errors | none: the only two run errors are the TRUNCATED ones below |
+
+Summary, first lines (`results/38520925302.txt`):
+
+```
+valid 10 of 10 (2 TRUNCATED: ask-the-council/forces-divergence ponytail/pushback-on-abstraction)
+re-run: none
+cost $34.03  runner aggregates over the 10 cases in the results: {"casesTotal": 10, "casesPassed": 9, "overallScore": 0.9028571428571428, "overallPassRate": 0.7, "meanDelta": 0.14476190476190479}
+```
+
+Per case: mean run score per arm, computed from both JSONs (`python -I`); each equals the case's `aggregates.score` / `scoreWithout`.
+
+| case | with | without | flag | baseline with | baseline without |
+|---|---|---|---|---|---|
+| ask-the-council/declines-low-stakes | 1.00 | 1.00 | - | 1.00 | 1.00 |
+| ask-the-council/forces-divergence | 0.70 | 0.70 | TRUNCATED with#0: `timed out after 900s` (923 s, 3 turns) | 1.00 | 0.70 |
+| ask-the-council/hands-off-after-verdict | 0.67 | 0.17 | - (under threshold 0.7) | 0.83 | 0.17 |
+| ponytail/defers-to-simplify | 1.00 | 1.00 | - | 1.00 | 1.00 |
+| ponytail/pushback-on-abstraction | 0.90 | 0.50 | TRUNCATED without#0: `Reached maximum number of turns (15)` (16 turns) | 0.80 | 0.30 |
+| ponytail/refuses-trust-boundary | 0.83 | 0.83 | - | 1.00 | 0.83 |
+| ponytail/root-cause | 1.00 | 1.00 | - | 1.00 | 1.00 |
+| prompt-generator/coding-agent-repo-prompt | 0.93 | 0.71 | - | 0.93 | 0.71 |
+| prompt-generator/human-prose-boundary | 1.00 | 1.00 | - | 1.00 | 1.00 |
+| prompt-generator/whole-build-scope-check | 1.00 | 0.67 | - | 1.00 | 0.83 |
+
+Graders behind the moves (from both `.txt` files):
+
+| case | arm | change | graders |
+|---|---|---|---|
+| forces-divergence | with | -0.30 | with#0 timed out; its evidence is the opening line only (`I'll convene the council via the ask-the-council skill…`), so chairman-commits, chairman-names-risk, chairman-names-tradeoff FAIL FAIL FAIL on that run; with#1 passes all |
+| hands-off-after-verdict | with | -0.17 | handoff-named fails both with runs (baseline: with#1 only); both replies open on the memory directory being write-protected / blocked by permission settings |
+| refuses-trust-boundary | with | -0.17 | with#1 `result` FAIL FAIL FAIL (baseline PP); skill-fired 0x in both with runs, as in baseline |
+| pushback-on-abstraction | with, without | +0.10, +0.20 | names-upgrade-trigger passes with#1 (baseline fails both); TRUNCATED is without#0 only (baseline without#0 and without#1) |
+| whole-build-scope-check | without | -0.17 | `result` fails both without runs (baseline one) |
+
+Re-run list for P5: none (0 INVALID, 0 NOT RUN). TRUNCATED runs count as valid (section 6), so they are not on it.
+
+Model usage in P2: the eval, $34.03 (published `costUsd`).
