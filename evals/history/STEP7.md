@@ -143,3 +143,29 @@ Model usage in P1: alias probes $0.77, the build-loop run $4.29 (driver-reported
 | P3 | sandboxed (9 cases: architect, review-swarm, up-to-date) | CI: same with `-f cases=sandboxed` | about $47 (37198713961: $47.41); fills a fresh window alone | the owner says the window is fresh | pending | - |
 | P4 | trigger suite (120 local cases in `evals-trigger/`) | local, detached: `claude plugin eval <repo> --eval-dir evals-trigger --runs 2 -j 4 --ablation none --model claude-fable-5-1 --no-publish --trust-plugin --json <scratch>/trigger.json` | not measured for a clean pass; `STEP5.md` section 6: about $115 over four invocations, two of them re-runs after the 5-hour limit | the owner says the window is fresh | pending | - |
 | P5 | re-runs of INVALID cases (at most two attempts each), then the README write-up | CI `-f only="<skill>/<case> ..."`; trigger `--case` | depends on what P2-P4 leave INVALID | the owner says the window is fresh | pending | - |
+
+## 9. P1 review fixes (2026-10-14)
+
+Review of P1 (10 reviewers and verifiers, every finding through an opus refutation pass): no blockers, 5 should-fix,
+9 nits. All 14 fixed on this branch; none dropped. STEP6 and README.md:162 still say the with-plugin runs hit the
+15-turn cap (section 6: it was the without-plugin runs); P5 corrects that.
+
+| # | finding | fix | check |
+|---|---|---|---|
+| S1 | `{"type":"failed"}` journal entries ignored: a dead stage showed as running forever, `--watch` never exited (14 dead stages in 4 local runs, all session limit or API error) | both renderers treat `failed` as finished with no result (`✗ no result`, line `(stopped without a result)`); `<synthetic>` model id skipped | `wf_82c05260-6bc` header `0 done · 6 failed · 0 running · 1:36 elapsed · … · finished` (was `6 running · 33245:23`); `wf_c222e401-e0e` `2 done · 1 failed`; tests |
+| S2 | eval summary on a partial run: cases never started dropped, still `valid 4 of 4, re-run: none` | first line `PARTIAL: … (<partialReason>)`; with `<eval dir>`, case folders (holding `case.yaml`) missing from the results are NOT RUN, counted in `valid N of M` and listed on `re-run:`; an arm with fewer runs than `<runs per arm>` is INVALID. `evals.yml` passes `evals-ci "$RUNS"` (job env `RUNS: "2"`, also the eval's `--runs`) | synthetic partial of 37218381217 (7 of 10 cases, one arm cut to 1 run): `valid 5 of 10 (1 TRUNCATED: …) (3 NOT RUN)`, re-run names 2 INVALID + 3 NOT RUN, `INVALID without: 1 of 2 runs` |
+| S3 | tallies counted failed stages as done | one split at all five sites: `N done · M failed · K running`, `· D disputed` after done when any; failed includes no result | `wf_ec0355da-6ea`: `14 done · 1 disputed · 4 failed · 0 running` (was `19 done … finished`); tests |
+| S4 | pane durations from poll times; first poll toasted every finished stage | `withFacts`: start and end from the transcript's first and last timestamps; `elapsed` rounds down; no toasts on the first tick of a run | test: stage first seen an hour late shows `Ran for 2:40` |
+| S5 | 12 of 27 mutants survived the mod tests | tests for `ok:false`, dispute, null result, `failed` entry, `failed` after result, `<synthetic>`, transcript times, `…` cuts, control characters, round dividers; render test checks order | 20 pass (was 15); 11 targeted mutants (the review's plus one per new rule) each fail the suite |
+| N1 | cuts with no `…` | `clip()` in both renderers ends a cut in `…`; the pane's `fit` is `clip` | test |
+| N2 | a disputing fix round showed `failed` | own state `! disputed`, warning tone/amber | `wf_ec0355da-6ea`: 1 disputed |
+| N3 | `tracker.html` not ignored | `.gitignore` line | `git status --ignored` shows `!! tracker.html` |
+| N4 | control characters in model text blank the pane | `oneLine()` strips C0, DEL and C1 in results, labels, phases, tool args | test |
+| N5 | summary hygiene | run and grader text as one line without control characters (no line can start `::`, no ESC); Summary step `shell: bash` (pipefail) with stderr in the published summary, skipped when no `result.json`; a thrown grader is not repeated as a FAIL line | diff against the three published runs: first two lines identical; other changes are the aggregates label, blank evidence lines collapsed, the duplicate FAIL lines gone |
+| N6 | `only` edge cases | blank `only` exits 2; a repeated name is copied once; commit subject uses `${ONLY:-$CASES}` | step script with the eval call cut off: repeat → 1 case, `"   "` / `*` / `ponytail/nope` → exit 2, unset → 10 in-container |
+| N7 | tracker details | no stages: no `finished`, `--watch` keeps waiting; details grid removed (it repeated the fold line); `effortClass` dead branch removed; dividers name the round from `:rN` labels (`Refute · round 2`); card status and label are an `<h3>` | 320 and 390 px, folds as rendered and all open: no horizontal overflow on 3 runs, 0 `<script>` |
+| N8 | README | v3.1 bullets no longer call the tracker the table above; v3.2 entry added | - |
+| N9 | mod tidiness | one `clip` for both fits; render test checks stage order; pane's arbiter and fix lines carry reasons like the tracker's | tests |
+
+Checks after the fixes: `claude plugin test mods/workflow-watch` 20 pass, 0 fail; `tsc` (section 7 setup, TypeScript 7.0.2) exit 0
+on all five mod files; `assets/tracker.png` re-rendered from `wf_8972b6c6-4a2` (changes: header tally, `REFUTE · ROUND 1`).

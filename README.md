@@ -129,7 +129,7 @@ The driver runs `claude -p` with `--permission-mode auto` once per task, asks it
 
 <p align="center"><img alt="The tracker for one build-loop run: 11 stages as cards in run order, each showing its status, model, effort and result above a folded line of time, tools and tokens" src="assets/tracker.png" width="900"></p>
 
-Each subagent a workflow spawns gets one card, in run order, with a small divider wherever the phase changes. A card shows the stage's status as a glyph and a word, its label, the model alias the script asked for and the id it resolved to, the effort it ran at, and its result in one line. Under that is a fold that reads like `Ran for 0:46 · 5 tools · 0.8k tokens`, or, while the stage is still running, its calls so far and the tool it is on. Open it for the full result, the stage's bar on the run's timeline and its numbers. Only running stages start open. Two ways to get it:
+Each subagent a workflow spawns gets one card, in run order, with a small divider wherever the phase changes. A card shows the stage's status as a glyph and a word, its label, the model alias the script asked for and the id it resolved to, the effort it ran at, and its result in one line. Under that is a fold that reads like `Ran for 0:46 · 5 tools · 0.8k tokens`, or, while the stage is still running, its calls so far and the tool it is on. Open it for the full result and the stage's bar on the run's timeline. Only running stages start open. The header counts each stage once, the way its card shows it: done, failed (a stage with no result included) and running, plus disputed when a fix round left findings for the arbiter. Two ways to get it:
 
 - **`scripts/tracker.mjs`**, from any shell: `node <plugin-root>/scripts/tracker.mjs [--run <dir> | --session <id>] [--out tracker.html] [--png tracker.png] [--watch]`. It reads the run's own files under `~/.claude/projects/<project>/<session>/subagents/workflows/<run>/` and writes a page; `--png` adds a screenshot when Playwright with Chromium is reachable (`--playwright <path>` otherwise). `--watch` re-renders every five seconds until the run ends.
 - **`mods/workflow-watch`**, inside Claude Code: a mod (a plugin of function hooks) that follows the session's newest run and draws the same stages live, one block each, in a pane, a band above the prompt while stages run, the status line, and a toast as each stage finishes. `/plugin install workflow-watch@alonbaron`, or `claude --plugin-dir mods/workflow-watch` for one session; `/workflow-watch` opens the pane and prints the report as text. The pane and band are drawn by the terminal and the desktop app; the mobile app shows the text report only.
@@ -194,11 +194,18 @@ One catch worth knowing about humanizer: as of v2.9.1 the plugin puts `SKILL.md`
 
 ---
 
+## ◢ What's new in v3.2
+
+- The `haiku` alias now resolves to `claude-haiku-5-5`, which records an effort level, so the build loop's scout and measure stages run at `low`. Haiku 4.5 recorded none.
+- `scripts/tracker.mjs` draws a run as a feed of cards, one per stage, as in the picture above. Refute and fix dividers carry their round number. A stage that died before returning (a session limit, an API error) shows as `✗ no result` instead of running forever, and `--watch` stops once the last stage ends.
+- workflow-watch 0.2.0 draws the same blocks in its pane, band and status line. Stage times come from each stage's own transcript, so a run the mod finds already under way still shows how long every stage took.
+- The eval summary opens with `valid N of M` and a `re-run:` line. A case is INVALID when a limit, an auth failure or a lost judge call spoiled it, TRUNCATED when a run hit the case's own turn or time budget, and NOT RUN when a stopped run never reached it. The CI job takes an `only` input to re-run named cases, and each published summary records the CLI version.
+
 ## ◢ What's new in v3.1
 
 - 3.1.1: every eval case now carries a Fable 5.1 number from 2026-10-04 (two runs on the GitHub runner, summaries published to the `eval-results` branch by CI); the CI job takes a case set (`sandboxed`, `in-container`, `all`) and gives the review swarm 1500 s; the one-off cron entries are gone.
-- `scripts/tracker.mjs` renders any workflow run as the stage table above, HTML or PNG, live with `--watch`.
-- `mods/workflow-watch`, a second plugin in this marketplace: the same table drawn live inside Claude Code (pane, band, status line, toasts, `/workflow-watch`).
+- `scripts/tracker.mjs` renders any workflow run as a stage table, HTML or PNG, live with `--watch` (v3.2 redraws it as the feed above).
+- `mods/workflow-watch`, a second plugin in this marketplace: the same stages drawn live inside Claude Code (pane, band, status line, toasts, `/workflow-watch`).
 - build-loop: the fixer is told which findings the arbiter upheld and cannot dispute them twice; the build stage names its effort; the in-session caveat about the harness relaying the turn's prompt is documented in the script and above.
 - The eval CI runs the nine sandboxed cases on Fable 5.1 (`workflow_dispatch` takes a model input for comparison runs); the table above now carries Fable numbers for every skill.
 
