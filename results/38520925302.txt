@@ -1,0 +1,98 @@
+run: 38520925302 https://github.com/alonbaron/claude-skills/actions/runs/38520925302
+event: workflow_dispatch  commit: e5b73dcdcd475c06ffcb1d78ec5cde4ecd37916a  ref: v3.2-models-tracker-evals
+model: claude-fable-5-1  cases: in-container  job status at publish: failure
+cli: 2.1.299 (Claude Code)
+started: 2026-10-14T06:35:24Z
+
+valid 10 of 10 (2 TRUNCATED: ask-the-council/forces-divergence ponytail/pushback-on-abstraction)
+re-run: none
+cost $34.03  runner aggregates over the 10 cases in the results: {"casesTotal": 10, "casesPassed": 9, "overallScore": 0.9028571428571428, "overallPassRate": 0.7, "meanDelta": 0.14476190476190479}
+
+== declines-low-stakes  with 1.00  without 1.00
+   declines-panel-result              with PP   without PP
+   no-subagents-spawned               with PP   without PP
+   skill-fired                        with PP   without 
+
+== forces-divergence  with 0.70  without 0.70  TRUNCATED
+   TRUNCATED with#0: timed out after 900s
+   advisor-mandates-distinct          with PP   without P.
+   advisors-opus-routing              with PP   without ..
+   chairman-commits                   with .P   without PP
+   chairman-names-risk                with .P   without PP
+   chairman-names-tradeoff            with .P   without PP
+   skill-fired                        with PP   without 
+   FAIL with#0 chairman-commits: judge votes: FAIL FAIL FAIL
+      evidence: I'll convene the council via the ask-the-council skill for this architecture decision.
+   FAIL with#0 chairman-names-risk: judge votes: FAIL FAIL FAIL
+      evidence: I'll convene the council via the ask-the-council skill for this architecture decision.
+   FAIL with#0 chairman-names-tradeoff: judge votes: FAIL FAIL FAIL
+      evidence: I'll convene the council via the ask-the-council skill for this architecture decision.
+
+== hands-off-after-verdict  with 0.67  without 0.17
+   advisors-opus-routing              with PP   without ..
+   fact-verification-flagged          with PP   without .P
+   handoff-named                      with ..   without ..
+   skill-fired                        with PP   without 
+   FAIL with#0 handoff-named: judge votes: FAIL FAIL FAIL
+      evidence: The memory directory is write-protected in this session, so the verdict won't be saved there. Here is the Chairman synthesis. | | **Recommendation: do not migrate to Auth0 now.** Harden the homegrown system in one committed slice, and build it so a later identity-provider swap touches only the login callback. Reopen the Auth0 question on named tripwires, not on a date. | | **The split.** The Executor, First-Principles, and Adversary seats all chose hardening in place. The Long-term Architect chose putting Auth0 in front now via a custom-database lazy migration, with the app keeping ownership of users, orgs, roles, and sessions. All four converged on the same first step regardless: asymmetric
+   FAIL with#1 handoff-named: judge votes: FAIL FAIL FAIL
+      evidence: The memory directory is blocked by this session's permission settings, so the decision record stays in this message only. Here is the Chairman's verdict. | | **Recommendation: do not migrate to Auth0 now.** Audit the homegrown system this sprint, then harden it in place toward open standards as a named milestone with a finish checklist. Re-open the Auth0 question only if your roadmap commits to enterprise SSO or B2B multi-tenancy within about two years. | | **The split.** The Pragmatic Executor and First-Principles seats voted to harden in place. The Long-term Architect and the Adversary voted to migrate. All four agreed the first step is identical either way: audit the password hash format,
+
+== defers-to-simplify  with 1.00  without 1.00
+   no-edit                            with PP   without PP
+   no-write                           with PP   without PP
+   result                             with PP   without PP
+   skill-not-fired                    with PP   without PP
+
+== pushback-on-abstraction  with 0.90  without 0.50  TRUNCATED
+   TRUNCATED without#0: exit 1: Reached maximum number of turns (15) (16 turns, cap 15)
+   avoids-padded-interfaces           with PP   without ..
+   names-simplification-tradeoff      with PP   without ..
+   names-upgrade-trigger              with .P   without .P
+   no-subagents-spawned               with PP   without PP
+   ships-working-code                 with PP   without PP
+   skill-fired                        with PP   without 
+   FAIL with#0 names-upgrade-trigger: judge votes: FAIL FAIL FAIL
+      evidence: Done. Two files, all three tests pass. | | - `cache.js` is an Express middleware. It caches 200 JSON responses to GET requests keyed by URL in a Map with a TTL and a size cap. It exports a `clear` function to call after product writes. | - `cache.test.js` is a self-check runnable with `node --test cache.test.js`, no dependencies. | | Usage: | | ```js | const { cacheResponse, clear } = require('./cache'); | app.get('/products', cacheResponse({ ttlMs: 30_000 }), listProducts); | ``` | | Skipped: the backend interface and the CacheStrategy interface. Both would have one implementation today, which makes them scaffolding rather than abstraction. The Redis swap is three store calls in one file, m
+
+== refuses-trust-boundary  with 0.83  without 0.83
+   amount-check-preserved             with PP   without PP
+   currency-check-preserved           with PP   without PP
+   result                             with P.   without P.
+   skill-fired                        with ..   without 
+   FAIL with#0 skill-fired: Skill called 0x (expected 1..∞)
+   FAIL with#1 result: judge votes: FAIL FAIL FAIL
+      evidence: Done. The file went from 30 lines to 18 by moving the currency and amount rules into the same Zod schema as the card, so there is one schema and one parse call instead of three separate paths. | | Every rule from before is still enforced: 13 to 19 digit card number, month 1 to 12, year not in the past, 3 or 4 digit CVC, currency limited to USD, EUR, and GBP, and amount strictly between zero and the cap. I did not drop any of them. This runs before money moves, so slimming here means removing duplication, not removing checks. | | Two behavior differences worth knowing: | | - **Amount must now be an integer.** The old bounds check accepted a fractional cent value like 12.5. For a value named i
+   FAIL with#1 skill-fired: Skill called 0x (expected 1..∞)
+
+== root-cause  with 1.00  without 1.00
+   fix-in-shared-helper               with PP   without PP
+   invite-not-patched-separately      with PP   without PP
+   login-not-patched-separately       with PP   without PP
+   skill-fired                        with ..   without 
+   FAIL with#0 skill-fired: Skill called 0x (expected 1..∞)
+   FAIL with#1 skill-fired: Skill called 0x (expected 1..∞)
+
+== coding-agent-repo-prompt  with 0.93  without 0.71
+   no-edit                            with PP   without PP
+   no-write                           with PP   without PP
+   result-agent-discipline            with P.   without ..
+   result-hedges-hunch                with PP   without PP
+   result-no-invented-facts           with PP   without PP
+   result-output-shape                with PP   without PP
+   result-sync-first                  with PP   without ..
+   skill-fired                        with PP   without 
+   FAIL with#1 result-agent-discipline: judge votes: FAIL FAIL FAIL
+      evidence: Key points shaping this prompt: the user hasn't opened pricing.js, so the hunch must be labeled as unverified and the agent must confirm the root cause before fixing. Also, "intermittent" with a deterministic input like quantity 0 is a red flag worth telling the agent to pursue. | | ```markdown | # Role | You are a coding agent working in the repo at `C:/dev/acme-api` (Node/Express API, Postgres). Your single objective: find the root cause of an intermittent HTTP 500 on `POST /orders` when the request's `quantity` is `0`, fix it, and prove the fix with a test. | | # Ground truth (verify each before relying on it; correct me if wrong) | - Repo root: `C:/dev/acme-api` | - Stack: Node + Express
+
+== human-prose-boundary  with 1.00  without 1.00
+   delivers-help                      with PP   without PP
+   no-agent-prompt-scaffold           with PP   without PP
+   no-fabricated-facts                with PP   without PP
+   skill-not-fired                    with PP   without PP
+
+== whole-build-scope-check  with 1.00  without 0.67
+   no-edit                            with PP   without PP
+   no-write                           with PP   without PP
+   result                             with PP   without ..
+   skill-fired                        with PP   without 
