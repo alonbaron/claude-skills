@@ -36,6 +36,9 @@ jobs:
     timeout-minutes: 120
     permissions:
       contents: write
+    env:
+      # Runs per arm, for the eval and for the summary, which flags an arm that got fewer.
+      RUNS: "2"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -61,13 +64,16 @@ jobs:
         run: |
           mkdir evals-ci
           if [ -n "$ONLY" ]; then
-            # Named cases only, e.g. the ones a summary listed as INVALID; a name that is not evals/<skill>/<case> stops the job.
+            # Named cases only, e.g. the ones a summary listed for a re-run; a name that is not evals/<skill>/<case>,
+            # or an `only` of nothing but blanks, stops the job. A name given twice is copied once.
             set -f
-            for c in $ONLY; do
-              [[ "$c" =~ ^[a-z0-9-]+/[a-z0-9-]+$ && -d "evals/$c" ]] || { echo "not a case: $c"; exit 2; }
-              mkdir -p "evals-ci/${c%/*}" && cp -r "evals/$c" "evals-ci/$c"
-            done
+            names=($ONLY)
             set +f
+            [ ${#names[@]} -gt 0 ] || { echo "only is blank"; exit 2; }
+            for c in "${names[@]}"; do
+              [[ "$c" =~ ^[a-z0-9-]+/[a-z0-9-]+$ && -d "evals/$c" ]] || { echo "not a case: $c"; exit 2; }
+              [ -e "evals-ci/$c" ] || { mkdir -p "evals-ci/${c%/*}" && cp -r "evals/$c" "evals-ci/$c"; }
+            done
           else
             case "$CASES" in
               sandboxed)    cp -r evals/architect evals/review-swarm evals/up-to-date evals-ci/ ;;
@@ -79,12 +85,17 @@ jobs:
           echo "cases: ${ONLY:-$CASES} ($(ls -d evals-ci/*/* | wc -l))"
           # Cases that already have a clean result on this commit's skills; space-separated <skill>/<case>.
           for c in $SKIP_CASES; do rm -rf "evals-ci/$c"; done
-          claude plugin eval . --eval-dir evals-ci --runs 2 -j 4 --scaffold \
+          claude plugin eval . --eval-dir evals-ci --runs "$RUNS" -j 4 --scaffold \
             --allow-tools Write Edit Bash --model "$MODEL" --judge-model sonnet \
             --no-publish --trust-plugin --threshold 0.7 --json evals-ci/result.json
       - name: Summary
         if: always()
-        run: python3 .github/scripts/eval-summary.py evals-ci/result.json | tee evals-ci/summary.txt
+        # `shell: bash` adds pipefail, so a crash of the script fails this step instead of hiding behind tee;
+        # its traceback goes into the published summary.
+        shell: bash
+        run: |
+          [ -f evals-ci/result.json ] || exit 0
+          python3 .github/scripts/eval-summary.py evals-ci/result.json evals-ci "$RUNS" 2>&1 | tee evals-ci/summary.txt
       - name: Publish the summary to the eval-results branch
         if: always()
         env:
@@ -114,7 +125,7 @@ jobs:
           cp evals-ci/result.json "results-wt/results/${{ github.run_id }}.json" 2>/dev/null || true
           cd results-wt
           git add -A
-          git commit -m "eval run ${{ github.run_id }}: $CASES on $MODEL (${{ job.status }})"
+          git commit -m "eval run ${{ github.run_id }}: ${ONLY:-$CASES} on $MODEL (${{ job.status }})"
           git push origin eval-results
       - name: Upload results
         if: always()
