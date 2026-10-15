@@ -140,7 +140,7 @@ Model usage in P1: alias probes $0.77, the build-loop run $4.29 (driver-reported
 | phase | set | where | estimated cost | entry condition | status | run id |
 |---|---|---|---|---|---|---|
 | P2 | in-container (10 cases: ponytail, ask-the-council, prompt-generator) | CI: `gh workflow run evals.yml --ref v3.2-models-tracker-evals -f cases=in-container -f model=claude-fable-5-1` | about $25 API-equivalent (37218381217: $25.13); fits a window with room | the owner's go, in the current window; nothing else on the plan while it runs | done 2026-10-14 (section 10): valid 10 of 10 (2 TRUNCATED), re-run none, $34.03; job red, hands-off-after-verdict 0.67 under `--threshold 0.7` | 38520925302 |
-| P3 | sandboxed (9 cases: architect, review-swarm, up-to-date) | CI: same with `-f cases=sandboxed` | about $47 (37198713961: $47.41); fills a fresh window alone | the owner says the window is fresh | INVALID: session limit, dispatched in P2's window (section 11); valid 1 of 9, re-run 8, $14.08 | 38523993370 |
+| P3 | sandboxed (9 cases: architect, review-swarm, up-to-date) | CI: same with `-f cases=sandboxed` | about $47 (37198713961: $47.41); fills a fresh window alone | the owner says the window is fresh | attempt 1 INVALID: session limit, dispatched in P2's window (section 11); valid 1 of 9, re-run 8, $14.08. Re-run split by skill over two windows: half A (architect 2, up-to-date 3) done 2026-10-15, valid 5 of 5 (2 TRUNCATED), re-run none, $20.38 (section 12); half B (review-swarm 3) pending, next fresh window | 38523993370, 38690586571 (A) |
 | P4 | trigger suite (120 local cases in `evals-trigger/`) | local, detached: `claude plugin eval <repo> --eval-dir evals-trigger --runs 2 -j 4 --ablation none --model claude-fable-5-1 --no-publish --trust-plugin --json <scratch>/trigger.json` | not measured for a clean pass; `STEP5.md` section 6: about $115 over four invocations, two of them re-runs after the 5-hour limit | the owner says the window is fresh | pending | - |
 | P5 | re-runs of INVALID cases (at most two attempts each), then the README write-up | CI `-f only="<skill>/<case> ..."`; trigger `--case` | depends on what P2-P4 leave INVALID | the owner says the window is fresh | pending | - |
 
@@ -266,3 +266,65 @@ Compared (valid in both): audit-drift-citation only, unchanged at 1.00 / 1.00, s
 Re-run list: the 8 above, $44.86 by baseline cost. audit-drift-citation stands as measured on 7917825.
 
 Model usage in P3 attempt 1: the eval, $14.08 (published `costUsd`); the executor session's own usage not measured.
+
+## 12. P3 sandboxed, half A (2026-10-15)
+
+The 8 cases section 11 left INVALID, split by skill because they cost $44.86 at baseline against about $48 a window
+holds (section 11, inference). Half A here; half B (review-swarm/real-diff-ranked-report, security-alone-hands-off,
+trivial-diff-declines; $21.76 at baseline, real-diff-ranked-report a lower bound since its with#0 was cut off) goes
+in the next fresh window. The owner confirmed this window fresh; the last local session before this one ended
+2026-10-14T14:52Z.
+
+| field | value |
+|---|---|
+| run | 38690586571, https://github.com/alonbaron/claude-skills/actions/runs/38690586571 |
+| dispatch | 06:07:38Z, `gh workflow run evals.yml --ref v3.2-models-tracker-evals -f cases=sandboxed -f model=claude-fable-5-1 -f only="architect/right-sized-new-feature architect/small-fix-boundary up-to-date/dirty-and-behind up-to-date/fresh-branch-no-upstream up-to-date/no-remote-boundary"` |
+| tested commit | a334aed (header `commit: a334aedb31833c12b1ab1158c241a17d2869eeeb  ref: v3.2-models-tracker-evals`); skills and harness as on 7917825, only STEP7.md changed |
+| model, judge | claude-fable-5-1, sonnet; `--runs 2 -j 4 --threshold 0.7` |
+| CLI | 2.1.300 (attempt 1: 2.1.299; baseline 37198713961: 2.1.289) |
+| duration | eval 934 s (`durationSeconds`); run created 06:07:39Z, completed 06:23:44Z |
+| cost | $20.38 (`costUsd` 20.37914575; these 5 cases at baseline $23.10) |
+| job | conclusion `success`, every step green; runner `casesPassed` 5 of 5 |
+| aggregates | overallScore 0.975, overallPassRate 0.9, meanDelta +0.20 (5 cases; not comparable to the baseline's 9-case figures) |
+| usage or limit errors | none: the only two run errors are the TRUNCATED ones below |
+
+Summary, first lines (`results/38690586571.txt`):
+
+```
+valid 5 of 5 (2 TRUNCATED: architect/right-sized-new-feature up-to-date/fresh-branch-no-upstream)
+re-run: none
+cost $20.38  runner aggregates over the 5 cases in the results: {"casesTotal": 5, "casesPassed": 5, "overallScore": 0.975, "overallPassRate": 0.9, "meanDelta": 0.20166666666666666}
+```
+
+Per case: mean run score per arm (`python -I`, both JSONs); each equals the case's `aggregates.score` / `scoreWithout`.
+
+| case | with | without | flag | baseline with | baseline without |
+|---|---|---|---|---|---|
+| architect/right-sized-new-feature | 1.00 | 0.67 | TRUNCATED with#1: `timed out after 900s` (914 s, 3 turns; scored 1.00) | 0.83 | 0.67 |
+| architect/small-fix-boundary | 1.00 | 0.88 | - | 0.88 | 0.75 |
+| up-to-date/dirty-and-behind | 1.00 | 0.70 | - | 1.00 | 0.70 |
+| up-to-date/fresh-branch-no-upstream | 0.88 | 0.62 | TRUNCATED without#1: `Reached maximum number of turns (15)` (16 turns) | 1.00 | 0.62 |
+| up-to-date/no-remote-boundary | 1.00 | 1.00 | - | INVALID | INVALID |
+
+Graders behind the moves (valid-in-both cases; from both `.txt` files):
+
+| case | arm | change | graders |
+|---|---|---|---|
+| right-sized-new-feature | with | +0.17 | right-sized-process passes both with runs (baseline with#0 FAIL FAIL PASS) |
+| small-fix-boundary | with | +0.125 | two-boundary-enforcement passes both with runs (baseline with#1 FAIL PASS FAIL) |
+| small-fix-boundary | without | +0.125 | no-invention passes without#1 (baseline fails both) |
+| fresh-branch-no-upstream | with | -0.125 | falls-back-to-default-branch fails with#1, FAIL FAIL FAIL (baseline passes both) |
+
+Not compared: no-remote-boundary, INVALID in 37198713961; here 1.00 / 1.00 on all four runs, so its first clean
+measurement. dirty-and-behind unchanged.
+
+Re-run list for P5: none from half A.
+
+Harness change after this dispatch, db49d7a: the summary finds case folders by `prompt.md` (every case has one;
+`case.yaml` only the 11 with a fixture), so on a PARTIAL run a fixture-less case that never started is NOT RUN
+instead of missing from `valid N of M`. Old and new output identical on the five published runs (37198713961,
+37213238188, 37218381217, 38520925302, 38523993370); on 38520925302 with 3 cases dropped and `partial` set, old
+`valid 7 of 8 … (1 NOT RUN)`, new `valid 7 of 10 … (3 NOT RUN)`. This run's summary re-derived with it: first two
+lines unchanged.
+
+Model usage in P3 half A: the eval, $20.38 (published `costUsd`).
