@@ -140,7 +140,7 @@ Model usage in P1: alias probes $0.77, the build-loop run $4.29 (driver-reported
 | phase | set | where | estimated cost | entry condition | status | run id |
 |---|---|---|---|---|---|---|
 | P2 | in-container (10 cases: ponytail, ask-the-council, prompt-generator) | CI: `gh workflow run evals.yml --ref v3.2-models-tracker-evals -f cases=in-container -f model=claude-fable-5-1` | about $25 API-equivalent (37218381217: $25.13); fits a window with room | the owner's go, in the current window; nothing else on the plan while it runs | done 2026-10-14 (section 10): valid 10 of 10 (2 TRUNCATED), re-run none, $34.03; job red, hands-off-after-verdict 0.67 under `--threshold 0.7` | 38520925302 |
-| P3 | sandboxed (9 cases: architect, review-swarm, up-to-date) | CI: same with `-f cases=sandboxed` | about $47 (37198713961: $47.41); fills a fresh window alone | the owner says the window is fresh | pending | - |
+| P3 | sandboxed (9 cases: architect, review-swarm, up-to-date) | CI: same with `-f cases=sandboxed` | about $47 (37198713961: $47.41); fills a fresh window alone | the owner says the window is fresh | INVALID: session limit, dispatched in P2's window (section 11); valid 1 of 9, re-run 8, $14.08 | 38523993370 |
 | P4 | trigger suite (120 local cases in `evals-trigger/`) | local, detached: `claude plugin eval <repo> --eval-dir evals-trigger --runs 2 -j 4 --ablation none --model claude-fable-5-1 --no-publish --trust-plugin --json <scratch>/trigger.json` | not measured for a clean pass; `STEP5.md` section 6: about $115 over four invocations, two of them re-runs after the 5-hour limit | the owner says the window is fresh | pending | - |
 | P5 | re-runs of INVALID cases (at most two attempts each), then the README write-up | CI `-f only="<skill>/<case> ..."`; trigger `--case` | depends on what P2-P4 leave INVALID | the owner says the window is fresh | pending | - |
 
@@ -221,3 +221,48 @@ Graders behind the moves (from both `.txt` files):
 Re-run list for P5: none (0 INVALID, 0 NOT RUN). TRUNCATED runs count as valid (section 6), so they are not on it.
 
 Model usage in P2: the eval, $34.03 (published `costUsd`).
+
+## 11. P3 sandboxed, first attempt (2026-10-14)
+
+| field | value |
+|---|---|
+| run | 38523993370, https://github.com/alonbaron/claude-skills/actions/runs/38523993370 |
+| dispatch | 06:44:30Z, session 0e47ee54, `gh workflow run evals.yml --ref v3.2-models-tracker-evals -f cases=sandboxed -f model=claude-fable-5-1` |
+| tested commit | 7917825 (header `commit: 7917825ad4aab41c9ffc93ae3bbd5acb63c5c2af  ref: v3.2-models-tracker-evals`) |
+| model, judge | claude-fable-5-1, sonnet; `--runs 2 -j 4 --threshold 0.7` |
+| CLI | 2.1.299 (baseline 37198713961: 2.1.289) |
+| duration | eval 686 s (`durationSeconds`; baseline 1601 s); run created 06:44:32Z, completed 06:56:27Z |
+| cost | $14.08 (`costUsd` 14.0827945; baseline $47.41) |
+| job | conclusion `failure`: `Run the cases` exit 1 after `⚠ 29 runs ended on an API error and scored 0 without grading … the suite exits non-zero regardless of scores` and `Wrote evals-ci/result.json`; Summary, Publish, Upload green. Not the threshold exit |
+| aggregates | runner over 9 cases, 8 INVALID: overallScore 0.167, meanDelta 0 (baseline 0.892, +0.23); valid-only (1 case): 1.00, +0.00 |
+| usage or limit errors | 29 of 36 runs: `exit 1: You've hit your session limit · resets 10:30am (UTC)`; the first cut-off run ended 06:53:57Z. The executor session hit the limit at 06:57:03Z (`resets 1:30pm (Asia/Jerusalem)`) and stopped while watching, before recording; this section was written 2026-10-15 from the published files |
+| cause | the window was not fresh: P2 (38520925302, dispatched 06:13:08Z, $34.03) ran in it. P2 + this run = $48.12 at the limit; 37198713961 hit it at $47.41. Inference, two data points: a window holds about $48 of eval spend (executor sessions' own usage unmeasured), and the sandboxed set's runs in 37198713961 sum to $48.38 with judges |
+
+Summary, first lines (`results/38523993370.txt`):
+
+```
+valid 1 of 9
+re-run: architect/right-sized-new-feature architect/small-fix-boundary review-swarm/real-diff-ranked-report review-swarm/security-alone-hands-off review-swarm/trivial-diff-declines up-to-date/dirty-and-behind up-to-date/fresh-branch-no-upstream up-to-date/no-remote-boundary
+cost $14.08  runner aggregates over the 9 cases in the results, 8 of them INVALID: {"casesTotal": 9, "casesPassed": 1, "overallScore": 0.16666666666666666, "overallPassRate": 0.16666666666666666, "meanDelta": 0}
+valid-only aggregates (1 cases): score 1.00  mean delta +0.00  1 of 1 at 0.7
+```
+
+Per case: mean run score per arm (`python -I`, both JSONs); runs finished without error; baseline cost is the case's runs plus judges in 37198713961.
+
+| case | with | without | runs finished | flag | baseline with | baseline without | baseline cost |
+|---|---|---|---|---|---|---|---|
+| architect/audit-drift-citation | 1.00 | 1.00 | 4 of 4 | - | 1.00 | 1.00 | $3.52 |
+| architect/right-sized-new-feature | 0.00 | 0.67 | 2 of 4 | INVALID with#0, with#1 | 0.83 | 0.67 | $9.65 |
+| architect/small-fix-boundary | 0.50 | 0.00 | 1 of 4 | INVALID with#1, without#0, without#1 | 0.88 | 0.75 | $6.22 |
+| review-swarm/real-diff-ranked-report | 0.00 | 0.00 | 0 of 4 | INVALID all | 0.90 | 0.40 | $14.38 (INVALID; with#0 cut off at $8.25) |
+| review-swarm/security-alone-hands-off | 0.00 | 0.00 | 0 of 4 | INVALID all | 0.67 | 0.33 | $5.67 |
+| review-swarm/trivial-diff-declines | 0.00 | 0.00 | 0 of 4 | INVALID all | 1.00 | 1.00 | $1.71 |
+| up-to-date/dirty-and-behind | 0.00 | 0.00 | 0 of 4 | INVALID all | 1.00 | 0.70 | $2.32 |
+| up-to-date/fresh-branch-no-upstream | 0.00 | 0.00 | 0 of 4 | INVALID all | 1.00 | 0.62 | $3.24 |
+| up-to-date/no-remote-boundary | 0.00 | 0.00 | 0 of 4 | INVALID all | 0.75 | 0.50 | $1.67 (INVALID; without arm cut off) |
+
+Compared (valid in both): audit-drift-citation only, unchanged at 1.00 / 1.00, so no grader table. Not compared: the other 8, INVALID in 38523993370 (real-diff-ranked-report and no-remote-boundary also INVALID in 37198713961).
+
+Re-run list: the 8 above, $44.86 by baseline cost. audit-drift-citation stands as measured on 7917825.
+
+Model usage in P3 attempt 1: the eval, $14.08 (published `costUsd`); the executor session's own usage not measured.
