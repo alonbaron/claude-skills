@@ -5,14 +5,18 @@ export type Stage = {
   agentId: string | null
   label: string
   phase: string
-  /** $.clock.now() at the tick that first saw the stage. */
+  /** The transcript's first timestamp (epoch ms); until there is one, $.clock.now() at the tick that first saw the stage. */
   startedAt: number
-  /** $.clock.now() at the tick that saw its result; null while running. */
+  /** The transcript's last timestamp once the stage finished, else $.clock.now() at the tick that saw it finish; null while running. */
   endedAt: number | null
   /** One line about the result, or null while running. */
   summary: string | null
-  /** True when the journal recorded a null result (skipped or died). */
+  /** True when the journal recorded a null result, or a `failed` entry (the stage died before it returned). */
   isEmpty: boolean
+  /** True when the result reports a failure: a failing verdict or `ok: false`. */
+  isFailed: boolean
+  /** True when a fix round left findings disputed, for the arbiter to rule on. */
+  isDisputed: boolean
   /** The model alias the script asked for (from the agent's meta.json), or null. */
   alias: string | null
   /** The model id the engine resolved the alias to, from the transcript, or null. */

@@ -5,7 +5,7 @@
 <p align="center">
   <img alt="Claude Code plugin" src="https://img.shields.io/badge/Claude_Code-plugin-0891B2?style=flat-square&labelColor=0F1E33">&nbsp;
   <img alt="6 skills + 1 workflow" src="https://img.shields.io/badge/skills-6_+_1_workflow-4F46E5?style=flat-square&labelColor=0F1E33">&nbsp;
-  <img alt="version" src="https://img.shields.io/badge/version-v3.1.1-7C3AED?style=flat-square&labelColor=0F1E33">&nbsp;
+  <img alt="version" src="https://img.shields.io/badge/version-v3.2.0-7C3AED?style=flat-square&labelColor=0F1E33">&nbsp;
   <a href="#-evals"><img alt="evals: 18/19 passing" src="https://img.shields.io/badge/evals-18%2F19_passing-D97706?style=flat-square&labelColor=0F1E33"></a>&nbsp;
   <img alt="MIT license" src="https://img.shields.io/badge/license-MIT-059669?style=flat-square&labelColor=0F1E33">&nbsp;
   <a href="https://github.com/alonbaron"><img alt="by alonbaron" src="https://img.shields.io/badge/by-alonbaron-C026D3?style=flat-square&labelColor=0F1E33&logo=github&logoColor=white"></a>
@@ -78,7 +78,7 @@ Each skill also triggers from plain language — e.g. *"spec this out before we 
 
 ## ◢ The build loop
 
-`/alon-skills:build-loop` builds `TODO_WORKFLOW.md` rows one at a time without supervision, in any repo that carries the architect doc set. Each stage is a fresh subagent with an empty context; state between runs lives in the repo, never in chat. Fable 5.1 makes the calls everything downstream inherits (which row, what done means, who wins a dispute), Opus 5.5 reviews and repairs, Sonnet 5.5 builds, Haiku 4.5 searches and counts. Stages name model aliases, so each follows the newest model of its tier.
+`/alon-skills:build-loop` builds `TODO_WORKFLOW.md` rows one at a time without supervision, in any repo that carries the architect doc set. Each stage is a fresh subagent with an empty context; state between runs lives in the repo, never in chat. Fable 5.1 makes the calls everything downstream inherits (which row, what done means, who wins a dispute), Opus 5.5 reviews and repairs, Sonnet 5.5 builds, Haiku 5.5 searches and counts. Stages name model aliases, so each follows the newest model of its tier.
 
 | Stage | Model | Reads | Writes | Returns | Stops the loop when |
 |---|---|---|---|---|---|
@@ -127,14 +127,14 @@ The driver runs `claude -p` with `--permission-mode auto` once per task, asks it
 
 ## ◢ Watching a run
 
-<p align="center"><img alt="The tracker for one build-loop run: 21 stages, each with its model, effort, tokens, timeline and result" src="assets/tracker.png" width="900"></p>
+<p align="center"><img alt="The tracker for one build-loop run: 11 stages as cards in run order, each showing its status, model, effort and result above a folded line of time, tools and tokens" src="assets/tracker.png" width="900"></p>
 
-Every subagent a workflow spawns is one row: phase, outcome, label, the model alias the script asked for and the id it resolved to, the effort it ran at, output tokens, how long it took, where it sat on the run's timeline, and either the tool it is calling right now or its result in one line. Two ways to get it:
+Each subagent a workflow spawns gets one card, in run order, with a small divider wherever the phase changes. A card shows the stage's status as a glyph and a word, its label, the model alias the script asked for and the id it resolved to, the effort it ran at, and its result in one line. Under that is a fold that reads like `Ran for 0:46 · 5 tools · 0.8k tokens`, or, while the stage is still running, its calls so far and the tool it is on. Open it for the full result and the stage's bar on the run's timeline. Only running stages start open. The header counts each stage once, the way its card shows it: done, failed (a stage with no result included) and running, plus disputed when a fix round left findings for the arbiter. Two ways to get it:
 
 - **`scripts/tracker.mjs`**, from any shell: `node <plugin-root>/scripts/tracker.mjs [--run <dir> | --session <id>] [--out tracker.html] [--png tracker.png] [--watch]`. It reads the run's own files under `~/.claude/projects/<project>/<session>/subagents/workflows/<run>/` and writes a page; `--png` adds a screenshot when Playwright with Chromium is reachable (`--playwright <path>` otherwise). `--watch` re-renders every five seconds until the run ends.
-- **`mods/workflow-watch`**, inside Claude Code: a mod (a plugin of function hooks) that follows the session's newest run and draws the same rows live in a pane, a band above the prompt while stages run, the status line, and a toast as each stage finishes. `/plugin install workflow-watch@alonbaron`, or `claude --plugin-dir mods/workflow-watch` for one session; `/workflow-watch` opens the pane and prints the report as text. The pane and band are drawn by the terminal and the desktop app; the mobile app shows the text report only.
+- **`mods/workflow-watch`**, inside Claude Code: a mod (a plugin of function hooks) that follows the session's newest run and draws the same stages live, one block each, in a pane, a band above the prompt while stages run, the status line, and a toast as each stage finishes. `/plugin install workflow-watch@alonbaron`, or `claude --plugin-dir mods/workflow-watch` for one session; `/workflow-watch` opens the pane and prints the report as text. The pane and band are drawn by the terminal and the desktop app; the mobile app shows the text report only.
 
-The picture above is the run that shaped v3.1: the build loop on a throwaway Node repo whose `npm test` script was broken before the loop touched it. The builder fixed it as a deviation, the invariants lens blocked that as outside the spec, the fixer reverted and disputed, two lenses then failed the reverted tree, the arbiter checked `HEAD` itself and upheld the finding, and the row closed as `[BLOCKED]` with the reason in `TODO_WORKFLOW.md` and `docs/handoff.md`. 21 stages, 8.5 minutes, 14.6k output tokens, all seven commits authored by the owner with no trailer. That run also showed two things the loop now does differently: the fixer is told which findings the arbiter upheld and may not dispute them again, and the build stage names its effort (`medium`) instead of inheriting whatever the launching session runs at. Every alias resolved as documented: fable → `claude-fable-5-1`, opus → `claude-opus-5-5`, sonnet → `claude-sonnet-5-5`, haiku → `claude-haiku-4-5-20251001`, and Haiku 4.5 records no effort level because it takes none.
+The picture above is one build-loop task on a throwaway Node repo, run on 2026-10-12 with `autobuild.mjs --tasks 1`: row 1.2, `truncateSlug(slug, max)`. It took 11 stages: plan, scout, spec, build, measure, five refute lenses and close. The loop skipped research because the spec listed no unverified APIs, and it needed no fix round because every lens passed with no blocking finding. The run took 5:29 and 8.5k output tokens, and the driver reported $4.29 for the session. The row closed as `[FINISHED - PENDING MERGE]` after six commits, all authored by the owner with no trailer. Every alias resolved as documented (fable → `claude-fable-5-1`, opus → `claude-opus-5-5`, sonnet → `claude-sonnet-5-5`, haiku → `claude-haiku-5-5`), and every stage recorded its effort level, with scout and measure at `low` on Haiku 5.5. Two of the loop's rules came from the v3.1 run: the fixer may not dispute a finding the arbiter upheld, and the build stage names its effort (`medium`) instead of inheriting the launching session's.
 
 ---
 
@@ -194,11 +194,18 @@ One catch worth knowing about humanizer: as of v2.9.1 the plugin puts `SKILL.md`
 
 ---
 
+## ◢ What's new in v3.2
+
+- The `haiku` alias now resolves to `claude-haiku-5-5`, which records an effort level, so the build loop's scout and measure stages run at `low`. Haiku 4.5 recorded none.
+- `scripts/tracker.mjs` draws a run as a feed of cards, one per stage, as in the picture above. Refute and fix dividers carry their round number. A stage that died before returning (a session limit, an API error) shows as `✗ no result` instead of running forever, and `--watch` stops once the last stage ends.
+- workflow-watch 0.2.0 draws the same blocks in its pane, band and status line. Stage times come from each stage's own transcript, so a run the mod finds already under way still shows how long every stage took.
+- The eval summary opens with `valid N of M` and a `re-run:` line. A case is INVALID when a limit, an auth failure or a lost judge call spoiled it, TRUNCATED when a run hit the case's own turn or time budget, and NOT RUN when a stopped run never reached it. The CI job takes an `only` input to re-run named cases, and each published summary records the CLI version.
+
 ## ◢ What's new in v3.1
 
 - 3.1.1: every eval case now carries a Fable 5.1 number from 2026-10-04 (two runs on the GitHub runner, summaries published to the `eval-results` branch by CI); the CI job takes a case set (`sandboxed`, `in-container`, `all`) and gives the review swarm 1500 s; the one-off cron entries are gone.
-- `scripts/tracker.mjs` renders any workflow run as the stage table above, HTML or PNG, live with `--watch`.
-- `mods/workflow-watch`, a second plugin in this marketplace: the same table drawn live inside Claude Code (pane, band, status line, toasts, `/workflow-watch`).
+- `scripts/tracker.mjs` renders any workflow run as a stage table, HTML or PNG, live with `--watch` (v3.2 redraws it as the feed above).
+- `mods/workflow-watch`, a second plugin in this marketplace: the same stages drawn live inside Claude Code (pane, band, status line, toasts, `/workflow-watch`).
 - build-loop: the fixer is told which findings the arbiter upheld and cannot dispute them twice; the build stage names its effort; the in-session caveat about the harness relaying the turn's prompt is documented in the script and above.
 - The eval CI runs the nine sandboxed cases on Fable 5.1 (`workflow_dispatch` takes a model input for comparison runs); the table above now carries Fable numbers for every skill.
 
