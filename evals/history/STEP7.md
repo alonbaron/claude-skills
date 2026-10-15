@@ -140,7 +140,7 @@ Model usage in P1: alias probes $0.77, the build-loop run $4.29 (driver-reported
 | phase | set | where | estimated cost | entry condition | status | run id |
 |---|---|---|---|---|---|---|
 | P2 | in-container (10 cases: ponytail, ask-the-council, prompt-generator) | CI: `gh workflow run evals.yml --ref v3.2-models-tracker-evals -f cases=in-container -f model=claude-fable-5-1` | about $25 API-equivalent (37218381217: $25.13); fits a window with room | the owner's go, in the current window; nothing else on the plan while it runs | done 2026-10-14 (section 10): valid 10 of 10 (2 TRUNCATED), re-run none, $34.03; job red, hands-off-after-verdict 0.67 under `--threshold 0.7` | 38520925302 |
-| P3 | sandboxed (9 cases: architect, review-swarm, up-to-date) | CI: same with `-f cases=sandboxed` | about $47 (37198713961: $47.41); fills a fresh window alone | the owner says the window is fresh | attempt 1 INVALID: session limit, dispatched in P2's window (section 11); valid 1 of 9, re-run 8, $14.08. Re-run split by skill over two windows: half A (architect 2, up-to-date 3) done 2026-10-15, valid 5 of 5 (2 TRUNCATED), re-run none, $20.38 (section 12); half B (review-swarm 3) pending, next fresh window | 38523993370, 38690586571 (A) |
+| P3 | sandboxed (9 cases: architect, review-swarm, up-to-date) | CI: same with `-f cases=sandboxed` | about $47 (37198713961: $47.41); fills a fresh window alone | the owner says the window is fresh | done 2026-10-15: valid 9 of 9 across the three runs (1 + 5 + 3), re-run none (section 13). Attempt 1 INVALID: session limit, dispatched in P2's window (section 11); valid 1 of 9, re-run 8, $14.08. Re-run split by skill over two windows: half A (architect 2, up-to-date 3) valid 5 of 5 (2 TRUNCATED), re-run none, $20.38 (section 12); half B (review-swarm 3) valid 3 of 3, re-run none, $22.64; job red, security-alone-hands-off 0.67 under `--threshold 0.7` (section 13) | 38523993370, 38690586571 (A), 38727606834 (B) |
 | P4 | trigger suite (120 local cases in `evals-trigger/`) | local, detached: `claude plugin eval <repo> --eval-dir evals-trigger --runs 2 -j 4 --ablation none --model claude-fable-5-1 --no-publish --trust-plugin --json <scratch>/trigger.json` | not measured for a clean pass; `STEP5.md` section 6: about $115 over four invocations, two of them re-runs after the 5-hour limit | the owner says the window is fresh | pending | - |
 | P5 | re-runs of INVALID cases (at most two attempts each), then the README write-up | CI `-f only="<skill>/<case> ..."`; trigger `--case` | depends on what P2-P4 leave INVALID | the owner says the window is fresh | pending | - |
 
@@ -328,3 +328,67 @@ instead of missing from `valid N of M`. Old and new output identical on the five
 lines unchanged.
 
 Model usage in P3 half A: the eval, $20.38 (published `costUsd`).
+
+## 13. P3 sandboxed, half B (2026-10-15)
+
+The three review-swarm cases section 12 left for the next fresh window. The owner confirmed this window fresh; the
+newest earlier eval run (38690586571) was created 06:07:39Z, 5 h 21 m before this dispatch.
+
+| field | value |
+|---|---|
+| run | 38727606834, https://github.com/alonbaron/claude-skills/actions/runs/38727606834 |
+| dispatch | 11:28:40Z, `gh workflow run evals.yml --ref v3.2-models-tracker-evals -f cases=sandboxed -f model=claude-fable-5-1 -f only="review-swarm/real-diff-ranked-report review-swarm/security-alone-hands-off review-swarm/trivial-diff-declines"` |
+| tested commit | ad68dd5 (header `commit: ad68dd5d31660a86912abe81428a789775b4e67f  ref: v3.2-models-tracker-evals`); skills as on 7917825, only `eval-summary.py` (db49d7a) and STEP7.md changed |
+| model, judge | claude-fable-5-1, sonnet; `--runs 2 -j 4 --threshold 0.7` |
+| CLI | 2.1.300 (half A: 2.1.300; baseline 37198713961: 2.1.289) |
+| duration | eval 1156 s (`durationSeconds`); run created 11:28:42Z, completed 11:48:26Z |
+| cost | $22.64 (`costUsd` 22.64316305, the runs' `costUsd` summed; with judges $22.75; these 3 cases at baseline $21.76, a lower bound) |
+| job | conclusion `failure`: `Run the cases` exit 1 after `Wrote evals-ci/result.json`, no API-error warning; Summary, Publish, Upload green; `partial` false. Threshold exit: runner `casesPassed` 2 of 3, security-alone-hands-off with 0.67 under 0.7 |
+| aggregates | overallScore 0.889, overallPassRate 0.667, meanDelta +0.31 (3 cases; not comparable to the baseline's 9-case figures) |
+| usage or limit errors | none: every run has `error: null` |
+
+Summary, first lines (`results/38727606834.txt`):
+
+```
+valid 3 of 3
+re-run: none
+cost $22.64  runner aggregates over the 3 cases in the results: {"casesTotal": 3, "casesPassed": 2, "overallScore": 0.8888888888888888, "overallPassRate": 0.6666666666666666, "meanDelta": 0.3111111111111111}
+```
+
+Per case: mean run score per arm (`python -I`, both JSONs); each equals the case's `aggregates.score` / `scoreWithout`.
+Cost is the case's runs plus judges.
+
+| case | with | without | flag | baseline with | baseline without | cost | baseline cost |
+|---|---|---|---|---|---|---|---|
+| review-swarm/real-diff-ranked-report | 1.00 | 0.40 | - | INVALID | INVALID | $15.03 | $14.38 (with#0 cut off at $8.25) |
+| review-swarm/security-alone-hands-off | 0.67 | 0.33 | - | 0.67 | 0.33 | $6.15 | $5.67 |
+| review-swarm/trivial-diff-declines | 1.00 | 1.00 | - | 1.00 | 1.00 | $1.57 | $1.71 |
+
+Graders: no compared case moved, so no grader table. security-alone-hands-off loses hands-off-to-security-review on
+all four runs again (with: FAIL FAIL FAIL each; the with runs review in a single pass instead of handing off), as in
+37198713961.
+
+Not compared: real-diff-ranked-report, INVALID in 37198713961; here 1.00 / 0.40, all four runs finished, so its first
+clean measurement. With arm: all six graders pass both runs; without arm: ranked-report-shape, reviewers-sonnet,
+verifiers-opus fail both runs.
+
+Re-run list for P5: none from half B.
+
+P3, all 9 cases (with / without: mean run score per arm in the source run):
+
+| case | with | without | flag | source run |
+|---|---|---|---|---|
+| architect/audit-drift-citation | 1.00 | 1.00 | - | 38523993370 |
+| architect/right-sized-new-feature | 1.00 | 0.67 | TRUNCATED with#1 | 38690586571 |
+| architect/small-fix-boundary | 1.00 | 0.88 | - | 38690586571 |
+| review-swarm/real-diff-ranked-report | 1.00 | 0.40 | - | 38727606834 |
+| review-swarm/security-alone-hands-off | 0.67 | 0.33 | with under 0.7 | 38727606834 |
+| review-swarm/trivial-diff-declines | 1.00 | 1.00 | - | 38727606834 |
+| up-to-date/dirty-and-behind | 1.00 | 0.70 | - | 38690586571 |
+| up-to-date/fresh-branch-no-upstream | 0.88 | 0.62 | TRUNCATED without#1 | 38690586571 |
+| up-to-date/no-remote-boundary | 1.00 | 1.00 | - | 38690586571 |
+
+P3 total: valid 9 of 9, re-run none; three tested commits (7917825, a334aed, ad68dd5) with the same skill files.
+Eval spend over the three runs: $14.08 + $20.38 + $22.64 = $57.10 (`costUsd`).
+
+Model usage in P3 half B: the eval, $22.64 (published `costUsd`).
