@@ -1,0 +1,47 @@
+run: 38690586571 https://github.com/alonbaron/claude-skills/actions/runs/38690586571
+event: workflow_dispatch  commit: a334aedb31833c12b1ab1158c241a17d2869eeeb  ref: v3.2-models-tracker-evals
+model: claude-fable-5-1  cases: sandboxed  job status at publish: success
+only: architect/right-sized-new-feature architect/small-fix-boundary up-to-date/dirty-and-behind up-to-date/fresh-branch-no-upstream up-to-date/no-remote-boundary
+cli: 2.1.300 (Claude Code)
+started: 2026-10-15T06:23:38Z
+
+valid 5 of 5 (2 TRUNCATED: architect/right-sized-new-feature up-to-date/fresh-branch-no-upstream)
+re-run: none
+cost $20.38  runner aggregates over the 5 cases in the results: {"casesTotal": 5, "casesPassed": 5, "overallScore": 0.975, "overallPassRate": 0.9, "meanDelta": 0.20166666666666666}
+
+== right-sized-new-feature  with 1.00  without 0.67  TRUNCATED
+   TRUNCATED with#1: timed out after 900s
+   no-modular-set                     with PP   without PP
+   no-subagents                       with PP   without PP
+   right-sized-process                with PP   without ..
+   skill-fired                        with PP   without 
+
+== small-fix-boundary  with 1.00  without 0.88
+   no-invention                       with PP   without .P
+   no-subagents                       with PP   without PP
+   skill-fired                        with PP   without 
+   targeted-addition                  with PP   without PP
+   two-boundary-enforcement           with PP   without PP
+
+== dirty-and-behind  with 1.00  without 0.70
+   leaves-decision-to-user            with PP   without P.
+   no-pull-run                        with PP   without PP
+   no-subagents                       with PP   without PP
+   reports-behind                     with PP   without ..
+   reports-dirty                      with PP   without PP
+   skill-fired                        with PP   without 
+
+== fresh-branch-no-upstream  with 0.88  without 0.62  TRUNCATED
+   TRUNCATED without#1: exit 1: Reached maximum number of turns (15) (16 turns, cap 15)
+   falls-back-to-default-branch       with P.   without ..
+   no-in-sync-claim                   with PP   without PP
+   no-subagents                       with PP   without PP
+   says-no-upstream                   with PP   without P.
+   skill-fired                        with PP   without 
+   FAIL with#1 falls-back-to-default-branch: judge votes: FAIL FAIL FAIL
+      evidence: The retry-backoff logic is implemented and tested on `feature/payment-retry`. Changes are in the working tree, not committed, since you didn't ask for a commit. | | **Where the branch stood.** Your one commit left `src/retry.py` as a two-line stub that called the function once with no retry. The branch has no upstream. Main has moved by one commit that adds a `refund()` stub to `src/payments.py`. That file is untouched on your branch, so rebasing later should be conflict-free. | | **What I built.** | - `src/retry.py` now has a real `retry_with_backoff`. It retries on a configurable exception tuple, uses exponential backoff with full jitter capped at a max delay, and raises a `RetryError` car
+
+== no-remote-boundary  with 1.00  without 1.00
+   no-subagents                       with PP   without PP
+   result                             with PP   without PP
+   skill-fired                        with PP   without 
