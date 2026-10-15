@@ -6,9 +6,9 @@ A case is INVALID when one of its runs failed, or one of its graders threw, for 
 (a usage, session or Fable limit, auth, the network, a lost judge call), or when an arm has fewer runs than
 asked for: its score measures nothing, so it is named for a re-run and left out of the valid-only aggregates.
 A case is TRUNCATED when a run stopped on the case's own max_turns or timeout_seconds: that is the case's
-budget at work, so it counts, flagged. With <eval dir>, a case folder in it (one holding case.yaml) that is
-not in the results is NOT RUN, and named for a re-run too: a run the CLI stopped early leaves out the cases
-it never started. <runs per arm> is the `--runs` the eval ran with (the JSON's runsPerCase is the case
+budget at work, so it counts, flagged. With <eval dir>, a case folder in it (one holding prompt.md; case.yaml
+is only there when the case has a fixture) that is not in the results is NOT RUN, and named for a re-run
+too: a run the CLI stopped early leaves out the cases it never started. <runs per arm> is the `--runs` the eval ran with (the JSON's runsPerCase is the case
 file's, which `--runs` overrides); without it, the most runs any arm in the file has.
 """
 import glob, json, os, re, sys
@@ -71,7 +71,7 @@ bad = [c for c, invalid, _ in cases if invalid]
 good = [c for c, invalid, _ in cases if not invalid]
 cut = [c for c, invalid, truncated in cases if truncated and not invalid]
 ran = {where(c["dir"]) for c in d["cases"]}
-folders = sorted(where(os.path.dirname(p)) for p in glob.glob(os.path.join(eval_dir, "*", "*", "case.yaml"))) if eval_dir else []
+folders = sorted(where(os.path.dirname(p)) for p in glob.glob(os.path.join(eval_dir, "*", "*", "prompt.md"))) if eval_dir else []
 not_run = [f for f in folders if f not in ran]
 
 if d.get("partial"):
