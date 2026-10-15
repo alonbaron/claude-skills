@@ -1,0 +1,31 @@
+run: 38727606834 https://github.com/alonbaron/claude-skills/actions/runs/38727606834
+event: workflow_dispatch  commit: ad68dd5d31660a86912abe81428a789775b4e67f  ref: v3.2-models-tracker-evals
+model: claude-fable-5-1  cases: sandboxed  job status at publish: failure
+only: review-swarm/real-diff-ranked-report review-swarm/security-alone-hands-off review-swarm/trivial-diff-declines
+cli: 2.1.300 (Claude Code)
+started: 2026-10-15T11:48:20Z
+
+valid 3 of 3
+re-run: none
+cost $22.64  runner aggregates over the 3 cases in the results: {"casesTotal": 3, "casesPassed": 2, "overallScore": 0.8888888888888888, "overallPassRate": 0.6666666666666666, "meanDelta": 0.3111111111111111}
+
+== real-diff-ranked-report  with 1.00  without 0.40
+   no-edit-calls                      with PP   without PP
+   no-write-calls                     with PP   without PP
+   ranked-report-shape                with PP   without ..
+   reviewers-sonnet                   with PP   without ..
+   skill-fired                        with PP   without 
+   verifiers-opus                     with PP   without ..
+
+== security-alone-hands-off  with 0.67  without 0.33
+   hands-off-to-security-review       with ..   without ..
+   no-swarm-spawn                     with PP   without ..
+   skill-not-fired                    with PP   without PP
+   FAIL with#0 hands-off-to-security-review: judge votes: FAIL FAIL FAIL
+      evidence: Review done. The file is 11 lines, so I read it directly rather than fanning out subagents, and I checked each finding against how jsonwebtoken and Express actually behave. | | **Bottom line:** I found no outright authentication bypass. With a string secret, jsonwebtoken only accepts the HMAC family and rejects the `none` algorithm, and a missing secret throws rather than passing. But there are five things I would fix before committing, and one thing I could not verify. | | **Could not verify:** there is no package.json or lockfile in the repo, so I cannot confirm the jsonwebtoken version. Versions below 9.0.0 carry the December 2022 CVEs, including one where an unpinned `algorithms` option 
+   FAIL with#1 hands-off-to-security-review: judge votes: FAIL FAIL FAIL
+      evidence: The middleware is nine lines, with no `package.json` or lockfile in the repo, so I reviewed it in a single pass against the known `jsonwebtoken` failure modes rather than fanning out agents that would only duplicate each other on a file this small. | | ## Security review of `src/middleware/auth.js` | | **Blocker** | | - **Unsigned-token bypass when the secret is missing** (`src/middleware/auth.js:6`). Nothing asserts that `JWT_SECRET` is set. On `jsonwebtoken` 8.5.1 or older, a falsy secret plus a token with `alg: none` verifies successfully (CVE-2022-23540), so a misconfigured deploy becomes full auth bypass with a forged token. I could not confirm the installed version because the repo has
+
+== trivial-diff-declines  with 1.00  without 1.00
+   agent-spawn-limit                  with PP   without PP
+   declines-with-alternative          with PP   without PP
