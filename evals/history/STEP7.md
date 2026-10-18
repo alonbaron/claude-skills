@@ -143,7 +143,7 @@ Model usage in P1: alias probes $0.77, the build-loop run $4.29 (driver-reported
 | P3 | sandboxed (9 cases: architect, review-swarm, up-to-date) | CI: same with `-f cases=sandboxed` | about $47 (37198713961: $47.41); fills a fresh window alone | the owner says the window is fresh | done 2026-10-15: valid 9 of 9 across the three runs (1 + 5 + 3), re-run none (section 13). Attempt 1 INVALID: session limit, dispatched in P2's window (section 11); valid 1 of 9, re-run 8, $14.08. Re-run split by skill over two windows: half A (architect 2, up-to-date 3) valid 5 of 5 (2 TRUNCATED), re-run none, $20.38 (section 12); half B (review-swarm 3) valid 3 of 3, re-run none, $22.64; job red, security-alone-hands-off 0.67 under `--threshold 0.7` (section 13) | 38523993370, 38690586571 (A), 38727606834 (B) |
 | P4 | trigger suite (120 local cases in `evals-trigger/`) | local, detached: `claude plugin eval . --eval-dir evals-trigger --case "<glob>" --runs 2 -j 4 --ablation none --model claude-fable-5-1 --no-publish --trust-plugin --max-cost-usd <cap> --output-dir <dir> --json <file>` | first attempt 2026-10-17: $25.26, valid 40 of 120, session limit (section 14). Remaining 80 split below, caps cut to 3 turns / 90 s | the owner says the window is fresh | split into P4a-P4e (section 14) | local 2026-10-17T11-28-43-593Z |
 | P4a | probe: ponytail-yes-00, ponytail-no-10, ask-the-council-yes-00, review-swarm-yes-03, 1 run each, `--keep-temp` | local, window 1 | cap $3 | P4.0 committed | done 2026-10-18, gates FAIL (section 14): $1.40, $0.35/run; council fired on turn 2, review-swarm-yes-03 never fired; no duplicates. P4b-P4c not started | local, scratch |
-| P4b | `ponytail-*` (20 cases, 40 runs) | local, window 2 | about $14 (40 x $0.35); `--max-cost-usd 14.2 -j 2`, so overrun (at most 2 runs in flight) stays under $15 | the owner says the window is fresh | pending | - |
+| P4b | `ponytail-*` (20 cases, 40 runs) | local, window 2 | about $14 (40 x $0.35); `--max-cost-usd 14.2 -j 2`, so overrun (at most 2 runs in flight) stays under $15 | the owner says the window is fresh | done 2026-10-18 (section 15): valid 20 of 20 (14 TRUNCATED), re-run none, $9.95, $0.25/run; yes-03 0.00, yes-09 0.50 | local 2026-10-18T06:21:29Z, scratch |
 | P4c | `prompt-generator-*` (20 cases, 40 runs) | local, window 3 | same as P4b | the owner says the window is fresh | pending | - |
 | P4d | `review-swarm-*` (20 cases, 40 runs; no-13, valid at the old caps, is re-measured at the new ones) | local, window 4 | same as P4b | the owner says the window is fresh | pending | - |
 | P4e | `up-to-date-*` (20 cases, 40 runs) | local, window 5 | same as P4b | the owner says the window is fresh | pending | - |
@@ -465,3 +465,32 @@ Decision after P4a (owner, 2026-10-18): accept $0.35/run; the cost gate becomes 
 window budget, so `ask-the-council-yes-09` (2 runs) moves to P5. The turn-1 gate is dropped: the grader scores a
 Skill call on any of the 3 turns, and review-swarm-yes-03 not firing is a trigger result, not a harness fault.
 Remaining P4 spend: 4 windows, about $56.
+
+## 15. P4b ponytail (2026-10-18)
+
+The owner confirmed the window fresh. Before launch: HEAD f547514 matched origin, tree clean; CI's newest
+`evals.yml` run 38727606834 (2026-10-15); newest local results folder 2026-10-17T11-28-43-593Z.
+
+| field | value |
+|---|---|
+| command | `claude plugin eval . --eval-dir evals-trigger --case "ponytail-*" --runs 2 -j 2 --ablation none --model claude-fable-5-1 --no-publish --trust-plugin --max-cost-usd 14.2 --output-dir <scratch>/p4b --json <scratch>/p4b.json` |
+| results | `<scratch>/p4b/aggregate-result.json` and `<scratch>/p4b.json` (session scratch, not kept) |
+| started | 06:21:29Z (`startedAt`); `durationSeconds` 423; CLI 2.1.296 |
+| caps | `max_turns: 3`, `timeout_seconds: 90` in every case; `--max-cost-usd 14.2` |
+| cost | $9.95 (`costUsd`): 40 runs, all paid |
+| cost/run | $0.249 (gate <= $0.40: PASS); range $0.004-$0.354 |
+| limit errors | none (no run `error` contains "limit") |
+| cap abort | no: `partial` false, all 40 runs in the JSON; CLI exit 1, not 2 (suite `threshold` 1, two cases below it) |
+| summary | `python -I .github/scripts/eval-summary.py <json>`: `valid 20 of 20 (14 TRUNCATED: no-10..no-19, yes-00, yes-01, yes-04, yes-06)`, `re-run: none`, `cost $9.95` |
+
+Valid 20 of 20. TRUNCATED runs stopped on the case's own 3-turn or 90 s cap; they count.
+
+| case | score | runs |
+|---|---|---|
+| ponytail-yes-03 | 0.00 | neither run called Skill (2 and 3 turns, no error) |
+| ponytail-yes-09 | 0.50 | #0 fired; #1 did not call Skill (4 turns, no error) |
+
+All 10 should-not cases scored 1. ponytail-yes-06#0 timed out at 90 s with `costUsd` $0.004 and 1 turn, yet
+its grader passed; its cost may be under-reported for a timed-out run (not checked).
+
+Re-run list for P5 from P4b: none. P5 still carries ask-the-council-yes-09 (section 14).
