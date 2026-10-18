@@ -147,7 +147,7 @@ Model usage in P1: alias probes $0.77, the build-loop run $4.29 (driver-reported
 | P4c | `prompt-generator-*` (20 cases, 40 runs) | local, window 3 | same as P4b | the owner says the window is fresh | done 2026-10-18 (section 16): valid 20 of 20 (10 TRUNCATED), re-run none, $13.33, $0.33/run; yes-04 0.00, yes-01, yes-06, yes-09 0.50 | local 2026-10-18T06:37:04Z, scratch |
 | P4d | `review-swarm-*` (20 cases, 40 runs; no-13, valid at the old caps, is re-measured at the new ones) | local, window 4 | same as P4b | the owner says the window is fresh | done 2026-10-18 (section 17): valid 20 of 20 (16 TRUNCATED), re-run none, $10.05, $0.25/run; yes-03, yes-07 0.00; no-13 1.00 again | local 2026-10-18T06:52:20Z, scratch |
 | P4e | `up-to-date-*` (20 cases, 40 runs) | local, window 5 | same as P4b | the owner says the window is fresh | done 2026-10-18 (section 18): valid 20 of 20 (19 TRUNCATED), re-run none, $11.33, $0.28/run; every case 1.00 | local 2026-10-18T10:44:35Z, scratch |
-| P5 | re-runs of INVALID cases (at most two attempts each; includes ask-the-council-yes-09), then the README write-up | CI `-f only="<skill>/<case> ..."`; trigger `--case` | depends on what P2-P4 leave INVALID | the owner says the window is fresh | pending | - |
+| P5 | re-runs of INVALID cases (at most two attempts each; includes ask-the-council-yes-09), then the README write-up | CI `-f only="<skill>/<case> ..."`; trigger `--case` | depends on what P2-P4 leave INVALID | the owner says the window is fresh | re-runs done 2026-10-18 (section 19): ask-the-council-yes-09 valid on attempt 1 of 2, 1.00 (both runs TRUNCATED at 90 s), $0.46, $0.23/run; valid 120 of 120, re-run none. README write-up pending | local 2026-10-18T10:58:36Z, scratch |
 
 ## 9. P1 review fixes (2026-10-14)
 
@@ -596,3 +596,40 @@ neither JSON file contains the string `anthropic-skills`.
 Re-run list for P5 from P4e: none. P5 still carries ask-the-council-yes-09 (section 14). Valid so far: 119 of
 120 (architect 20, ask-the-council 19, ponytail 20, prompt-generator 20,
 review-swarm 20, up-to-date 20).
+
+## 19. P5 re-runs (2026-10-18)
+
+The owner confirmed the window fresh and nothing else on the plan. Before launch: HEAD 0186fef matched origin,
+tree clean; CI's newest `evals.yml` run 38727606834 (2026-10-15); newest local results folder
+2026-10-17T11-28-43-593Z.
+
+Re-run list: ask-the-council-yes-09 only (section 14). P2 (section 10), P3 (sections 11-13) and P4b-P4e
+(sections 15-18) each left re-run none. In section 14 the case was INVALID at the old caps (6 turns / 180 s,
+prefix `(?:[\w-]+:)?`): both runs ended on the session limit. Here it is measured at the current caps
+(3 turns / 90 s, prefix `(?:alon-skills:)?`), not the old ones.
+
+| field | value |
+|---|---|
+| command | `claude plugin eval . --eval-dir evals-trigger --case "ask-the-council-yes-09" --runs 2 -j 2 --ablation none --model claude-fable-5-1 --no-publish --trust-plugin --max-cost-usd 3 --output-dir <scratch>/p5 --json <scratch>/p5.json` |
+| results | `<scratch>/p5/aggregate-result.json` and `<scratch>/p5.json` (session scratch, not kept) |
+| started | 10:58:36Z (`startedAt`); `durationSeconds` 91; wall clock 10:58:35Z-11:00:07Z; CLI 2.1.296 |
+| caps | `max_turns: 3`, `timeout_seconds: 90`; `--max-cost-usd 3` |
+| cost | $0.46 (`costUsd` $0.458): 2 runs, both paid |
+| cost/run | $0.229 (gate <= $0.40: PASS); range $0.227-$0.231 |
+| limit errors | none (no run `error` contains "limit") |
+| cap abort | no: `partial` false, both runs in the JSON; CLI exit 0 (case at threshold 1) |
+| summary | `python -I .github/scripts/eval-summary.py <json>`: `valid 1 of 1 (1 TRUNCATED: evals-trigger/ask-the-council-yes-09)`, `re-run: none`, `cost $0.46` |
+| attempts | 1 of 2 (valid on the first; the second was not needed) |
+
+| case | score | runs |
+|---|---|---|
+| ask-the-council-yes-09 | 1.00 | #0 fired, 2 turns, $0.231, `timed out after 90s`; #1 fired, 2 turns, $0.227, `timed out after 90s` |
+
+Both runs are TRUNCATED on the case's own 90 s cap, so the case is valid.
+
+anthropic-skills calls: not checked. The run had no `--keep-temp`, so both `tracePath` files were gone;
+neither JSON file contains the string `anthropic-skills`.
+
+Re-run list after P5: none. Valid: 120 of 120 (architect 20, ask-the-council 20, ponytail 20, prompt-generator
+20, review-swarm 20, up-to-date 20). Mixed caps: architect, ask-the-council (except yes-09) were measured at
+6 turns / 180 s (section 14); ask-the-council-yes-09 and the other four skills at 3 turns / 90 s.
