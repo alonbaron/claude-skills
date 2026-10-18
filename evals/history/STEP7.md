@@ -142,7 +142,7 @@ Model usage in P1: alias probes $0.77, the build-loop run $4.29 (driver-reported
 | P2 | in-container (10 cases: ponytail, ask-the-council, prompt-generator) | CI: `gh workflow run evals.yml --ref v3.2-models-tracker-evals -f cases=in-container -f model=claude-fable-5-1` | about $25 API-equivalent (37218381217: $25.13); fits a window with room | the owner's go, in the current window; nothing else on the plan while it runs | done 2026-10-14 (section 10): valid 10 of 10 (2 TRUNCATED), re-run none, $34.03; job red, hands-off-after-verdict 0.67 under `--threshold 0.7` | 38520925302 |
 | P3 | sandboxed (9 cases: architect, review-swarm, up-to-date) | CI: same with `-f cases=sandboxed` | about $47 (37198713961: $47.41); fills a fresh window alone | the owner says the window is fresh | done 2026-10-15: valid 9 of 9 across the three runs (1 + 5 + 3), re-run none (section 13). Attempt 1 INVALID: session limit, dispatched in P2's window (section 11); valid 1 of 9, re-run 8, $14.08. Re-run split by skill over two windows: half A (architect 2, up-to-date 3) valid 5 of 5 (2 TRUNCATED), re-run none, $20.38 (section 12); half B (review-swarm 3) valid 3 of 3, re-run none, $22.64; job red, security-alone-hands-off 0.67 under `--threshold 0.7` (section 13) | 38523993370, 38690586571 (A), 38727606834 (B) |
 | P4 | trigger suite (120 local cases in `evals-trigger/`) | local, detached: `claude plugin eval . --eval-dir evals-trigger --case "<glob>" --runs 2 -j 4 --ablation none --model claude-fable-5-1 --no-publish --trust-plugin --max-cost-usd <cap> --output-dir <dir> --json <file>` | first attempt 2026-10-17: $25.26, valid 40 of 120, session limit (section 14). Remaining 80 split below, caps cut to 3 turns / 90 s | the owner says the window is fresh | split into P4a-P4e (section 14) | local 2026-10-17T11-28-43-593Z |
-| P4a | probe: ponytail-yes-00, ponytail-no-10, ask-the-council-yes-00, review-swarm-yes-03, 1 run each, `--keep-temp` | local, window 1 | cap $3 | P4.0 committed | pending | - |
+| P4a | probe: ponytail-yes-00, ponytail-no-10, ask-the-council-yes-00, review-swarm-yes-03, 1 run each, `--keep-temp` | local, window 1 | cap $3 | P4.0 committed | done 2026-10-18, gates FAIL (section 14): $1.40, $0.35/run; council fired on turn 2, review-swarm-yes-03 never fired; no duplicates. P4b-P4c not started | local, scratch |
 | P4b | `ponytail-*` (20 cases) | local, window 1 | 1.5 x probe cost/run x 40 | P4a gates pass: every Skill call on turn 1, cost/run <= $0.15, no anthropic-skills duplicates | pending | - |
 | P4c | `prompt-generator-*` (20), then `ask-the-council-yes-09` alone | local, window 1 | spend so far + cap <= $15 | P4b done | pending | - |
 | P4d | `review-swarm-*` (19 left; no-13 valid at the old caps) | local, window 2 | from the measured cost/run | the owner says the window is fresh | pending | - |
@@ -411,7 +411,7 @@ First attempt, 2026-10-17, local, all 120 cases in one invocation.
 | limit | first `You've hit your session limit` at 11:56:06Z; the remaining 160 runs never started (cost 0) |
 | summary | `python -I .github/scripts/eval-summary.py <json> evals-trigger 2`: valid 40 of 120 (16 TRUNCATED at 180 s) |
 
-The 40 valid cases: architect 20, ask-the-council 19 (yes-09 INVALID: one run hit the limit), review-swarm-no-13.
+The 40 valid cases: architect 20, ask-the-council 19 (yes-09 INVALID: both runs ended on the limit, with#0 after a Skill call), review-swarm-no-13.
 They stay as measured, at the 6-turn / 180 s caps. 80 cases are left: ask-the-council-yes-09, ponytail 20,
 prompt-generator 20, review-swarm 19, up-to-date 20. The runner's `casesPassed` (76) is not used: it counts a
 should-not case whose runs died on the limit as a pass.
@@ -429,3 +429,33 @@ signal (avg $0.32 per run at 6 turns). The old prefix matched any plugin namespa
 `anthropic-skills:ponytail` and `anthropic-skills:prompt-generator` (claude.ai custom-skill duplicates), so a
 call to one of those passed a should-fire case and failed a should-not case for the wrong skill. The suite is
 gitignored; this section is the record of the change.
+
+### P4a probe (2026-10-18)
+
+The owner confirmed the window fresh; the newest earlier eval was the 2026-10-17 local run (above), CI's newest
+38727606834 (2026-10-15). Four commands, one case each, `--runs 1 --keep-temp --max-cost-usd 0.75` (cap $3
+total), caps 3 turns / 90 s, CLI 2.1.296, started 05:59:16Z, all done 06:00:49Z.
+
+| case | cost | main-thread turn of the Skill call | end | score |
+|---|---|---|---|---|
+| ponytail-yes-00 | $0.373 | 1: `alon-skills:ponytail` | max turns (3) | 1 |
+| ponytail-no-10 | $0.348 | 1: `simplify` (not ponytail: the correct decline) | max turns (3) | 1 |
+| ask-the-council-yes-00 | $0.349 | 2: `alon-skills:ask-the-council`, after a Glob on turn 1; turn 3 spawned 4 opus Agent seats | timed out at 90 s | 1 |
+| review-swarm-yes-03 | $0.326 | none: Glob on turns 1-3 | max turns (3) | 0 |
+
+Probe spend $1.40 (`costUsd` summed), $0.35 per run. Turns counted by distinct assistant `message.id` with no
+`parent_tool_use_id` in `out/trace.jsonl`. Each child's init `skills` lists 24 skills, 7 of them `alon-skills:*`
+and none `anthropic-skills:*`.
+
+| gate | result |
+|---|---|
+| every Skill call on turn 1 | FAIL: council fired on turn 2; review-swarm-yes-03 never called Skill in 3 turns |
+| cost/run <= $0.15 | FAIL: $0.33-$0.37 (2026-10-17 at 6 turns: $0.32 average) |
+| no anthropic-skills duplicates in the child | PASS |
+
+Cutting turns from 6 to 3 did not cut cost per run. Each run's usage is about 15-17k cache-creation (1 h TTL) plus
+29-31k cache-read input tokens and under 600 output tokens, so cost looks set by context setup, not by turns; that
+is an inference from four runs, not measured against a 1-turn cap. The 3-turn cap also cuts off a should-fire case
+that looks first and fires on turn 2 (council-yes-00 would fail at `max_turns: 1`).
+
+Stopped at P4a: P4b and P4c not run. The caps and prefix from P4.0 stay in place.
