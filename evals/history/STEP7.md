@@ -146,7 +146,7 @@ Model usage in P1: alias probes $0.77, the build-loop run $4.29 (driver-reported
 | P4b | `ponytail-*` (20 cases, 40 runs) | local, window 2 | about $14 (40 x $0.35); `--max-cost-usd 14.2 -j 2`, so overrun (at most 2 runs in flight) stays under $15 | the owner says the window is fresh | done 2026-10-18 (section 15): valid 20 of 20 (14 TRUNCATED), re-run none, $9.95, $0.25/run; yes-03 0.00, yes-09 0.50 | local 2026-10-18T06:21:29Z, scratch |
 | P4c | `prompt-generator-*` (20 cases, 40 runs) | local, window 3 | same as P4b | the owner says the window is fresh | done 2026-10-18 (section 16): valid 20 of 20 (10 TRUNCATED), re-run none, $13.33, $0.33/run; yes-04 0.00, yes-01, yes-06, yes-09 0.50 | local 2026-10-18T06:37:04Z, scratch |
 | P4d | `review-swarm-*` (20 cases, 40 runs; no-13, valid at the old caps, is re-measured at the new ones) | local, window 4 | same as P4b | the owner says the window is fresh | done 2026-10-18 (section 17): valid 20 of 20 (16 TRUNCATED), re-run none, $10.05, $0.25/run; yes-03, yes-07 0.00; no-13 1.00 again | local 2026-10-18T06:52:20Z, scratch |
-| P4e | `up-to-date-*` (20 cases, 40 runs) | local, window 5 | same as P4b | the owner says the window is fresh | pending | - |
+| P4e | `up-to-date-*` (20 cases, 40 runs) | local, window 5 | same as P4b | the owner says the window is fresh | done 2026-10-18 (section 18): valid 20 of 20 (19 TRUNCATED), re-run none, $11.33, $0.28/run; every case 1.00 | local 2026-10-18T10:44:35Z, scratch |
 | P5 | re-runs of INVALID cases (at most two attempts each; includes ask-the-council-yes-09), then the README write-up | CI `-f only="<skill>/<case> ..."`; trigger `--case` | depends on what P2-P4 leave INVALID | the owner says the window is fresh | pending | - |
 
 ## 9. P1 review fixes (2026-10-14)
@@ -566,3 +566,33 @@ neither JSON file contains the string `anthropic-skills`. One run reports more t
 Re-run list for P5 from P4d: none. P5 still carries ask-the-council-yes-09 (section 14). Valid so far: 100 of
 120 (architect 20, ask-the-council 19, ponytail 20, prompt-generator 20, review-swarm 20, with no-13
 re-measured).
+
+## 18. P4e up-to-date (2026-10-18)
+
+The owner confirmed the window fresh and nothing else on the plan. Before launch: HEAD aa3a1c6 matched origin,
+tree clean; CI's newest `evals.yml` run 38727606834 (2026-10-15); newest local results folder
+2026-10-17T11-28-43-593Z.
+
+| field | value |
+|---|---|
+| command | `claude plugin eval . --eval-dir evals-trigger --case "up-to-date-*" --runs 2 -j 2 --ablation none --model claude-fable-5-1 --no-publish --trust-plugin --max-cost-usd 14.2 --output-dir <scratch>/p4e --json <scratch>/p4e.json` |
+| results | `<scratch>/p4e/aggregate-result.json` and `<scratch>/p4e.json` (session scratch, not kept) |
+| started | 10:44:35Z (`startedAt`); `durationSeconds` 508; CLI 2.1.296 |
+| caps | `max_turns: 3`, `timeout_seconds: 90` in every case; `--max-cost-usd 14.2` |
+| cost | $11.33 (`costUsd`): 40 runs, all paid |
+| cost/run | $0.283 (gate <= $0.40: PASS); range $0.209-$0.441 |
+| limit errors | none (no run `error` contains "limit") |
+| cap abort | no: `partial` false, all 40 runs in the JSON; CLI exit 0 (every case at threshold 1) |
+| summary | `python -I .github/scripts/eval-summary.py <json>`: `valid 20 of 20 (19 TRUNCATED: no-10..no-17, no-19, yes-00..yes-09)`, `re-run: none`, `cost $11.33` |
+
+Valid 20 of 20. TRUNCATED runs stopped on the case's own 3-turn or 90 s cap; they count. Every case scored
+1.00 (10 should-fire, 10 should-not). 38 runs hit the turn cap (4 turns); no-12's two runs timed out at 90 s
+(3 turns); no-18's two runs ended in 3 turns with no error. No run reports more than 4 turns or 0 turns. Two
+single runs cost over $0.40 (no-10 #0 $0.406, #1 $0.441); the gate is on the average.
+
+anthropic-skills calls: not checked. The run had no `--keep-temp`, so the 40 `tracePath` files were gone;
+neither JSON file contains the string `anthropic-skills`.
+
+Re-run list for P5 from P4e: none. P5 still carries ask-the-council-yes-09 (section 14). Valid so far: 119 of
+120 (architect 20, ask-the-council 19, ponytail 20, prompt-generator 20,
+review-swarm 20, up-to-date 20).
