@@ -1,0 +1,265 @@
+{
+  "schemaVersion": 1,
+  "claudeVersion": "2.1.302",
+  "startedAt": "2026-10-18T12:57:21.316Z",
+  "durationSeconds": 308,
+  "costUsd": 4.62103475,
+  "partial": false,
+  "suite": {
+    "root": "/home/runner/work/claude-skills/claude-skills",
+    "ablation": "with-without",
+    "modelOverride": "claude-fable-5-1",
+    "judgeModel": "sonnet",
+    "threshold": 0.7,
+    "concurrency": 4,
+    "plugins": [
+      {
+        "name": "alon-skills",
+        "version": "3.2.0",
+        "path": "/home/runner/work/claude-skills/claude-skills"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "security-alone-hands-off",
+      "dir": "evals-ci/review-swarm/security-alone-hands-off",
+      "source": "mixed",
+      "promptMarkdown": "We just added JWT validation middleware in `src/middleware/auth.js` on our Express API — checks the Authorization header, verifies the signature, attaches `req.user` — but haven't committed it yet. Can you swarm review it for security holes? That's literally the only thing I care about right now, not style or perf.",
+      "runsPerCase": 3,
+      "timeoutSeconds": 900,
+      "maxTurns": 40,
+      "graders": [
+        {
+          "name": "hands-off-to-security-review",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the response treats this as a security-only ask and points to `/security-review` as the right tool (recommending it, or saying it tried it), instead of running a generic six-specialist review swarm.\n\nFAIL if it runs or offers the six-lens swarm as the answer, never mentions `/security-review`, or makes a claim that `src/middleware/auth.js` contradicts. The file calls `jwt.verify(token, process.env.JWT_SECRET)` with no `algorithms` option and no try/catch, so saying the algorithm is not pinned, or that a bad token throws, is accurate, not invented.",
+          "config": {
+            "criteria": "PASS if the response treats this as a security-only ask and points to `/security-review` as the right tool (recommending it, or saying it tried it), instead of running a generic six-specialist review swarm.\n\nFAIL if it runs or offers the six-lens swarm as the answer, never mentions `/security-review`, or makes a claim that `src/middleware/auth.js` contradicts. The file calls `jwt.verify(token, process.env.JWT_SECRET)` with no `algorithms` option and no try/catch, so saying the algorithm is not pinned, or that a bad token throws, is accurate, not invented.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "no-swarm-spawn",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "skill-not-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?review-swarm\"",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 6,
+            "costUsd": 0.56985075,
+            "judgeCostUsd": 0.02253,
+            "durationSeconds": 68,
+            "startedAt": "2026-10-18T12:57:21.339Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-8ed8Pe/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "hands-off-to-security-review",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS FAIL PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  false,
+                  true
+                ],
+                "evidence": "Review complete. Security is the whole ask, so per the review-swarm skill I ran the security review instead of spawning a swarm. Its preamble diff failed because the repo has no remote, so I reviewed the untracked file directly. Nothing was changed.\n\nThe middleware is 11 lines, and the app scaffold has no package.json and does not mount it yet, so nothing is actually protected right now.\n\n**Blocker**\n\n- **Verify errors are uncaught** (`src/middleware/auth.js:6`). A missing, malformed, expired, or forged token makes the synchronous verify throw. Express routes that to the default error handler, which returns a 500 and, outside production, prints the stack trace and error message in the body. Worse, any custom error handler that swallows errors or calls next turns this into a full auth bypass. Fix: wrap in try/catch and respond 401.\n\n**Should fix**\n\n- **No algorithm pin** (line 6). Without an allowlist the library accepts whatever the token header claims. With an HMAC string secret on jsonwebtoken 9 this is mostly mitigated, but if the secret is ever swapped for an asymmetric public key, or the version is older, it becomes signature forgery. Fix: pass `algorithms: ['HS256']`.\n- **No issuer, audience, or expiry requirement** (line 6). A token with no `exp` claim is valid forever, and any token signed with the same secret for a different service or audience is accepted. Fix: pass `issuer`, `audience`, and `maxAge`, and reject payloads without `sub`.\n- **jsonwebtoken version is unpinned.** There is no package.json or lockfile. Versions below 9.0.0 carry signature-verification CVEs. Fix: depend on `jsonwebtoken@^9`.\n- **Secret not validated at startup** (line 6). An unset secret fails closed at request time, but an empty or short one is not caught at all. Fix: assert at module load that the secret exists and is at least 32 bytes.\n\n**Nits**\n\n- **Bearer parsing is loose** (line 5). The prefix match is case-sensitive, and a header with a different scheme is passed through whole as the token. Fix: match with a case-insensitive regex and 401 on no match.\n- **Entire payload becomes req.user** (line 7). Downstream code may read claims like `role` that you never set. Fix: copy only the fields you issue.\n\nHardened version:\n\n```js\nconst jwt = require('jsonwebtoken');\n\nconst SECRET = process.env.JWT_SECRET;\nif (!SECRET || SECRET.length < 32) {\n  throw new Error('JWT_SECRET must be set and at least 32 characters');\n}\n\nfunction requireAuth(req, res, next) {\n  const match = /^Bearer\\s+(\\S+)$/i.exec(req.headers.authorization || '');\n  if (!match) return res.status(401).json({ error: 'unauthorized' });\n\n  let payload;\n  try {\n    payload = jwt.verify(match[1], SECRET, {\n      algorithms: ['HS256'],\n      issuer: 'your-api',\n      audience: 'your-api',\n      maxAge: '1h',\n    });\n  } catch {\n    return res.status(401).json({ error: 'unauthorized' });\n  }\n\n  if (!payload.sub) return res.status(401).json({ error: 'unauthorized' });\n  req.user = { id: payload.sub };\n  next();\n}\n\nmodule.exports = { requireAuth };\n```\n\nAdjust issuer, audience, and maxAge to match what your signing code sets, and mount the middleware on the routes you intend to protect."
+              },
+              {
+                "name": "no-swarm-spawn",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-not-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.6666666666666666,
+            "passed": false,
+            "turns": 7,
+            "costUsd": 0.50626625,
+            "judgeCostUsd": 0.01403,
+            "durationSeconds": 64,
+            "startedAt": "2026-10-18T12:57:21.339Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-YuweXC/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "hands-off-to-security-review",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "Review done. The middleware is 12 lines, so no swarm was warranted. I read it directly along with `src/app.js`, where it is not yet mounted. There is no package.json or lockfile in the repo, so I could not confirm the jsonwebtoken version, and one finding depends on it.\n\n**Blocker**\n\n- **Missing secret can turn into a full auth bypass** at `src/middleware/auth.js:6`. If `JWT_SECRET` is unset in any environment, jsonwebtoken 8.x and older will accept an unsigned token with `alg: none` and set `req.user` to whatever the attacker wrote. Version 9 throws instead, but I could not confirm which you have. Fix: read the secret once at module load and throw if it is empty, and pin `algorithms: ['HS256']` in the verify options.\n\n**Should fix**\n\n- **Algorithm is not pinned** at line 6. Today the key is a shared secret so classic HS/RS confusion does not apply, but the moment someone swaps the env var for a PEM public key it does. Pinning closes that permanently.\n- **Verify failures throw instead of returning 401** at line 6. Express catches the synchronous throw, so it fails closed, but the client gets a 500, and with the default error handler outside production the response body includes the stack trace. Wrap in try/catch and return 401 with a generic body.\n- **No issuer or audience check** at line 6. Any token signed with the same secret for another purpose, such as password reset, email verification, or refresh tokens, is accepted as a session token. Pass `issuer` and `audience` and reject tokens whose type claim is not an access token.\n- **No maxAge** at line 6. Expiry is only enforced if the issuer set `exp`. Adding `maxAge` means a token minted without it cannot live forever.\n\n**Nits**\n\n- **Scheme is not validated** at line 5. A `Basic` header or a bare token passes straight to verify. Not a bypass since the signature still has to check out, but split on whitespace and require the scheme to be `Bearer` case-insensitively.\n- **Whole payload becomes `req.user`** at line 7. Downstream code will trust any claim, including role flags, with no revocation path. Consider copying only the fields you need, and if logout must invalidate tokens, check `jti` against a denylist.\n\nHardened version covering all of the above:\n\n```js\nconst jwt = require('jsonwebtoken');\n\nconst SECRET = process.env.JWT_SECRET;\nif (!SECRET || SECRET.length < 32) {\n  throw new Error('JWT_SECRET must be set and at least 32 characters');\n}\n\nfunction requireAuth(req, res, next) {\n  const [scheme, token, ...rest] = (req.headers.authorization || '').split(/\\s+/);\n  if (!/^bearer$/i.test(scheme) || !token || rest.length) {\n    return res.status(401).json({ error: 'unauthorized' });\n  }\n  let payload;\n  try {\n    payload = jwt.verify(token, SECRET, {\n      algorithms: ['HS256'],\n      issuer: 'your-api',\n      audience: 'your-api',\n      maxAge: '1h',\n    });\n  } catch {\n    return res.status(401).json({ error: 'unauthorized' });\n  }\n  req.user = { id: payload.sub, role: payload.role };\n  next();\n}\n\nmodule.exports = { requireAuth };\n```\n\nTwo things to confirm on your side. Check the installed jsonwebtoken version, since anything below 9 makes the blocker live rather than theoretical. Also make sure the issuer and audience strings match what your signing code emits, or every token will be rejected."
+              },
+              {
+                "name": "no-swarm-spawn",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-not-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ],
+        "without": [
+          {
+            "score": 0.3333333333333333,
+            "passed": false,
+            "turns": 9,
+            "costUsd": 1.65689675,
+            "judgeCostUsd": 0.011532,
+            "durationSeconds": 216,
+            "startedAt": "2026-10-18T12:57:21.339Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-fr5NUh/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "hands-off-to-security-review",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "Three independent reviewers covered the file. Here is the merged result, with one disagreement between them resolved below.\n\n**Bottom line:** as written there is no unauthenticated bypass when `JWT_SECRET` is set and the library is current. But the middleware leans entirely on library defaults, and because the repo has no package.json the jsonwebtoken version is unpinned. Under one plausible misconfiguration the code fails open to full token forgery.\n\nFindings, all in `src/middleware/auth.js`:\n\n1. **Critical, conditional. Unset or empty secret fails open (line 6).** In jsonwebtoken 8.5.1 and earlier (CVE-2022-23540), when the secret is falsy and the token has an empty signature segment, verify silently defaults the algorithm list to `none` and accepts the token. A staging box with `JWT_SECRET` missing lets anyone submit `{\"alg\":\"none\"}` with `role: admin` and get in. Version 9 fails closed here with a 500 on every request. One reviewer called this safe fail-closed in all versions. That is wrong for 8.x, and I went with the reviewer who cited the CVE. Fix: assert the secret exists and is at least 32 bytes at module load, and pin `algorithms`.\n\n2. **High. Algorithm chosen by the attacker's token (line 6).** No `algorithms` option, so the `alg` header decides how verification runs. If any deployment ever points the secret at an RS256 issuer's public key, HMAC-signing with that public key forges tokens. Fix: `algorithms: ['HS256']`.\n\n3. **High. Auth failures become 500s with an error oracle (line 6).** The synchronous throw is caught by Express, so no crash, but the client gets 500 instead of 401. With `NODE_ENV` not set to production the body includes the stack trace and the exact message, so an attacker can distinguish expired, bad signature, malformed, and \"secret or public key must be provided\". That last one advertises finding 1. Fix: try/catch and return a uniform 401 with no detail.\n\n4. **High. No issuer or audience check (line 6).** Any token signed with the same shared secret by another service or environment is accepted. Fix: set `issuer` and `audience` in the verify options.\n\n5. **Medium. No lifetime bound or revocation (lines 6 to 7).** A token with no `exp` is valid forever, and a stolen token works until expiry with no `jti` check. Fix: `maxAge` in verify options, plus a denylist if logout must invalidate tokens.\n\n6. **Medium. Raw payload becomes `req.user` (line 7).** Every attacker-influenced claim lands on the request object, and a string payload makes `req.user.id` undefined downstream. Fix: require an object with `sub`, then copy only the claims you expect.\n\n7. **Low. Loose header parsing (line 5).** A bare token, a `Basic` credential, or a lowercase scheme passes straight to verify. Not a bypass, since the signature still fails, but it produces more 500s. Fix: match `^Bearer\\s+(\\S+)$`.\n\nHardened version the reviewers converged on, for when you are ready to apply it:\n\n```js\nconst jwt = require('jsonwebtoken'); // pin \"jsonwebtoken\": \"^9.0.2\" in package.json\n\nconst SECRET = process.env.JWT_SECRET;\nif (!SECRET || SECRET.length < 32) {\n  throw new Error('JWT_SECRET must be set and at least 32 chars');\n}\n\nconst VERIFY_OPTS = {\n  algorithms: ['HS256'],\n  issuer: process.env.JWT_ISSUER,\n  audience: process.env.JWT_AUDIENCE,\n  maxAge: '15m',\n  clockTolerance: 5,\n};\n\nfunction requireAuth(req, res, next) {\n  const m = /^Bearer\\s+([A-Za-z0-9\\-_.]+)$/.exec(req.headers.authorization || '');\n  if (!m) return res.status(401).json({ error: 'unauthorized' });\n\n  let payload;\n  try {\n    payload = jwt.verify(m[1], SECRET, VERIFY_OPTS);\n  } catch {\n    return res.status(401).json({ error: 'unauthorized' });\n  }\n  if (typeof payload !== 'object' || !payload.sub) {\n    return res.status(401).json({ error: 'unauthorized' });\n  }\n  req.user = { id: payload.sub, role: payload.role };\n  next();\n}\n\nmodule.exports = { requireAuth };\n```\n\nNothing was modified. The two changes that matter most are pinning jsonwebtoken to 9.x in a package.json and adding the try/catch with an explicit `algorithms` list."
+              },
+              {
+                "name": "no-swarm-spawn",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Agent called 3x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-not-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.3333333333333333,
+            "passed": false,
+            "turns": 14,
+            "costUsd": 1.8880210000000002,
+            "judgeCostUsd": 0.011633999999999999,
+            "durationSeconds": 308,
+            "startedAt": "2026-10-18T12:57:21.340Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-ikBBlX/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "hands-off-to-security-review",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "Three parallel reviewers covered the middleware from JWT/crypto, Express request-handling, and attacker-bypass angles. The findings converged on five real issues in `src/middleware/auth.js`. One caveat up front: the repo has no package.json or node_modules, so the jsonwebtoken and Express versions are unknown, and the sandbox blocked fetching library source to confirm version-specific behavior. The two version-dependent points below are labeled.\n\n**Findings, ordered by severity**\n\n- **Critical (version-dependent): no `algorithms` allowlist on line 6.** If the secret is ever unset or empty at runtime, jsonwebtoken 8.x and older defaults to accepting unsigned `alg: none` tokens, which is CVE-2022-23540. An attacker then sends a token with header `{\"alg\":\"none\"}`, payload `{\"sub\":\"1\",\"role\":\"admin\"}`, and an empty signature, and gets whatever `req.user` they want. Version 9 closed this by requiring you to opt into `none` explicitly. Because the version is unknown, treat it as live. Fix: pass `{ algorithms: ['HS256'] }` and fail at startup if the secret is missing.\n\n- **High: the secret is read from the environment on every request with no startup check (line 6).** Beyond the bypass above, an unset secret silently turns every request into a 500 instead of failing at boot. Capture the secret once at module load and throw if it is falsy.\n\n- **High: the verify call is not wrapped, so every auth failure is a 500 (line 6).** Express catches the synchronous throw, so the process does not crash, but with no custom error handler and `NODE_ENV` unset, the default handler returns the stack trace to the client. That leaks file paths and gives an attacker an oracle that distinguishes \"invalid signature\" from \"jwt malformed\" from \"jwt expired.\" Wrap it in try/catch and return 401 with an empty body.\n\n- **High: no issuer, audience, or subject validation (line 6).** Any token signed with the same secret is accepted, including tokens minted by another service or environment that shares the key. Pass `issuer` and `audience` options and reject payloads without `sub`.\n\n- **Medium: expiry is not required (line 6).** jsonwebtoken only checks `exp` when the claim is present. A token minted without one is valid forever, and there is no `jti` or blocklist for revocation. Set `maxAge` or reject payloads lacking a numeric `exp`.\n\n- **Medium: scheme parsing is lax (line 5).** The replace call strips the first literal \"Bearer \" anywhere in the string and is case-sensitive, so \"Basic abc\" and bare tokens reach verify unchanged. No signature forgery comes from this, but it feeds the 500 path above. Parse with a strict anchored regex and 401 on mismatch.\n\n- **Low: the raw payload is attached to `req.user` (line 7).** Trusting a verified payload is normal, but every claim including `role` is passed through verbatim, so any of the signature weaknesses above becomes privilege escalation downstream. Whitelisting claims limits the blast radius.\n\n**What is fine.** With a proper non-empty secret, `alg: none` is rejected in all versions. A string HMAC secret is not vulnerable to RS256-to-HS256 confusion, and the key-object RCE and key-type CVEs from the 2022 batch do not apply because the key is never attacker-controlled. A missing header fails closed. Node collapses duplicate Authorization headers, so an array value cannot reach the parser.\n\n**Suggested replacement**\n\n```js\nconst jwt = require('jsonwebtoken');\n\nconst SECRET = process.env.JWT_SECRET;\nif (!SECRET) throw new Error('JWT_SECRET must be set');\n\nfunction requireAuth(req, res, next) {\n  const m = /^Bearer\\s+(\\S+)$/i.exec(req.headers.authorization || '');\n  if (!m) return res.status(401).end();\n  try {\n    const payload = jwt.verify(m[1], SECRET, {\n      algorithms: ['HS256'],\n      issuer: process.env.JWT_ISSUER,\n      audience: process.env.JWT_AUDIENCE,\n      maxAge: '15m',\n    });\n    if (typeof payload.exp !== 'number' || !payload.sub) return res.status(401).end();\n    req.user = payload;\n    next();\n  } catch {\n    return res.status(401).end();\n  }\n}\n\nmodule.exports = { requireAuth };\n```\n\nTwo things to do before committing: add a package.json pinning jsonwebtoken to 9.x so the `alg: none` question is closed by the library itself, and confirm the secret in every environment is at least 32 random bytes, since HS256 tokens can be cracked offline with no rate limit."
+              },
+              {
+                "name": "no-swarm-spawn",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Agent called 3x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-not-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 0.8333333333333333,
+        "passRate": 0.5,
+        "scoreWithout": 0.3333333333333333,
+        "passRateWithout": 0,
+        "delta": 0.49999999999999994
+      }
+    }
+  ],
+  "aggregates": {
+    "casesTotal": 1,
+    "casesPassed": 1,
+    "overallScore": 0.8333333333333333,
+    "overallPassRate": 0.5,
+    "meanDelta": 0.49999999999999994
+  }
+}

@@ -1,0 +1,17 @@
+run: 39129416449 https://github.com/alonbaron/claude-skills/actions/runs/39129416449
+event: workflow_dispatch  commit: 40bb8bd2a702b33f39bb3c0a5c9a77865986d10a  ref: fix/review-swarm-security-handoff
+model: claude-fable-5-1  cases: sandboxed  job status at publish: success
+only: review-swarm/security-alone-hands-off
+cli: 2.1.302 (Claude Code)
+started: 2026-10-18T13:02:30Z
+
+valid 1 of 1
+re-run: none
+cost $4.62  runner aggregates over the 1 cases in the results: {"casesTotal": 1, "casesPassed": 1, "overallScore": 0.8333333333333333, "overallPassRate": 0.5, "meanDelta": 0.49999999999999994}
+
+== security-alone-hands-off  with 0.83  without 0.33
+   hands-off-to-security-review       with P.   without ..
+   no-swarm-spawn                     with PP   without ..
+   skill-not-fired                    with PP   without PP
+   FAIL with#1 hands-off-to-security-review: judge votes: FAIL FAIL FAIL
+      evidence: Review done. The middleware is 12 lines, so no swarm was warranted. I read it directly along with `src/app.js`, where it is not yet mounted. There is no package.json or lockfile in the repo, so I could not confirm the jsonwebtoken version, and one finding depends on it. | | **Blocker** | | - **Missing secret can turn into a full auth bypass** at `src/middleware/auth.js:6`. If `JWT_SECRET` is unset in any environment, jsonwebtoken 8.x and older will accept an unsigned token with `alg: none` and set `req.user` to whatever the attacker wrote. Version 9 throws instead, but I could not confirm which you have. Fix: read the secret once at module load and throw if it is empty, and pin `algorithms: 
