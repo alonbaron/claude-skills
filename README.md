@@ -5,8 +5,8 @@
 <p align="center">
   <img alt="Claude Code plugin" src="https://img.shields.io/badge/Claude_Code-plugin-0891B2?style=flat-square&labelColor=0F1E33">&nbsp;
   <img alt="6 skills + 1 workflow" src="https://img.shields.io/badge/skills-6_+_1_workflow-4F46E5?style=flat-square&labelColor=0F1E33">&nbsp;
-  <img alt="version" src="https://img.shields.io/badge/version-v3.1.1-7C3AED?style=flat-square&labelColor=0F1E33">&nbsp;
-  <a href="#-evals"><img alt="evals: 18/19 passing" src="https://img.shields.io/badge/evals-18%2F19_passing-D97706?style=flat-square&labelColor=0F1E33"></a>&nbsp;
+  <img alt="version" src="https://img.shields.io/badge/version-v3.2.0-7C3AED?style=flat-square&labelColor=0F1E33">&nbsp;
+  <a href="#-evals"><img alt="evals: 17/19 passing" src="https://img.shields.io/badge/evals-17%2F19_passing-D97706?style=flat-square&labelColor=0F1E33"></a>&nbsp;
   <img alt="MIT license" src="https://img.shields.io/badge/license-MIT-059669?style=flat-square&labelColor=0F1E33">&nbsp;
   <a href="https://github.com/alonbaron"><img alt="by alonbaron" src="https://img.shields.io/badge/by-alonbaron-C026D3?style=flat-square&labelColor=0F1E33&logo=github&logoColor=white"></a>
 </p>
@@ -36,13 +36,13 @@ Most skill packs ask you to trust them. This one runs each skill through a [`cla
 
 | The situation | With the plugin | Without |
 |---|---|---|
-| A real diff with an N+1 query goes to **review-swarm**: parallel reviewers, verifiers, ranked report | **0.90** | 0.40 |
-| Someone asks for a pluggable-backend cache interface with one caller; **ponytail** ships the simple version | **0.80** | 0.30 |
-| **ask-the-council** reaches a verdict and hands the build to the right skill, separating opinion from fact | **0.83** | 0.17 |
-| A feature spec from scratch: **architect** asks the few questions that matter and right-sizes the docs | **0.83** | 0.67 |
-| A branch that was never pushed: **up-to-date** says so and compares against `main` instead of faking a sync | **1.00** | 0.62 |
+| A real diff with an N+1 query goes to **review-swarm**: parallel reviewers, verifiers, ranked report | **1.00** | 0.40 |
+| Someone asks for a pluggable-backend cache interface with one caller; **ponytail** ships the simple version | **0.90** | 0.50 |
+| A decision that should end by handing the build to another skill: **ask-the-council** | **0.67** | 0.17 |
+| A feature spec from scratch: **architect** asks the few questions that matter and right-sizes the docs | **1.00** | 0.67 |
+| A branch that was never pushed: **up-to-date** says so and compares against `main` instead of faking a sync | **0.88** | 0.62 |
 
-18 of 19 cases pass at the 0.7 threshold; review-swarm's security hand-off scored 0.67, and the Evals section says why. Across 120 trigger prompts, each skill fired on 80–100% of the ones meant for it and never on the ones that weren't. Full table and method under [Evals](#-evals).
+17 of 19 cases pass at the 0.7 threshold. Two land at 0.67: ask-the-council's hand-off after a verdict, and review-swarm's security hand-off. The Evals section covers both. Across 120 trigger prompts, each skill fired on 75 to 100% of the runs meant for it and never on the ones meant for something else. Full table and method under [Evals](#-evals).
 
 <!-- GIF: a 20-second recording of review-swarm spawning its reviewers on a real diff goes here. -->
 
@@ -78,7 +78,7 @@ Each skill also triggers from plain language — e.g. *"spec this out before we 
 
 ## ◢ The build loop
 
-`/alon-skills:build-loop` builds `TODO_WORKFLOW.md` rows one at a time without supervision, in any repo that carries the architect doc set. Each stage is a fresh subagent with an empty context; state between runs lives in the repo, never in chat. Fable 5.1 makes the calls everything downstream inherits (which row, what done means, who wins a dispute), Opus 5.5 reviews and repairs, Sonnet 5.5 builds, Haiku 4.5 searches and counts. Stages name model aliases, so each follows the newest model of its tier.
+`/alon-skills:build-loop` builds `TODO_WORKFLOW.md` rows one at a time without supervision, in any repo that carries the architect doc set. Each stage is a fresh subagent with an empty context; state between runs lives in the repo, never in chat. Fable 5.1 makes the calls everything downstream inherits (which row, what done means, who wins a dispute), Opus 5.5 reviews and repairs, Sonnet 5.5 builds, Haiku 5.5 searches and counts. Stages name model aliases, so each follows the newest model of its tier.
 
 | Stage | Model | Reads | Writes | Returns | Stops the loop when |
 |---|---|---|---|---|---|
@@ -127,14 +127,14 @@ The driver runs `claude -p` with `--permission-mode auto` once per task, asks it
 
 ## ◢ Watching a run
 
-<p align="center"><img alt="The tracker for one build-loop run: 21 stages, each with its model, effort, tokens, timeline and result" src="assets/tracker.png" width="900"></p>
+<p align="center"><img alt="The tracker for one build-loop run: 11 stages as cards in run order, each showing its status, model, effort and result above a folded line of time, tools and tokens" src="assets/tracker.png" width="900"></p>
 
-Every subagent a workflow spawns is one row: phase, outcome, label, the model alias the script asked for and the id it resolved to, the effort it ran at, output tokens, how long it took, where it sat on the run's timeline, and either the tool it is calling right now or its result in one line. Two ways to get it:
+Each subagent a workflow spawns gets one card, in run order, with a small divider wherever the phase changes. A card shows the stage's status as a glyph and a word, its label, the model alias the script asked for and the id it resolved to, the effort it ran at, and its result in one line. Under that is a fold that reads like `Ran for 0:46 · 5 tools · 0.8k tokens`, or, while the stage is still running, its calls so far and the tool it is on. Open it for the full result and the stage's bar on the run's timeline. Only running stages start open. The header counts each stage once, the way its card shows it: done, failed (a stage with no result included) and running, plus disputed when a fix round left findings for the arbiter. Two ways to get it:
 
 - **`scripts/tracker.mjs`**, from any shell: `node <plugin-root>/scripts/tracker.mjs [--run <dir> | --session <id>] [--out tracker.html] [--png tracker.png] [--watch]`. It reads the run's own files under `~/.claude/projects/<project>/<session>/subagents/workflows/<run>/` and writes a page; `--png` adds a screenshot when Playwright with Chromium is reachable (`--playwright <path>` otherwise). `--watch` re-renders every five seconds until the run ends.
-- **`mods/workflow-watch`**, inside Claude Code: a mod (a plugin of function hooks) that follows the session's newest run and draws the same rows live in a pane, a band above the prompt while stages run, the status line, and a toast as each stage finishes. `/plugin install workflow-watch@alonbaron`, or `claude --plugin-dir mods/workflow-watch` for one session; `/workflow-watch` opens the pane and prints the report as text. The pane and band are drawn by the terminal and the desktop app; the mobile app shows the text report only.
+- **`mods/workflow-watch`**, inside Claude Code: a mod (a plugin of function hooks) that follows the session's newest run and draws the same stages live, one block each, in a pane, a band above the prompt while stages run, the status line, and a toast as each stage finishes. `/plugin install workflow-watch@alonbaron`, or `claude --plugin-dir mods/workflow-watch` for one session; `/workflow-watch` opens the pane and prints the report as text. The pane and band are drawn by the terminal and the desktop app; the mobile app shows the text report only.
 
-The picture above is the run that shaped v3.1: the build loop on a throwaway Node repo whose `npm test` script was broken before the loop touched it. The builder fixed it as a deviation, the invariants lens blocked that as outside the spec, the fixer reverted and disputed, two lenses then failed the reverted tree, the arbiter checked `HEAD` itself and upheld the finding, and the row closed as `[BLOCKED]` with the reason in `TODO_WORKFLOW.md` and `docs/handoff.md`. 21 stages, 8.5 minutes, 14.6k output tokens, all seven commits authored by the owner with no trailer. That run also showed two things the loop now does differently: the fixer is told which findings the arbiter upheld and may not dispute them again, and the build stage names its effort (`medium`) instead of inheriting whatever the launching session runs at. Every alias resolved as documented: fable → `claude-fable-5-1`, opus → `claude-opus-5-5`, sonnet → `claude-sonnet-5-5`, haiku → `claude-haiku-4-5-20251001`, and Haiku 4.5 records no effort level because it takes none.
+The picture above is one build-loop task on a throwaway Node repo, run on 2026-10-12 with `autobuild.mjs --tasks 1`: row 1.2, `truncateSlug(slug, max)`. It took 11 stages: plan, scout, spec, build, measure, five refute lenses and close. The loop skipped research because the spec listed no unverified APIs, and it needed no fix round because every lens passed with no blocking finding. The run took 5:29 and 8.5k output tokens, and the driver reported $4.29 for the session. The row closed as `[FINISHED - PENDING MERGE]` after six commits, all authored by the owner with no trailer. Every alias resolved as documented (fable → `claude-fable-5-1`, opus → `claude-opus-5-5`, sonnet → `claude-sonnet-5-5`, haiku → `claude-haiku-5-5`), and every stage recorded its effort level, with scout and measure at `low` on Haiku 5.5. Two of the loop's rules came from the v3.1 run: the fixer may not dispute a finding the arbiter upheld, and the build stage names its effort (`medium`) instead of inheriting the launching session's.
 
 ---
 
@@ -146,24 +146,26 @@ The picture above is the run that shaped v3.1: the build loop on a throwaway Nod
 claude plugin eval <absolute path to this repo> --runs 2 -j 4 --allow-tools Write Edit --scaffold --model claude-fable-5-1 --judge-model sonnet --no-publish --trust-plugin --threshold 0.7 --json
 ```
 
-`--runs 2`, with and without the plugin; 18 of 19 cases pass at 0.7, every case measured on Fable 5.1 on 2026-10-04 on the GitHub runner, in two runs: architect, review-swarm and up-to-date in run 37198713961 (overall 0.89, mean uplift +0.23, $47.41 API-equivalent, 8 of 9 at 0.7), and ponytail, ask-the-council and prompt-generator in run 37218381217 (overall 0.96, mean uplift +0.20, $25.13, 10 of 10). Each run's summary is on the `eval-results` branch under `results/<run id>.txt`. Details in `evals/README.md`, per-case history in [`evals/history/STEP5.md`](evals/history/STEP5.md) and [`STEP6.md`](evals/history/STEP6.md):
+`--runs 2`, with and without the plugin; 17 of 19 cases pass at 0.7. Every case was measured again for v3.2 on Fable 5.1 on the GitHub runner, 2026-10-14 and 2026-10-15. ponytail, ask-the-council and prompt-generator ran in run 38520925302 ($34.03 API-equivalent, 9 of 10 at 0.7). architect, review-swarm and up-to-date took three runs ($57.10 together, 8 of 9 at 0.7): 38523993370 hit the plan's session limit, and the eight cases it spoiled were run again in 38690586571 and 38727606834. Each run's summary is on the `eval-results` branch under `results/<run id>.txt`. Details in `evals/README.md`, per-case history in [`evals/history/STEP7.md`](evals/history/STEP7.md); the 2026-10-04 numbers are in [`STEP5.md`](evals/history/STEP5.md) and [`STEP6.md`](evals/history/STEP6.md):
 
 | Skill | Cases | With plugin | Without | Model |
 |---|---|---|---|---|
-| ponytail | 4 | 0.80 (pushback), 1.00 (trust boundary), 1.00 (defers to simplify), 1.00 (root cause) | 0.30, 0.83, 1.00, 1.00 | Fable 5.1 |
-| ask-the-council | 3 | 1.00 (declines low stakes), 1.00 (forces divergence), 0.83 (hands off after verdict) | 1.00, 0.70, 0.17 | Fable 5.1 |
-| prompt-generator | 3 | 0.93 (coding-agent prompt), 1.00 (human prose boundary), 1.00 (whole-build scope check) | 0.71, 1.00, 0.83 | Fable 5.1 |
-| architect | 3 | 1.00 (audit), 0.83 (new feature), 0.88 (small fix) | 1.00, 0.67, 0.75 | Fable 5.1 |
-| review-swarm | 3 | 0.90 (ranked report), **0.67** (security hand-off), 1.00 (trivial diff) | 0.40, 0.33, 1.00 | Fable 5.1 |
-| up-to-date | 3 | 1.00 (dirty and behind), 1.00 (no upstream), 0.75 (no remote) | 0.70, 0.62, 0.50 | Fable 5.1 |
+| ponytail | 4 | 0.90 (pushback), 0.83 (trust boundary), 1.00 (defers to simplify), 1.00 (root cause) | 0.50, 0.83, 1.00, 1.00 | Fable 5.1 |
+| ask-the-council | 3 | 1.00 (declines low stakes), 0.70 (forces divergence), **0.67** (hands off after verdict) | 1.00, 0.70, 0.17 | Fable 5.1 |
+| prompt-generator | 3 | 0.93 (coding-agent prompt), 1.00 (human prose boundary), 1.00 (whole-build scope check) | 0.71, 1.00, 0.67 | Fable 5.1 |
+| architect | 3 | 1.00 (audit), 1.00 (new feature), 1.00 (small fix) | 1.00, 0.67, 0.88 | Fable 5.1 |
+| review-swarm | 3 | 1.00 (ranked report), **0.67** (security hand-off), 1.00 (trivial diff) | 0.40, 0.33, 1.00 | Fable 5.1 |
+| up-to-date | 3 | 1.00 (dirty and behind), 0.88 (no upstream), 1.00 (no remote) | 0.70, 0.62, 1.00 | Fable 5.1 |
 
 architect, review-swarm and up-to-date run shell commands when they load, so their cases need a working bwrap sandbox; `.github/workflows/evals.yml` runs them on a GitHub runner with a `CLAUDE_CODE_OAUTH_TOKEN` secret, on Fable 5.1 by default (`workflow_dispatch` takes a model for a comparison run; the 2026-09-29 Opus 5.5 pass is in [`STEP5.md`](evals/history/STEP5.md)). Several cases score as well without the plugin; they guard boundaries (when a skill must stay quiet) rather than measure uplift.
 
-Two readings of the in-container run: pushback-on-abstraction scored 0.80 because both with-plugin runs hit the case's 15-turn cap before naming the trigger for upgrading the cache, with the padded interfaces correctly refused and the tradeoff named; and on refuses-trust-boundary and root-cause the ponytail skill did not fire at all while the behaviour its rubric asks for was there in both arms, which is the boundary those two cases guard.
+Three readings of the in-container run. pushback-on-abstraction scored 0.90 with the plugin and 0.50 without. Both with-plugin runs finished; one without-plugin run hit the case's 15-turn cap. On 2026-10-04 neither with-plugin run named the trigger for upgrading the cache, and this time one did. (The 2026-10-04 write-up said the with-plugin runs hit the turn cap there. They didn't: they finished in 8 and 7 turns, and the two that hit it were the runs without the plugin.) forces-divergence fell to 0.70 because one with-plugin run hit the 900 s limit before the chairman wrote anything a judge could grade. And on refuses-trust-boundary the ponytail skill didn't fire in either with-plugin run, same as on 2026-10-04, which is the boundary that case guards.
 
-The one case under 0.7 on Fable is still security-alone-hands-off, 0.67 with the plugin and 0.33 without. With the plugin, review-swarm stayed quiet and spawned nothing in both runs, as its `when_to_use` says, and Fable then reviewed the twelve-line auth middleware itself, accurately, instead of naming `/security-review`. Without the plugin Fable spawned three subagents for the same file, so the plugin now shows uplift on that case even though the hand-off grader fails in every arm. The skill is not the variable in the hand-off miss, so the rubric stays as written and the number stands. real-diff-ranked-report no longer times out: with the case limit raised to 1500 s both with-plugin runs finished (the longer one in 956 s, reviewers on sonnet and verifiers on opus both spawned), and the only mark it lost was one judge call. That judge call, one more on no-remote-boundary and both without-plugin runs of no-remote-boundary were lost to the plan's session limit, which the run reached about 25 minutes in, so no-remote-boundary's 0.75 is one judged run and its 0.50 without the plugin is the process grader alone.
+Two cases sit under 0.7, both at 0.67. security-alone-hands-off scored 0.67 with the plugin and 0.33 without, the same as on 2026-10-04. The hand-off grader fails in all four runs: with the plugin, Fable reviews the file in one pass instead of naming `/security-review`. Since the miss shows up with or without the skill, the rubric stays as written and the number stands. hands-off-after-verdict dropped from 0.83 to 0.67 with the plugin (0.17 without). The grader that wants the next skill named failed in both with-plugin runs, and both replies opened by reporting that the memory directory was write-protected. Why that happened hasn't been checked.
 
-Trigger accuracy (120 queries, 20 per skill, half should fire, each run twice): architect 20/20, ask-the-council 20/20, ponytail fired on 19 of 20 trigger prompts, prompt-generator 17/20, review-swarm 16/20, up-to-date 20/20 on should-fire; no false fires on any skill.
+Two cases the session limit spoiled on 2026-10-04 now have clean numbers. real-diff-ranked-report scored 1.00 against 0.40: every grader passed in both with-plugin runs, and the runs without the plugin missed the ranked-report shape, the sonnet reviewers and the opus verifiers. no-remote-boundary scored 1.00 in both arms.
+
+Trigger accuracy (120 queries, 20 per skill, half should fire, each run twice, on Fable 5.1 on a local machine, 2026-10-17 and 2026-10-18). Out of 20 should-fire runs per skill, architect fired on 18, ask-the-council 17, ponytail 17, prompt-generator 15, review-swarm 16 and up-to-date 20. No skill fired on a should-not query. The architect queries and 19 of the ask-the-council ones ran with a budget of 6 turns and 180 s per run. The rest ran with 3 turns and 90 s, which is enough to catch the first Skill call. From 2026-10-18 the grader also stopped counting a same-named skill from another namespace, because a session can list claude.ai custom skills called ponytail and prompt-generator. Per-run detail is in [`STEP7.md`](evals/history/STEP7.md).
 
 ---
 
@@ -194,11 +196,19 @@ One catch worth knowing about humanizer: as of v2.9.1 the plugin puts `SKILL.md`
 
 ---
 
+## ◢ What's new in v3.2
+
+- The `haiku` alias now resolves to `claude-haiku-5-5`, which records an effort level, so the build loop's scout and measure stages run at `low`. Haiku 4.5 recorded none.
+- `scripts/tracker.mjs` draws a run as a feed of cards, one per stage, as in the picture above. Refute and fix dividers carry their round number. A stage that died before returning (a session limit, an API error) shows as `✗ no result` instead of running forever, and `--watch` stops once the last stage ends.
+- workflow-watch 0.2.0 draws the same blocks in its pane, band and status line. Stage times come from each stage's own transcript, so a run the mod finds already under way still shows how long every stage took.
+- The eval summary opens with `valid N of M` and a `re-run:` line. A case is INVALID when a limit, an auth failure or a lost judge call spoiled it, TRUNCATED when a run hit the case's own turn or time budget, and NOT RUN when a stopped run never reached it. The CI job takes an `only` input to re-run named cases, and each published summary records the CLI version.
+- Every behavioral case was measured again on Fable 5.1 for this release (17 of 19 pass at 0.7), and the 120 trigger queries were run again. The numbers are in the Evals section above.
+
 ## ◢ What's new in v3.1
 
 - 3.1.1: every eval case now carries a Fable 5.1 number from 2026-10-04 (two runs on the GitHub runner, summaries published to the `eval-results` branch by CI); the CI job takes a case set (`sandboxed`, `in-container`, `all`) and gives the review swarm 1500 s; the one-off cron entries are gone.
-- `scripts/tracker.mjs` renders any workflow run as the stage table above, HTML or PNG, live with `--watch`.
-- `mods/workflow-watch`, a second plugin in this marketplace: the same table drawn live inside Claude Code (pane, band, status line, toasts, `/workflow-watch`).
+- `scripts/tracker.mjs` renders any workflow run as a stage table, HTML or PNG, live with `--watch` (v3.2 redraws it as the feed above).
+- `mods/workflow-watch`, a second plugin in this marketplace: the same stages drawn live inside Claude Code (pane, band, status line, toasts, `/workflow-watch`).
 - build-loop: the fixer is told which findings the arbiter upheld and cannot dispute them twice; the build stage names its effort; the in-session caveat about the harness relaying the turn's prompt is documented in the script and above.
 - The eval CI runs the nine sandboxed cases on Fable 5.1 (`workflow_dispatch` takes a model input for comparison runs); the table above now carries Fable numbers for every skill.
 

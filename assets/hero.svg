@@ -1,6 +1,6 @@
 <svg width="1280" height="640" viewBox="0 0 1280 640" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t d">
 <title id="t">alon-skills — Claude Code skills that prove they work</title>
-<desc id="d">Banner for the alon-skills Claude Code plugin. Left: the wordmark alon-skills, the line "Claude Code skills that prove they work", and the six slash commands. Right: an eval card for the selected eval case per skill with and without the plugin: review-swarm 0.90 vs 0.40, ponytail (vendored) 0.80 vs 0.30, ask-the-council 0.83 vs 0.17, architect 0.83 vs 0.67, up-to-date 1.00 vs 0.62. Footer: 18 of 19 evals passing.</desc>
+<desc id="d">Banner for the alon-skills Claude Code plugin. Left: the wordmark alon-skills, the line "Claude Code skills that prove they work", and the six slash commands. Right: an eval card for the selected eval case per skill with and without the plugin: review-swarm 1.00 vs 0.40, ponytail (vendored) 0.90 vs 0.50, ask-the-council 0.67 vs 0.17, architect 1.00 vs 0.67, up-to-date 0.88 vs 0.62. Footer: 17 of 19 evals passing.</desc>
 <defs>
   <linearGradient id="bg" x1="0" y1="0" x2="1280" y2="640" gradientUnits="userSpaceOnUse">
     <stop stop-color="#F5F9FD"/><stop offset=".55" stop-color="#EFF4FB"/><stop offset="1" stop-color="#EAF0FA"/>
@@ -105,27 +105,27 @@
   <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="15">
     <g transform="translate(32 116)">
       <text y="0" fill="#233A57" font-weight="600">review-swarm</text>
-      <rect y="12" width="306" height="10" rx="5" fill="url(#bar)"/><text x="356" y="22" fill="#233A57" font-weight="700">0.90</text>
+      <rect y="12" width="340" height="10" rx="5" fill="url(#bar)"/><text x="356" y="22" fill="#233A57" font-weight="700">1.00</text>
       <rect y="28" width="136" height="10" rx="5" fill="#B8C4D6"/><text x="356" y="38" fill="#8A99B2">0.40</text>
     </g>
     <g transform="translate(32 184)">
       <text y="0" fill="#233A57" font-weight="600">ponytail (vendored)</text>
-      <rect y="12" width="272" height="10" rx="5" fill="url(#bar)"/><text x="356" y="22" fill="#233A57" font-weight="700">0.80</text>
-      <rect y="28" width="102" height="10" rx="5" fill="#B8C4D6"/><text x="356" y="38" fill="#8A99B2">0.30</text>
+      <rect y="12" width="306" height="10" rx="5" fill="url(#bar)"/><text x="356" y="22" fill="#233A57" font-weight="700">0.90</text>
+      <rect y="28" width="170" height="10" rx="5" fill="#B8C4D6"/><text x="356" y="38" fill="#8A99B2">0.50</text>
     </g>
     <g transform="translate(32 252)">
       <text y="0" fill="#233A57" font-weight="600">ask-the-council</text>
-      <rect y="12" width="282" height="10" rx="5" fill="url(#bar)"/><text x="356" y="22" fill="#233A57" font-weight="700">0.83</text>
+      <rect y="12" width="228" height="10" rx="5" fill="url(#bar)"/><text x="356" y="22" fill="#233A57" font-weight="700">0.67</text>
       <rect y="28" width="58" height="10" rx="5" fill="#B8C4D6"/><text x="356" y="38" fill="#8A99B2">0.17</text>
     </g>
     <g transform="translate(32 320)">
       <text y="0" fill="#233A57" font-weight="600">architect</text>
-      <rect y="12" width="282" height="10" rx="5" fill="url(#bar)"/><text x="356" y="22" fill="#233A57" font-weight="700">0.83</text>
+      <rect y="12" width="340" height="10" rx="5" fill="url(#bar)"/><text x="356" y="22" fill="#233A57" font-weight="700">1.00</text>
       <rect y="28" width="228" height="10" rx="5" fill="#B8C4D6"/><text x="356" y="38" fill="#8A99B2">0.67</text>
     </g>
     <g transform="translate(32 388)">
       <text y="0" fill="#233A57" font-weight="600">up-to-date</text>
-      <rect y="12" width="340" height="10" rx="5" fill="url(#bar)"/><text x="356" y="22" fill="#233A57" font-weight="700">1.00</text>
+      <rect y="12" width="299" height="10" rx="5" fill="url(#bar)"/><text x="356" y="22" fill="#233A57" font-weight="700">0.88</text>
       <rect y="28" width="211" height="10" rx="5" fill="#B8C4D6"/><text x="356" y="38" fill="#8A99B2">0.62</text>
     </g>
   </g>
@@ -133,8 +133,8 @@
 
 <!-- footer strip -->
 <g font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="15">
-  <circle cx="712" cy="584" r="5" fill="#059669"/>
-  <text x="726" y="589" fill="#047857" font-weight="600">18/19 evals passing</text>
+  <circle cx="712" cy="584" r="5" fill="#D97706"/>
+  <text x="726" y="589" fill="#B45309" font-weight="600">17/19 evals passing</text>
   <text x="1200" y="589" text-anchor="end" fill="#6B7C98">github.com/alonbaron/claude-skills</text>
 </g>
 </svg>

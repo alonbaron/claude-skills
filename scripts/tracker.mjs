@@ -1,10 +1,12 @@
 #!/usr/bin/env node
-// Stage tracker for a Workflow run (the build loop or any other): one row per subagent with its
-// phase, outcome, label, model alias and resolved id, effort, duration, tool calls, output tokens,
-// its place on the run's timeline, and its result in one line. Rendered from the run's own files
-// under ~/.claude/projects/<project>/<session>/subagents/workflows/<run>/: journal.jsonl (stages and
-// results), agent-<id>.meta.json (the alias asked for) and agent-<id>.jsonl (what actually ran).
-// That layout is Claude Code internal; when it moves, this script says so instead of guessing.
+// Stage tracker for a Workflow run (the build loop or any other), drawn as a feed: one card per
+// subagent in run order, with a divider where the phase changes. A card shows its status (glyph and
+// word), label, model alias and the id it resolved to, effort, and its result in one line; its fold
+// says how long it ran with how many tools and tokens, and opens onto the full result and the stage's
+// bar on the run's timeline. Only running stages start open; a failed one says so in its header.
+// Rendered from the run's own files under ~/.claude/projects/<project>/<session>/subagents/workflows/<run>/:
+// journal.jsonl (stages and results), agent-<id>.meta.json (the alias asked for) and agent-<id>.jsonl
+// (what actually ran). That layout is Claude Code internal; when it moves, this script says so instead of guessing.
 //
 //   node <plugin-root>/scripts/tracker.mjs                      newest run of the newest session, to ./tracker.html
 //   node <plugin-root>/scripts/tracker.mjs --run <run dir>       that run
@@ -13,7 +15,7 @@
 //   node <plugin-root>/scripts/tracker.mjs --png <file.png>      also a screenshot (needs playwright with chromium;
 //                                                                --playwright <path to its package> when not resolvable)
 //   node <plugin-root>/scripts/tracker.mjs --watch               re-render every 5 s while the run goes on
-// The workflow-watch mod (mods/workflow-watch) draws the same rows live inside Claude Code.
+// The workflow-watch mod (mods/workflow-watch) draws the same stages live inside Claude Code.
 
 import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
@@ -28,7 +30,10 @@ const val = (n, d) => {
   return i >= 0 && i + 1 < argv.length ? argv[i + 1] : d;
 };
 if (flag("--help") || flag("-h")) {
-  console.log(readFileSync(new URL(import.meta.url)).toString().split("\n").slice(1, 16).map((l) => l.replace(/^\/\/ ?/, "")).join("\n"));
+  // The comment block under the shebang, up to its first non-comment line.
+  const src = readFileSync(new URL(import.meta.url)).toString().split(/\r?\n/);
+  const end = src.findIndex((l, i) => i > 0 && !l.startsWith("//"));
+  console.log(src.slice(1, end).map((l) => l.replace(/^\/\/ ?/, "")).join("\n"));
   process.exit(0);
 }
 
@@ -77,7 +82,10 @@ const jsonLines = (p) =>
       }
     });
 const count = (a) => (Array.isArray(a) ? a.length : 0);
-const str = (v, n = 90) => String(v ?? "").replace(/\s+/g, " ").slice(0, n);
+// One line (each run of whitespace and control characters becomes one space), at most n characters; a cut ends in "…".
+const oneLine = (v) => String(v ?? "").replace(/[\s\u0000-\u001f\u007f-\u009f]+/g, " ").trim();
+const clip = (t, n) => (t.length <= n ? t : n <= 0 ? "" : `${t.slice(0, n - 1)}…`);
+const str = (v, n = 90) => clip(oneLine(v), n);
 function summarize(label, r) {
   const role = String(label).split(":")[0];
   if (typeof r === "string") return str(r, 120);
@@ -99,7 +107,7 @@ function summarize(label, r) {
     case "refute": {
       const b = r.blocking || [];
       const head = `${String(r.verdict).toUpperCase()} blocking=${b.length} advisory=${count(r.advisory)}`;
-      return b.length ? `${head} | ${b[0].file}: ${str(b[0].issue, 110)}` : head;
+      return b.length ? `${head} | ${str(b[0].file)}: ${str(b[0].issue, 110)}` : head;
     }
     case "arbiter":
       return (r.rulings || []).map((x) => `${x.key} ${x.ruling}: ${str(x.reason, 100)}`).join("; ") || "no rulings";
@@ -114,13 +122,17 @@ function summarize(label, r) {
 function readRun(dir) {
   const stages = [];
   const byKey = new Map();
+  // A stage's first terminal entry (result or failed) wins, as in the mod.
   for (const e of jsonLines(join(dir, "journal.jsonl"))) {
     if (e.type === "started" && e.key) {
       const s = { key: e.key, agentId: e.agentId, label: e.label || "", phase: e.phase || "", result: undefined, isDone: false };
       stages.push(s);
       byKey.set(e.key, s);
-    } else if (e.type === "result" && byKey.has(e.key)) {
+    } else if (e.type === "result" && byKey.has(e.key) && !byKey.get(e.key).isDone) {
       Object.assign(byKey.get(e.key), { result: e.result, isDone: true });
+    } else if (e.type === "failed" && byKey.has(e.key) && !byKey.get(e.key).isDone) {
+      // The stage died before it returned (a session limit, an API error): finished, with no result.
+      Object.assign(byKey.get(e.key), { isDone: true, died: true });
     }
   }
   for (const s of stages) {
@@ -138,7 +150,8 @@ function readRun(dir) {
         }
         const msg = e.message || {};
         if (e.type === "assistant") {
-          if (msg.model) models.add(msg.model);
+          // `<synthetic>` is the client's own message when a call fails, not a model.
+          if (msg.model && msg.model !== "<synthetic>") models.add(msg.model);
           if (e.effort) efforts.add(e.effort);
           outTok += msg.usage?.output_tokens || 0;
         }
@@ -156,51 +169,119 @@ function readRun(dir) {
 
 // ---------- render ----------
 const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
-const dur = (ms) => (ms == null ? "--:--" : `${String(Math.floor(ms / 60000)).padStart(2, "0")}:${String(Math.floor((ms % 60000) / 1000)).padStart(2, "0")}`);
+// m:ss with the minutes unpadded (0:46, 15:03).
+const clock = (ms) => {
+  if (ms == null || !Number.isFinite(ms)) return "-:--";
+  const sec = Math.max(0, Math.floor(ms / 1000));
+  return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
+};
+const kTok = (n) => `${(n / 1000).toFixed(1)}k`;
+const many = (n, one, more) => `${n} ${n === 1 ? one : more}`;
 function verdict(s) {
   if (!s.isDone) return "run";
   const r = s.result;
-  if (r == null) return "empty";
-  if (typeof r === "object" && (r.verdict === "fail" || r.ok === false || (Array.isArray(r.notFixed) && r.notFixed.length))) return "fail";
+  if (s.died || r == null) return "empty";
+  if (typeof r === "object" && (r.verdict === "fail" || r.ok === false)) return "fail";
+  // A fix round that left findings for the arbiter: neither a pass nor a failure.
+  if (typeof r === "object" && Array.isArray(r.notFixed) && r.notFixed.length) return "disputed";
   return "ok";
+}
+const GLYPH = { run: "▶", ok: "✓", fail: "!", disputed: "!", empty: "✗" };
+const WORD = { run: "running", ok: "done", fail: "failed", disputed: "disputed", empty: "no result" };
+// "low" ... "max", and "na" for a model that records none ("n/a"); a stage whose turns ran at several levels gets each.
+const effortClass = (e) => String(e).split(/,\s*/).map((x) => x.replace(/[^a-z]/gi, "")).join(" ");
+function fullResult(s) {
+  if (!s.isDone) return "No result yet.";
+  if (s.died) return "(stopped without a result: the journal recorded the stage as failed)";
+  if (s.result == null) return "(no result)";
+  return typeof s.result === "string" ? s.result : JSON.stringify(s.result, null, 2);
+}
+// The run directory as ~/.claude/projects/…/<session>/subagents/workflows/<run>: no home path, no project folder name.
+function shortDir(dir) {
+  const same = (a, b) => (process.platform === "win32" ? a.toLowerCase() === b.toLowerCase() : a === b);
+  const home = resolve(homedir()).split(/[\\/]+/);
+  let parts = resolve(dir).split(/[\\/]+/);
+  if (home.length < parts.length && home.every((h, i) => same(h, parts[i]))) parts = ["~", ...parts.slice(home.length)];
+  const p = parts.findIndex((x, i) => x === "projects" && parts[i - 1] === ".claude");
+  if (p >= 0 && p + 1 < parts.length) parts = [...parts.slice(0, p + 1), "…", ...parts.slice(p + 2)];
+  return parts.join("/");
+}
+function card(s, t0, total) {
+  const v = verdict(s);
+  const ran = s.start ? s.end - s.start : null;
+  const from = s.start ? s.start - t0 : null;
+  const left = s.start ? (from / total) * 100 : 0;
+  const width = s.start ? Math.max(0.8, (ran / total) * 100) : 0;
+  const line = v === "run" ? "no result yet" : s.died ? "(stopped without a result)" : summarize(s.label, s.result);
+  const fold =
+    v === "run"
+      ? `Running for ${clock(ran)} · ${many(s.tools, "call", "calls")} · ${s.lastTool || "starting"}`
+      : `Ran for ${clock(ran)} · ${many(s.tools, "tool", "tools")} · ${kTok(s.outTok)} tokens`;
+  const span = s.start ? `+${clock(from)} to +${clock(from + ran)} of ${clock(total)}` : "not started";
+  // The status and label are the card's heading, so heading navigation walks the stages.
+  return `<article class="stage ${esc(v)}">
+<h3 class="top"><span class="st"><span aria-hidden="true">${esc(GLYPH[v])}</span> ${esc(WORD[v])}</span><span class="lb">${esc(s.label)}</span></h3>
+<div class="who"><span class="m ${esc(s.alias)}">${esc(s.alias)}</span><span>→</span><span class="id">${esc(s.model)}</span><span class="ef ${esc(effortClass(s.effort))}">${esc(s.effort)}</span></div>
+<p class="res">${esc(clip(oneLine(line), 220))}</p>
+<details${v === "run" ? " open" : ""}><summary>${esc(fold)}</summary><div class="more">
+<div class="tl"><div class="track"><div class="fill" style="left:${esc(left.toFixed(1))}%;width:${esc(width.toFixed(1))}%"></div></div><span>${esc(span)}</span></div>
+<pre tabindex="0">${esc(fullResult(s))}</pre>
+</div></details>
+</article>`;
 }
 function page(dir, stages) {
   const t0 = Math.min(...stages.filter((s) => s.start).map((s) => s.start));
   const t1 = Math.max(...stages.map((s) => s.end ?? t0));
   const total = Math.max(1, t1 - t0);
-  const live = stages.filter((s) => !s.isDone).length;
   const tokens = stages.reduce((n, s) => n + s.outTok, 0);
+  // Run order, with a divider each time the phase changes (a second refute round gets its own, named by
+  // the round its labels carry: `refute:…:r2`).
   let prev = null;
-  const rows = stages.map((s) => {
-    const v = verdict(s);
-    const g = { run: "▶", ok: "✓", fail: "!", empty: "✗" }[v];
-    const ph = s.phase !== prev ? s.phase : "";
+  const feed = stages.map((s) => {
+    const round = /:r(\d+)$/.exec(s.label)?.[1];
+    const divider = s.phase !== prev ? `<h2 class="phase">${esc(s.phase || "(no phase)")}${round ? ` · round ${esc(round)}` : ""}</h2>\n` : "";
     prev = s.phase;
-    const left = s.start ? ((s.start - t0) / total) * 100 : 0;
-    const width = s.start ? Math.max(0.8, ((s.end - s.start) / total) * 100) : 0;
-    const text = v === "run" ? `${s.tools} calls · ${s.lastTool || "starting"}` : summarize(s.label, s.result);
-    return `<tr class="${v}"><td class="ph">${esc(ph)}</td><td class="g">${g}</td><td class="lb">${esc(s.label)}</td><td class="mo"><span class="m ${esc(s.alias)}">${esc(s.alias)}</span><br><small>${esc(s.model)}</small></td><td class="ef ${esc(s.effort)}">${esc(s.effort)}</td><td class="n">${dur(s.start ? s.end - s.start : null)}</td><td class="n">${s.tools}</td><td class="n">${(s.outTok / 1000).toFixed(1)}k</td><td class="bar"><div class="track"><div class="fill" style="left:${left.toFixed(1)}%;width:${width.toFixed(1)}%"></div></div></td><td class="sm">${esc(text).slice(0, 220)}</td></tr>`;
+    return divider + card(s, t0, total);
   });
-  const state = `${live} running · ${stages.length - live} done · ${dur(total)} elapsed · ${(tokens / 1000).toFixed(1)}k output tokens${live ? "" : " · finished"}`;
-  return `<!doctype html><html><head><meta charset="utf-8"><title>${esc(basename(dir))}</title><style>
-:root{--bg:#0f1115;--card:#161920;--line:#262b36;--fg:#e6e8ee;--dim:#8a93a6;--acc:#7aa2f7;--ok:#4fcf8a;--bad:#ff7b72;--warn:#f0c35b}
-body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;padding:24px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;max-width:1240px}
-.head{display:flex;justify-content:space-between;align-items:baseline;gap:16px;padding:14px 18px;border-bottom:1px solid var(--line)} .head b{font-size:16px} .head span{color:var(--dim)}
-table{border-collapse:collapse;width:100%} td{padding:6px 10px;border-bottom:1px solid #1d212b;vertical-align:top;white-space:nowrap}
-tr.hd td{color:var(--dim);font-size:11px;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--line)}
-td.ph{color:var(--acc);font-weight:600;width:70px} td.g{width:14px;text-align:center} td.lb{width:230px} td.n{color:var(--dim);text-align:right;width:40px}
-td.mo{width:150px;line-height:1.2} td.mo small{color:var(--dim);font-size:10.5px} td.ef{width:50px;font-size:12px;color:var(--dim)} td.ef.high{color:#d9ccff} td.ef.low{color:#6b7280}
-td.sm{color:var(--dim);white-space:normal;max-width:360px;font-size:12.5px}
-tr.ok td.g{color:var(--ok)} tr.fail td.g{color:var(--bad)} tr.run td.g,tr.run td.lb{color:var(--warn)} tr.empty td.g{color:var(--bad)} tr.fail td.sm{color:#f3b5b0}
+  // Every stage counted once, as its card shows it; failed includes no result.
+  const n = { ok: 0, disputed: 0, bad: 0, run: 0 };
+  for (const s of stages) {
+    const v = verdict(s);
+    n[v === "fail" || v === "empty" ? "bad" : v] += 1;
+  }
+  const isFinished = stages.length > 0 && n.run === 0;
+  const state = `${n.ok} done${n.disputed ? ` · ${n.disputed} disputed` : ""} · ${n.bad} failed · ${n.run} running · ${clock(total)} elapsed · ${kTok(tokens)} output tokens${isFinished ? " · finished" : ""}`;
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${esc(basename(dir))}</title><style>
+:root{--bg:#0f1115;--card:#161920;--line:#262b36;--fg:#e6e8ee;--dim:#8a93a6;--acc:#7aa2f7;--ok:#4fcf8a;--bad:#ff7b72;--warn:#f0c35b;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;--sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 var(--sans)}
+main{max-width:808px;margin:0 auto;padding:24px;display:flex;flex-direction:column;gap:10px}
+.head,.stage{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 16px}
+.head h1{margin:0;font:600 16px/1.35 var(--mono);overflow-wrap:anywhere} .head p{margin:4px 0 0;color:var(--dim);font:12.5px/1.45 var(--mono)}
+.phase{display:flex;align-items:center;gap:10px;margin:12px 0 2px;color:var(--acc);font:600 11.5px/1.2 var(--sans);letter-spacing:.06em;text-transform:uppercase}
+.phase::before,.phase::after{content:"";flex:1 1 0;height:1px;background:var(--line)}
+.stage{border-left:3px solid var(--ok)} .stage.run,.stage.disputed{border-left-color:var(--warn)} .stage.fail,.stage.empty{border-left-color:var(--bad)}
+.top{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 12px;margin:0;font:inherit} .st{font-size:12.5px;font-weight:600;white-space:nowrap}
+.ok .st{color:var(--ok)} .run .st,.disputed .st{color:var(--warn)} .fail .st,.empty .st{color:var(--bad)}
+.lb{min-width:0;font:600 14px/1.4 var(--mono);overflow-wrap:anywhere}
+.who{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin-top:6px;color:var(--dim);font:12px/1.4 var(--mono)} .id{min-width:0;overflow-wrap:anywhere}
 .m{font-size:11px;padding:1px 6px;border-radius:4px;background:#232838;color:var(--dim)} .m.fable{background:#3b2f6b;color:#d9ccff} .m.opus{background:#2d3f6b;color:#cfe0ff} .m.sonnet{background:#1f4a3a;color:#b9f0d2} .m.haiku{background:#4a3a1f;color:#f3dfae}
-td.bar{width:200px} .track{position:relative;height:8px;background:#20242e;border-radius:4px} .fill{position:absolute;top:0;height:8px;border-radius:4px;background:#5b84d6} tr.run .fill{background:var(--warn)} tr.fail .fill{background:var(--bad)}
-.foot{padding:10px 18px;color:var(--dim);border-top:1px solid var(--line);font-size:12.5px}
-</style></head><body><div class="card">
-<div class="head"><b>${esc(basename(dir))}</b><span>${state}</span></div>
-<table><tr class="hd"><td>phase</td><td></td><td>stage</td><td>model (alias / resolved)</td><td>effort</td><td class="n">time</td><td class="n">tools</td><td class="n">out tok</td><td>timeline</td><td>result</td></tr>${rows.join("")}</table>
-<div class="foot">${esc(dir)} · bars are each stage's start and length over the whole run · out tok = output tokens the stage generated, thinking included · rendered ${new Date().toISOString()}</div>
-</div></body></html>`;
+.ef{font-size:11px;padding:0 6px;border:1px solid var(--line);border-radius:4px;color:var(--dim)} .ef.na{border-style:dashed;font-style:italic}
+.ef.medium{color:#c3cad8;border-color:#343a48} .ef.high{color:#d9ccff;border-color:#4b3f80} .ef.xhigh{color:#f3dfae;border-color:#6b5528} .ef.max{color:#ffb3ad;border-color:#7a3a36;font-weight:700}
+.res{margin:8px 0 0;overflow-wrap:anywhere} .fail .res,.empty .res{color:#f3b5b0}
+details{margin-top:8px;padding-top:6px;border-top:1px solid #1d212b}
+summary{cursor:pointer;color:var(--dim);font:12px/1.5 var(--mono);overflow-wrap:anywhere} summary:hover{color:var(--fg)} summary:focus-visible{outline:2px solid var(--acc);outline-offset:2px;border-radius:4px}
+.more{display:flex;flex-direction:column;gap:10px;margin-top:8px}
+.track{position:relative;height:8px;overflow:hidden;background:#20242e;border-radius:4px} .fill{position:absolute;top:0;height:8px;border-radius:4px;background:#5b84d6} .run .fill,.disputed .fill{background:var(--warn)} .fail .fill,.empty .fill{background:var(--bad)}
+.tl span{display:block;margin-top:4px;color:var(--dim);font:11.5px/1.4 var(--mono)}
+pre{max-height:18em;overflow:auto;margin:0;padding:10px 12px;background:#11141a;border:1px solid #1d212b;border-radius:8px;color:#c9cfdb;font:12px/1.45 var(--mono);white-space:pre-wrap;overflow-wrap:anywhere}
+.foot{padding:6px 2px 0;color:var(--dim);font-size:12px} .foot code{display:block;margin-bottom:2px;color:var(--fg);font:12px/1.45 var(--mono);overflow-wrap:anywhere}
+@media (max-width:480px){main{padding:12px 10px}.head,.stage{padding:10px 12px}}
+</style></head><body><main>
+<header class="head"><h1>${esc(basename(dir))}</h1><p>${esc(state)}</p></header>
+${feed.join("\n") || `<p class="res">No stages in this run yet.</p>`}
+<footer class="foot"><code>${esc(shortDir(dir))}</code>tokens are the output tokens a stage generated, thinking included · each bar is the stage's start and length on the run's timeline · rendered ${esc(new Date().toISOString())}</footer>
+</main></body></html>`;
 }
 
 async function screenshot(html, png) {
@@ -213,9 +294,9 @@ async function screenshot(html, png) {
     return false;
   }
   const b = await pw.chromium.launch();
-  const p = await b.newPage({ viewport: { width: 1300, height: 800 }, deviceScaleFactor: 2 });
+  const p = await b.newPage({ viewport: { width: 900, height: 800 }, deviceScaleFactor: 2 });
   await p.goto(pathToFileURL(html).href);
-  await (await p.$(".card")).screenshot({ path: png });
+  await (await p.$("main")).screenshot({ path: png });
   await b.close();
   return true;
 }
@@ -228,6 +309,7 @@ do {
   const live = stages.filter((s) => !s.isDone).length;
   console.log(`${basename(runDir)}: ${stages.length} stages, ${live} running -> ${out}`);
   if (png && (await screenshot(out, resolve(png)))) console.log(`screenshot -> ${resolve(png)}`);
-  if (!flag("--watch") || !live) break;
+  // A run with no stages yet has not finished: --watch waits for its first.
+  if (!flag("--watch") || (stages.length > 0 && !live)) break;
   await sleep(5000);
 } while (true);

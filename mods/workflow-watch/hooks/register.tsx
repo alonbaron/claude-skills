@@ -2,7 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 
 import type { Stage, Watch } from '../types'
-import { EMPTY, applyEntries, elapsed, finished, groupByPhase, parseLines, readMeta, readTranscript, report, running, stageLine, statusLine } from './journal'
+import { EMPTY, applyEntries, clip, parseLines, phaseRuns, phaseTitle, readMeta, readTranscript, report, running, stageDetail, stageResult, stageTitle, state, statusLine, tally, tone, withFacts } from './journal'
 
 const PANE = 'workflow-watch'
 const watch = atom({ plugin: 'workflow-watch', key: 'watch' } as const, EMPTY)
@@ -50,8 +50,7 @@ async function enrich($: Engine, dir: string, s: Stage): Promise<Stage> {
     }
   }
   try {
-    const facts = readTranscript(await $.fs.read(`${dir}/agent-${s.agentId}.jsonl`))
-    next = { ...next, ...facts, isSettled: next.endedAt !== null }
+    next = withFacts(next, readTranscript(await $.fs.read(`${dir}/agent-${s.agentId}.jsonl`)))
   } catch {
     /* not written yet, or over the read limit: keep what we have */
   }
@@ -83,9 +82,10 @@ async function tick($: Engine): Promise<void> {
   for (const s of applyEntries(base, parseLines(text), now)) stages.push(await enrich($, found.dir, s))
   const next: Watch = { journal: found.path, run: found.run, stages, now }
 
+  // A run first seen now toasts nothing: its finished stages finished before this mod was watching.
   const wasDone = new Set(base.filter(s => s.endedAt !== null).map(s => s.key))
-  const justDone = stages.filter(s => s.endedAt !== null && !wasDone.has(s.key))
-  for (const s of justDone) $.ui.toast(`${s.isEmpty ? '✗' : '✓'} ${s.phase}: ${s.label} — ${s.summary ?? ''}`.slice(0, 120))
+  const justDone = sameRun ? stages.filter(s => s.endedAt !== null && !wasDone.has(s.key)) : []
+  for (const s of justDone) $.ui.toast(clip(`${state(s)}: ${s.label} — ${s.summary ?? ''}`, 120))
   if (!sameRun && stages.length) {
     $.ui.toast(`workflow-watch: following run ${found.run}`)
     void openPane($)
@@ -128,23 +128,33 @@ export const register: Register = on => {
         </Box>
       )
     }
-    const live = running(w)
-    const done = finished(w)
     const tokens = w.stages.reduce((n, s) => n + s.outputTokens, 0)
+    const room = width - 2
+    // One block per stage in run order: the state and who ran it, then the result and the details
+    // indented under it; a divider each time the phase changes.
     return (
       <Box flexDirection="column" paddingX={1}>
-        <Text bold>
-          {w.run} · {live.length} running · {done.length} done · {(tokens / 1000).toFixed(1)}k output tokens
+        <Text bold wrap="truncate-end">
+          {clip(`${w.run} · ${tally(w)} · ${(tokens / 1000).toFixed(1)}k output tokens`, room)}
         </Text>
-        {groupByPhase(w.stages).map(g => (
-          <Box key={`phase-${g.phase}`} flexDirection="column" marginTop={1}>
-            <Text bold dimColor={g.stages.every(s => s.endedAt !== null)}>
-              {g.phase || '(no phase)'}
+        {phaseRuns(w.stages).map((g, i) => (
+          <Box key={`phase-${i}`} flexDirection="column" marginTop={1}>
+            <Text bold dimColor wrap="truncate-end">
+              {clip(`── ${phaseTitle(g)}`, room)}
             </Text>
             {g.stages.map(s => (
-              <Text key={s.key} dimColor={s.endedAt !== null} wrap="truncate-end">
-                {`  ${stageLine(s, w.now)}`.slice(0, width - 2)}
-              </Text>
+              <Box key={s.key} flexDirection="column">
+                <Text wrap="truncate-end">
+                  <Text color={tone(s)} bold>
+                    {state(s)}
+                  </Text>
+                  {clip(`  ${stageTitle(s)}`, room - state(s).length)}
+                </Text>
+                <Text wrap="truncate-end">{clip(`    ${stageResult(s)}`, room)}</Text>
+                <Text dimColor wrap="truncate-end">
+                  {clip(`    ${stageDetail(s, w.now)}`, room)}
+                </Text>
+              </Box>
             ))}
           </Box>
         ))}
@@ -159,15 +169,26 @@ export const register: Register = on => {
     if (isQuiet) return next(e)
     const { Box, Text } = $.ui.resolve(e)
     const width = Math.max(40, e.props.bodyColumns ?? 80)
-    const head = `${w.run}: ${finished(w).length} done · ${live.length} running`
+    // A running stage has no result yet, so its block is the head line and the live details under it.
     return (
       <Box flexDirection="column">
-        <Text bold wrap="truncate-end">{head}</Text>
+        <Text bold wrap="truncate-end">
+          {clip(`${w.run}: ${tally(w)}`, width)}
+        </Text>
         {live.slice(0, 4).map(s => (
-          <Text key={s.key} dimColor wrap="truncate-end">
-            {`  ▶ ${elapsed(w.now - s.startedAt)} ${s.label} [${s.model ?? s.alias ?? '?'} ${s.effort ?? ''}]${s.lastTool ? ' · ' + s.lastTool : ''}`.slice(0, width)}
-          </Text>
+          <Box key={s.key} flexDirection="column">
+            <Text wrap="truncate-end">
+              <Text color={tone(s)} bold>
+                {state(s)}
+              </Text>
+              {clip(`  ${stageTitle(s)}`, width - state(s).length)}
+            </Text>
+            <Text dimColor wrap="truncate-end">
+              {clip(`    ${stageDetail(s, w.now)}`, width)}
+            </Text>
+          </Box>
         ))}
+        {live.length > 4 && <Text dimColor>{`  +${live.length - 4} more running`}</Text>}
       </Box>
     )
   })
