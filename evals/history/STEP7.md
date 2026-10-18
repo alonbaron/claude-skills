@@ -143,11 +143,11 @@ Model usage in P1: alias probes $0.77, the build-loop run $4.29 (driver-reported
 | P3 | sandboxed (9 cases: architect, review-swarm, up-to-date) | CI: same with `-f cases=sandboxed` | about $47 (37198713961: $47.41); fills a fresh window alone | the owner says the window is fresh | done 2026-10-15: valid 9 of 9 across the three runs (1 + 5 + 3), re-run none (section 13). Attempt 1 INVALID: session limit, dispatched in P2's window (section 11); valid 1 of 9, re-run 8, $14.08. Re-run split by skill over two windows: half A (architect 2, up-to-date 3) valid 5 of 5 (2 TRUNCATED), re-run none, $20.38 (section 12); half B (review-swarm 3) valid 3 of 3, re-run none, $22.64; job red, security-alone-hands-off 0.67 under `--threshold 0.7` (section 13) | 38523993370, 38690586571 (A), 38727606834 (B) |
 | P4 | trigger suite (120 local cases in `evals-trigger/`) | local, detached: `claude plugin eval . --eval-dir evals-trigger --case "<glob>" --runs 2 -j 4 --ablation none --model claude-fable-5-1 --no-publish --trust-plugin --max-cost-usd <cap> --output-dir <dir> --json <file>` | first attempt 2026-10-17: $25.26, valid 40 of 120, session limit (section 14). Remaining 80 split below, caps cut to 3 turns / 90 s | the owner says the window is fresh | split into P4a-P4e (section 14) | local 2026-10-17T11-28-43-593Z |
 | P4a | probe: ponytail-yes-00, ponytail-no-10, ask-the-council-yes-00, review-swarm-yes-03, 1 run each, `--keep-temp` | local, window 1 | cap $3 | P4.0 committed | done 2026-10-18, gates FAIL (section 14): $1.40, $0.35/run; council fired on turn 2, review-swarm-yes-03 never fired; no duplicates. P4b-P4c not started | local, scratch |
-| P4b | `ponytail-*` (20 cases) | local, window 1 | 1.5 x probe cost/run x 40 | P4a gates pass: every Skill call on turn 1, cost/run <= $0.15, no anthropic-skills duplicates | pending | - |
-| P4c | `prompt-generator-*` (20), then `ask-the-council-yes-09` alone | local, window 1 | spend so far + cap <= $15 | P4b done | pending | - |
-| P4d | `review-swarm-*` (19 left; no-13 valid at the old caps) | local, window 2 | from the measured cost/run | the owner says the window is fresh | pending | - |
-| P4e | `up-to-date-*` (20) | local, window 2 | from the measured cost/run | P4d done | pending | - |
-| P5 | re-runs of INVALID cases (at most two attempts each), then the README write-up | CI `-f only="<skill>/<case> ..."`; trigger `--case` | depends on what P2-P4 leave INVALID | the owner says the window is fresh | pending | - |
+| P4b | `ponytail-*` (20 cases, 40 runs) | local, window 2 | about $14 (40 x $0.35); `--max-cost-usd 14.2 -j 2`, so overrun (at most 2 runs in flight) stays under $15 | the owner says the window is fresh | pending | - |
+| P4c | `prompt-generator-*` (20 cases, 40 runs) | local, window 3 | same as P4b | the owner says the window is fresh | pending | - |
+| P4d | `review-swarm-*` (20 cases, 40 runs; no-13, valid at the old caps, is re-measured at the new ones) | local, window 4 | same as P4b | the owner says the window is fresh | pending | - |
+| P4e | `up-to-date-*` (20 cases, 40 runs) | local, window 5 | same as P4b | the owner says the window is fresh | pending | - |
+| P5 | re-runs of INVALID cases (at most two attempts each; includes ask-the-council-yes-09), then the README write-up | CI `-f only="<skill>/<case> ..."`; trigger `--case` | depends on what P2-P4 leave INVALID | the owner says the window is fresh | pending | - |
 
 ## 9. P1 review fixes (2026-10-14)
 
@@ -459,3 +459,9 @@ is an inference from four runs, not measured against a 1-turn cap. The 3-turn ca
 that looks first and fires on turn 2 (council-yes-00 would fail at `max_turns: 1`).
 
 Stopped at P4a: P4b and P4c not run. The caps and prefix from P4.0 stay in place.
+
+Decision after P4a (owner, 2026-10-18): accept $0.35/run; the cost gate becomes <= $0.40/run; caps stay at 3 turns /
+90 s, which still catch a turn-2 fire (council-yes-00). One skill per window: 40 runs x $0.35 = $14 against the $15
+window budget, so `ask-the-council-yes-09` (2 runs) moves to P5. The turn-1 gate is dropped: the grader scores a
+Skill call on any of the 3 turns, and review-swarm-yes-03 not firing is a trigger result, not a harness fault.
+Remaining P4 spend: 4 windows, about $56.
