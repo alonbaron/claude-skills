@@ -145,7 +145,7 @@ Model usage in P1: alias probes $0.77, the build-loop run $4.29 (driver-reported
 | P4a | probe: ponytail-yes-00, ponytail-no-10, ask-the-council-yes-00, review-swarm-yes-03, 1 run each, `--keep-temp` | local, window 1 | cap $3 | P4.0 committed | done 2026-10-18, gates FAIL (section 14): $1.40, $0.35/run; council fired on turn 2, review-swarm-yes-03 never fired; no duplicates. P4b-P4c not started | local, scratch |
 | P4b | `ponytail-*` (20 cases, 40 runs) | local, window 2 | about $14 (40 x $0.35); `--max-cost-usd 14.2 -j 2`, so overrun (at most 2 runs in flight) stays under $15 | the owner says the window is fresh | done 2026-10-18 (section 15): valid 20 of 20 (14 TRUNCATED), re-run none, $9.95, $0.25/run; yes-03 0.00, yes-09 0.50 | local 2026-10-18T06:21:29Z, scratch |
 | P4c | `prompt-generator-*` (20 cases, 40 runs) | local, window 3 | same as P4b | the owner says the window is fresh | done 2026-10-18 (section 16): valid 20 of 20 (10 TRUNCATED), re-run none, $13.33, $0.33/run; yes-04 0.00, yes-01, yes-06, yes-09 0.50 | local 2026-10-18T06:37:04Z, scratch |
-| P4d | `review-swarm-*` (20 cases, 40 runs; no-13, valid at the old caps, is re-measured at the new ones) | local, window 4 | same as P4b | the owner says the window is fresh | pending | - |
+| P4d | `review-swarm-*` (20 cases, 40 runs; no-13, valid at the old caps, is re-measured at the new ones) | local, window 4 | same as P4b | the owner says the window is fresh | done 2026-10-18 (section 17): valid 20 of 20 (16 TRUNCATED), re-run none, $10.05, $0.25/run; yes-03, yes-07 0.00; no-13 1.00 again | local 2026-10-18T06:52:20Z, scratch |
 | P4e | `up-to-date-*` (20 cases, 40 runs) | local, window 5 | same as P4b | the owner says the window is fresh | pending | - |
 | P5 | re-runs of INVALID cases (at most two attempts each; includes ask-the-council-yes-09), then the README write-up | CI `-f only="<skill>/<case> ..."`; trigger `--case` | depends on what P2-P4 leave INVALID | the owner says the window is fresh | pending | - |
 
@@ -527,3 +527,42 @@ than 4 turns with no error (no-17 #0 6, #1 7; yes-01 #1 6; yes-03 #0 7, #1 5) an
 $1.24, yes-01 #1 $1.16, plus no-14 #1 $1.05 at the turn cap); why `turns` exceeds the 3-turn cap is not checked.
 
 Re-run list for P5 from P4c: none. P5 still carries ask-the-council-yes-09 (section 14).
+
+## 17. P4d review-swarm (2026-10-18)
+
+The owner confirmed the window fresh. Before launch: HEAD d97310f matched origin, tree clean; CI's newest
+`evals.yml` run 38727606834 (2026-10-15); newest local results folder 2026-10-17T11-28-43-593Z.
+
+| field | value |
+|---|---|
+| command | `claude plugin eval . --eval-dir evals-trigger --case "review-swarm-*" --runs 2 -j 2 --ablation none --model claude-fable-5-1 --no-publish --trust-plugin --max-cost-usd 14.2 --output-dir <scratch>/p4d --json <scratch>/p4d.json` |
+| results | `<scratch>/p4d/aggregate-result.json` and `<scratch>/p4d.json` (session scratch, not kept) |
+| started | 06:52:20Z (`startedAt`); `durationSeconds` 461; CLI 2.1.296 |
+| caps | `max_turns: 3`, `timeout_seconds: 90` in every case; `--max-cost-usd 14.2` |
+| cost | $10.05 (`costUsd`): 40 runs, all paid |
+| cost/run | $0.251 (gate <= $0.40: PASS); range $0.028-$0.379 |
+| limit errors | none (no run `error` contains "limit") |
+| cap abort | no: `partial` false, all 40 runs in the JSON; CLI exit 1, not 2 (suite `threshold` 1, two cases below it) |
+| summary | `python -I .github/scripts/eval-summary.py <json>`: `valid 20 of 20 (16 TRUNCATED: no-10..no-12, no-14, no-16, no-17, no-19, yes-00, yes-01, yes-03..yes-09)`, `re-run: none`, `cost $10.05` |
+
+Valid 20 of 20. TRUNCATED runs stopped on the case's own 3-turn or 90 s cap; they count.
+
+| case | score | runs |
+|---|---|---|
+| review-swarm-yes-03 | 0.00 | neither run called Skill (4 turns each, turn cap) |
+| review-swarm-yes-07 | 0.00 | neither run called Skill (4 turns each, turn cap) |
+
+All 10 should-not cases scored 1. review-swarm-yes-03 also never fired in the P4a probe (section 14).
+
+review-swarm-no-13 (prompt `/code-review this branch please, ...`): 1.00 at the new caps, both runs 0 turns,
+$0.031 and $0.028, no error. At the old caps (2026-10-17T11-28-43-593Z, 6 turns / 180 s, prefix
+`(?:[\w-]+:)?`) it was valid with score 1, both listed runs 0 turns and $0. The new result replaces the old
+one. Why a slash-command prompt reports 0 turns is not checked.
+
+anthropic-skills calls: not checked. The run had no `--keep-temp`, so the 40 `tracePath` files were gone;
+neither JSON file contains the string `anthropic-skills`. One run reports more than 4 turns with no error
+(no-15 #0, 5 turns); no run cost over $1.
+
+Re-run list for P5 from P4d: none. P5 still carries ask-the-council-yes-09 (section 14). Valid so far: 100 of
+120 (architect 20, ask-the-council 19, ponytail 20, prompt-generator 20, review-swarm 20, with no-13
+re-measured).
