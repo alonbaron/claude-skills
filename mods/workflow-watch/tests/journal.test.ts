@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'claude-code/testing'
 
-import { EMPTY, applyEntries, parseLines, phaseRuns, readMeta, readTranscript, report, stageDetail, stageLines, state, statusLine, summarize, tally, tone, who, withFacts } from '../hooks/journal'
+import { EMPTY, applyEntries, mergeStages, parseLines, parseSession, phaseRuns, readMeta, readMetaInfo, readTranscript, report, stageDetail, stageLines, state, statusLine, summarize, tally, timelineBar, tone, who, withFacts } from '../hooks/journal'
 
 const STARTED = '{"type":"started","key":"k1","agentId":"a1","label":"build:1.2","phase":"Build"}'
 const RESULT = '{"type":"result","key":"k1","agentId":"a1","result":{"ok":true,"commits":["c1","c2"],"testsPassed":true,"lintPassed":false,"deviations":[]}}'
@@ -149,9 +149,14 @@ describe('transcript', () => {
     expect(stageDetail(l, t0 + 200_000)).toBe('Running for 3:20 · 0 calls · starting…')
   })
 
-  test('readMeta takes the alias and tolerates garbage', async () => {
+  test('readMeta and readMetaInfo take the alias and toolUseId and tolerate garbage', async () => {
     expect(readMeta('{"model":"sonnet","agentType":"workflow-subagent"}')).toBe('sonnet')
     expect(readMeta('not json')).toBe(null)
+    expect(readMetaInfo('{"model":"opus","description":"Verify findings","toolUseId":"toolu_1"}')).toEqual({
+      model: 'opus',
+      description: 'Verify findings',
+      toolUseId: 'toolu_1',
+    })
   })
 
   test('who shows alias, resolved model and effort, and n/a for a model with no effort', async () => {
@@ -166,6 +171,104 @@ describe('transcript', () => {
     const s = { ...(live as NonNullable<typeof live>), ...readTranscript(TRANSCRIPT) }
     expect(stageDetail(s, 13000)).toBe('Running for 0:12 · 1 call · Bash npm test')
     expect(stageDetail({ ...s, endedAt: 47000 }, 99000)).toBe('Ran for 0:46 · 1 tool · 0.8k tokens')
+  })
+})
+
+describe('session & timeline', () => {
+  test('parseSession extracts turns, skills, background subagents, and git commits while filtering meta noise', async () => {
+    const sessionLines = [
+      '{"type":"user","timestamp":"2026-10-12T14:00:00.000Z","message":{"content":[{"type":"text","text":"<browser_instruction>ignore</browser_instruction>"},{"type":"text","text":"Review the PR and commit fix"}]}}',
+      '{"type":"assistant","timestamp":"2026-10-12T14:00:05.000Z","effort":"high","message":{"model":"claude-fable-5-1","stop_reason":"tool_use","usage":{"output_tokens":200},"content":[{"type":"tool_use","id":"tu_skill","name":"Skill","input":{"skill":"alon-skills:review-swarm","args":"PR #12"}}]}}',
+      '{"type":"user","isMeta":true,"timestamp":"2026-10-12T14:00:05.100Z","message":{"content":[{"type":"text","text":"skill body injected"}]}}',
+      '{"type":"assistant","timestamp":"2026-10-12T14:00:10.000Z","effort":"high","message":{"model":"claude-fable-5-1","stop_reason":"tool_use","usage":{"output_tokens":300},"content":[{"type":"tool_use","id":"tu_agent","name":"Agent","input":{"description":"Review lens: security","model":"sonnet"}}]}}',
+      '{"type":"user","timestamp":"2026-10-12T14:00:11.000Z","toolUseResult":{"isAsync":true,"status":"async_launched","agentId":"ag_sec","resolvedModel":"claude-sonnet-5-5"},"message":{"content":[{"type":"tool_result","tool_use_id":"tu_agent","content":"launched"}]}}',
+      '{"type":"user","timestamp":"2026-10-12T14:01:00.000Z","message":{"content":"<task-notification><task-id>ag_sec</task-id><tool-use-id>tu_agent</tool-use-id></task-notification>"}}',
+      '{"type":"assistant","timestamp":"2026-10-12T14:01:10.000Z","effort":"high","message":{"model":"claude-fable-5-1","stop_reason":"tool_use","usage":{"output_tokens":150},"content":[{"type":"tool_use","id":"tu_commit","name":"Bash","input":{"command":"git commit -m \\"fix: tighten auth check\\""}}]}}',
+      '{"type":"user","timestamp":"2026-10-12T14:01:12.000Z","toolUseResult":{"stdout":"[main 40bb8bd] fix: tighten auth check\\n 1 file changed"},"message":{"content":[{"type":"tool_result","tool_use_id":"tu_commit","content":"[main 40bb8bd] fix: tighten auth check"}]}}',
+      '{"type":"assistant","timestamp":"2026-10-12T14:01:20.000Z","effort":"high","message":{"model":"claude-fable-5-1","stop_reason":"end_turn","usage":{"output_tokens":100},"content":[{"type":"text","text":"All review findings fixed and committed."}]}}',
+    ].join('\n')
+
+    const items = parseSession(sessionLines, Date.parse('2026-10-12T14:02:00.000Z'))
+    expect(items.map(s => `${s.kind}:${s.label}`)).toEqual([
+      'turn:turn:1',
+      'skill:skill:review-swarm',
+      'agent:agent:Review lens: security',
+      'commit:commit:40bb8bd',
+    ])
+    const [turn, skill, agent, commit] = items
+    expect(turn?.alias).toBe('fable')
+    expect(turn?.model).toBe('claude-fable-5-1')
+    expect(turn?.outputTokens).toBe(750)
+    expect(turn?.summary).toBe('All review findings fixed and committed.')
+    expect(turn?.endedAt).toBe(Date.parse('2026-10-12T14:01:20.000Z'))
+    expect(skill?.phase).toBe('Skill · review-swarm')
+    expect(skill?.summary).toBe('PR #12')
+    expect(agent?.agentId).toBe('ag_sec')
+    expect(agent?.phase).toBe('Skill · review-swarm')
+    expect(commit?.summary).toBe('fix: tighten auth check')
+
+    // Enriching the background agent from its subagent transcript takes SubagentHandback as the summary without counting it as a tool call
+    const subLines = [
+      '{"type":"user","timestamp":"2026-10-12T14:00:11.000Z","message":{"content":"audit security"}}',
+      '{"type":"assistant","timestamp":"2026-10-12T14:00:30.000Z","effort":"medium","message":{"model":"claude-sonnet-5-5","usage":{"output_tokens":400},"content":[{"type":"tool_use","name":"Grep","input":{"pattern":"auth"}}]}}',
+      '{"type":"assistant","timestamp":"2026-10-12T14:00:59.000Z","effort":"medium","message":{"model":"claude-sonnet-5-5","usage":{"output_tokens":200},"content":[{"type":"tool_use","name":"SubagentHandback","input":{"message":"No blocking vulnerabilities found."}}]}}',
+    ].join('\n')
+    const enriched = withFacts(agent as NonNullable<typeof agent>, readTranscript(subLines))
+    expect(enriched.calls).toBe(1)
+    expect(enriched.lastTool).toBe('Grep auth')
+    expect(enriched.summary).toBe('No blocking vulnerabilities found.')
+  })
+
+  test('mergeStages orders session items and workflow stages chronologically, and timelineBar renders spans', async () => {
+    const [wf] = applyEntries([], parseLines(STARTED + '\n' + RESULT), 2000)
+    const turn = parseSession('{"type":"user","timestamp":"1970-01-01T00:00:01.000Z","message":{"content":"run workflow"}}', 3000)[0]
+    const merged = mergeStages(turn ? [turn] : [], wf ? [wf] : [])
+    expect(merged.map(s => s.label)).toEqual(['turn:1', 'build:1.2'])
+    expect(timelineBar({ ...(wf as NonNullable<typeof wf>), startedAt: 1000, endedAt: 3000 }, 1000, 4000, 8)).toBe('████░░░░')
+    expect(timelineBar({ ...(wf as NonNullable<typeof wf>), startedAt: 3000, endedAt: null }, 1000, 4000, 8)).toBe('░░░░▓▓▓▓')
+  })
+
+  test('parseSession and readTranscript parse Antigravity extension transcripts and subagent handbacks', async () => {
+    const agyLines = [
+      '{"step_index":0,"source":"USER_EXPLICIT","type":"USER_INPUT","created_at":"2026-10-19T10:00:00Z","content":"<USER_REQUEST>\\nReview and commit\\n</USER_REQUEST>\\n<USER_SETTINGS_CHANGE>\\nThe user changed setting `Model Selection` from None to Gemini 4 Argon (High).\\n</USER_SETTINGS_CHANGE>"}',
+      '{"step_index":1,"source":"MODEL","type":"PLANNER_RESPONSE","created_at":"2026-10-19T10:00:05Z","output_tokens":300,"tool_calls":[{"name":"view_file","args":{"AbsolutePath":"\\"c:/repo/skills/review-swarm/SKILL.md\\""}},{"name":"invoke_subagent","args":{"Subagents":"[{\\"Model\\":\\"inherit\\",\\"Role\\":\\"Review Lens: Security\\",\\"TypeName\\":\\"research\\",\\"Prompt\\":\\"Audit auth\\"}]"}},{"name":"run_command","args":{"CommandLine":"\\"git commit -m \'fix: auth\'\\""}}]}',
+      '{"step_index":2,"source":"MODEL","type":"GENERIC","created_at":"2026-10-19T10:00:06Z","content":"Created the following subagents:\\n{\\n  \\"conversationId\\": \\"conv_sec_1\\"\\n}"}',
+      '{"step_index":3,"source":"MODEL","type":"GENERIC","created_at":"2026-10-19T10:00:08Z","content":"The command exited with code 0.\\nOutput:\\n[main 9a1b2c3] fix: auth"}',
+      '{"step_index":4,"source":"SYSTEM","type":"SYSTEM_MESSAGE","created_at":"2026-10-19T10:00:20Z","content":"<SYSTEM_MESSAGE>\\n[Message] timestamp=2026-10-19T10:00:20Z sender=conv_sec_1 priority=MESSAGE_PRIORITY_HIGH content=Clean security pass.\\n</SYSTEM_MESSAGE>"}',
+      '{"step_index":5,"source":"MODEL","type":"PLANNER_RESPONSE","created_at":"2026-10-19T10:00:25Z","output_tokens":150,"content":"Review and commit finished."}',
+    ].join('\n')
+    const items = parseSession(agyLines, Date.parse('2026-10-19T10:01:00Z'))
+    expect(items.map(s => `${s.kind}:${s.label}`)).toEqual(['turn:turn:1', 'skill:skill:review-swarm', 'agent:agent:Review Lens: Security', 'commit:commit:9a1b2c3'])
+    const [turn, , agent] = items
+    expect(turn?.alias).toBe('gemini')
+    expect(turn?.model).toBe('Gemini 4 Argon')
+    expect(turn?.effort).toBe('high')
+    expect(turn?.outputTokens).toBe(450)
+    expect(agent?.agentId).toBe('conv_sec_1')
+
+    const subTranscript = [
+      '{"step_index":1,"source":"MODEL","type":"PLANNER_RESPONSE","created_at":"2026-10-19T10:00:10Z","output_tokens":220,"tool_calls":[{"name":"view_file","args":{"AbsolutePath":"\\"src/auth.ts\\""}},{"name":"send_message","args":{"Message":"\\"Verified no injection issues.\\""}}]}',
+    ].join('\n')
+    const enriched = withFacts(agent as NonNullable<typeof agent>, readTranscript(subTranscript))
+    expect(enriched.calls).toBe(1)
+    expect(enriched.outputTokens).toBe(220)
+    expect(enriched.summary).toBe('Verified no injection issues.')
+  })
+
+  test('Antigravity: truncated subagent args, quoted spawn output, and commands that only mention git commit', async () => {
+    const step = (o: Record<string, unknown>): string => JSON.stringify(o)
+    // The compact transcript cuts the Subagents arg mid-way: the first Role survives, the second does not.
+    const truncatedSubs = JSON.stringify(JSON.stringify([{ Model: 'inherit', Prompt: 'p1', Role: 'Lens: Correctness' }])).slice(0, -3) + ',{"Model":"inherit","Prompt":"p2 cut'
+    const spawn = 'Created the following subagents:\n{\n  "conversationId": "conv_a"\n}\n{\n  "conversationId": "conv_b"\n}'
+    const lines = [
+      step({ step_index: 0, source: 'USER_EXPLICIT', type: 'USER_INPUT', created_at: '2026-10-19T10:00:00Z', content: '<USER_REQUEST>\nreview\n</USER_REQUEST>' }),
+      step({ step_index: 1, type: 'PLANNER_RESPONSE', created_at: '2026-10-19T10:00:01Z', tool_calls: [{ name: 'invoke_subagent', args: { Subagents: truncatedSubs } }] }),
+      step({ step_index: 2, type: 'GENERIC', created_at: '2026-10-19T10:00:02Z', content: spawn }),
+      step({ step_index: 3, type: 'PLANNER_RESPONSE', created_at: '2026-10-19T10:00:03Z', tool_calls: [{ name: 'run_command', args: { CommandLine: JSON.stringify("node -e \"if (l.includes('git commit')) console.log(l)\"") } }] }),
+      step({ step_index: 4, type: 'GENERIC', created_at: '2026-10-19T10:00:04Z', content: `The command exited with code 0.\nOutput:\n${spawn.replace('conv_a', 'conv_x')}` }),
+    ].join('\n')
+    const items = parseSession(lines, Date.parse('2026-10-19T10:01:00Z'))
+    expect(items.map(s => `${s.kind}:${s.label}:${s.agentId ?? ''}`)).toEqual(['turn:turn:1:', 'agent:agent:Lens: Correctness:conv_a', 'agent:agent:conv_b:conv_b'])
   })
 })
 

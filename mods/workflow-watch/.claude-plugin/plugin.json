@@ -1,7 +1,7 @@
 {
   "name": "workflow-watch",
-  "version": "0.2.0",
-  "description": "Live view of a running Workflow: each stage as it starts and finishes, with what it is doing right now, in a pane, a band above the prompt and the status line.",
+  "version": "0.3.0",
+  "description": "Live session and Workflow tracker: main-thread turns, skills fired, spawned subagents, git commits and workflow stages with models, effort, tokens and timeline waterfall in a pane, a band above the prompt and the status line.",
   "types": "./types/index.d.ts",
   "author": {
     "name": "Alon Baron",

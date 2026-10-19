@@ -26,6 +26,7 @@ describe('render', () => {
         props: { title: 'Workflow', isFocused: false, bodyColumns: 120, placement: 'dock', ...SITE },
       })
       expect(await ui.find({ type: 'Text', text: 'wf_1 · 1 done · 1 failed · 1 running · 0.0k output tokens' })).toBeDefined()
+      expect(await ui.find({ type: 'Text', text: /^── Timeline · 0:12 elapsed$/ })).toBeDefined()
       expect(await ui.find({ type: 'Text', text: /^── Refute · round 1$/ })).toBeDefined()
       const heads = await ui.findAll({ type: 'Text', text: /^(▶ running|✓ done|! failed) {2}\S+ {2}/ })
       expect(heads.map(h => h.text.split('  ')[1])).toEqual(['build:1.2', 'refute:invariants:1.2:r1', 'refute:correctness:1.2:r1'])
