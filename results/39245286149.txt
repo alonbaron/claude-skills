@@ -1,0 +1,18 @@
+run: 39245286149 https://github.com/alonbaron/claude-skills/actions/runs/39245286149
+event: workflow_dispatch  commit: 838bb1c2d00d9e41de383657940219fe59360b8d  ref: fix/review-swarm-security-naming
+model: claude-fable-5-1  cases: sandboxed  job status at publish: success
+only: review-swarm/real-diff-ranked-report
+cli: 2.1.303 (Claude Code)
+started: 2026-10-19T11:56:13Z
+
+valid 1 of 1
+re-run: none
+cost $22.14  runner aggregates over the 1 cases in the results: {"casesTotal": 1, "casesPassed": 1, "overallScore": 1, "overallPassRate": 1, "meanDelta": 0.6}
+
+== real-diff-ranked-report  with 1.00  without 0.40
+   no-edit-calls                      with PP   without PP
+   no-write-calls                     with PP   without PP
+   ranked-report-shape                with PP   without ..
+   reviewers-sonnet                   with PP   without ..
+   skill-fired                        with PP   without 
+   verifiers-opus                     with PP   without ..

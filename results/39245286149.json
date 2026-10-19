@@ -1,0 +1,373 @@
+{
+  "schemaVersion": 1,
+  "claudeVersion": "2.1.303",
+  "startedAt": "2026-10-19T11:32:09.244Z",
+  "durationSeconds": 1443,
+  "costUsd": 22.14295,
+  "partial": false,
+  "suite": {
+    "root": "/home/runner/work/claude-skills/claude-skills",
+    "ablation": "with-without",
+    "modelOverride": "claude-fable-5-1",
+    "judgeModel": "sonnet",
+    "threshold": 0.7,
+    "concurrency": 4,
+    "plugins": [
+      {
+        "name": "alon-skills",
+        "version": "3.2.1",
+        "path": "/home/runner/work/claude-skills/claude-skills"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "real-diff-ranked-report",
+      "dir": "evals-ci/review-swarm/real-diff-ranked-report",
+      "source": "mixed",
+      "promptMarkdown": "I added a new `/orders/<user_id>` endpoint in `app/routes.py`: it pulls a user's orders with `Order.query.filter_by(user_id=user_id).all()`, then loops over them and calls `db.session.query(Item).get(order.item_id)` once per order. There's no test covering a user with zero orders. Haven't committed it yet. Run review-swarm on this diff before I open the PR.",
+      "runsPerCase": 3,
+      "timeoutSeconds": 1500,
+      "maxTurns": 40,
+      "graders": [
+        {
+          "name": "no-edit-calls",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Edit",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "no-write-calls",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Write",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "ranked-report-shape",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final report: (1) surfaces the N+1 query pattern in `app/routes.py` (one `Item` lookup per order inside the `for order in orders` loop) as a data/performance finding, (2) surfaces the missing test for the zero-orders case as a tests/failure-paths finding, (3) is structured as a ranked Blockers / Should-fix / Nits report with a file:line-style reference and a one-line fix for each item, and (4) shows evidence of adversarial verification (e.g. explains why a finding is real and reproducible, or explicitly drops a speculative one) rather than only listing raw first-pass findings.\n\nFAIL if the report misses either the N+1 pattern or the missing-test finding, is not organized into a ranked Blockers/Should-fix/Nits structure, or shows no sign that findings were verified before being reported.",
+          "config": {
+            "criteria": "PASS if the final report: (1) surfaces the N+1 query pattern in `app/routes.py` (one `Item` lookup per order inside the `for order in orders` loop) as a data/performance finding, (2) surfaces the missing test for the zero-orders case as a tests/failure-paths finding, (3) is structured as a ranked Blockers / Should-fix / Nits report with a file:line-style reference and a one-line fix for each item, and (4) shows evidence of adversarial verification (e.g. explains why a finding is real and reproducible, or explicitly drops a speculative one) rather than only listing raw first-pass findings.\n\nFAIL if the report misses either the N+1 pattern or the missing-test finding, is not organized into a ranked Blockers/Should-fix/Nits structure, or shows no sign that findings were verified before being reported.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "reviewers-sonnet",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "input_match": "\"model\"\\s*:\\s*\"sonnet\"",
+            "min": 4
+          }
+        },
+        {
+          "name": "skill-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?review-swarm\""
+          }
+        },
+        {
+          "name": "verifiers-opus",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "input_match": "\"model\"\\s*:\\s*\"opus\"",
+            "min": 1
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 23,
+            "costUsd": 16.00156845,
+            "judgeCostUsd": 0.017628,
+            "durationSeconds": 1443,
+            "startedAt": "2026-10-19T11:32:09.275Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-y25O10/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-edit-calls",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Edit called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-write-calls",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Write called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "ranked-report-shape",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS FAIL PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  false,
+                  true
+                ],
+                "evidence": "Tree is clean again: only your `app/routes.py` change remains. Here is the verified, ranked report.\n\nSix specialists reviewed the diff and seven verifiers tried to refute each finding. Two blockers, three should-fixes, and two nits survived. Four nits were dropped as speculative. Flask and SQLAlchemy are not installed here and PyPI is blocked, so library claims come from documentation; the SQLite and Postgres behaviours below were run directly, and the import failure was reproduced against a stub Flask.\n\n## Blockers\n\n- **`app/routes.py:2` · the module no longer imports.** Nothing in the repo defines `db`, and there is no `app/__init__.py`, so this line raises `ImportError: cannot import name 'db' from 'app'`. HEAD imported fine; the diff takes down the Flask instance on line 5 too. Even with `db` defined, nothing binds it to the app and the models are still `query = None` placeholders, so line 10 fails on the first request. Fix: add `app/extensions.py` holding only `db = SQLAlchemy()`, import that on line 2, call `db.init_app(app)` after line 5, and land real `db.Model` classes for Order and Item in the same PR or stack this PR on them.\n\n- **`tests/test_routes.py:1` · zero tests, and the suite imports nothing.** The only test is `assert True`, so CI stays green while the module cannot load. Verified by mutation: each of the three tests below catches a bug the other two miss. Fix: replace the placeholder with these, plus a root `pytest.ini` containing `pythonpath = .` so bare `pytest` can import `app`, and a client fixture that sets the SQLite URI before import and calls `create_all` and `drop_all` per test. Do not let the fixture be the only place `db.init_app` runs.\n  1. Happy path: two users seeded, order ids distinct from item ids. `GET /orders/1` returns 200 with each order's own item name and the other user's order absent.\n  2. Orphan: one order with a dangling `item_id`. SQLite accepts it by default. Expect 200 with `item_name` null. Today this raises AttributeError.\n  3. Zero orders, with other users seeded: `GET /orders/42` returns 200 and `[]`, not 404. Your case ranks third because it never executes lines 13 and 14, but it is the only test pinning the empty contract.\n\n## Should-fix\n\n- **`app/routes.py:8` · the caller picks whose orders come back.** The owner key comes from the URL and goes straight into the filter, so once the scaffold runs any caller can read or enumerate every user's orders. A later `@login_required` alone would not fix it. The verifier downgraded this from blocker because no auth mechanism exists yet to check against, but it must be fixed before the route is reachable anywhere. Fix: serve `/orders` scoped to the identity from the server-verified credential, whichever mechanism the project picks, and add a separate role-checked route if support staff need cross-user access.\n\n- **`app/routes.py:14` · one orphaned order turns the whole list into a 500.** `Query.get` returns None when `item_id` is NULL or points at a deleted item, and `item.name` then raises. The user's entire order history becomes unreachable on every retry until the row is repaired. Reachable under the intended stack's defaults: SQLite does not enforce foreign keys, and a classic FK column is nullable. Fix: the outer join below. When you write the models, add `nullable=False` on the FK and a restrict or soft-delete policy for Item.\n\n- **`app/routes.py:13` · N+1 query.** One Item SELECT per order, with no pagination to bound it. The identity map does not help: clean objects are held weakly and `item` is rebound each pass, so only back-to-back repeats are served from memory. Fix: the same rewrite as the orphan item. One query replaces lines 10 to 15, removes the legacy `Query.get`, and keeps orders with a missing item instead of crashing or silently dropping them:\n\n```python\nrows = (Order.query\n        .outerjoin(Item, Order.item_id == Item.id)\n        .filter(Order.user_id == user_id)\n        .with_entities(Order.id, Item.name)\n        .order_by(Order.id)\n        .all())\nreturn jsonify([{\"order_id\": oid, \"item_name\": name} for oid, name in rows])\n```\n\n## Nits\n\n- **`app/routes.py:8` · no route converter.** A string reaches the integer column. Malformed ids return 200 and `[]` on SQLite but a DataError 500 on Postgres, both verified. Fix: `<int:user_id>`. Moot if the authorization fix removes the path parameter.\n- **`app/routes.py:10` · no `ORDER BY`.** Row order is undefined and can shift on Postgres after updates. Fix: `.order_by(Order.id)` on whichever query ships, already included above.\n\n**Clean dimensions.** Security beyond the ownership issue: queries are parameterised, the response is an explicit two-field allowlist, and unknown users and zero-order users both return 200 with `[]`, so there is no existence oracle. Simplicity: the diff is minimal with no dead code. Data: read-only request, session teardown is handled by Flask-SQLAlchemy. Architecture: nothing beyond the wiring covered in the first blocker.\n\n**What's solid.** The zero-orders path you were worried about is correct as written: an empty result skips the loop and returns 200 with `[]`. That is a coverage gap, not a bug. The response shape is tight, the queries are injection-safe, and the handler is the right size for one endpoint.\n\n**Dropped after verification:** a pagination limit, a Cache-Control header, the route namespace and bare-array shape, a psycopg3 cast claim, and a bounded int converter. Each was either speculative, absorbed by another fix, or unverifiable here.\n\nIf you want these applied, I can implement the ranked list directly or hand it to `/code-review --fix`. No files were changed during this review."
+              },
+              {
+                "name": "reviewers-sonnet",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 6x (expected 4..∞)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 1x (expected 1..∞)",
+                "withOnly": true,
+                "scored": false
+              },
+              {
+                "name": "verifiers-opus",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 7x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 1,
+            "costUsd": 4.49374905,
+            "judgeCostUsd": 0.010464000000000005,
+            "durationSeconds": 509,
+            "startedAt": "2026-10-19T11:32:09.275Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-MwZg9u/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-edit-calls",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Edit called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-write-calls",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Write called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "ranked-report-shape",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "Review-swarm is complete. Six specialists reviewed the diff and four verifiers refuted or confirmed each claim. Three claims were dropped as unverifiable. Here is the ranked result.\n\n**Blocker**\n\n- `app/routes.py:2` The import of `db` from the `app` package fails. There is no `app/__init__.py` and nothing in the repo defines `db`, so importing the routes module raises ImportError before any route registers. The committed version imports cleanly with a stub Flask; this diff is what breaks it. Fix: add `app/__init__.py` (or a leaf `app/extensions.py`) with `db = SQLAlchemy()`, and call `db.init_app(app)` with a database URI configured.\n\n**Should-fix**\n\n- `app/routes.py:8-10` Any anonymous caller can read any user's orders by iterating the URL. The repo has no auth layer at all, so this is a repo-wide gap, but the first endpoint that serves per-user data should not merge without ownership enforcement. Fix: take the user from the session or token, or check the path user against the authenticated user and return 403.\n- `app/routes.py:14` If an order's item is missing or deleted, the item lookup returns None and `item.name` raises, turning the whole list into a 500 for that user. Fix: null-guard the name, or let the join below handle it.\n- `app/routes.py:13` N+1 query. One SELECT for orders, then one per distinct item. Fix: replace lines 10-14 with a single joined select, then build the dicts from the rows:\n\n```python\nrows = db.session.execute(\n    db.select(Order.id, Item.name)\n    .outerjoin(Item, Item.id == Order.item_id)\n    .where(Order.user_id == user_id)\n    .order_by(Order.id)\n).all()\nreturn jsonify([{\"order_id\": r.id, \"item_name\": r.name} for r in rows])\n```\n\n  Use `outerjoin` to keep orphan orders with a null name. An inner join would silently drop them instead of crashing, so decide which you want.\n- `tests/test_routes.py:1-2` The placeholder test runs no application code, which is why CI stays green while the module cannot be imported. There is also no conftest or pytest config, so bare `pytest` won't put the repo root on `sys.path`. Fix: add a root `conftest.py` with app and client fixtures using TESTING and in-memory SQLite, then add three tests. The happy path should seed two users and assert the filter and the response shape. The missing-item case should assert 200 with a null name. The zero-orders case should seed another user's order and assert 200 with an empty list.\n\n**Nits**\n\n- `app/routes.py:10` No ORDER BY, so row order can differ between identical requests. Covered by the join fix above.\n- `app/routes.py:13` `Query.get()` is legacy in SQLAlchemy 2.0 and emits a warning. Moot once the join fix lands.\n- `app/routes.py:8` A future `/orders/<order_id>` route would compile to the same pattern and be silently unreachable. Consider `/users/<user_id>/orders`.\n- The zero-orders case you flagged behaves correctly by construction, since an empty list skips the loop and returns 200. It is still worth pinning in a test.\n\n**Dropped after verification**: the missing index on `user_id`, the int converter for the path param, and a separate init_app finding. The models declare no columns, so the first two are speculation, and the third is part of the blocker's fix.\n\n**Context, not a finding against this diff**: `app/models.py:3,8` are placeholder classes with `query = None`. Even after the import is fixed, the route cannot work until Order and Item are real mapped models with the fields it reads.\n\n**What's solid**: parameter binding means no SQL injection, the response shape is sensible, and the simplicity lens found nothing worth changing beyond the join collapse.\n\nThe review did not apply any changes. If you want the fixes made, I can hand this list to an implementer or you can run `/code-review --fix`."
+              },
+              {
+                "name": "reviewers-sonnet",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 6x (expected 4..∞)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 1x (expected 1..∞)",
+                "withOnly": true,
+                "scored": false
+              },
+              {
+                "name": "verifiers-opus",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 4x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ],
+        "without": [
+          {
+            "score": 0.4,
+            "passed": false,
+            "turns": 3,
+            "costUsd": 0.8797155,
+            "judgeCostUsd": 0.012552,
+            "durationSeconds": 88,
+            "startedAt": "2026-10-19T11:32:09.275Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-L2tFpj/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-edit-calls",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Edit called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-write-calls",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Write called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "ranked-report-shape",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "`review-swarm` isn't available here. It is not in this session's skill list and nothing by that name exists in the project's `.claude/skills` or `.claude/commands`. I ran the built-in `code-review` skill at high effort on the uncommitted diff instead. Here is what it found, ranked.\n\n**Blocking, the app won't even start:**\n\n- **`from app import db` cannot resolve.** There is no `app/__init__.py` and no `db` object anywhere in the package, so importing `app.routes` raises ImportError. Server boot and pytest collection both fail.\n- **The models are placeholders.** `Order.query` is literally `None` in `app/models.py`, and neither class has mapped columns, so even with `db` fixed the first request would 500 with an AttributeError.\n- **The SQLAlchemy extension is never bound to the Flask app.** `routes.py` creates its own `Flask(__name__)` and nothing calls `db.init_app`, so `db.session` would raise at request time once the models are real.\n\n**Correctness and security in the route itself:**\n\n- **`item.name` has no None guard.** An order whose `item_id` points at a deleted item makes the whole response 500, and the user's valid orders are lost too.\n- **N+1 queries.** One `Item` SELECT per order. Use a relationship with `joinedload`, or join `Order` to `Item` in a single query, so it's one round trip regardless of order count.\n- **No authorization.** Any caller can enumerate `/orders/1`, `/orders/2`, and so on. The user id should come from the authenticated session or be checked against it.\n- **No `<int:user_id>` converter.** `/orders/abc` reaches the database as a string and can surface as a 500 instead of a 404.\n\n**Minor:**\n\n- `Query.get()` is the legacy API and warns under SQLAlchemy 1.4 and 2.0. Prefer `db.session.get(Item, id)`, or the join removes the call entirely.\n- The function mixes `Order.query` and `db.session.query(Item)` styles. Using `Item.query` would also remove the need for the `db` import.\n\n**Tests:** `tests/test_routes.py` is just `assert True`, so none of the above is caught. The zero-orders case you mentioned should return `[]`, and it would be worth adding cases for a user with orders, an orphaned item id, and a non-integer user id alongside it.\n\nNothing was changed in the working tree. If you want review-swarm specifically, it needs to be installed as a plugin or project skill first, and I can rerun once it is."
+              },
+              {
+                "name": "reviewers-sonnet",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 4..∞)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "verifiers-opus",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.4,
+            "passed": false,
+            "turns": 6,
+            "costUsd": 0.7679170000000001,
+            "judgeCostUsd": 0.015042,
+            "durationSeconds": 89,
+            "startedAt": "2026-10-19T11:32:09.275Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-R0H4mO/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-edit-calls",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Edit called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-write-calls",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Write called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "ranked-report-shape",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "Review complete. One caveat first: there is no `review-swarm` skill in this session, so I ran the built-in `code-review` skill at high effort instead. It fans out over several review angles and pools the results, which covers the same ground.\n\n**Blocking: the diff cannot run as written.** The new import on line 2 of `app/routes.py` pulls `db` from the `app` package, but that package has no `__init__.py` and nothing defines `db`. Importing the module raises ImportError, so every route is unreachable. Separately, both model classes in `app/models.py` still have `query = None` placeholders, so even with the import fixed the first request would crash on `None.filter_by`. Flask and SQLAlchemy are also not installed here, so I could not execute the endpoint to confirm further.\n\n**Correctness findings, ranked:**\n\n1. **Missing item crashes the response.** `get()` returns None for an unknown id, so one order pointing at a deleted item turns the whole request into a 500 rather than skipping or 404ing that row.\n2. **No authorization.** Anyone can enumerate `/orders/1`, `/orders/2`, and so on and read every customer's order history. Tie the lookup to the authenticated user or check ownership.\n3. **Untyped URL parameter.** `user_id` arrives as a string. Use `<int:user_id>` so Flask rejects non-numeric ids and the integer column comparison is reliable across backends.\n4. **Circular import waiting to happen.** Creating the Flask app inside routes while also importing `db` from the package means the obvious `app/__init__.py` fix will import routes partway through initialization. Move app creation to the package or use an app factory.\n\n**Design and efficiency:**\n\n- **N+1 queries.** One Item SELECT per order. Prefer a join, a single `IN` query keyed into a dict, or an `Order.item` relationship with `joinedload`.\n- **Inconsistent access style.** Orders use the model's query manager, Items use the session. `Query.get()` is also the legacy API and warns under SQLAlchemy 2.x. Prefer `db.session.get(Item, id)`.\n\n**On the zero-orders case you mentioned:** the loop body never runs, so the endpoint correctly returns an empty JSON list. That is fine behavior, but it should still be a test. The test file currently only asserts True, so CI will stay green through all of the above. Worth adding before the PR: zero orders, a user with orders, an order whose item is missing, and a non-numeric user id."
+              },
+              {
+                "name": "reviewers-sonnet",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 4..∞)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "verifiers-opus",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 1,
+        "passRate": 1,
+        "scoreWithout": 0.4,
+        "passRateWithout": 0,
+        "delta": 0.6
+      }
+    }
+  ],
+  "aggregates": {
+    "casesTotal": 1,
+    "casesPassed": 1,
+    "overallScore": 1,
+    "overallPassRate": 1,
+    "meanDelta": 0.6
+  }
+}
