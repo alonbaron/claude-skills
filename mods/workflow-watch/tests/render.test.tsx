@@ -37,6 +37,21 @@ describe('render', () => {
     }
   })
 
+  test('a narrow column count does not cut pane text; the surface truncates at its real width', async ($, on) => {
+    mock.clock(on)
+    on('state.get', { plugin: 'workflow-watch', key: 'watch' }, () => ({ value: { value: WATCH, version: 1 } }))
+    const ui = await $.ui.mount({
+      plugin: 'workflow-watch',
+      surface: 'desktop',
+      component: 'Pane',
+      requestId: 'workflow-watch',
+      props: { title: 'Workflow', isFocused: false, bodyColumns: 40, placement: 'dock', ...SITE },
+    })
+    expect(await ui.find({ type: 'Text', text: 'wf_1 · 1 done · 1 failed · 1 running · 0.0k output tokens' })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: '    FAIL blocking=1 advisory=0 testsRan=false | src/a.js: off by one' })).toBeDefined()
+    await ui.unmount()
+  })
+
   test('the band draws each running stage as its head and its live details', async ($, on) => {
     mock.clock(on)
     on('state.get', { plugin: 'workflow-watch', key: 'watch' }, () => ({ value: { value: WATCH, version: 1 } }))
