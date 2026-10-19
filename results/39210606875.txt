@@ -1,0 +1,24 @@
+run: 39210606875 https://github.com/alonbaron/claude-skills/actions/runs/39210606875
+event: workflow_dispatch  commit: 838bb1c2d00d9e41de383657940219fe59360b8d  ref: fix/review-swarm-security-naming
+model: claude-fable-5-1  cases: sandboxed  job status at publish: failure
+only: review-swarm/security-alone-hands-off review-swarm/trivial-diff-declines review-swarm/real-diff-ranked-report
+cli: 2.1.303 (Claude Code)
+started: 2026-10-19T06:46:17Z
+
+valid 2 of 3
+re-run: review-swarm/real-diff-ranked-report
+cost $19.05  runner aggregates over the 3 cases in the results, 1 of them INVALID: {"casesTotal": 3, "casesPassed": 2, "overallScore": 0.6666666666666666, "overallPassRate": 0.6666666666666666, "meanDelta": 0.33333333333333337}
+valid-only aggregates (2 cases): score 1.00  mean delta +0.33  2 of 2 at 0.7
+
+== real-diff-ranked-report  with 0.00  without 0.40  INVALID
+   INVALID with#0 run: exit 1: You've hit your session limit · resets 10:40am (UTC)
+   INVALID with#1 run: exit 1: You've hit your session limit · resets 10:40am (UTC)
+
+== security-alone-hands-off  with 1.00  without 0.33
+   hands-off-to-security-review       with PP   without ..
+   no-swarm-spawn                     with PP   without ..
+   skill-not-fired                    with PP   without PP
+
+== trivial-diff-declines  with 1.00  without 1.00
+   agent-spawn-limit                  with PP   without PP
+   declines-with-alternative          with PP   without PP

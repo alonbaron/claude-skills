@@ -1,0 +1,682 @@
+{
+  "schemaVersion": 1,
+  "claudeVersion": "2.1.303",
+  "startedAt": "2026-10-19T06:33:50.511Z",
+  "durationSeconds": 746,
+  "costUsd": 19.0453284,
+  "partial": false,
+  "suite": {
+    "root": "/home/runner/work/claude-skills/claude-skills",
+    "ablation": "with-without",
+    "modelOverride": "claude-fable-5-1",
+    "judgeModel": "sonnet",
+    "threshold": 0.7,
+    "concurrency": 4,
+    "plugins": [
+      {
+        "name": "alon-skills",
+        "version": "3.2.1",
+        "path": "/home/runner/work/claude-skills/claude-skills"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "real-diff-ranked-report",
+      "dir": "evals-ci/review-swarm/real-diff-ranked-report",
+      "source": "mixed",
+      "promptMarkdown": "I added a new `/orders/<user_id>` endpoint in `app/routes.py`: it pulls a user's orders with `Order.query.filter_by(user_id=user_id).all()`, then loops over them and calls `db.session.query(Item).get(order.item_id)` once per order. There's no test covering a user with zero orders. Haven't committed it yet. Run review-swarm on this diff before I open the PR.",
+      "runsPerCase": 3,
+      "timeoutSeconds": 1500,
+      "maxTurns": 40,
+      "graders": [
+        {
+          "name": "no-edit-calls",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Edit",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "no-write-calls",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Write",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "ranked-report-shape",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final report: (1) surfaces the N+1 query pattern in `app/routes.py` (one `Item` lookup per order inside the `for order in orders` loop) as a data/performance finding, (2) surfaces the missing test for the zero-orders case as a tests/failure-paths finding, (3) is structured as a ranked Blockers / Should-fix / Nits report with a file:line-style reference and a one-line fix for each item, and (4) shows evidence of adversarial verification (e.g. explains why a finding is real and reproducible, or explicitly drops a speculative one) rather than only listing raw first-pass findings.\n\nFAIL if the report misses either the N+1 pattern or the missing-test finding, is not organized into a ranked Blockers/Should-fix/Nits structure, or shows no sign that findings were verified before being reported.",
+          "config": {
+            "criteria": "PASS if the final report: (1) surfaces the N+1 query pattern in `app/routes.py` (one `Item` lookup per order inside the `for order in orders` loop) as a data/performance finding, (2) surfaces the missing test for the zero-orders case as a tests/failure-paths finding, (3) is structured as a ranked Blockers / Should-fix / Nits report with a file:line-style reference and a one-line fix for each item, and (4) shows evidence of adversarial verification (e.g. explains why a finding is real and reproducible, or explicitly drops a speculative one) rather than only listing raw first-pass findings.\n\nFAIL if the report misses either the N+1 pattern or the missing-test finding, is not organized into a ranked Blockers/Should-fix/Nits structure, or shows no sign that findings were verified before being reported.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "reviewers-sonnet",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "input_match": "\"model\"\\s*:\\s*\"sonnet\"",
+            "min": 4
+          }
+        },
+        {
+          "name": "skill-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?review-swarm\""
+          }
+        },
+        {
+          "name": "verifiers-opus",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "input_match": "\"model\"\\s*:\\s*\"opus\"",
+            "min": 1
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 0,
+            "passed": false,
+            "turns": 21,
+            "costUsd": 4.59818275,
+            "judgeCostUsd": 0,
+            "durationSeconds": 707,
+            "startedAt": "2026-10-19T06:33:50.543Z",
+            "error": "exit 1: You've hit your session limit · resets 10:40am (UTC)",
+            "tracePath": "/tmp/claude-eval-MN42Sn/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": []
+          },
+          {
+            "score": 0,
+            "passed": false,
+            "turns": 17,
+            "costUsd": 5.80043015,
+            "judgeCostUsd": 0,
+            "durationSeconds": 746,
+            "startedAt": "2026-10-19T06:33:50.543Z",
+            "error": "exit 1: You've hit your session limit · resets 10:40am (UTC)",
+            "tracePath": "/tmp/claude-eval-fJ0u6l/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": []
+          }
+        ],
+        "without": [
+          {
+            "score": 0.4,
+            "passed": false,
+            "turns": 6,
+            "costUsd": 0.9435309999999999,
+            "judgeCostUsd": 0.008723999999999999,
+            "durationSeconds": 100,
+            "startedAt": "2026-10-19T06:33:50.543Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-JzHggc/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-edit-calls",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Edit called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-write-calls",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Write called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "ranked-report-shape",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "`review-swarm` doesn't exist in this project or the skill list, so I ran the built-in `code-review` skill at high effort on the diff instead. Flask isn't installed here, so I couldn't execute the route, but the findings below come from reading the code and the repo layout.\n\n**Blocking (the endpoint cannot run as committed)**\n\n- **`from app import db` will fail.** There is no `app/__init__.py` and no `db` object defined anywhere in the repo. Importing `app/routes.py` raises ImportError, which takes down the whole module, not just the new route.\n- **`Order.query` is a hard-coded `None`** in `app/models.py`, so even with `db` wired up, `Order.query.filter_by(...)` raises AttributeError on every request. The models are placeholders, not ORM-mapped classes.\n- **Two Flask app instances.** The route is registered on a fresh `Flask(__name__)` created in `routes.py`, while `db` would be bound to whatever `app/__init__.py` eventually builds. Either the real app never sees the route, or the route hits `db.session` with no bound engine.\n\n**Correctness and security**\n\n- **Unchecked `None` from `.get(order.item_id)`.** If an item is deleted or `item_id` is NULL, `item.name` raises AttributeError and the entire response becomes a 500 rather than returning the user's remaining orders. The zero-orders case you mentioned is actually fine (returns `[]`); the missing-item case is the real crash.\n- **No authentication or ownership check.** Any caller can enumerate `/orders/1`, `/orders/2`, ... and read other users' order history. This is an IDOR and should be resolved before the PR, not after.\n- **Untyped `user_id` converter.** `/orders/abc` reaches the database as a string comparison against an integer column. Postgres returns a 500; SQLite silently returns an empty 200. Use `<int:user_id>` so Flask returns 404 for non-numeric input.\n\n**Performance and style**\n\n- **N+1 query.** One `Item` lookup per order means a user with 2,000 orders costs 2,001 round-trips. Better: declare `item = relationship(Item)` on `Order` with `selectinload`, or do a single `Item.id.in_(...)` lookup. That also centralizes the None handling at the model layer.\n- **`Query.get()` is the deprecated 1.x API.** On SQLAlchemy 2.x it emits a LegacyAPIWarning per request. The current form is `db.session.get(Item, order.item_id)`.\n\n**Tests**\n\n- **No coverage at all.** `tests/test_routes.py` contains only `assert True`, so CI stays green even though the module doesn't import. Beyond the zero-orders test you flagged, add cases for a missing item, a non-numeric user_id, and the import itself.\n\nSuggested order before opening the PR: create `app/__init__.py` with the real app and `db`, replace the model placeholders with mapped classes and an `Order.item` relationship, add an auth check, switch to `<int:user_id>`, then write the tests. I haven't changed any files."
+              },
+              {
+                "name": "reviewers-sonnet",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 4..∞)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "verifiers-opus",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.4,
+            "passed": false,
+            "turns": 6,
+            "costUsd": 1.0979825,
+            "judgeCostUsd": 0.008130000000000002,
+            "durationSeconds": 129,
+            "startedAt": "2026-10-19T06:33:50.543Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-rhQPkH/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-edit-calls",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Edit called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-write-calls",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Write called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "ranked-report-shape",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "Review done. One note up front: there is no `review-swarm` skill in this session, so I ran the listed `code-review` skill at high effort with all findings, plus a direct read of the diff, models, and tests.\n\n**Verdict: not ready to open the PR.** The route cannot run at all as written, and two secondary issues would cause 500s once it does.\n\n**Blockers**\n\n- **The import on line 2 fails.** Nothing in the repo defines `db`, and `app/` has no `__init__.py`, so Python treats it as a namespace package with no attributes. Any process that imports `app/routes.py` dies with an ImportError before a route is registered. Fix at the root: add `app/__init__.py` that creates the Flask app and the SQLAlchemy `db`, and move the Flask app construction out of routes to avoid a circular import.\n- **The models are placeholders.** In `app/models.py` both `Order.query` and `Item.query` are literally `None`, and neither class defines `id`, `user_id`, `item_id`, or `name`. Even with `db` defined, the first request raises AttributeError on `None.filter_by`. The route needs real `db.Model` subclasses behind it.\n\n**Bugs in the route itself**\n\n- **Missing item crashes the whole list** (line 14). `.get()` returns `None` when an order points at a deleted or NULL item, and `item.name` then raises. One dangling order 500s every order for that user. Guard it or use an outer join.\n- **No authorization check** (line 8). Any caller can read any user's orders by changing the path segment. Derive the user from the session or token, or verify ownership.\n- **Unconverted `user_id`** (line 8). Use `<int:user_id>` so non-numeric input gets a 404 instead of a database type error on PostgreSQL, and so SQLite does not silently mismatch string vs integer.\n\n**Quality**\n\n- **N+1 queries** (line 13). One `Item` lookup per order. Define an `Order.item` relationship or do a single join. This also removes the None-deref hazard above.\n- **Legacy API** (line 13). `Query.get()` warns under SQLAlchemy 2.x. Use `db.session.get(Item, order.item_id)`, and pick one query style instead of mixing `Order.query` with `db.session.query`.\n\n**Tests**\n\n- **Your zero-orders worry is the one case that is actually fine.** An empty result just returns `[]`. The uncovered cases that matter are the import itself, a missing item, and a non-integer id. `tests/test_routes.py` never imports `app.routes`, so the suite stays green while the app cannot start. Add a test-client test for the endpoint covering those three cases.\n\nFlask and SQLAlchemy are not installed in this sandbox, so the import failure was confirmed by inspecting the package layout rather than by running the server."
+              },
+              {
+                "name": "reviewers-sonnet",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 4..∞)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "verifiers-opus",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 0,
+        "passRate": 0,
+        "passRateWithout": 0
+      }
+    },
+    {
+      "name": "security-alone-hands-off",
+      "dir": "evals-ci/review-swarm/security-alone-hands-off",
+      "source": "mixed",
+      "promptMarkdown": "We just added JWT validation middleware in `src/middleware/auth.js` on our Express API — checks the Authorization header, verifies the signature, attaches `req.user` — but haven't committed it yet. Can you swarm review it for security holes? That's literally the only thing I care about right now, not style or perf.",
+      "runsPerCase": 3,
+      "timeoutSeconds": 900,
+      "maxTurns": 40,
+      "graders": [
+        {
+          "name": "hands-off-to-security-review",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the response treats this as a security-only ask and points to `/security-review` as the right tool (recommending it, or saying it tried it), instead of running a generic six-specialist review swarm.\n\nFAIL if it runs or offers the six-lens swarm as the answer, never mentions `/security-review`, or makes a claim that `src/middleware/auth.js` contradicts. The file calls `jwt.verify(token, process.env.JWT_SECRET)` with no `algorithms` option and no try/catch, so saying the algorithm is not pinned, or that a bad token throws, is accurate, not invented.",
+          "config": {
+            "criteria": "PASS if the response treats this as a security-only ask and points to `/security-review` as the right tool (recommending it, or saying it tried it), instead of running a generic six-specialist review swarm.\n\nFAIL if it runs or offers the six-lens swarm as the answer, never mentions `/security-review`, or makes a claim that `src/middleware/auth.js` contradicts. The file calls `jwt.verify(token, process.env.JWT_SECRET)` with no `algorithms` option and no try/catch, so saying the algorithm is not pinned, or that a bad token throws, is accurate, not invented.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "no-swarm-spawn",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "skill-not-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?review-swarm\"",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 10,
+            "costUsd": 0.7491412500000001,
+            "judgeCostUsd": 0.008688000000000005,
+            "durationSeconds": 179,
+            "startedAt": "2026-10-19T06:35:30.883Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-OImIvs/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "hands-off-to-security-review",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "The right tool for a security-only ask is `/security-review`, and that's what I ran. Its preamble failed because the repo has no `origin` remote, so I did the same single-file review by hand. The middleware is 11 lines, and the findings below are from reading it against known jsonwebtoken behavior. I could not install jsonwebtoken to test empirically because the sandbox denies access to the npm registry, and there is no package.json or node_modules in the repo to tell me which version you depend on.\n\n**Blockers**\n\n- **Missing or empty `JWT_SECRET` is not fail-fast** at `src/middleware/auth.js:6`. On jsonwebtoken 8.5.1 and older, an undefined or empty secret combined with no `algorithms` option makes `verify` accept unsigned `alg: none` tokens, which is a full auth bypass (CVE-2022-23540). On version 9 it instead throws per request, which is safe but means every protected route returns 500. Fix: read the secret once at module load and throw at startup if it is missing, and pin the library to 9.x or newer.\n- **No `algorithms` pinned** at `src/middleware/auth.js:6`. The library's defaults are inferred from the secret's shape, so a future switch to a PEM key or an older library version silently changes which algorithms are accepted. Fix: pass `{ algorithms: ['HS256'] }` explicitly.\n\n**Should-fix**\n\n- **Verification errors become 500s with leaked details** at `src/middleware/auth.js:6`. The synchronous `verify` throws on missing, malformed, expired, or bad-signature tokens. Express forwards that to the default error handler, which outside production writes the stack trace and error message to the response. This fails closed, so it is not a bypass, but it discloses internals and lets an attacker distinguish \"expired\" from \"bad signature\". Fix: wrap in try/catch and respond 401 with a generic body.\n- **No audience or issuer check** at `src/middleware/auth.js:6`. Any token signed with the same secret is accepted as a session, including tokens minted for another purpose or service that shares the secret, such as password-reset or refresh tokens. Fix: set `audience` and `issuer` in the verify options and mint access tokens with matching claims.\n- **Tokens without `exp` never expire** at `src/middleware/auth.js:6`. The library only enforces expiry when the claim exists. Fix: pass `maxAge` in verify options, or reject payloads lacking `exp`.\n- **Loose scheme parsing** at `src/middleware/auth.js:4-5`. The replace strips the first `Bearer ` anywhere in the string, is case-sensitive, and accepts a raw token with no scheme at all. Not a bypass on its own, but it widens what reaches `verify`. Fix: split on whitespace and require exactly two parts with scheme equal to `bearer` case-insensitively.\n\n**Not an issue**\n\n- Attaching the full payload to `req.user` is fine once the signature is verified. JSON parsing of `__proto__` keys does not pollute the prototype.\n\n**Left out**\n\n- The middleware is not mounted anywhere in `src/app.js` yet, so I could not check which routes it protects or whether any route is reachable without it. Also unverifiable without package.json: the jsonwebtoken version and whether the secret has adequate entropy."
+              },
+              {
+                "name": "no-swarm-spawn",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-not-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 6,
+            "costUsd": 0.55062675,
+            "judgeCostUsd": 0.008915999999999997,
+            "durationSeconds": 90,
+            "startedAt": "2026-10-19T06:35:59.592Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-DW3pUr/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "hands-off-to-security-review",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "`/security-review` is the right tool for a security-only pass, and I invoked it first. Its preamble aborted because this repo has no `origin` remote to diff against, so I did the equivalent review by hand on the uncommitted `src/middleware/auth.js`. Note that there is no `package.json` or lockfile in the repo, so I could not confirm which `jsonwebtoken` version you are on.\n\n**Should fix before commit**\n\n- **Verification failures crash the request instead of returning 401** at `src/middleware/auth.js:6`. The synchronous `jwt.verify` throws on a missing, malformed, expired, or forged token. Express forwards that to the default error handler, which responds 500 and, outside `NODE_ENV=production`, echoes the stack and the library message (\"invalid signature\", \"jwt expired\"). That leaks internals and gives attackers a validity oracle. No auth bypass results, since `next()` is never reached, but the failure path is wrong. Fix: wrap in try/catch and respond 401 with a generic body.\n- **No algorithm pinning** at line 6. With a string secret, jsonwebtoken defaults to HMAC algorithms and rejects `alg: none`, so this is not exploitable today. It becomes exploitable the moment someone swaps in a public key or an older library version. Fix: pass `{ algorithms: ['HS256'] }` and pin `jsonwebtoken@^9` once you add a `package.json`.\n- **No issuer, audience, or required expiry** at line 6. A token with no `exp` claim is accepted forever. Any token signed with the same secret by another service or environment is accepted here. Fix: pass `issuer` and `audience` options, and reject tokens that lack `exp` or use `maxAge`.\n\n**Nits**\n\n- **Bearer scheme is not enforced** at line 5. The replace strips the first \"Bearer \" anywhere and otherwise passes the raw header to verify. Harmless today, but a strict check (`/^Bearer (\\S+)$/`) is clearer and fails faster.\n- **Secret is read per request** at line 6. If `JWT_SECRET` is unset or empty, jsonwebtoken throws, so it fails closed. Still, assert it at startup so a misconfigured deploy dies immediately.\n- **Nothing is protected yet.** `src/app.js` never mounts this middleware, so no route is currently gated by it.\n\n**Verified non-issues:** unset or empty secret fails closed, `alg: none` is rejected by library defaults, and duplicate Authorization headers are dropped by Node before reaching this code.\n\nSuggested shape for the fix, for reference only since you asked for review rather than changes:\n\n```js\nconst jwt = require('jsonwebtoken');\nconst SECRET = process.env.JWT_SECRET;\nif (!SECRET) throw new Error('JWT_SECRET must be set');\n\nfunction requireAuth(req, res, next) {\n  const m = /^Bearer (\\S+)$/.exec(req.headers.authorization || '');\n  if (!m) return res.status(401).json({ error: 'unauthorized' });\n  try {\n    req.user = jwt.verify(m[1], SECRET, {\n      algorithms: ['HS256'],\n      issuer: 'your-issuer',\n      audience: 'your-api',\n      maxAge: '1h',\n    });\n    return next();\n  } catch {\n    return res.status(401).json({ error: 'unauthorized' });\n  }\n}\n```"
+              },
+              {
+                "name": "no-swarm-spawn",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-not-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ],
+        "without": [
+          {
+            "score": 0.3333333333333333,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 1.2340922500000002,
+            "judgeCostUsd": 0.012180000000000003,
+            "durationSeconds": 134,
+            "startedAt": "2026-10-19T06:37:29.797Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-IajSmc/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "hands-off-to-security-review",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "All three reviewers are back. One of them contradicted another on what happens when the secret is unset, so I checked the library source for both majors before writing this up. The verdict below reflects the verified behavior.\n\n**Bottom line:** the middleware has no outright bypass on a current `jsonwebtoken` with a configured secret, but it has one conditional critical and several real gaps. There is no package.json or lockfile in the repo, so the installed version is unknown. Pin it before anything else.\n\n**Findings, ranked**\n\n1. **CRITICAL on jsonwebtoken 8.x: unset secret becomes an auth bypass** (`src/middleware/auth.js:6`). The secret is read per request with no startup check. On 8.x, when the secret is falsy and the token has no signature, verify defaults `algorithms` to `none` and accepts the token. An attacker forges `{\"alg\":\"none\"}` with any claims and gets `req.user` (CVE-2022-23540). On 9.x the same misconfiguration fails closed, but every protected request then 500s. Fix: validate at module load and pin `jsonwebtoken` to `^9.0.2`.\n\n2. **HIGH: no `try/catch` around verify** (line 6). It throws synchronously, so every bad, expired, or missing token yields a 500 instead of a 401. Outside `NODE_ENV=production` the default Express handler returns the stack trace, including file paths and the misconfiguration message if the secret is absent. Unauthenticated traffic also floods error logs.\n\n3. **HIGH: no `algorithms` allowlist** (line 6). Harmless today with a string secret, but the moment someone swaps `JWT_SECRET` for an RSA public key without touching this line, HS/RS key confusion applies on older versions. Pin `['HS256']` now.\n\n4. **HIGH: expiry only enforced if the issuer sets `exp`** (line 6). The library never requires it. A token minted without `exp` is valid forever, and there is no revocation path. `maxAge` forces `iat` and bounds lifetime regardless of `exp`.\n\n5. **MEDIUM: no `issuer` or `audience` binding** (line 6). Any token signed with the same secret by a sibling service, staging environment, or dev script is accepted here.\n\n6. **MEDIUM: scheme not enforced** (line 5). `replace('Bearer ', '')` strips a prefix rather than checking one. `Basic <jwt>`, `Token <jwt>`, or a bare token are all accepted, which defeats gateway or WAF rules keyed on the Bearer scheme. Lowercase `bearer` fails closed by accident.\n\n7. **MEDIUM: entire payload trusted as `req.user`** (line 7). Not a bypass on its own since only a secret holder can mint claims. It becomes one if any handler spreads `req.user` into a DB write or object merge, and any `res.json(req.user)` leaks every claim. Project only the fields you need.\n\n8. **MEDIUM, design level: symmetric secret for an API verifier.** Every service that verifies can also mint. If more than one consumer shares this secret, one compromised consumer forges tokens for all. RS256 or ES256 with a JWKS endpoint also gives you `kid` rotation, which you currently have no code for.\n\n**Verified non-issues:** `alg: none` with a non-empty secret is rejected on both majors. Node discards duplicate `Authorization` headers, so no array confusion. Decoding alone does not prototype-pollute. A repo sweep found no hardcoded secret, though the `.idea`, `.vscode`, and `.mcp.json` paths were unreadable in this sandbox and are unverified.\n\n**Minimal hardened version** that closes items 1 through 7:\n\n```js\nconst jwt = require('jsonwebtoken');\n\nconst SECRET = process.env.JWT_SECRET;\nif (!SECRET || SECRET.length < 32) {\n  throw new Error('JWT_SECRET missing or shorter than 32 bytes');\n}\n\nconst BEARER = /^Bearer\\s+([A-Za-z0-9\\-_.]+)$/i;\n\nfunction requireAuth(req, res, next) {\n  const m = BEARER.exec(req.headers.authorization || '');\n  if (!m) return res.status(401).json({ error: 'missing_token' });\n\n  let payload;\n  try {\n    payload = jwt.verify(m[1], SECRET, {\n      algorithms: ['HS256'],\n      issuer: 'your-auth-service',\n      audience: 'your-api',\n      maxAge: '1h',\n    });\n  } catch (err) {\n    return res.status(401).json({ error: 'invalid_token' });\n  }\n\n  if (!payload.sub) return res.status(401).json({ error: 'invalid_token' });\n  req.user = { id: payload.sub, roles: payload.roles ?? [] };\n  next();\n}\n\nmodule.exports = { requireAuth };\n```\n\nI did not modify the file. Item 8 is a design decision for you, and the issuer and audience strings need to match whatever mints the tokens."
+              },
+              {
+                "name": "no-swarm-spawn",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Agent called 3x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-not-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.3333333333333333,
+            "passed": false,
+            "turns": 9,
+            "costUsd": 2.4955025000000006,
+            "judgeCostUsd": 0.014917999999999994,
+            "durationSeconds": 210,
+            "startedAt": "2026-10-19T06:38:29.519Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-iojLff/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "hands-off-to-security-review",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "Three reviewers finished. Here is the consolidated result, deduplicated and ordered by severity. I did not change any code.\n\n**Caveat first:** the repo has no `package.json` or lockfile, so the installed jsonwebtoken version is unknown. The top finding depends on it.\n\n**Critical, conditional** (jsonwebtoken below 9.0.0 and `JWT_SECRET` unset or empty): full auth bypass via `alg: none`. Line 6 passes the env var straight through with no `algorithms` option. In 8.x, a falsy secret plus an unsigned token makes the library default to accepting `none`, so an attacker sends a two-part token with any payload and it becomes `req.user`. This is CVE-2022-23540. The secret is read per request, so a missing env var is silent until exploited. On 9.x this fails closed.\n\n**High:** no `issuer` or `audience` check. Any JWT signed with the shared secret is accepted here: tokens minted for other services, staging tokens if environments share a secret, password-reset or email-verification JWTs, refresh tokens. Each becomes a valid login on this API.\n\n**High:** no token-type check. Compounds the above. A refresh token with a 30-day life works directly as a bearer on every route, and a reset-link JWT in an email is a login credential for whoever sees the email.\n\n**High:** `req.user` is the raw payload with no required claims. The library accepts tokens with no `sub`, no `exp`, and even non-object payloads. A sub-less token reaching a handler that does `findOne({ _id: req.user.sub })` matches the first row in Mongoose. Downstream code will also trust whatever `role` or `isAdmin` claim the signer included.\n\n**High:** tokens without `exp` are valid forever. Expiry is only enforced when the claim exists. There is no `maxAge` and no revocation seam, so a stolen or accidentally non-expiring token cannot be invalidated short of rotating the secret.\n\n**Medium:** uncaught throw on line 6. Every auth failure becomes a 500 with no `WWW-Authenticate`. With `NODE_ENV` unset, the Express default handler returns the stack trace, including file paths and the message \"secret or public key must be provided\" which advertises a missing secret.\n\n**Medium:** secret never validated at boot. Nothing refuses an empty or short secret. HS256 with a weak secret is offline-crackable from one captured token.\n\n**Low:** `header.replace('Bearer ', '')` does not validate the scheme. A bare token or `Basic xyz` is passed to verify. Not a bypass since the signature still has to check out, but lowercase `bearer` from RFC-compliant clients is wrongly rejected.\n\n**Not vulnerabilities here:** RS256-to-HS256 confusion is not reachable with a string secret on 8.x or 9.x. Duplicate Authorization headers are collapsed to the first by Node. `next()` is only called on success. Prototype pollution via `__proto__` claim keys does not affect `req.user` directly, only a downstream deep-merge, and the allow-list fix below removes it anyway.\n\nA hardened version that closes all of the file-local findings:\n\n```js\nconst jwt = require('jsonwebtoken');\n\nconst SECRET = process.env.JWT_SECRET;\nif (typeof SECRET !== 'string' || Buffer.byteLength(SECRET) < 32) {\n  throw new Error('JWT_SECRET must be set and at least 32 bytes');\n}\nconst VERIFY_OPTS = { algorithms: ['HS256'], issuer: 'myapp-auth', audience: 'myapp-api', maxAge: '15m' };\n\nfunction requireAuth(req, res, next) {\n  const m = /^Bearer\\s+(\\S+)$/i.exec(req.headers.authorization || '');\n  if (!m) return res.status(401).set('WWW-Authenticate', 'Bearer').end();\n\n  let payload;\n  try { payload = jwt.verify(m[1], SECRET, VERIFY_OPTS); }\n  catch { return res.status(401).set('WWW-Authenticate', 'Bearer error=\"invalid_token\"').end(); }\n\n  if (typeof payload !== 'object' || payload === null) return res.status(401).end();\n  const { sub, role, jti, token_use } = payload;\n  if (token_use !== 'access' || typeof sub !== 'string' || !sub) return res.status(401).end();\n\n  req.user = Object.freeze({ id: sub, role: typeof role === 'string' ? role : 'user', jti });\n  next();\n}\n\nmodule.exports = { requireAuth };\n```\n\nTwo things the rest of the app has to own: the issuer must stamp `iss`, `aud`, `exp`, `jti`, and `token_use` on every token it signs, and anything consequential like admin checks should be re-derived from the database using `req.user.id` rather than read off the token. Pin jsonwebtoken to 9.x or later in `package.json` when you add it."
+              },
+              {
+                "name": "no-swarm-spawn",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Agent called 3x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-not-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 1,
+        "passRate": 1,
+        "scoreWithout": 0.3333333333333333,
+        "passRateWithout": 0,
+        "delta": 0.6666666666666667
+      }
+    },
+    {
+      "name": "trivial-diff-declines",
+      "dir": "evals-ci/review-swarm/trivial-diff-declines",
+      "source": "mixed",
+      "promptMarkdown": "I renamed `userId` to `accountId` across `src/users.js`, `src/orders.js`, and `src/session.js` in our Node API, and fixed a typo in a comment while I was in there (`recieve` -> `receive`). Nothing's committed yet. Can you run review-swarm on this before I open the PR?",
+      "runsPerCase": 3,
+      "timeoutSeconds": 900,
+      "maxTurns": 40,
+      "graders": [
+        {
+          "name": "agent-spawn-limit",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "min": 0,
+            "max": 2
+          }
+        },
+        {
+          "name": "declines-with-alternative",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the response treats this diff (a variable rename plus a comment typo fix across three files) as too small for the six-specialist swarm, does not run that swarm, and either gives a single-pass review itself or points to one (a single read or `/code-review`) as the next step.\n\nFAIL if it runs the six-lens swarm on this diff, or declines without reviewing the diff and without offering any way to review it.",
+          "config": {
+            "criteria": "PASS if the response treats this diff (a variable rename plus a comment typo fix across three files) as too small for the six-specialist swarm, does not run that swarm, and either gives a single-pass review itself or points to one (a single read or `/code-review`) as the next step.\n\nFAIL if it runs the six-lens swarm on this diff, or declines without reviewing the diff and without offering any way to review it.",
+            "focus": "last_message"
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 6,
+            "costUsd": 0.45843,
+            "judgeCostUsd": 0.0036179999999999962,
+            "durationSeconds": 44,
+            "startedAt": "2026-10-19T06:39:43.429Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-Kp9u8q/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "agent-spawn-limit",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..2)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "declines-with-alternative",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "Review complete. The diff is clean, and nothing blocks the PR.\n\n**What I checked**\n\n- Each `userId` parameter is renamed consistently within its own function body, so no half-renamed identifiers remain.\n- No `userId` references remain anywhere in the tracked tree. The repo tracks only the three changed files, so there are no callers to break.\n- The rename touches positional parameters only. Callers pass arguments by position, so even external callers would be unaffected.\n- The SQL column names and the session map key are untouched, which is correct for a parameter rename.\n- The comment typo fix is correct.\n\n**Blockers:** none.\n**Should-fix:** none.\n**Nits:** none.\n\n**One pre-existing note, not introduced by this diff:** none of the three files import or require `db` or `sessions`. That is fine if they are runtime globals. If they are not, every call would throw a reference error, but that was true before the rename too.\n\n**What's solid:** the rename is complete, mechanical, and behavior-preserving. Commit it as-is."
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 6,
+            "costUsd": 0.45290024999999995,
+            "judgeCostUsd": 0.0038879999999999956,
+            "durationSeconds": 39,
+            "startedAt": "2026-10-19T06:40:27.600Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-nOrqoj/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "agent-spawn-limit",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..2)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "declines-with-alternative",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "The diff is clean. Nothing blocks the PR.\n\nI ran a single-pass read instead of the full swarm because review-swarm's own rules exclude renames and one-liners from the parallel specialists. Here is what I checked:\n\n- **Rename is complete.** No `userId` remains anywhere in the repo, so there are no stale references in callers, tests, or docs. The repo tracks only the three files you touched, and nothing inside it calls these functions.\n- **Behaviour is unchanged.** Each hunk renames a positional parameter and its single use inside the function body. JavaScript callers pass by position, so external callers are unaffected.\n- **Typo fix is correct.** The comment in `src/users.js:2` now reads \"receive\".\n- **Database columns are untouched.** The query in `src/orders.js:2` still filters on `user_id`, and the one in `src/users.js:3` still uses `id`. That is the right call for a code-level rename, but it means the parameter name and the column name no longer match in orders. If the schema is also moving to account terminology, that would be a separate migration.\n\nCorrectness, security, data, architecture, simplicity, tests: no issues in this diff."
+              }
+            ]
+          }
+        ],
+        "without": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 5,
+            "costUsd": 0.34338825,
+            "judgeCostUsd": 0.004139999999999998,
+            "durationSeconds": 31,
+            "startedAt": "2026-10-19T06:41:07.049Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-P98KC0/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "agent-spawn-limit",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..2)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "declines-with-alternative",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I didn't run review-swarm, for two reasons. It isn't installed as a skill in this session, and the change is too small to need a multi-agent review anyway. I reviewed the diff directly instead.\n\n**Verdict: safe to open the PR.** The diff is seven changed lines across three files, and every change is mechanical.\n\n- **The rename is complete.** No `userId` remains anywhere in the repo, and all three parameters are used consistently inside their functions.\n- **No callers to break.** The three functions are only exported, never called within this repo, so the parameter rename is invisible to anything outside these files.\n- **Behavior is unchanged.** The SQL columns stay `user_id` and `id`, which is correct, since only the JavaScript parameter name changed, not the schema.\n- **The comment fix** in `src/users.js` is just the spelling correction you described.\n\nOne thing worth deciding before you merge, not a blocker: the SQL still queries `orders.user_id` while the code now calls it an account ID. If \"account\" and \"user\" are meant to become distinct concepts, the column name will drift from the code. If it's purely a naming cleanup, that's fine as is.\n\nIf you want a heavier pass anyway, `/code-review` and `/security-review` are available here, but for a diff this size they'd return the same conclusion."
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 4,
+            "costUsd": 0.32112074999999995,
+            "judgeCostUsd": 0.012351999999999995,
+            "durationSeconds": 24,
+            "startedAt": "2026-10-19T06:41:37.621Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-1POHcw/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "agent-spawn-limit",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..2)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "declines-with-alternative",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "There is no `review-swarm` skill or command in this environment, so I couldn't run it. The diff is 7 lines across three files, so I reviewed it directly instead.\n\n**Verdict: safe to open the PR.** The change is a pure parameter rename plus a comment typo fix, with no behavior change.\n\nWhat I checked:\n\n- **Rename is complete.** No remaining `userId` references anywhere in the repo, and every renamed parameter is used consistently within its function body.\n- **No caller impact.** Only function parameter names changed, not exported function names, so the three exports are unaffected. There are no in-repo callers of these functions anyway.\n- **SQL untouched.** The column names in the queries still read `user_id` and `id`, which is correct since the database schema didn't change. Only the JS variable binding was renamed.\n- **Typo fix is correct.** The comment now reads `receive`.\n\nOne thing worth a thought before the PR: `accountId` now feeds a query against `orders.user_id` and `users.id`. If \"account\" and \"user\" are meant to become distinct concepts later, the naming mismatch between the parameter and the column could confuse readers. If they're synonyms, this is fine as is.\n\nIf review-swarm is a skill from a plugin you expected to be installed, it isn't available in this session. Running `/code-review` would be the nearest equivalent here, though for a diff this size it would not find more than the above."
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 1,
+        "passRate": 1,
+        "scoreWithout": 1,
+        "passRateWithout": 1,
+        "delta": 0
+      }
+    }
+  ],
+  "aggregates": {
+    "casesTotal": 3,
+    "casesPassed": 2,
+    "overallScore": 0.6666666666666666,
+    "overallPassRate": 0.6666666666666666,
+    "meanDelta": 0.33333333333333337
+  }
+}
