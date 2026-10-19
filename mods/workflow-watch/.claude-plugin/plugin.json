@@ -1,6 +1,6 @@
 {
   "name": "workflow-watch",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Live session and Workflow tracker: main-thread turns, skills fired, spawned subagents, git commits and workflow stages with models, effort, tokens and timeline waterfall in a pane, a band above the prompt and the status line.",
   "types": "./types/index.d.ts",
   "author": {

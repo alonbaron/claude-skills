@@ -2,7 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 
 import type { Stage, Watch } from '../types'
-import { EMPTY, applyEntries, clip, elapsed, mergeStages, parseLines, parseSession, phaseRuns, phaseTitle, readMeta, readMetaInfo, readTranscript, report, running, stageDetail, stageResult, stageTitle, state, statusLine, tally, timelineBar, tone, withFacts } from './journal'
+import { EMPTY, applyEntries, clip, elapsed, mergeStages, parseLines, parseSession, phaseRuns, phaseTitle, readMeta, readMetaInfo, readTranscript, report, running, stageDetail, stageResult, stageTitle, state, statusLine, tally, timelineBar, tone, who, withFacts } from './journal'
 
 const PANE = 'workflow-watch'
 const TITLE = 'Tracker'
@@ -73,6 +73,13 @@ async function findTarget($: Engine): Promise<Target | null> {
 }
 
 const VALID_ID = /^[a-zA-Z0-9_-]+$/
+
+/** The theme color for each tally word; a zero count is drawn subtle whatever its word. */
+const TALLY_TONE: Record<string, string> = { done: 'success', disputed: 'warning', failed: 'error', running: 'warning' }
+
+/** A timeline bar as its track and span pieces, so the track can be drawn quieter than the span. */
+const barParts = (bar: string): Array<[string, boolean]> =>
+  (bar.match(/░+|[█▓]+/g) ?? []).map(part => [part, part[0] !== '░'])
 
 /**
  * Antigravity writes a compact transcript.jsonl (long tool args truncated) and an untruncated
@@ -243,11 +250,10 @@ export const register: Register = on => {
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
     const { Box, Text } = $.ui.resolve(e)
     const w = await read($, watch)
-    const width = Math.max(40, e.props.bodyColumns ?? e.viewport?.columns ?? 80)
     if (!w.run || w.stages.length === 0) {
       return (
         <Box flexDirection="column" paddingX={1}>
-          <Text dimColor>Waiting for session activity. Turns, skills, subagents, commits and Workflow stages appear here live.</Text>
+          <Text color="subtle">Waiting for session activity. Turns, skills, subagents, commits and Workflow stages appear here live.</Text>
         </Box>
       )
     }
@@ -255,42 +261,59 @@ export const register: Register = on => {
     const t0 = w.stages.reduce((m, s) => Math.min(m, s.startedAt), Infinity)
     const t1 = w.stages.reduce((m, s) => Math.max(m, s.endedAt ?? w.now), -Infinity)
     const total = Math.max(1, t1 - t0)
-    const room = width - 2
     // Top waterfall timeline (when 2+ items exist), then one block per stage in run order with phase dividers.
     return (
       <Box flexDirection="column" paddingX={1}>
-        <Text bold wrap="truncate-end">
-          {clip(`${w.run} · ${tally(w)} · ${(tokens / 1000).toFixed(1)}k output tokens`, room)}
+        <Text wrap="truncate-end">
+          <Text bold color="claude">
+            {w.run}
+          </Text>
+          {tally(w)
+            .split(' · ')
+            .map(part => (
+              <Text key={part} color={/^0 /.test(part) ? 'subtle' : TALLY_TONE[part.split(' ')[1] ?? ''] ?? 'text'}>{` · ${part}`}</Text>
+            ))}
+          <Text color="subtle">{` · ${(tokens / 1000).toFixed(1)}k output tokens`}</Text>
         </Text>
         {w.stages.length > 1 && (
           <Box flexDirection="column" marginTop={1}>
-            <Text bold dimColor wrap="truncate-end">
-              {clip(`── Timeline · ${elapsed(total)} elapsed`, room)}
+            <Text bold color="suggestion" wrap="truncate-end">
+              {`── Timeline · ${elapsed(total)} elapsed`}
             </Text>
             {w.stages.slice(-10).map(s => (
               <Text key={`tl-${s.key}`} wrap="truncate-end">
-                <Text color={tone(s)}>{timelineBar(s, t0, total, 14)}</Text>
-                {clip(`  ${s.label} (${elapsed((s.endedAt ?? w.now) - s.startedAt)})`, room - 14)}
+                {barParts(timelineBar(s, t0, total, 14)).map(([part, isSpan], j) => (
+                  <Text key={j} color={isSpan ? tone(s) : 'subtle'}>
+                    {part}
+                  </Text>
+                ))}
+                {`  ${s.label} `}
+                <Text color="subtle">{`(${elapsed((s.endedAt ?? w.now) - s.startedAt)})`}</Text>
               </Text>
             ))}
           </Box>
         )}
         {phaseRuns(w.stages).map((g, i) => (
           <Box key={`phase-${i}`} flexDirection="column" marginTop={1}>
-            <Text bold dimColor wrap="truncate-end">
-              {clip(`── ${phaseTitle(g)}`, room)}
+            <Text bold color="suggestion" wrap="truncate-end">
+              {`── ${phaseTitle(g)}`}
             </Text>
-            {g.stages.map(s => (
-              <Box key={s.key} flexDirection="column">
+            {g.stages.map((s, j) => (
+              <Box key={s.key} flexDirection="column" marginTop={j === 0 ? 0 : 1}>
                 <Text wrap="truncate-end">
                   <Text color={tone(s)} bold>
                     {state(s)}
                   </Text>
-                  {clip(`  ${stageTitle(s)}`, room - state(s).length)}
+                  <Text bold>{`  ${s.label}`}</Text>
+                  <Text color="permission">{`  ${who(s)}`}</Text>
                 </Text>
-                <Text wrap="truncate-end">{clip(`    ${stageResult(s)}`, room)}</Text>
-                <Text dimColor wrap="truncate-end">
-                  {clip(`    ${stageDetail(s, w.now)}`, room)}
+                {s.endedAt === null ? (
+                  <Text color="subtle" italic wrap="truncate-end">{`    ${stageResult(s)}`}</Text>
+                ) : (
+                  <Text wrap="truncate-end">{`    ${stageResult(s)}`}</Text>
+                )}
+                <Text color="subtle" wrap="truncate-end">
+                  {`    ${stageDetail(s, w.now)}`}
                 </Text>
               </Box>
             ))}
@@ -306,12 +329,11 @@ export const register: Register = on => {
     const isQuiet = e.props.hasSurvey || !w.run || live.length === 0
     if (isQuiet) return next(e)
     const { Box, Text } = $.ui.resolve(e)
-    const width = Math.max(40, e.props.bodyColumns ?? 80)
     // A running stage has no result yet, so its block is the head line and the live details under it.
     return (
       <Box flexDirection="column">
-        <Text bold wrap="truncate-end">
-          {clip(`${w.run}: ${tally(w)}`, width)}
+        <Text bold color="claude" wrap="truncate-end">
+          {`${w.run}: ${tally(w)}`}
         </Text>
         {live.slice(0, 4).map(s => (
           <Box key={s.key} flexDirection="column">
@@ -319,10 +341,10 @@ export const register: Register = on => {
               <Text color={tone(s)} bold>
                 {state(s)}
               </Text>
-              {clip(`  ${stageTitle(s)}`, width - state(s).length)}
+              {`  ${stageTitle(s)}`}
             </Text>
             <Text dimColor wrap="truncate-end">
-              {clip(`    ${stageDetail(s, w.now)}`, width)}
+              {`    ${stageDetail(s, w.now)}`}
             </Text>
           </Box>
         ))}
