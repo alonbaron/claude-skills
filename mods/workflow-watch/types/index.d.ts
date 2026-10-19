@@ -1,7 +1,11 @@
+export type StageKind = 'stage' | 'turn' | 'skill' | 'agent' | 'commit'
+
 export type Stage = {
-  /** The journal's key for this agent() call. */
+  /** The kind of item in the feed; defaults to 'stage' for Workflow stages. */
+  kind?: StageKind
+  /** The journal's or session's key for this item. */
   key: string
-  /** The subagent's loop id; its transcript is agent-<id>.jsonl beside the journal. */
+  /** The subagent's loop id; its transcript is agent-<id>.jsonl beside the journal or under subagents/. */
   agentId: string | null
   label: string
   phase: string
