@@ -633,3 +633,74 @@ neither JSON file contains the string `anthropic-skills`.
 Re-run list after P5: none. Valid: 120 of 120 (architect 20, ask-the-council 20, ponytail 20, prompt-generator
 20, review-swarm 20, up-to-date 20). Mixed caps: architect, ask-the-council (except yes-09) were measured at
 6 turns / 180 s (section 14); ask-the-council-yes-09 and the other four skills at 3 turns / 90 s.
+
+## 20. review-swarm security hand-off after the boundary fix (2026-10-19)
+
+40bb8bd rewrote review-swarm's security-only boundary: from "hand off to /security-review" to "don't swarm:
+tell the user /security-review is the tool for that, and run it or recommend it". One case re-measured on CI.
+
+| field | value |
+|---|---|
+| run | 39206713941, `workflow_dispatch` on `fix/review-swarm-security-handoff` at 40bb8bd |
+| command | `gh workflow run evals.yml --ref fix/review-swarm-security-handoff -f only="review-swarm/security-alone-hands-off" -f model=claude-fable-5-1` |
+| model, judge | claude-fable-5-1, sonnet; `--runs 2`, `--threshold 0.7` |
+| CLI | 2.1.303 |
+| started | 2026-10-19T05:56:47Z |
+| job | conclusion `success` |
+| summary | `valid 1 of 1`, `re-run: none`, `cost $7.18`; runner `casesPassed` 1 of 1 |
+
+| case | with | without | baseline (38727606834) with | without |
+|---|---|---|---|---|
+| review-swarm/security-alone-hands-off | 0.83 | 0.33 | 0.67 | 0.33 |
+
+| grader | with | without |
+|---|---|---|
+| hands-off-to-security-review | FAIL PASS | FAIL FAIL |
+| no-swarm-spawn | PASS PASS | FAIL FAIL |
+| skill-not-fired | PASS PASS | PASS PASS |
+
+with#0 still fails the hand-off (judge votes FAIL FAIL FAIL): it reviewed `src/middleware/auth.js` in one pass
+without naming `/security-review`. with#1 names it. The suite moves to 18 of 19 at 0.7 once 40bb8bd is on
+main; hands-off-after-verdict (0.67, section 10) is the one case still under.
+
+## 21. ask-the-council after the next-step fix (2026-10-19)
+
+63be22b changed the skill's Output section: after the dissent, the verdict lists what to verify and closes with
+a **Next step** naming the hand-off by skill, or why none applies. Hand-offs gained the status-quo case (no
+`architect` update, name the reopening tripwire, `ponytail` sizes any remaining work). The 2026-10-14 failure
+(section 10): both with-plugin verdicts kept the current design and stopped at the dissent. All three council
+cases re-measured, since the Output change reaches every verdict.
+
+| field | value |
+|---|---|
+| run | 39207379482, `workflow_dispatch` on `release/v3.2.1` at 63be22b |
+| command | `gh workflow run evals.yml --ref release/v3.2.1 -f only="ask-the-council/hands-off-after-verdict ask-the-council/forces-divergence ask-the-council/declines-low-stakes" -f model=claude-fable-5-1` |
+| model, judge | claude-fable-5-1, sonnet; `--runs 2`, `--threshold 0.7` |
+| CLI | 2.1.303 |
+| started | 2026-10-19T06:14:58Z |
+| job | conclusion `success` |
+| summary | `valid 3 of 3`, `re-run: none`, `cost $24.76`; runner `casesPassed` 3 of 3 |
+
+| case | with | without | baseline (38520925302) with | without |
+|---|---|---|---|---|
+| ask-the-council/hands-off-after-verdict | 1.00 | 0.33 | 0.67 | 0.17 |
+| ask-the-council/forces-divergence | 0.90 | 0.70 | 0.70 | 0.70 |
+| ask-the-council/declines-low-stakes | 1.00 | 0.75 | 1.00 | 1.00 |
+
+Grader marks (`P` pass, `.` fail; without the plugin no panel is spawned, so advisors-opus-routing cannot pass there):
+
+| case | grader | with | without |
+|---|---|---|---|
+| hands-off-after-verdict | handoff-named | PP | .. |
+| hands-off-after-verdict | fact-verification-flagged | PP | PP |
+| hands-off-after-verdict | advisors-opus-routing | PP | .. |
+| forces-divergence | advisor-mandates-distinct | P. | P. |
+| forces-divergence | chairman-commits, -names-risk, -names-tradeoff | PP each | PP each |
+| declines-low-stakes | declines-panel-result | PP | P. |
+
+forces-divergence with#1 failed advisor-mandates-distinct on judge votes FAIL PASS FAIL. Neither run hit the
+900 s limit this time (2026-10-14 with#0 did).
+
+Suite after sections 20 and 21: 19 of 19 at 0.7. Skills changed since the 2026-10-14/15 runs: review-swarm
+(4badd15; same SKILL.md blob as 40bb8bd, measured in section 20) and ask-the-council (63be22b, this section).
+The other four skills are byte-identical to what sections 10-13 measured. Shipped as v3.2.1.

@@ -82,8 +82,11 @@ count if the lone dissent names the risk that actually decides it.
 ## Output
 
 Lead with the **recommendation** (one or two sentences). Then: the key split
-and the tradeoff that decides it, then any dissent worth keeping. Short — a
-brief, not a transcript.
+and the tradeoff that decides it, then any dissent worth keeping, then what
+to verify before acting. Close with **Next step**: the hand-off below that
+fits the verdict, by skill name, with the reason — or why none applies yet.
+A verdict without a next step leaves the user holding an opinion and no
+move. Short — a brief, not a transcript.
 
 ## Boundaries
 
@@ -105,6 +108,9 @@ brief, not a transcript.
 - Verdict chosen → `ponytail` the winning option down to its minimal build.
 - Verdict changes an architectural fact → `architect` updates
   `SOURCE_OF_TRUTH.md` before any code.
+- Verdict keeps the current design → no `architect` update, since no fact
+  changed; say so, and name the tripwire that would reopen it. If the
+  verdict still calls for work (hardening, an audit), `ponytail` sizes it.
 
 ## Done when
 
