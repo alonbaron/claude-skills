@@ -6,7 +6,7 @@
   <img alt="Claude Code plugin" src="https://img.shields.io/badge/Claude_Code-plugin-0891B2?style=flat-square&labelColor=0F1E33">&nbsp;
   <img alt="6 skills + 1 workflow" src="https://img.shields.io/badge/skills-6_+_1_workflow-4F46E5?style=flat-square&labelColor=0F1E33">&nbsp;
   <img alt="version" src="https://img.shields.io/badge/version-v3.2.0-7C3AED?style=flat-square&labelColor=0F1E33">&nbsp;
-  <a href="#-evals"><img alt="evals: 17/19 passing" src="https://img.shields.io/badge/evals-17%2F19_passing-D97706?style=flat-square&labelColor=0F1E33"></a>&nbsp;
+  <a href="#-evals"><img alt="evals: 18/19 passing" src="https://img.shields.io/badge/evals-18%2F19_passing-D97706?style=flat-square&labelColor=0F1E33"></a>&nbsp;
   <img alt="MIT license" src="https://img.shields.io/badge/license-MIT-059669?style=flat-square&labelColor=0F1E33">&nbsp;
   <a href="https://github.com/alonbaron"><img alt="by alonbaron" src="https://img.shields.io/badge/by-alonbaron-C026D3?style=flat-square&labelColor=0F1E33&logo=github&logoColor=white"></a>
 </p>
@@ -42,7 +42,7 @@ Most skill packs ask you to trust them. This one runs each skill through a [`cla
 | A feature spec from scratch: **architect** asks the few questions that matter and right-sizes the docs | **1.00** | 0.67 |
 | A branch that was never pushed: **up-to-date** says so and compares against `main` instead of faking a sync | **0.88** | 0.62 |
 
-17 of 19 cases pass at the 0.7 threshold. Two land at 0.67: ask-the-council's hand-off after a verdict, and review-swarm's security hand-off. The Evals section covers both. Across 120 trigger prompts, each skill fired on 75 to 100% of the runs meant for it and never on the ones meant for something else. Full table and method under [Evals](#-evals).
+18 of 19 cases pass at the 0.7 threshold. The one that doesn't is ask-the-council's hand-off after a verdict, at 0.67; the Evals section covers it. Across 120 trigger prompts, each skill fired on 75 to 100% of the runs meant for it and never on the ones meant for something else. Full table and method under [Evals](#-evals).
 
 <!-- GIF: a 20-second recording of review-swarm spawning its reviewers on a real diff goes here. -->
 
@@ -146,7 +146,7 @@ The picture above is one build-loop task on a throwaway Node repo, run on 2026-1
 claude plugin eval <absolute path to this repo> --runs 2 -j 4 --allow-tools Write Edit --scaffold --model claude-fable-5-1 --judge-model sonnet --no-publish --trust-plugin --threshold 0.7 --json
 ```
 
-`--runs 2`, with and without the plugin; 17 of 19 cases pass at 0.7. Every case was measured again for v3.2 on Fable 5.1 on the GitHub runner, 2026-10-14 and 2026-10-15. ponytail, ask-the-council and prompt-generator ran in run 38520925302 ($34.03 API-equivalent, 9 of 10 at 0.7). architect, review-swarm and up-to-date took three runs ($57.10 together, 8 of 9 at 0.7): 38523993370 hit the plan's session limit, and the eight cases it spoiled were run again in 38690586571 and 38727606834. Each run's summary is on the `eval-results` branch under `results/<run id>.txt`. Details in `evals/README.md`, per-case history in [`evals/history/STEP7.md`](evals/history/STEP7.md); the 2026-10-04 numbers are in [`STEP5.md`](evals/history/STEP5.md) and [`STEP6.md`](evals/history/STEP6.md):
+`--runs 2`, with and without the plugin; 18 of 19 cases pass at 0.7. Every case was measured again for v3.2 on Fable 5.1 on the GitHub runner, 2026-10-14 and 2026-10-15. ponytail, ask-the-council and prompt-generator ran in run 38520925302 ($34.03 API-equivalent, 9 of 10 at 0.7). architect, review-swarm and up-to-date took three runs ($57.10 together, 8 of 9 at 0.7): 38523993370 hit the plan's session limit, and the eight cases it spoiled were run again in 38690586571 and 38727606834. After a fix to review-swarm's boundary, its security hand-off case was run once more on 2026-10-19 in 39206713941 ($7.18). Each run's summary is on the `eval-results` branch under `results/<run id>.txt`. Details in `evals/README.md`, per-case history in [`evals/history/STEP7.md`](evals/history/STEP7.md); the 2026-10-04 numbers are in [`STEP5.md`](evals/history/STEP5.md) and [`STEP6.md`](evals/history/STEP6.md):
 
 | Skill | Cases | With plugin | Without | Model |
 |---|---|---|---|---|
@@ -154,14 +154,16 @@ claude plugin eval <absolute path to this repo> --runs 2 -j 4 --allow-tools Writ
 | ask-the-council | 3 | 1.00 (declines low stakes), 0.70 (forces divergence), **0.67** (hands off after verdict) | 1.00, 0.70, 0.17 | Fable 5.1 |
 | prompt-generator | 3 | 0.93 (coding-agent prompt), 1.00 (human prose boundary), 1.00 (whole-build scope check) | 0.71, 1.00, 0.67 | Fable 5.1 |
 | architect | 3 | 1.00 (audit), 1.00 (new feature), 1.00 (small fix) | 1.00, 0.67, 0.88 | Fable 5.1 |
-| review-swarm | 3 | 1.00 (ranked report), **0.67** (security hand-off), 1.00 (trivial diff) | 0.40, 0.33, 1.00 | Fable 5.1 |
+| review-swarm | 3 | 1.00 (ranked report), 0.83 (security hand-off), 1.00 (trivial diff) | 0.40, 0.33, 1.00 | Fable 5.1 |
 | up-to-date | 3 | 1.00 (dirty and behind), 0.88 (no upstream), 1.00 (no remote) | 0.70, 0.62, 1.00 | Fable 5.1 |
 
 architect, review-swarm and up-to-date run shell commands when they load, so their cases need a working bwrap sandbox; `.github/workflows/evals.yml` runs them on a GitHub runner with a `CLAUDE_CODE_OAUTH_TOKEN` secret, on Fable 5.1 by default (`workflow_dispatch` takes a model for a comparison run; the 2026-09-29 Opus 5.5 pass is in [`STEP5.md`](evals/history/STEP5.md)). Several cases score as well without the plugin; they guard boundaries (when a skill must stay quiet) rather than measure uplift.
 
 Three readings of the in-container run. pushback-on-abstraction scored 0.90 with the plugin and 0.50 without. Both with-plugin runs finished; one without-plugin run hit the case's 15-turn cap. On 2026-10-04 neither with-plugin run named the trigger for upgrading the cache, and this time one did. (The 2026-10-04 write-up said the with-plugin runs hit the turn cap there. They didn't: they finished in 8 and 7 turns, and the two that hit it were the runs without the plugin.) forces-divergence fell to 0.70 because one with-plugin run hit the 900 s limit before the chairman wrote anything a judge could grade. And on refuses-trust-boundary the ponytail skill didn't fire in either with-plugin run, same as on 2026-10-04, which is the boundary that case guards.
 
-Two cases sit under 0.7, both at 0.67. security-alone-hands-off scored 0.67 with the plugin and 0.33 without, the same as on 2026-10-04. The hand-off grader fails in all four runs: with the plugin, Fable reviews the file in one pass instead of naming `/security-review`. Since the miss shows up with or without the skill, the rubric stays as written and the number stands. hands-off-after-verdict dropped from 0.83 to 0.67 with the plugin (0.17 without). The grader that wants the next skill named failed in both with-plugin runs, and both replies opened by reporting that the memory directory was write-protected. Why that happened hasn't been checked.
+security-alone-hands-off scored 0.67 with the plugin and 0.33 without on 2026-10-15, the same as on 2026-10-04. In both with-plugin runs, Fable reviewed the file in one pass instead of naming `/security-review`. The skill used to say only "hand off to /security-review". It now says not to swarm, to tell the user `/security-review` is the tool for this, and to run or recommend it. The 2026-10-19 re-run scored 0.83 against 0.33. The hand-off grader passed in one of the two with-plugin runs, so the fix helps without settling it.
+
+One case sits under 0.7. hands-off-after-verdict dropped from 0.83 to 0.67 with the plugin (0.17 without). The grader that wants the next skill named failed in both with-plugin runs, and both replies opened by reporting that the memory directory was write-protected. Why that happened hasn't been checked.
 
 Two cases the session limit spoiled on 2026-10-04 now have clean numbers. real-diff-ranked-report scored 1.00 against 0.40: every grader passed in both with-plugin runs, and the runs without the plugin missed the ranked-report shape, the sonnet reviewers and the opus verifiers. no-remote-boundary scored 1.00 in both arms.
 
@@ -202,7 +204,7 @@ One catch worth knowing about humanizer: as of v2.9.1 the plugin puts `SKILL.md`
 - `scripts/tracker.mjs` draws a run as a feed of cards, one per stage, as in the picture above. Refute and fix dividers carry their round number. A stage that died before returning (a session limit, an API error) shows as `✗ no result` instead of running forever, and `--watch` stops once the last stage ends.
 - workflow-watch 0.2.0 draws the same blocks in its pane, band and status line. Stage times come from each stage's own transcript, so a run the mod finds already under way still shows how long every stage took.
 - The eval summary opens with `valid N of M` and a `re-run:` line. A case is INVALID when a limit, an auth failure or a lost judge call spoiled it, TRUNCATED when a run hit the case's own turn or time budget, and NOT RUN when a stopped run never reached it. The CI job takes an `only` input to re-run named cases, and each published summary records the CLI version.
-- Every behavioral case was measured again on Fable 5.1 for this release (17 of 19 pass at 0.7), and the 120 trigger queries were run again. The numbers are in the Evals section above.
+- Every behavioral case was measured again on Fable 5.1 for this release (17 of 19 passed at 0.7; 18 of 19 since the review-swarm boundary fix and its 2026-10-19 re-run), and the 120 trigger queries were run again. The numbers are in the Evals section above.
 
 ## ◢ What's new in v3.1
 

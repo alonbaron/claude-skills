@@ -633,3 +633,32 @@ neither JSON file contains the string `anthropic-skills`.
 Re-run list after P5: none. Valid: 120 of 120 (architect 20, ask-the-council 20, ponytail 20, prompt-generator
 20, review-swarm 20, up-to-date 20). Mixed caps: architect, ask-the-council (except yes-09) were measured at
 6 turns / 180 s (section 14); ask-the-council-yes-09 and the other four skills at 3 turns / 90 s.
+
+## 20. review-swarm security hand-off after the boundary fix (2026-10-19)
+
+40bb8bd rewrote review-swarm's security-only boundary: from "hand off to /security-review" to "don't swarm:
+tell the user /security-review is the tool for that, and run it or recommend it". One case re-measured on CI.
+
+| field | value |
+|---|---|
+| run | 39206713941, `workflow_dispatch` on `fix/review-swarm-security-handoff` at 40bb8bd |
+| command | `gh workflow run evals.yml --ref fix/review-swarm-security-handoff -f only="review-swarm/security-alone-hands-off" -f model=claude-fable-5-1` |
+| model, judge | claude-fable-5-1, sonnet; `--runs 2`, `--threshold 0.7` |
+| CLI | 2.1.303 |
+| started | 2026-10-19T05:56:47Z |
+| job | conclusion `success` |
+| summary | `valid 1 of 1`, `re-run: none`, `cost $7.18`; runner `casesPassed` 1 of 1 |
+
+| case | with | without | baseline (38727606834) with | without |
+|---|---|---|---|---|
+| review-swarm/security-alone-hands-off | 0.83 | 0.33 | 0.67 | 0.33 |
+
+| grader | with | without |
+|---|---|---|
+| hands-off-to-security-review | FAIL PASS | FAIL FAIL |
+| no-swarm-spawn | PASS PASS | FAIL FAIL |
+| skill-not-fired | PASS PASS | PASS PASS |
+
+with#0 still fails the hand-off (judge votes FAIL FAIL FAIL): it reviewed `src/middleware/auth.js` in one pass
+without naming `/security-review`. with#1 names it. The suite moves to 18 of 19 at 0.7 once 40bb8bd is on
+main; hands-off-after-verdict (0.67, section 10) is the one case still under.
