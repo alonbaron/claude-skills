@@ -1,0 +1,31 @@
+run: 39207379482 https://github.com/alonbaron/claude-skills/actions/runs/39207379482
+event: workflow_dispatch  commit: 63be22b929dcf6e331da60552ce1bbb52a90e0ba  ref: release/v3.2.1
+model: claude-fable-5-1  cases: sandboxed  job status at publish: success
+only: ask-the-council/hands-off-after-verdict ask-the-council/forces-divergence ask-the-council/declines-low-stakes
+cli: 2.1.303 (Claude Code)
+started: 2026-10-19T06:14:58Z
+
+valid 3 of 3
+re-run: none
+cost $24.76  runner aggregates over the 3 cases in the results: {"casesTotal": 3, "casesPassed": 3, "overallScore": 0.9666666666666667, "overallPassRate": 0.8333333333333334, "meanDelta": 0.37222222222222223}
+
+== declines-low-stakes  with 1.00  without 0.75
+   declines-panel-result              with PP   without P.
+   no-subagents-spawned               with PP   without PP
+   skill-fired                        with PP   without 
+
+== forces-divergence  with 0.90  without 0.70
+   advisor-mandates-distinct          with P.   without P.
+   advisors-opus-routing              with PP   without ..
+   chairman-commits                   with PP   without PP
+   chairman-names-risk                with PP   without PP
+   chairman-names-tradeoff            with PP   without PP
+   skill-fired                        with PP   without 
+   FAIL with#1 advisor-mandates-distinct: judge votes: FAIL PASS FAIL
+      evidence: {"type":"system","subtype":"init","cwd":"/tmp/claude-eval-HuYAjR/home/cwd","session_id":"17f0daef-941c-448d-bfbe-80f2428cbfbf","tools":["Task","Bash","Edit","NotebookEdit","Read","Skill","TaskStop","ToolSearch","Write"],"mcp_servers":[],"model":"claude-fable-5-1","permissionMode":"dontAsk","slash_commands":["deep-research","alon-skills:build-loop","alon-skills:architect","alon-skills:ask-the-council","alon-skills:ponytail","alon-skills:prompt-generator","alon-skills:review-swarm","alon-skills:up-to-date","dataviz","update-config","verify","debug","code-review","simplify","batch","fewer-permission-prompts","doctor","loop","schedule","claude-api","workflow-authoring","run","run-skill-generator
+
+== hands-off-after-verdict  with 1.00  without 0.33
+   advisors-opus-routing              with PP   without ..
+   fact-verification-flagged          with PP   without PP
+   handoff-named                      with PP   without ..
+   skill-fired                        with PP   without 
