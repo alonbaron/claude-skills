@@ -704,3 +704,50 @@ forces-divergence with#1 failed advisor-mandates-distinct on judge votes FAIL PA
 Suite after sections 20 and 21: 19 of 19 at 0.7. Skills changed since the 2026-10-14/15 runs: review-swarm
 (4badd15; same SKILL.md blob as 40bb8bd, measured in section 20) and ask-the-council (63be22b, this section).
 The other four skills are byte-identical to what sections 10-13 measured. Shipped as v3.2.1.
+
+## 22. review-swarm security naming in when_to_use (2026-10-19)
+
+838bb1c changed review-swarm's `when_to_use` security-only clause from "tell the user /security-review is
+the tool for that, and run it or recommend it" to "open the final answer by naming /security-review as the
+tool for that, then run it or recommend it; a one-pass review of your own may follow that line but never
+replaces it". The skill correctly does not fire on this case, so the body never loads; only the listing text
+can steer the reply, and section 20's with#0 did a one-pass review without the name. All three review-swarm
+cases re-measured, since `when_to_use` reaches triggering on each. The grader was not changed.
+
+| field | value |
+|---|---|
+| run A | 39210606875, `workflow_dispatch` on `fix/review-swarm-security-naming` at 838bb1c |
+| command A | `gh workflow run evals.yml --ref fix/review-swarm-security-naming -f only="review-swarm/security-alone-hands-off review-swarm/trivial-diff-declines review-swarm/real-diff-ranked-report" -f model=claude-fable-5-1` |
+| run B | 39245286149, same ref and commit, `-f only="review-swarm/real-diff-ranked-report"` |
+| model, judge | claude-fable-5-1, sonnet; `--runs 2`, `--threshold 0.7` |
+| CLI | 2.1.303 (both) |
+| started | A 2026-10-19T06:46:17Z, B 2026-10-19T11:56:13Z |
+| job | A `failure` (real-diff-ranked-report INVALID scored under 0.7), B `success` |
+| summary A | `valid 2 of 3`, `re-run: review-swarm/real-diff-ranked-report`, `cost $19.05` |
+| summary B | `valid 1 of 1`, `re-run: none`, `cost $22.14` |
+
+| case | with | without | run | baseline with | without |
+|---|---|---|---|---|---|
+| review-swarm/security-alone-hands-off | 1.00 | 0.33 | A | 0.83 (39206713941) | 0.33 |
+| review-swarm/trivial-diff-declines | 1.00 | 1.00 | A | 1.00 (38727606834) | 1.00 |
+| review-swarm/real-diff-ranked-report | 1.00 | 0.40 | B | 1.00 (38727606834) | 0.40 |
+
+Run A's real-diff-ranked-report was INVALID: both with-plugin runs exited 1 on "You've hit your session
+limit · resets 10:40am (UTC)". Run B re-ran it alone after the reset.
+
+Grader marks (`P` pass, `.` fail; blank where the arm has no mark):
+
+| case | grader | with | without |
+|---|---|---|---|
+| security-alone-hands-off | hands-off-to-security-review | PP | .. |
+| security-alone-hands-off | no-swarm-spawn | PP | .. |
+| security-alone-hands-off | skill-not-fired | PP | PP |
+| trivial-diff-declines | agent-spawn-limit | PP | PP |
+| trivial-diff-declines | declines-with-alternative | PP | PP |
+| real-diff-ranked-report | no-edit-calls, no-write-calls | PP each | PP each |
+| real-diff-ranked-report | ranked-report-shape, reviewers-sonnet, verifiers-opus | PP each | .. each |
+| real-diff-ranked-report | skill-fired | PP | |
+
+The hand-off grader now passes both with-plugin runs (one of two in section 20). No regression on the other
+two cases. Suite: 19 of 19 at 0.7. Merging main into the branch (c48c27b) left `skills/review-swarm/SKILL.md`
+at the measured blob 47b60f6. Shipped as v3.2.2.

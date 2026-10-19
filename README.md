@@ -5,7 +5,7 @@
 <p align="center">
   <img alt="Claude Code plugin" src="https://img.shields.io/badge/Claude_Code-plugin-0891B2?style=flat-square&labelColor=0F1E33">&nbsp;
   <img alt="6 skills + 1 workflow" src="https://img.shields.io/badge/skills-6_+_1_workflow-4F46E5?style=flat-square&labelColor=0F1E33">&nbsp;
-  <img alt="version" src="https://img.shields.io/badge/version-v3.2.1-7C3AED?style=flat-square&labelColor=0F1E33">&nbsp;
+  <img alt="version" src="https://img.shields.io/badge/version-v3.2.2-7C3AED?style=flat-square&labelColor=0F1E33">&nbsp;
   <a href="#-evals"><img alt="evals: 19/19 passing" src="https://img.shields.io/badge/evals-19%2F19_passing-059669?style=flat-square&labelColor=0F1E33"></a>&nbsp;
   <img alt="MIT license" src="https://img.shields.io/badge/license-MIT-059669?style=flat-square&labelColor=0F1E33">&nbsp;
   <a href="https://github.com/alonbaron"><img alt="by alonbaron" src="https://img.shields.io/badge/by-alonbaron-C026D3?style=flat-square&labelColor=0F1E33&logo=github&logoColor=white"></a>
@@ -147,7 +147,7 @@ The picture above is one build-loop task on a throwaway Node repo, run on 2026-1
 claude plugin eval <absolute path to this repo> --runs 2 -j 4 --allow-tools Write Edit --scaffold --model claude-fable-5-1 --judge-model sonnet --no-publish --trust-plugin --threshold 0.7 --json
 ```
 
-`--runs 2`, with and without the plugin; 19 of 19 cases pass at 0.7. Every case was measured again for v3.2 on Fable 5.1 on the GitHub runner, 2026-10-14 and 2026-10-15. ponytail, ask-the-council and prompt-generator ran in run 38520925302 ($34.03 API-equivalent, 9 of 10 at 0.7). architect, review-swarm and up-to-date took three runs ($57.10 together, 8 of 9 at 0.7): 38523993370 hit the plan's session limit, and the eight cases it spoiled were run again in 38690586571 and 38727606834. v3.2.1 changed two skills and re-measured them on 2026-10-19: review-swarm's security hand-off in 39206713941 ($7.18), and all three ask-the-council cases in 39207379482 ($24.76). The other four skills are unchanged since those runs. Each run's summary is on the `eval-results` branch under `results/<run id>.txt`. Details in `evals/README.md`, per-case history in [`evals/history/STEP7.md`](evals/history/STEP7.md); the 2026-10-04 numbers are in [`STEP5.md`](evals/history/STEP5.md) and [`STEP6.md`](evals/history/STEP6.md):
+`--runs 2`, with and without the plugin; 19 of 19 cases pass at 0.7. Every case was measured again for v3.2 on Fable 5.1 on the GitHub runner, 2026-10-14 and 2026-10-15. ponytail, ask-the-council and prompt-generator ran in run 38520925302 ($34.03 API-equivalent, 9 of 10 at 0.7). architect, review-swarm and up-to-date took three runs ($57.10 together, 8 of 9 at 0.7): 38523993370 hit the plan's session limit, and the eight cases it spoiled were run again in 38690586571 and 38727606834. v3.2.1 changed two skills and re-measured them on 2026-10-19: review-swarm's security hand-off in 39206713941 ($7.18), and all three ask-the-council cases in 39207379482 ($24.76). v3.2.2 changed review-swarm's description again and re-ran all three of its cases on 2026-10-19, since the description steers triggering on every one: 39210606875 ($19.05) measured the security hand-off and the trivial diff, and 39245286149 ($22.14) re-ran the ranked report after the first run hit the plan's session limit on it. The other four skills are unchanged since those runs. Each run's summary is on the `eval-results` branch under `results/<run id>.txt`. Details in `evals/README.md`, per-case history in [`evals/history/STEP7.md`](evals/history/STEP7.md); the 2026-10-04 numbers are in [`STEP5.md`](evals/history/STEP5.md) and [`STEP6.md`](evals/history/STEP6.md):
 
 | Skill | Cases | With plugin | Without | Model |
 |---|---|---|---|---|
@@ -155,14 +155,14 @@ claude plugin eval <absolute path to this repo> --runs 2 -j 4 --allow-tools Writ
 | ask-the-council | 3 | 1.00 (declines low stakes), 0.90 (forces divergence), 1.00 (hands off after verdict) | 0.75, 0.70, 0.33 | Fable 5.1 |
 | prompt-generator | 3 | 0.93 (coding-agent prompt), 1.00 (human prose boundary), 1.00 (whole-build scope check) | 0.71, 1.00, 0.67 | Fable 5.1 |
 | architect | 3 | 1.00 (audit), 1.00 (new feature), 1.00 (small fix) | 1.00, 0.67, 0.88 | Fable 5.1 |
-| review-swarm | 3 | 1.00 (ranked report), 0.83 (security hand-off), 1.00 (trivial diff) | 0.40, 0.33, 1.00 | Fable 5.1 |
+| review-swarm | 3 | 1.00 (ranked report), 1.00 (security hand-off), 1.00 (trivial diff) | 0.40, 0.33, 1.00 | Fable 5.1 |
 | up-to-date | 3 | 1.00 (dirty and behind), 0.88 (no upstream), 1.00 (no remote) | 0.70, 0.62, 1.00 | Fable 5.1 |
 
 architect, review-swarm and up-to-date run shell commands when they load, so their cases need a working bwrap sandbox; `.github/workflows/evals.yml` runs them on a GitHub runner with a `CLAUDE_CODE_OAUTH_TOKEN` secret, on Fable 5.1 by default (`workflow_dispatch` takes a model for a comparison run; the 2026-09-29 Opus 5.5 pass is in [`STEP5.md`](evals/history/STEP5.md)). Several cases score as well without the plugin; they guard boundaries (when a skill must stay quiet) rather than measure uplift.
 
 Three readings of the in-container run. pushback-on-abstraction scored 0.90 with the plugin and 0.50 without. Both with-plugin runs finished; one without-plugin run hit the case's 15-turn cap. On 2026-10-04 neither with-plugin run named the trigger for upgrading the cache, and this time one did. (The 2026-10-04 write-up said the with-plugin runs hit the turn cap there. They didn't: they finished in 8 and 7 turns, and the two that hit it were the runs without the plugin.) forces-divergence fell to 0.70 because one with-plugin run hit the 900 s limit before the chairman wrote anything a judge could grade; the v3.2.1 re-run scored 0.90. And on refuses-trust-boundary the ponytail skill didn't fire in either with-plugin run, same as on 2026-10-04, which is the boundary that case guards.
 
-security-alone-hands-off scored 0.67 with the plugin and 0.33 without on 2026-10-15, the same as on 2026-10-04. In both with-plugin runs, Fable reviewed the file in one pass instead of naming `/security-review`. The skill used to say only "hand off to /security-review". It now says not to swarm, to tell the user `/security-review` is the tool for this, and to run or recommend it. The 2026-10-19 re-run scored 0.83 against 0.33. The hand-off grader passed in one of the two with-plugin runs, so the fix helps without settling it.
+security-alone-hands-off scored 0.67 with the plugin and 0.33 without on 2026-10-15, the same as on 2026-10-04. In both with-plugin runs, Fable reviewed the file in one pass instead of naming `/security-review`. The skill used to say only "hand off to /security-review". It now says not to swarm, to tell the user `/security-review` is the tool for this, and to run or recommend it. The 2026-10-19 re-run scored 0.83 against 0.33. The hand-off grader passed in one of the two with-plugin runs, so the fix helped without settling it. In the run that failed, Fable reviewed `src/middleware/auth.js` in one pass and never named the tool. The skill doesn't fire on this ask, so its body never loads and only the description can steer the answer, and the description never said where the name goes. v3.2.2 says it: the answer opens by naming `/security-review`, and a one-pass review may follow that line but never replaces it. The re-run scored 1.00 against 0.33, with the hand-off grader passing in both with-plugin runs.
 
 hands-off-after-verdict dropped from 0.83 to 0.67 with the plugin (0.17 without) on 2026-10-14. Both with-plugin verdicts stopped without naming a next step. The skill's output spec ended at the dissent, so the chairman never reached the hand-offs, and both verdicts kept the current design, a case the hand-offs didn't cover. v3.2.1 closes every verdict with a named next step and covers that case. The re-run scored 1.00 against 0.33, with the hand-off grader passing both runs.
 
@@ -198,6 +198,11 @@ Not shipped here and not mine. Two third-party skills the hand-offs above are wr
 One catch worth knowing about humanizer: as of v2.9.1 the plugin puts `SKILL.md` at its root instead of `skills/humanizer/SKILL.md`. Claude Code installs it, reports it enabled, and never loads it. Copy `SKILL.md` out of `~/.claude/plugins/cache/humanizer/humanizer/<version>/` into `~/.claude/skills/humanizer/` and it works.
 
 ---
+
+## ◢ What's new in v3.2.2
+
+- review-swarm: when security is the whole ask, the answer now opens by naming `/security-review`. Any one-pass review of its own comes after that line, not instead of it. security-alone-hands-off went from 0.83 to 1.00, and the hand-off grader passed in both with-plugin runs instead of one (run 39210606875).
+- The other two review-swarm cases were re-run because the description affects triggering on all of them. Both held at 1.00 (runs 39210606875 and 39245286149).
 
 ## ◢ What's new in v3.2.1
 
