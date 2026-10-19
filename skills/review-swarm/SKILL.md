@@ -14,8 +14,10 @@ when_to_use: >-
   diff (docs, rename, one-liner) — a single-pass read or plain /code-review
   covers it; if named on one anyway, do that read and spawn nothing. Not when the ask is to fix rather than review — implement
   first, then swarm the result. When security is the whole ask, don't
-  swarm: tell the user /security-review is the tool for that, and run it or
-  recommend it. Not when /code-review is named explicitly.
+  swarm: open the final answer by naming /security-review as the tool for
+  that, then run it or recommend it; a one-pass review of your own may
+  follow that line but never replaces it. Not when /code-review is named
+  explicitly.
 argument-hint: "[optional: 'staged' | 'branch' | a path]"
 effort: max
 allowed-tools: Bash(git status *) Bash(git diff *) Bash(git merge-base *) Bash(git log *)
