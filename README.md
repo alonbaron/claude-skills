@@ -14,7 +14,7 @@
 <p align="center">
   <b>Six Claude Code skills and one unattended build loop, tuned to one engineering style: model-first, failure-path-aware, YAGNI.</b><br>
   <sub>Every skill is measured with and without the plugin, so the uplift is a number, not a promise.</sub><br>
-  <sub>One install. Usable in the Claude Code CLI and the VS Code / JetBrains extensions.</sub>
+  <sub>One install. Usable in the Claude Code CLI and the VS Code extension.</sub>
 </p>
 
 ---
