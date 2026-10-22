@@ -16,7 +16,7 @@
     {
       "name": "workflow-watch",
       "source": "./mods/workflow-watch",
-      "description": "Mod: a live pane, band, status line and toasts following the session's running Workflow, with each stage's model, effort, tokens and result.",
+      "description": "Mod: a live side pane following the session and its running Workflow, with each item's model, effort, tokens and result.",
       "category": "productivity"
     }
   ]

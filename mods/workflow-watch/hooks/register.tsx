@@ -1,12 +1,15 @@
 import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 
-import type { Stage, Watch } from '../types'
-import { EMPTY, applyEntries, clip, elapsed, mergeStages, parseLines, parseSession, phaseRuns, phaseTitle, readMeta, readMetaInfo, readTranscript, report, running, stageDetail, stageResult, stageTitle, state, statusLine, tally, timelineBar, tone, who, withFacts } from './journal'
+import type { Stage, Theme, Watch } from '../types'
+import { KIND_FILL, PANE_BG, headerCard, phaseChip, stageCard, timelineCard } from './cards'
+import { EMPTY, SLIM, applyEntries, elapsed, mergeStages, parseLines, parseSession, phaseRuns, phaseTitle, readMeta, readMetaInfo, readTranscript, report, running, stageDetail, stageResult, state, tally, timelineBar, tone, who, withFacts } from './journal'
 
 const PANE = 'workflow-watch'
 const TITLE = 'Tracker'
 const watch = atom({ plugin: 'workflow-watch', key: 'watch' } as const, EMPTY)
+const theme = atom({ plugin: 'workflow-watch', key: 'theme' } as const, 'dark' as Theme)
+const isTimelineOpen = atom({ plugin: 'workflow-watch', key: 'isTimelineOpen' } as const, true)
 
 type Engine = Parameters<Parameters<Register>[0]>[2] extends (...a: infer A) => unknown ? A[0] : never
 type Listing = Awaited<ReturnType<Engine['fs']['list']>>
@@ -77,6 +80,9 @@ const VALID_ID = /^[a-zA-Z0-9_-]+$/
 /** The theme color for each tally word; a zero count is drawn subtle whatever its word. */
 const TALLY_TONE: Record<string, string> = { done: 'success', disputed: 'warning', failed: 'error', running: 'warning' }
 
+const INK = '#111111'
+const fill = (s: Stage | undefined): string => KIND_FILL[s?.kind ?? 'stage']
+
 /** A timeline bar as its track and span pieces, so the track can be drawn quieter than the span. */
 const barParts = (bar: string): Array<[string, boolean]> =>
   (bar.match(/░+|[█▓]+/g) ?? []).map(part => [part, part[0] !== '░'])
@@ -94,7 +100,49 @@ async function readTranscriptText($: Engine, path: string): Promise<string> {
       /* over the read limit: fall back to the compact transcript */
     }
   }
-  return $.fs.read(path)
+  const { size } = await $.fs.stat(path)
+  return size > READ_LIMIT ? readSlimmed($, path, size) : $.fs.read(path)
+}
+
+/** What one $.fs.read copies at most: the engine rejects a larger file, and caps a process's stdout the same. */
+const READ_LIMIT = 4 * 1024 * 1024
+
+/** Each slimmed log's last result by path until its size changes; a failure (null) too, so it isn't respawned every tick. */
+const slimmed = new Map<string, { size: number; text: string | null }>()
+
+// The log path and the SLIM patterns reach the child as environment variables, never spliced into its script.
+const POWERSHELL_SCRIPT = [
+  "$ErrorActionPreference='Stop'",
+  '[Console]::OutputEncoding=[Text.Encoding]::UTF8',
+  '$t=[IO.File]::ReadAllText($env:WW_LOG)',
+  "$t=[regex]::Replace($t,$env:WW_META,'',[Text.RegularExpressions.RegexOptions]::Multiline)",
+  `$t=[regex]::Replace($t,$env:WW_IMAGE,'"data":""')`,
+  `[Console]::Out.Write([regex]::Replace($t,$env:WW_LONG,'"$1..."'))`,
+].join('; ')
+const PERL_SCRIPT = 's/$ENV{WW_META}//gm; s/$ENV{WW_IMAGE}/"data":""/g; s/$ENV{WW_LONG}/"$1..."/g'
+
+/**
+ * A session log over the read limit, read through the SLIM filter (journal.ts): the engine's bookkeeping lines,
+ * pasted images' base64 and the tails of long strings go, every line stays valid JSON, and a 10 MiB log comes to
+ * about 1 MiB. Windows PowerShell by its full path on Windows, perl elsewhere; rerun only when the file's size changed.
+ */
+async function readSlimmed($: Engine, path: string, size: number): Promise<string> {
+  const known = slimmed.get(path)
+  if (known?.size === size) {
+    if (known.text === null) throw new Error('slimmed read failed at this size')
+    return known.text
+  }
+  const systemRoot = await $.env.get('SystemRoot')
+  const argv = systemRoot
+    ? [`${systemRoot}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe`, '-NoProfile', '-NonInteractive', '-Command', POWERSHELL_SCRIPT]
+    : ['perl', '-0777', '-pe', PERL_SCRIPT, path]
+  const env = { WW_LOG: path, WW_META: SLIM.meta, WW_IMAGE: SLIM.image, WW_LONG: SLIM.long }
+  const out = await $.process.run(argv, { env, timeoutMs: 20000 }).catch(() => null)
+  const text = out && out.exitCode === 0 && !out.isStdoutTruncated && out.stdout.length > 0 ? out.stdout : null
+  if (slimmed.size > 16) slimmed.clear()
+  slimmed.set(path, { size, text })
+  if (text === null) throw new Error(`slimmed read failed: ${out?.stderr.slice(0, 200) ?? 'did not start'}`)
+  return text
 }
 
 /** Model, effort, tokens and tool calls from the stage's own transcript; a finished stage is read once more, then left alone. */
@@ -141,16 +189,10 @@ async function linkSessionAgents($: Engine, subagentsDir: string, stages: Stage[
   }
 }
 
-/** Opens the pane unless it is already up; says in the transcript whether the surface placed it. */
+/** Opens the pane unless it is already up. The pane is the only view; nothing is written to the chat. */
 async function openPane($: Engine): Promise<void> {
   const isUp = (await $.ui.panes()).some(p => p.id === PANE)
-  if (isUp) return
-  const opened = await $.ui.open({ id: PANE, title: TITLE })
-  $.ui.log(
-    opened.isPlaced
-      ? 'workflow-watch: tracker pane open'
-      : `workflow-watch: pane not placed on this surface (${opened.reason}); AbovePrompt, status line, toasts and /tracker provide the view`,
-  )
+  if (!isUp) await $.ui.open({ id: PANE, title: TITLE })
 }
 
 async function tick($: Engine): Promise<void> {
@@ -163,66 +205,74 @@ async function tick($: Engine): Promise<void> {
   const base = sameRun ? prev.stages : []
   const prevByKey = new Map(base.map(s => [s.key, s]))
 
-  const sessionStages: Stage[] = []
+  // A log that cannot be read this tick keeps what the last read found, and the pane says so instead of blanking.
+  let sessionStages: Stage[] = base.filter(s => s.kind && s.kind !== 'stage')
+  let unread: string | null = null
   if (target.sessionPath) {
     try {
       const raw = parseSession(await readTranscriptText($, target.sessionPath), now)
       for (const s of raw) if (s.kind === 'agent') s.agentId ??= prevByKey.get(s.key)?.agentId ?? null
       if (target.subagentsDir) await linkSessionAgents($, target.subagentsDir, raw)
+      const fresh: Stage[] = []
       for (const s of raw) {
         if (s.kind === 'agent' && target.subagentsDir) {
           const known = prevByKey.get(s.key)
           if (known?.isSettled) {
-            sessionStages.push({ ...known, summary: known.summary ?? s.summary, endedAt: known.endedAt ?? s.endedAt })
+            fresh.push({ ...known, summary: known.summary ?? s.summary, endedAt: known.endedAt ?? s.endedAt })
           } else {
             const merged = known
               ? { ...s, agentId: s.agentId ?? known.agentId, alias: s.alias ?? known.alias, model: s.model ?? known.model, effort: s.effort ?? known.effort, outputTokens: known.outputTokens, calls: known.calls, lastTool: known.lastTool }
               : s
-            sessionStages.push(await enrich($, target.subagentsDir, merged))
+            fresh.push(await enrich($, target.subagentsDir, merged))
           }
         } else {
-          sessionStages.push(s)
+          fresh.push(s)
         }
       }
+      sessionStages = fresh
     } catch {
-      /* session transcript not readable yet */
+      unread = 'the session log'
     }
   }
 
-  const wfStages: Stage[] = []
+  let wfStages: Stage[] = base.filter(s => !s.kind || s.kind === 'stage')
   if (target.wf) {
     try {
       const text = await $.fs.read(target.wf.path)
-      const prevWf = base.filter(s => !s.kind || s.kind === 'stage')
-      for (const s of applyEntries(prevWf, parseLines(text), now)) wfStages.push(await enrich($, target.wf.dir, s))
+      const fresh: Stage[] = []
+      for (const s of applyEntries(wfStages, parseLines(text), now)) fresh.push(await enrich($, target.wf.dir, s))
+      wfStages = fresh
     } catch {
-      /* workflow journal not readable yet */
+      unread = unread ? 'the session log and the workflow journal' : 'the workflow journal'
     }
   }
 
   const stages = mergeStages(sessionStages, wfStages)
   const run = target.wf && sessionStages.length === 0 ? target.wf.run : target.wf ? `${target.sid.slice(0, 8)} · ${target.wf.run}` : `session ${target.sid.slice(0, 8)}`
-  const next: Watch = { journal: journalKey, run, stages, now }
+  const notice = unread ? `Could not read ${unread}; showing what was last read.` : null
+  const next: Watch = { journal: journalKey, run, stages, now, notice }
+  if (!sameRun && stages.length) void openPane($)
 
-  // A run first seen now toasts nothing: its finished stages finished before this mod was watching.
-  // Normal chat turns do not toast; workflow stages, subagents, and commits do.
-  const wasDone = new Set(base.filter(s => s.endedAt !== null).map(s => s.key))
-  const justDone = sameRun ? stages.filter(s => s.endedAt !== null && !wasDone.has(s.key) && s.kind !== 'turn' && s.kind !== 'skill') : []
-  for (const s of justDone) $.ui.toast(clip(`${state(s)}: ${s.label} — ${s.summary ?? ''}`, 120))
-  if (!sameRun && stages.length) {
-    if (target.wf) $.ui.toast(`workflow-watch: following ${run}`)
-    void openPane($)
-  }
-
-  const changed = !sameRun || JSON.stringify(prev.stages) !== JSON.stringify(stages) || running(next).length > 0
+  const changed = !sameRun || prev.notice !== notice || JSON.stringify(prev.stages) !== JSON.stringify(stages) || running(next).length > 0
   if (changed) await update($, watch, () => next)
-  $.ui.status(statusLine(next))
+}
+
+/** One tick at a time: a slow read (a slimmed log, many transcripts) skips the ticks that come due meanwhile. */
+let isTicking = false
+async function tickOnce($: Engine): Promise<void> {
+  if (isTicking) return
+  isTicking = true
+  try {
+    await tick($)
+  } finally {
+    isTicking = false
+  }
 }
 
 async function runCommand($: Engine): Promise<{ text: string }> {
   let w = await read($, watch)
   if (!w.run || w.stages.length === 0) {
-    await tick($)
+    await tickOnce($)
     w = await read($, watch)
   }
   const opened = await $.ui.open({ id: PANE, title: TITLE })
@@ -236,24 +286,37 @@ export const register: Register = on => {
     const description = 'Live session & workflow tracker: turns, skills, subagents, commits and stages with models, effort, tokens and timeline'
     await $.command.register({ name: 'workflow-watch', description })
     await $.command.register({ name: 'tracker', description })
-    $.clock.every(2000, () => void tick($))
+    const saved = await $.store.get('theme').catch(() => undefined)
+    if (saved === 'dark' || saved === 'light') await update($, theme, () => saved)
+    const savedOpen = await $.store.get('isTimelineOpen').catch(() => undefined)
+    if (typeof savedOpen === 'boolean') await update($, isTimelineOpen, () => savedOpen)
+    $.clock.every(2000, () => void tickOnce($))
     void openPane($)
-    void tick($)
+    void tickOnce($)
     return next(e)
   })
 
-  // The pane is drawn by the terminal and the desktop app only; the text report below is what
-  // every surface shows (the mobile app shows nothing else), so it carries the whole picture.
+  // Not every surface seats the pane; the text report below is what every surface can show, so it carries the whole picture.
   on('command.run', { command: 'workflow-watch' }, async $ => runCommand($))
   on('command.run', { command: 'tracker' }, async $ => runCommand($))
 
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
-    const { Box, Text } = $.ui.resolve(e)
+    const elements = $.ui.resolve(e)
+    const { Box, Text, Button } = elements
+    const Svg = e.surface !== 'terminal' && 'Svg' in elements ? elements.Svg : null
     const w = await read($, watch)
+    const notice = w.notice ? (
+      <Text color="warning" wrap="wrap">
+        {w.notice}
+      </Text>
+    ) : null
     if (!w.run || w.stages.length === 0) {
       return (
         <Box flexDirection="column" paddingX={1}>
-          <Text color="subtle">Waiting for session activity. Turns, skills, subagents, commits and Workflow stages appear here live.</Text>
+          <Box borderStyle="round" borderColor="claude" paddingX={1}>
+            <Text color="subtle">Waiting for session activity. Turns, skills, subagents, commits and Workflow stages appear here live.</Text>
+          </Box>
+          {notice}
         </Box>
       )
     }
@@ -261,29 +324,104 @@ export const register: Register = on => {
     const t0 = w.stages.reduce((m, s) => Math.min(m, s.startedAt), Infinity)
     const t1 = w.stages.reduce((m, s) => Math.max(m, s.endedAt ?? w.now), -Infinity)
     const total = Math.max(1, t1 - t0)
-    // Top waterfall timeline (when 2+ items exist), then one block per stage in run order with phase dividers.
+    // Newest first: the latest work sits under the header with no scrolling, history further down.
+    // (The editor's pane scrolls by itself and leaves $.ui.scroll unapplied, so following the end is not an option there.)
+    // Phases are cut in run order, so each chip keeps its opener's kind and round; then groups and members are reversed.
+    const groups = phaseRuns(w.stages).reverse()
+    const newestOf = (g: { stages: Stage[] }): Stage[] => [...g.stages].reverse()
+    // A header card, a timeline card (when 2+ items exist), then one card per stage, newest first, under a colored phase chip.
+    // A surface with Svg (desktop, vscode, mobile) draws each card as a rounded vector card; the terminal draws them in box glyphs.
+    if (Svg) {
+      const mode = await read($, theme)
+      const isOpen = await read($, isTimelineOpen)
+      const head = headerCard(w, tokens, mode)
+      const tl = timelineCard(w.stages, t0, total, w.now, mode)
+      return (
+        <Box flexDirection="column" paddingX={1} paddingY={1} backgroundColor={PANE_BG[mode]}>
+          <Box justifyContent="flex-end" marginBottom={1}>
+            <Button
+              key="theme"
+              label={mode === 'dark' ? '☀ Light mode' : '☾ Dark mode'}
+              onPress={() => {
+                void update($, theme, m => (m === 'dark' ? 'light' : 'dark'))
+                  .then(m => $.store.set('theme', m))
+                  .catch(() => undefined)
+              }}
+            />
+          </Box>
+          {notice}
+          <Svg source={head.source} alt={head.alt} width={head.width} height={head.height} />
+          {w.stages.length > 1 && (
+            <Box flexDirection="column" marginTop={1}>
+              <Box>
+                <Button
+                  key="timeline"
+                  label={isOpen ? '− Timeline' : `+ Timeline · ${elapsed(total)} elapsed`}
+                  onPress={() => {
+                    void update($, isTimelineOpen, open => !open)
+                      .then(open => $.store.set('isTimelineOpen', open))
+                      .catch(() => undefined)
+                  }}
+                />
+              </Box>
+              {isOpen && (
+                <Box marginTop={1}>
+                  <Svg source={tl.source} alt={tl.alt} width={tl.width} height={tl.height} />
+                </Box>
+              )}
+            </Box>
+          )}
+          {groups.map((g, i) => {
+            const chip = phaseChip(g, mode)
+            return (
+              <Box key={`phase-${i}`} flexDirection="column" marginTop={1}>
+                <Svg source={chip.source} alt={chip.alt} width={chip.width} height={chip.height} />
+                {newestOf(g).map(s => {
+                  const c = stageCard(s, w.now, mode)
+                  return (
+                    <Box key={s.key} marginTop={1}>
+                      <Svg source={c.source} alt={c.alt} width={c.width} height={c.height} />
+                    </Box>
+                  )
+                })}
+              </Box>
+            )
+          })}
+        </Box>
+      )
+    }
     return (
       <Box flexDirection="column" paddingX={1}>
-        <Text wrap="truncate-end">
-          <Text bold color="claude">
+        {notice}
+        <Box flexDirection="column" borderStyle="round" borderColor="claude" paddingX={1}>
+          <Text bold color="claude" wrap="truncate-end">
             {w.run}
           </Text>
-          {tally(w)
-            .split(' · ')
-            .map(part => (
-              <Text key={part} color={/^0 /.test(part) ? 'subtle' : TALLY_TONE[part.split(' ')[1] ?? ''] ?? 'text'}>{` · ${part}`}</Text>
-            ))}
-          <Text color="subtle">{` · ${(tokens / 1000).toFixed(1)}k output tokens`}</Text>
-        </Text>
+          <Text wrap="truncate-end">
+            {tally(w)
+              .split(' · ')
+              .map((part, i) => (
+                <Text key={part}>
+                  {i > 0 ? ' ' : ''}
+                  {/^0 /.test(part) ? (
+                    <Text color="subtle">{` ${part} `}</Text>
+                  ) : (
+                    <Text bold backgroundColor={TALLY_TONE[part.split(' ')[1] ?? ''] ?? 'text'} color="inverseText">{` ${part} `}</Text>
+                  )}
+                </Text>
+              ))}
+            <Text color="subtle">{`  ${(tokens / 1000).toFixed(1)}k output tokens`}</Text>
+          </Text>
+        </Box>
         {w.stages.length > 1 && (
-          <Box flexDirection="column" marginTop={1}>
-            <Text bold color="suggestion" wrap="truncate-end">
-              {`── Timeline · ${elapsed(total)} elapsed`}
+          <Box flexDirection="column" borderStyle="round" borderColor="subtle" paddingX={1} marginTop={1}>
+            <Text bold color="claude" wrap="truncate-end">
+              {`Timeline · ${elapsed(total)} elapsed`}
             </Text>
             {w.stages.slice(-10).map(s => (
               <Text key={`tl-${s.key}`} wrap="truncate-end">
                 {barParts(timelineBar(s, t0, total, 14)).map(([part, isSpan], j) => (
-                  <Text key={j} color={isSpan ? tone(s) : 'subtle'}>
+                  <Text key={j} color={isSpan ? fill(s) : 'subtle'}>
                     {part}
                   </Text>
                 ))}
@@ -293,62 +431,35 @@ export const register: Register = on => {
             ))}
           </Box>
         )}
-        {phaseRuns(w.stages).map((g, i) => (
+        {groups.map((g, i) => (
           <Box key={`phase-${i}`} flexDirection="column" marginTop={1}>
-            <Text bold color="suggestion" wrap="truncate-end">
-              {`── ${phaseTitle(g)}`}
+            <Text wrap="truncate-end">
+              <Text bold backgroundColor={fill(g.stages[0])} color={INK}>{` ${phaseTitle(g)} `}</Text>
             </Text>
-            {g.stages.map((s, j) => (
-              <Box key={s.key} flexDirection="column" marginTop={j === 0 ? 0 : 1}>
+            {newestOf(g).map(s => (
+              <Box key={s.key} flexDirection="column" borderStyle="round" borderColor={s.endedAt === null ? tone(s) : 'subtle'} paddingX={1}>
                 <Text wrap="truncate-end">
-                  <Text color={tone(s)} bold>
-                    {state(s)}
-                  </Text>
+                  <Text bold backgroundColor={tone(s)} color="inverseText">{` ${state(s)} `}</Text>
                   <Text bold>{`  ${s.label}`}</Text>
                   <Text color="permission">{`  ${who(s)}`}</Text>
                 </Text>
+                {s.prompt && (
+                  <Text color="claude" wrap="truncate-end">
+                    {`› ${s.prompt}`}
+                  </Text>
+                )}
                 {s.endedAt === null ? (
-                  <Text color="subtle" italic wrap="truncate-end">{`    ${stageResult(s)}`}</Text>
+                  <Text color="subtle" italic wrap="truncate-end">{stageResult(s)}</Text>
                 ) : (
-                  <Text wrap="truncate-end">{`    ${stageResult(s)}`}</Text>
+                  <Text wrap="truncate-end">{stageResult(s)}</Text>
                 )}
                 <Text color="subtle" wrap="truncate-end">
-                  {`    ${stageDetail(s, w.now)}`}
+                  {stageDetail(s, w.now)}
                 </Text>
               </Box>
             ))}
           </Box>
         ))}
-      </Box>
-    )
-  })
-
-  on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
-    const w = await read($, watch)
-    const live = running(w)
-    const isQuiet = e.props.hasSurvey || !w.run || live.length === 0
-    if (isQuiet) return next(e)
-    const { Box, Text } = $.ui.resolve(e)
-    // A running stage has no result yet, so its block is the head line and the live details under it.
-    return (
-      <Box flexDirection="column">
-        <Text bold color="claude" wrap="truncate-end">
-          {`${w.run}: ${tally(w)}`}
-        </Text>
-        {live.slice(0, 4).map(s => (
-          <Box key={s.key} flexDirection="column">
-            <Text wrap="truncate-end">
-              <Text color={tone(s)} bold>
-                {state(s)}
-              </Text>
-              {`  ${stageTitle(s)}`}
-            </Text>
-            <Text dimColor wrap="truncate-end">
-              {`    ${stageDetail(s, w.now)}`}
-            </Text>
-          </Box>
-        ))}
-        {live.length > 4 && <Text dimColor>{`  +${live.length - 4} more running`}</Text>}
       </Box>
     )
   })

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'claude-code/testing'
 
-import { EMPTY, applyEntries, mergeStages, parseLines, parseSession, phaseRuns, readMeta, readMetaInfo, readTranscript, report, stageDetail, stageLines, state, statusLine, summarize, tally, timelineBar, tone, who, withFacts } from '../hooks/journal'
+import { EMPTY, applyEntries, mergeStages, parseLines, parseSession, phaseRuns, readMeta, readMetaInfo, readTranscript, report, stageDetail, stageLines, state, summarize, tally, timelineBar, tone, who, withFacts } from '../hooks/journal'
 
 const STARTED = '{"type":"started","key":"k1","agentId":"a1","label":"build:1.2","phase":"Build"}'
 const RESULT = '{"type":"result","key":"k1","agentId":"a1","result":{"ok":true,"commits":["c1","c2"],"testsPassed":true,"lintPassed":false,"deviations":[]}}'
@@ -42,13 +42,7 @@ describe('journal', () => {
     expect(summarize('probe:one', { word: 'ok' })).toBe('{"word":"ok"}')
   })
 
-  test('the status line names the running stages', async () => {
-    const stages = applyEntries([], parseLines(STARTED), 1)
-    expect(statusLine({ ...EMPTY, run: 'wf_1', stages, now: 1 })).toBe('wf_1: ▶ running build:1.2 (? n/a) · 0 done · 0 failed · 1 running')
-    expect(statusLine(EMPTY)).toBe(undefined)
-  })
-
-  test('a failing result is marked failed, shown as a glyph and a word, and counted on the status line', async () => {
+  test('a failing result is marked failed, shown as a glyph and a word, and counted in the tally', async () => {
     const lines = parseLines(STARTED + '\n' + REFUTE_STARTED + '\n' + RESULT + '\n' + REFUTE_FAILED)
     const stages = applyEntries([], lines, 4000)
     const lens = stages[1] as NonNullable<(typeof stages)[1]>
@@ -57,7 +51,7 @@ describe('journal', () => {
     expect(tone(lens)).toBe('error')
     expect(state(stages[0] as NonNullable<(typeof stages)[0]>)).toBe('✓ done')
     expect(tone(stages[0] as NonNullable<(typeof stages)[0]>)).toBe('success')
-    expect(statusLine({ ...EMPTY, run: 'wf_1', stages, now: 4000 })).toBe('wf_1: ! finished · 1 done · 1 failed · 0 running')
+    expect(tally({ ...EMPTY, run: 'wf_1', stages, now: 4000 })).toBe('1 done · 1 failed · 0 running')
   })
 
   test('ok:false fails, a dispute is its own state, and a null result or a failed entry has no result; the tally adds up', async () => {
@@ -85,9 +79,8 @@ describe('journal', () => {
     expect(scout?.summary).toBe('(stopped without a result)')
     const stages = applyEntries([], lines, 10)
     expect(tally({ ...EMPTY, run: 'wf_1', stages, now: 10 })).toBe('1 done · 1 disputed · 3 failed · 1 running')
-    expect(statusLine({ ...EMPTY, run: 'wf_1', stages, now: 10 })).toBe('wf_1: ▶ running measure:1.2 (? n/a) · 1 done · 1 disputed · 3 failed · 1 running')
     const ended = applyEntries(stages, parseLines('{"type":"result","key":"k6","result":{"filesChanged":1,"linesChanged":2}}'), 20)
-    expect(statusLine({ ...EMPTY, run: 'wf_1', stages: ended, now: 20 })).toBe('wf_1: ! finished · 2 done · 1 disputed · 3 failed · 0 running')
+    expect(tally({ ...EMPTY, run: 'wf_1', stages: ended, now: 20 })).toBe('2 done · 1 disputed · 3 failed · 0 running')
   })
 
   test('a failed entry for an unknown stage, or after its result, changes nothing', async () => {
@@ -286,5 +279,25 @@ describe('report', () => {
     const [s] = applyEntries([], parseLines(STARTED), 1000)
     const live = { ...(s as NonNullable<typeof s>), alias: 'haiku', model: 'claude-haiku-5-5', effort: 'low' }
     expect(stageLines(live, 3000)).toEqual(['▶ running  build:1.2  haiku→claude-haiku-5-5 low', '    no result yet', '    Running for 0:02 · 0 calls · starting…'])
+  })
+
+  test('an interrupt ends the turn without opening one; a message typed mid-turn becomes the turn prompt, not a new turn', async () => {
+    const lines = [
+      '{"type":"user","timestamp":"2026-10-22T08:00:00.000Z","message":{"content":"make the pane pretty"}}',
+      '{"type":"assistant","timestamp":"2026-10-22T08:00:05.000Z","message":{"model":"claude-opus-5-5","stop_reason":"tool_use","content":[{"type":"text","text":"Checking the props"},{"type":"tool_use","id":"tu1","name":"Read","input":{"file_path":"a.ts"}}]}}',
+      '{"type":"user","timestamp":"2026-10-22T08:00:06.000Z","message":{"content":[{"type":"text","text":"[Request interrupted by user]"}]}}',
+      '{"type":"user","timestamp":"2026-10-22T08:00:10.000Z","message":{"content":"only the side pane"}}',
+      '{"type":"assistant","timestamp":"2026-10-22T08:00:12.000Z","message":{"model":"claude-opus-5-5","stop_reason":"tool_use","content":[{"type":"tool_use","id":"tu2","name":"Bash","input":{"command":"ls"}}]}}',
+      '{"type":"attachment","timestamp":"2026-10-22T08:00:13.000Z","attachment":{"type":"queued_command","commandMode":"prompt","prompt":[{"type":"text","text":"approve the look first"}]}}',
+      '{"type":"assistant","timestamp":"2026-10-22T08:00:20.000Z","message":{"model":"claude-opus-5-5","stop_reason":"end_turn","content":[{"type":"text","text":"Stopped for your approval."}]}}',
+    ].join('\n')
+    const items = parseSession(lines, Date.parse('2026-10-22T08:01:00.000Z'))
+    expect(items.map(s => s.label)).toEqual(['turn:1', 'turn:2'])
+    const [first, second] = items
+    expect(first?.endedAt).toBe(Date.parse('2026-10-22T08:00:05.000Z'))
+    expect(first?.summary).toBe('(interrupted) Checking the props')
+    expect(first?.prompt).toBe('make the pane pretty')
+    expect(second?.prompt).toBe('(mid-turn) approve the look first')
+    expect(second?.summary).toBe('Stopped for your approval.')
   })
 })
