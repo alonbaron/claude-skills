@@ -14,10 +14,10 @@ const WATCH = { ...EMPTY, journal: 'journal.jsonl', run: 'wf_1', stages, now: 13
 const SITE = { scroll: { offset: 0, bodyRows: 40 }, view: {} }
 
 describe('render', () => {
-  test('the pane draws one block per stage in run order on the terminal and the desktop', async ($, on) => {
+  test('the terminal draws one block per stage, newest first', async ($, on) => {
     mock.clock(on)
     on('state.get', { plugin: 'workflow-watch', key: 'watch' }, () => ({ value: { value: WATCH, version: 1 } }))
-    for (const surface of ['terminal', 'desktop'] as const) {
+    for (const surface of ['terminal'] as const) {
       const ui = await $.ui.mount({
         plugin: 'workflow-watch',
         surface,
@@ -25,14 +25,15 @@ describe('render', () => {
         requestId: 'workflow-watch',
         props: { title: 'Workflow', isFocused: false, bodyColumns: 120, placement: 'dock', ...SITE },
       })
-      expect(await ui.find({ type: 'Text', text: 'wf_1 · 1 done · 1 failed · 1 running · 0.0k output tokens' })).toBeDefined()
-      expect(await ui.find({ type: 'Text', text: /^── Timeline · 0:12 elapsed$/ })).toBeDefined()
-      expect(await ui.find({ type: 'Text', text: /^── Refute · round 1$/ })).toBeDefined()
-      const heads = await ui.findAll({ type: 'Text', text: /^(▶ running|✓ done|! failed) {2}\S+ {2}/ })
-      expect(heads.map(h => h.text.split('  ')[1])).toEqual(['build:1.2', 'refute:invariants:1.2:r1', 'refute:correctness:1.2:r1'])
-      expect(await ui.find({ type: 'Text', text: /^! failed {2}refute:invariants:1\.2:r1 {2}haiku→claude-haiku-5-5 low$/ })).toBeDefined()
-      expect(await ui.find({ type: 'Text', text: '    FAIL blocking=1 advisory=0 testsRan=false | src/a.js: off by one' })).toBeDefined()
-      expect(await ui.find({ type: 'Text', text: /^ {4}Running for 0:12 · 0 calls · starting…$/ })).toBeDefined()
+      expect(await ui.find({ type: 'Text', text: 'wf_1' })).toBeDefined()
+      expect(await ui.find({ type: 'Text', text: ' 1 done   1 failed   1 running   0.0k output tokens' })).toBeDefined()
+      expect(await ui.find({ type: 'Text', text: /^Timeline · 0:12 elapsed$/ })).toBeDefined()
+      expect(await ui.find({ type: 'Text', text: ' Refute · round 1 ' })).toBeDefined()
+      const heads = await ui.findAll({ type: 'Text', text: /^ (▶ running|✓ done|! failed) {3}\S+ {2}/ })
+      expect(heads.map(h => h.text.trim().split(/ {2,}/)[1])).toEqual(['refute:correctness:1.2:r1', 'refute:invariants:1.2:r1', 'build:1.2'])
+      expect(await ui.find({ type: 'Text', text: /^ ! failed {3}refute:invariants:1\.2:r1 {2}haiku→claude-haiku-5-5 low$/ })).toBeDefined()
+      expect(await ui.find({ type: 'Text', text: 'FAIL blocking=1 advisory=0 testsRan=false | src/a.js: off by one' })).toBeDefined()
+      expect(await ui.find({ type: 'Text', text: /^Running for 0:12 · 0 calls · starting…$/ })).toBeDefined()
       await ui.unmount()
     }
   })
@@ -42,30 +43,75 @@ describe('render', () => {
     on('state.get', { plugin: 'workflow-watch', key: 'watch' }, () => ({ value: { value: WATCH, version: 1 } }))
     const ui = await $.ui.mount({
       plugin: 'workflow-watch',
-      surface: 'desktop',
+      surface: 'terminal',
       component: 'Pane',
       requestId: 'workflow-watch',
       props: { title: 'Workflow', isFocused: false, bodyColumns: 40, placement: 'dock', ...SITE },
     })
-    expect(await ui.find({ type: 'Text', text: 'wf_1 · 1 done · 1 failed · 1 running · 0.0k output tokens' })).toBeDefined()
-    expect(await ui.find({ type: 'Text', text: '    FAIL blocking=1 advisory=0 testsRan=false | src/a.js: off by one' })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: ' 1 done   1 failed   1 running   0.0k output tokens' })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: 'FAIL blocking=1 advisory=0 testsRan=false | src/a.js: off by one' })).toBeDefined()
     await ui.unmount()
   })
 
-  test('the band draws each running stage as its head and its live details', async ($, on) => {
+  test('the desktop and the editor draw rounded vector cards: header, timeline, a phase chip per run, one card per stage, newest first', async ($, on) => {
     mock.clock(on)
     on('state.get', { plugin: 'workflow-watch', key: 'watch' }, () => ({ value: { value: WATCH, version: 1 } }))
-    for (const surface of ['terminal', 'desktop'] as const) {
+    for (const surface of ['desktop', 'vscode'] as const) {
       const ui = await $.ui.mount({
         plugin: 'workflow-watch',
         surface,
-        component: 'AbovePrompt',
-        props: { hasSurvey: false, isWorking: true, maxRows: 12, bodyColumns: 100, ...SITE },
+        component: 'Pane',
+        requestId: 'workflow-watch',
+        props: { title: 'Workflow', isFocused: false, bodyColumns: 60, placement: 'dock', ...SITE },
       })
-      expect(await ui.find({ type: 'Text', text: /^wf_1: 1 done · 1 failed · 1 running$/ })).toBeDefined()
-      expect(await ui.find({ type: 'Text', text: /^▶ running {2}refute:correctness:1\.2:r1 {2}haiku→claude-haiku-5-5 low$/ })).toBeDefined()
-      expect(await ui.find({ type: 'Text', text: /^! failed/ })).toBe(undefined)
+      const alts = (await ui.findAll({ type: 'Svg' })).map(n => String(n.props.alt))
+      expect(alts[0]).toBe('wf_1: 1 done · 1 failed · 1 running · 0.0k output tokens')
+      expect(alts[1]).toMatch(/^Timeline, 0:12 elapsed: build:1\.2, /)
+      expect(alts.filter(a => /^(▶ running|✓ done|! failed) /.test(a)).map(a => a.split(' ')[2])).toEqual(['refute:correctness:1.2:r1', 'refute:invariants:1.2:r1', 'build:1.2'])
+      expect(alts).toContain('Refute · round 1')
+      const card = (await ui.findAll({ type: 'Svg' })).find(n => String(n.props.alt).startsWith('! failed'))
+      expect(String(card?.props.source)).toContain('rx="16"')
+      expect(String(card?.props.source)).toContain('FAIL blocking=1')
       await ui.unmount()
     }
+  })
+
+  test('the theme button flips the cards between dark and light, whatever the system theme', async ($, on) => {
+    mock.clock(on)
+    on('state.get', { plugin: 'workflow-watch', key: 'watch' }, () => ({ value: { value: WATCH, version: 1 } }))
+    const ui = await $.ui.mount({
+      plugin: 'workflow-watch',
+      surface: 'vscode',
+      component: 'Pane',
+      requestId: 'workflow-watch',
+      props: { title: 'Workflow', isFocused: false, bodyColumns: 60, placement: 'dock', ...SITE },
+    })
+    expect((await ui.find({ key: 'theme' }))?.props.label).toBe('☀ Light mode')
+    expect(String((await ui.find({ type: 'Svg' }))?.props.source)).toContain('fill:#202124')
+    await ui.press({ key: 'theme' })
+    expect((await ui.find({ key: 'theme' }))?.props.label).toBe('☾ Dark mode')
+    expect(String((await ui.find({ type: 'Svg' }))?.props.source)).toContain('.card{fill:#fff')
+    await ui.unmount()
+  })
+
+  test('the timeline folds to its +/- button and opens again', async ($, on) => {
+    mock.clock(on)
+    on('state.get', { plugin: 'workflow-watch', key: 'watch' }, () => ({ value: { value: WATCH, version: 1 } }))
+    const ui = await $.ui.mount({
+      plugin: 'workflow-watch',
+      surface: 'vscode',
+      component: 'Pane',
+      requestId: 'workflow-watch',
+      props: { title: 'Workflow', isFocused: false, bodyColumns: 60, placement: 'dock', ...SITE },
+    })
+    const timeline = async () => (await ui.findAll({ type: 'Svg' })).some(n => String(n.props.alt).startsWith('Timeline'))
+    expect((await ui.find({ key: 'timeline' }))?.props.label).toBe('− Timeline')
+    expect(await timeline()).toBe(true)
+    await ui.press({ key: 'timeline' })
+    expect((await ui.find({ key: 'timeline' }))?.props.label).toBe('+ Timeline · 0:12 elapsed')
+    expect(await timeline()).toBe(false)
+    await ui.press({ key: 'timeline' })
+    expect(await timeline()).toBe(true)
+    await ui.unmount()
   })
 })

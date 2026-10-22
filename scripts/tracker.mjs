@@ -835,13 +835,23 @@ function readSession(sessionFile, subagentsDir) {
 
       if (!e.isMeta) {
         const prompt = cleanPrompt(msg.content);
+        // The engine's interrupt marker is not something typed: it ends the turn, the next prompt opens one.
+        const isInterrupt = prompt && /^\[Request interrupted by user/.test(prompt);
         if (prompt) {
           if (currentTurn && !currentTurn.isDone) {
             currentTurn.isDone = true;
             currentTurn.end = lastTurnAt;
+            if (isInterrupt) currentTurn.summary = `(interrupted) ${currentTurn.summary || ""}`.trim();
           }
-          currentTurn = openTurn(t, prompt);
+          if (!isInterrupt) currentTurn = openTurn(t, prompt);
         }
+      }
+    } else if (e.type === "attachment") {
+      // A message typed while Claude works is folded into the running turn, so it opens none; the turn shows it as its prompt.
+      const att = e.attachment || {};
+      if (att.type === "queued_command" && att.commandMode === "prompt" && currentTurn) {
+        const text = cleanPrompt(att.prompt);
+        if (text) currentTurn.prompt = `(mid-turn) ${text}`;
       }
     } else if (e.type === "assistant") {
       if (!currentTurn) currentTurn = openTurn(t, null);
@@ -876,7 +886,8 @@ function readSession(sessionFile, subagentsDir) {
 
       for (const b of Array.isArray(msg.content) ? msg.content : []) {
         if (!b) continue;
-        if (b.type === "text" && typeof b.text === "string" && oneLine(b.text)) {
+        // The client's own filler after an interrupt (<synthetic> "No response requested.") is not Claude's answer.
+        if (b.type === "text" && typeof b.text === "string" && oneLine(b.text) && msg.model !== "<synthetic>") {
           currentTurn.summary = str(b.text, 140);
           currentTurn.result = b.text.trim();
         }

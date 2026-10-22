@@ -252,21 +252,19 @@ const toolResultText = (content: unknown): string =>
       ? content.map(b => (typeof rec(b).text === 'string' ? String(rec(b).text) : '')).join('\n')
       : ''
 
+/** Drops injected blocks from one text block; a block a slimmed read cut before its closing tag runs to the end. */
+const stripInjected = (text: string): string =>
+  text.replace(/<browser_instruction>[\s\S]*?(?:<\/browser_instruction>|$)/gi, '').replace(/<system-reminder>[\s\S]*?(?:<\/system-reminder>|$)/gi, '')
+
 function cleanPrompt(content: unknown): string | null {
   if (Array.isArray(content) && content.every(b => rec(b).type === 'tool_result')) return null
-  const raw =
+  const blocks =
     typeof content === 'string'
-      ? content
+      ? [content]
       : Array.isArray(content)
-        ? content
-            .filter(b => rec(b).type === 'text')
-            .map(b => String(rec(b).text ?? ''))
-            .join(' ')
-        : ''
-  const stripped = raw
-    .replace(/<browser_instruction>[\s\S]*?<\/browser_instruction>/gi, '')
-    .replace(/<system-reminder>[\s\S]*?<\/system-reminder>/gi, '')
-    .trim()
+        ? content.filter(b => rec(b).type === 'text').map(b => String(rec(b).text ?? ''))
+        : []
+  const stripped = blocks.map(stripInjected).join(' ').trim()
   if (!stripped || /^<(task-notification|command-name|local-command-|agent-message)/i.test(stripped)) return null
   return oneLine(stripped) || null
 }
@@ -288,7 +286,7 @@ export function parseSession(text: string, now: number): Stage[] {
   let currentPhase = 'Session'
   let lastTurnAt = now
 
-  const openTurn = (at: number, summary: string | null): Stage => {
+  const openTurn = (at: number, prompt: string | null): Stage => {
     turnCount += 1
     currentPhase = `Turn ${turnCount}`
     lastTurnAt = at
@@ -300,7 +298,8 @@ export function parseSession(text: string, now: number): Stage[] {
       phase: currentPhase,
       startedAt: at,
       endedAt: null,
-      summary,
+      summary: null,
+      prompt,
       isEmpty: false,
       isFailed: false,
       isDisputed: false,
@@ -578,7 +577,8 @@ export function parseSession(text: string, now: number): Stage[] {
     if (e.type === 'user') {
       const rawContent = toolResultText(msg.content)
       if (rawContent && (rawContent.includes('<agent-message') || rawContent.includes('<task-'))) {
-        const am = /<agent-message\s+from="([^"]+)"[^>]*>([\s\S]*?)<\/agent-message>/i.exec(rawContent)
+        // A slimmed read can cut a long report before its closing tag.
+        const am = /<agent-message\s+from="([^"]+)"[^>]*>([\s\S]*?)(?:<\/agent-message>|$)/i.exec(rawContent)
         const tnId = /<task-id>([^<]+)<\/task-id>/i.exec(rawContent)?.[1]
         const tnTool = /<tool-use-id>([^<]+)<\/tool-use-id>/i.exec(rawContent)?.[1]
         const aid = oneLine(am?.[1] ?? tnId)
@@ -635,13 +635,27 @@ export function parseSession(text: string, now: number): Stage[] {
 
       if (!e.isMeta) {
         const prompt = cleanPrompt(msg.content)
-        if (prompt) {
+        if (prompt && /^\[Request interrupted by user/.test(prompt)) {
+          // The engine's marker for an interrupt, not something typed: it ends the turn, the next prompt opens one.
+          if (currentTurn && currentTurn.endedAt === null) {
+            currentTurn.endedAt = lastTurnAt
+            currentTurn.isSettled = true
+            currentTurn.summary = currentTurn.summary ? `(interrupted) ${currentTurn.summary}` : '(interrupted)'
+          }
+        } else if (prompt) {
           if (currentTurn && currentTurn.endedAt === null) {
             currentTurn.endedAt = lastTurnAt
             currentTurn.isSettled = true
           }
           currentTurn = openTurn(t, str(prompt, 100))
         }
+      }
+    } else if (e.type === 'attachment') {
+      // A message typed while Claude works is folded into the running turn, so it opens none; the turn shows it as its prompt.
+      const att = rec(e.attachment)
+      if (att.type === 'queued_command' && att.commandMode === 'prompt' && currentTurn) {
+        const text = cleanPrompt(att.prompt)
+        if (text) currentTurn.prompt = str(`(mid-turn) ${text}`, 100)
       }
     } else if (e.type === 'assistant') {
       if (!currentTurn) currentTurn = openTurn(t, null)
@@ -675,7 +689,8 @@ export function parseSession(text: string, now: number): Stage[] {
       if (!Array.isArray(content)) continue
       for (const block of content) {
         const b = rec(block)
-        if (b.type === 'text' && typeof b.text === 'string' && oneLine(b.text)) {
+        // The client's own filler after an interrupt (<synthetic> "No response requested.") is not Claude's answer.
+        if (b.type === 'text' && typeof b.text === 'string' && oneLine(b.text) && msg.model !== '<synthetic>') {
           currentTurn.summary = str(b.text, 100)
         }
         if (b.type !== 'tool_use') continue
@@ -744,6 +759,21 @@ export function parseSession(text: string, now: number): Stage[] {
 }
 
 /** Merges session items and workflow stages in chronological start order. */
+/**
+ * What a session log past the plugin read limit is filtered through: the same three patterns run in PowerShell (.NET)
+ * and perl, and in slimLog for the tests. Every line stays valid JSON. `meta` drops the engine's bookkeeping lines
+ * (api-request copies, titles, bridge state; never user, assistant or attachment), `image` empties pasted images'
+ * base64, and `long` cuts any string past 2000 characters at an escape boundary.
+ */
+export const SLIM = {
+  meta: '^[{]"type":"(?!user"|assistant"|attachment")[a-z][a-z-]*".*\\r?\\n',
+  image: '"data":"[A-Za-z0-9+/=]{200,}"',
+  long: '"((?:[^"\\\\\\r\\n]|\\\\.){2000})(?:[^"\\\\\\r\\n]|\\\\.)+"',
+} as const
+
+export const slimLog = (text: string): string =>
+  text.replace(new RegExp(SLIM.meta, 'gm'), '').replace(new RegExp(SLIM.image, 'g'), '"data":""').replace(new RegExp(SLIM.long, 'g'), '"$1..."')
+
 export function mergeStages(sessionStages: Stage[], workflowStages: Stage[]): Stage[] {
   if (sessionStages.length === 0) return workflowStages
   if (workflowStages.length === 0) return sessionStages
@@ -894,23 +924,10 @@ export function stageDetail(s: Stage, now: number): string {
 
 /** One stage as a block: the head line, then its result and its details indented under it. */
 export function stageLines(s: Stage, now: number): string[] {
-  return [`${state(s)}  ${stageTitle(s)}`, `    ${stageResult(s)}`, `    ${stageDetail(s, now)}`]
+  return [`${state(s)}  ${stageTitle(s)}`, ...(s.prompt ? [`    › ${s.prompt}`] : []), `    ${stageResult(s)}`, `    ${stageDetail(s, now)}`]
 }
 
-/** The one-line status: the state as glyph and word, what runs now, and the tally. */
-export function statusLine(w: Watch): string | undefined {
-  if (!w.run || w.stages.length === 0) return undefined
-  const live = running(w)
-  if (live.length === 0) {
-    const isClean = w.stages.every(s => outcome(s) === 'done')
-    return `${w.run}: ${isClean ? '✓' : '!'} finished · ${tally(w)}`
-  }
-  const first = live[0] as Stage
-  if (live.length === 1) return `${w.run}: ▶ running ${first.label} (${who(first)}) · ${tally(w)}`
-  return `${w.run}: ▶ ${live.length} running (${clip(live.map(s => s.label).join(', '), 61)}) · ${tally(w)}`
-}
-
-/** The whole picture as plain text: what the command prints, the same blocks the pane draws. */
+/** The whole picture as plain text: what the command prints, the same blocks the pane draws, oldest first as a log reads. */
 export function report(w: Watch): string {
   const lines = [`${w.run}: ${tally(w)}`]
   for (const g of phaseRuns(w.stages)) {

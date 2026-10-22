@@ -1,3 +1,6 @@
+/** The pane's card theme, picked with its toggle and kept between sessions. */
+export type Theme = 'dark' | 'light'
+
 export type StageKind = 'stage' | 'turn' | 'skill' | 'agent' | 'commit'
 
 export type Stage = {
@@ -15,6 +18,8 @@ export type Stage = {
   endedAt: number | null
   /** One line about the result, or null while running. */
   summary: string | null
+  /** For a turn: the person's words that opened it, or the latest typed while it ran. */
+  prompt?: string | null
   /** True when the journal recorded a null result, or a `failed` entry (the stage died before it returned). */
   isEmpty: boolean
   /** True when the result reports a failure: a failing verdict or `ok: false`. */
@@ -45,10 +50,12 @@ export type Watch = {
   stages: Stage[]
   /** $.clock.now() at the last tick, so elapsed times redraw. */
   now: number
+  /** Set while a log could not be read: what the pane says above the items it kept. */
+  notice?: string | null
 }
 
 declare module 'claude-code' {
   interface PluginState {
-    'workflow-watch': { watch: Watch }
+    'workflow-watch': { watch: Watch; theme: Theme; isTimelineOpen: boolean }
   }
 }
