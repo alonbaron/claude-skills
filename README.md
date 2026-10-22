@@ -26,6 +26,8 @@
 /plugin install alon-skills@alonbaron
 ```
 
+The live session tracker is a second plugin in the same marketplace, optional: `/plugin install workflow-watch@alonbaron` (see [Watching a session or a run](#-watching-a-session-or-a-run)).
+
 Pull updates anytime with `/plugin marketplace update alonbaron` — the marketplace tracks `main`, so you're always on the latest. [Tagged releases](https://github.com/alonbaron/claude-skills/releases) mark the milestones.
 
 ---
@@ -230,7 +232,7 @@ One catch worth knowing about humanizer: as of v2.9.1 the plugin puts `SKILL.md`
 ## ◢ What's new in v3.1
 
 - 3.1.1: every eval case now carries a Fable 5.1 number from 2026-10-04 (two runs on the GitHub runner, summaries published to the `eval-results` branch by CI); the CI job takes a case set (`sandboxed`, `in-container`, `all`) and gives the review swarm 1500 s; the one-off cron entries are gone.
-- `scripts/tracker.mjs` renders any workflow run as a stage table, HTML or PNG, live with `--watch` (v3.2 redraws it as the feed above).
+- `scripts/tracker.mjs` renders any workflow run as a stage table, HTML or PNG, live with `--watch` (v3.2 redraws it as a feed of cards).
 - `mods/workflow-watch`, a second plugin in this marketplace: the same stages drawn live inside Claude Code (pane, band, status line, toasts, `/workflow-watch`).
 - build-loop: the fixer is told which findings the arbiter upheld and cannot dispute them twice; the build stage names its effort; the in-session caveat about the harness relaying the turn's prompt is documented in the script and above.
 - The eval CI runs the nine sandboxed cases on Fable 5.1 (`workflow_dispatch` takes a model input for comparison runs); the table above now carries Fable numbers for every skill.
