@@ -764,14 +764,15 @@ export function parseSession(text: string, now: number): Stage[] {
  * and perl, and in slimLog for the tests. Every line stays valid JSON. `meta` drops the engine's bookkeeping lines
  * (api-request copies, titles, bridge state; never user, assistant or attachment), `image` empties pasted images'
  * base64, and `long` cuts any string past 2000 characters at an escape boundary. Perl before 5.38 (macOS's
- * /usr/bin/perl is 5.34) stops a repeated group after 65534 rounds, so past its first 2001 units `long` repeats a
- * group once per escape rather than per character, and it never starts on an escaped quote, so a miss costs one pass.
+ * /usr/bin/perl is 5.34) stops a repeated group after 65534 rounds, so past its first 2001 units `long` takes runs of
+ * plain characters whole and escapes in chunks of up to 30000, each held by a lookahead and a backreference (atomic in
+ * JS, .NET and perl alike, so a miss can't backtrack into it). It never starts on an escaped quote, so a miss costs one pass.
  * slimLog applies the patterns only; the tail cut lives in the child scripts and tests/slim-check.mjs runs those.
  */
 export const SLIM = {
   meta: '^[{]"type":"(?!user"|assistant"|attachment")[a-z][a-z-]*".*\\r?\\n',
   image: '"data":"[A-Za-z0-9+/=]{200,}"',
-  long: '(?<!\\\\)"((?:[^"\\\\\\r\\n]|\\\\.){2000})(?:[^"\\\\\\r\\n]|\\\\.)[^"\\\\\\r\\n]*(?:\\\\.[^"\\\\\\r\\n]*)*"',
+  long: '(?<!\\\\)"((?:[^"\\\\\\r\\n]|\\\\.){2000})(?:[^"\\\\\\r\\n]|\\\\.)[^"\\\\\\r\\n]*(?:(?=((?:\\\\.[^"\\\\\\r\\n]*){1,30000}))\\2)*"',
 } as const
 
 export const slimLog = (text: string): string =>
