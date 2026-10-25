@@ -3,7 +3,7 @@ import type { Register } from 'claude-code'
 
 import type { Stage, Theme, Watch } from '../types'
 import { KIND_FILL, PANE_BG, headerCard, phaseChip, stageCard, timelineCard } from './cards'
-import { EMPTY, SLIM, applyEntries, elapsed, mergeStages, parseLines, parseSession, phaseRuns, phaseTitle, readMeta, readMetaInfo, readTranscript, report, running, stageDetail, stageResult, state, tally, timelineBar, tone, who, withFacts } from './journal'
+import { EMPTY, READ_LIMIT, SLIM_CUT, SLIM_TIMEOUT_MS, applyEntries, elapsed, mergeStages, parseLines, parseSession, phaseRuns, phaseTitle, readMeta, readMetaInfo, readTranscript, report, running, slimCommand, stageDetail, stageResult, state, tally, timelineBar, tone, who, withFacts } from './journal'
 
 const PANE = 'workflow-watch'
 const TITLE = 'Tracker'
@@ -104,27 +104,14 @@ async function readTranscriptText($: Engine, path: string): Promise<string> {
   return size > READ_LIMIT ? readSlimmed($, path, size) : $.fs.read(path)
 }
 
-/** What one $.fs.read copies at most: the engine rejects a larger file, and caps a process's stdout the same. */
-const READ_LIMIT = 4 * 1024 * 1024
-
 /** Each slimmed log's last result by path until its size changes; a failure (null) too, so it isn't respawned every tick. */
 const slimmed = new Map<string, { size: number; text: string | null }>()
-
-// The log path and the SLIM patterns reach the child as environment variables, never spliced into its script.
-const POWERSHELL_SCRIPT = [
-  "$ErrorActionPreference='Stop'",
-  '[Console]::OutputEncoding=[Text.Encoding]::UTF8',
-  '$t=[IO.File]::ReadAllText($env:WW_LOG)',
-  "$t=[regex]::Replace($t,$env:WW_META,'',[Text.RegularExpressions.RegexOptions]::Multiline)",
-  `$t=[regex]::Replace($t,$env:WW_IMAGE,'"data":""')`,
-  `[Console]::Out.Write([regex]::Replace($t,$env:WW_LONG,'"$1..."'))`,
-].join('; ')
-const PERL_SCRIPT = 's/$ENV{WW_META}//gm; s/$ENV{WW_IMAGE}/"data":""/g; s/$ENV{WW_LONG}/"$1..."/g'
 
 /**
  * A session log over the read limit, read through the SLIM filter (journal.ts): the engine's bookkeeping lines,
  * pasted images' base64 and the tails of long strings go, every line stays valid JSON, and a 10 MiB log comes to
- * about 1 MiB. Windows PowerShell by its full path on Windows, perl elsewhere; rerun only when the file's size changed.
+ * about 1 MiB. A log still past SLIM_TAIL after that keeps only its newest whole lines, behind a SLIM_CUT line.
+ * Windows PowerShell by its full path on Windows, perl elsewhere (slimCommand); rerun only when the file's size changed.
  */
 async function readSlimmed($: Engine, path: string, size: number): Promise<string> {
   const known = slimmed.get(path)
@@ -132,12 +119,8 @@ async function readSlimmed($: Engine, path: string, size: number): Promise<strin
     if (known.text === null) throw new Error('slimmed read failed at this size')
     return known.text
   }
-  const systemRoot = await $.env.get('SystemRoot')
-  const argv = systemRoot
-    ? [`${systemRoot}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe`, '-NoProfile', '-NonInteractive', '-Command', POWERSHELL_SCRIPT]
-    : ['perl', '-0777', '-pe', PERL_SCRIPT, path]
-  const env = { WW_LOG: path, WW_META: SLIM.meta, WW_IMAGE: SLIM.image, WW_LONG: SLIM.long }
-  const out = await $.process.run(argv, { env, timeoutMs: 20000 }).catch(() => null)
+  const { argv, env } = slimCommand(path, await $.env.get('SystemRoot'))
+  const out = await $.process.run(argv, { env, timeoutMs: SLIM_TIMEOUT_MS }).catch(() => null)
   const text = out && out.exitCode === 0 && !out.isStdoutTruncated && out.stdout.length > 0 ? out.stdout : null
   if (slimmed.size > 16) slimmed.clear()
   slimmed.set(path, { size, text })
@@ -208,9 +191,12 @@ async function tick($: Engine): Promise<void> {
   // A log that cannot be read this tick keeps what the last read found, and the pane says so instead of blanking.
   let sessionStages: Stage[] = base.filter(s => s.kind && s.kind !== 'stage')
   let unread: string | null = null
+  let isCut = false
   if (target.sessionPath) {
     try {
-      const raw = parseSession(await readTranscriptText($, target.sessionPath), now)
+      const text = await readTranscriptText($, target.sessionPath)
+      isCut = text.startsWith(SLIM_CUT)
+      const raw = parseSession(text, now)
       for (const s of raw) if (s.kind === 'agent') s.agentId ??= prevByKey.get(s.key)?.agentId ?? null
       if (target.subagentsDir) await linkSessionAgents($, target.subagentsDir, raw)
       const fresh: Stage[] = []
@@ -249,7 +235,11 @@ async function tick($: Engine): Promise<void> {
 
   const stages = mergeStages(sessionStages, wfStages)
   const run = target.wf && sessionStages.length === 0 ? target.wf.run : target.wf ? `${target.sid.slice(0, 8)} · ${target.wf.run}` : `session ${target.sid.slice(0, 8)}`
-  const notice = unread ? `Could not read ${unread}; showing what was last read.` : null
+  const notice = unread
+    ? `Could not read ${unread}; showing what was last read.`
+    : isCut
+      ? 'This session’s log is too long to read in full, so only its most recent part is shown. Turn numbers start from there.'
+      : null
   const next: Watch = { journal: journalKey, run, stages, now, notice }
   if (!sameRun && stages.length) void openPane($)
 

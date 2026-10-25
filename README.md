@@ -201,6 +201,13 @@ One catch worth knowing about humanizer: as of v2.9.1 the plugin puts `SKILL.md`
 
 ---
 
+## ◢ What's new in workflow-watch 0.4.1
+
+- Big logs work on a stock Mac. macOS's own perl (5.34 in `/usr/bin`) left long strings uncut and took 56 seconds on a 24 MB test log, past the tracker's 20-second limit, so the pane couldn't read big sessions there. The filter now handles that perl, and on the logs measured it runs 3 to 12 times faster on every platform.
+- A very long session no longer leaves the pane stuck. If a log is still over 3.5 MiB after filtering, which took more than 30 MB of log on the sessions measured, the tracker keeps its newest lines and says so. The earliest turns drop out of the cards and the counts.
+- A `PERL_UNICODE` or `PERL5OPT` setting in your shell no longer changes how perl counts the log.
+- The `tracker-slim` CI job runs the real filter on macOS (every perl in `/usr/bin`), Ubuntu and Windows.
+
 ## ◢ What's new in workflow-watch 0.4
 
 - The tracker lives only in its side pane. The band above the prompt, the status line entry, the toasts and the "pane not placed" log line are gone.

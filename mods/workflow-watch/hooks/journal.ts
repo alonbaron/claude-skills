@@ -763,16 +763,57 @@ export function parseSession(text: string, now: number): Stage[] {
  * What a session log past the plugin read limit is filtered through: the same three patterns run in PowerShell (.NET)
  * and perl, and in slimLog for the tests. Every line stays valid JSON. `meta` drops the engine's bookkeeping lines
  * (api-request copies, titles, bridge state; never user, assistant or attachment), `image` empties pasted images'
- * base64, and `long` cuts any string past 2000 characters at an escape boundary.
+ * base64, and `long` cuts any string past 2000 characters at an escape boundary. Perl before 5.38 (macOS's
+ * /usr/bin/perl is 5.34) stops a repeated group after 65534 rounds, so past its first 2001 units `long` takes runs of
+ * plain characters whole and escapes in chunks of up to 30000, each held by a lookahead and a backreference (atomic in
+ * JS, .NET and perl alike, so a miss can't backtrack into it). It never starts on an escaped quote, so a miss costs one pass.
+ * slimLog applies the patterns only; the tail cut lives in the child scripts and tests/slim-check.mjs runs those.
  */
 export const SLIM = {
   meta: '^[{]"type":"(?!user"|assistant"|attachment")[a-z][a-z-]*".*\\r?\\n',
   image: '"data":"[A-Za-z0-9+/=]{200,}"',
-  long: '"((?:[^"\\\\\\r\\n]|\\\\.){2000})(?:[^"\\\\\\r\\n]|\\\\.)+"',
+  long: '(?<!\\\\)"((?:[^"\\\\\\r\\n]|\\\\.){2000})(?:[^"\\\\\\r\\n]|\\\\.)[^"\\\\\\r\\n]*(?:(?=((?:\\\\.[^"\\\\\\r\\n]*){1,30000}))\\2)*"',
 } as const
 
 export const slimLog = (text: string): string =>
   text.replace(new RegExp(SLIM.meta, 'gm'), '').replace(new RegExp(SLIM.image, 'g'), '"data":""').replace(new RegExp(SLIM.long, 'g'), '"$1..."')
+
+/** What one $.fs.read copies at most: the engine rejects a larger file, and caps a process's stdout the same. */
+export const READ_LIMIT = 4 * 1024 * 1024
+/** Bytes a slimmed log keeps at most: past it only its newest whole lines are kept, behind SLIM_CUT. */
+export const SLIM_TAIL = READ_LIMIT - 512 * 1024
+/** The first line of a slimmed log that had to drop its oldest lines; parseSession skips it. */
+export const SLIM_CUT = '{"type":"slim-cut"}'
+/** How long a slimming child may run before its read counts as failed. */
+export const SLIM_TIMEOUT_MS = 20000
+
+// The SLIM patterns, the tail size and the cut marker reach the child as environment variables, never spliced into its
+// script, and so does the log path for PowerShell; perl gets it as its file argument. perl runs with -C0 and an empty
+// PERL5OPT so a user's PERL_UNICODE or PERL5OPT=-C can't turn its byte counts into character counts.
+const POWERSHELL_SCRIPT = [
+  "$ErrorActionPreference='Stop'",
+  '[Console]::OutputEncoding=[Text.Encoding]::UTF8',
+  '$t=[IO.File]::ReadAllText($env:WW_LOG)',
+  "$t=[regex]::Replace($t,$env:WW_META,'',[Text.RegularExpressions.RegexOptions]::Multiline)",
+  `$t=[regex]::Replace($t,$env:WW_IMAGE,'"data":""')`,
+  `$t=[regex]::Replace($t,$env:WW_LONG,'"$1..."')`,
+  '$b=[Text.Encoding]::UTF8.GetBytes($t)',
+  '$n=[int]$env:WW_TAIL',
+  'if($b.Length -gt $n){$i=[Array]::IndexOf($b,[byte]10,$b.Length-$n-1); $t=$env:WW_CUT+[char]10+[Text.Encoding]::UTF8.GetString($b,$i+1,$b.Length-$i-1)}',
+  '[Console]::Out.Write($t)',
+].join('; ')
+const PERL_SCRIPT =
+  's/$ENV{WW_META}//gm; s/$ENV{WW_IMAGE}/"data":""/g; s/$ENV{WW_LONG}/"$1..."/g; ' +
+  'if (length($_) > $ENV{WW_TAIL}) { $_ = "$ENV{WW_CUT}\\n" . substr($_, index($_, "\\n", length($_) - $ENV{WW_TAIL} - 1) + 1) }'
+
+/** The child that slims a log: Windows PowerShell by its full path when SystemRoot is set, perl elsewhere. */
+export function slimCommand(path: string, systemRoot: string | null | undefined, perl = 'perl'): { argv: string[]; env: Record<string, string> } {
+  const argv = systemRoot
+    ? [`${systemRoot}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe`, '-NoProfile', '-NonInteractive', '-Command', POWERSHELL_SCRIPT]
+    : [perl, '-C0', '-0777', '-pe', PERL_SCRIPT, path]
+  const env = { WW_LOG: path, WW_META: SLIM.meta, WW_IMAGE: SLIM.image, WW_LONG: SLIM.long, WW_TAIL: String(SLIM_TAIL), WW_CUT: SLIM_CUT }
+  return { argv, env: systemRoot ? env : { ...env, PERL5OPT: '' } }
+}
 
 export function mergeStages(sessionStages: Stage[], workflowStages: Stage[]): Stage[] {
   if (sessionStages.length === 0) return workflowStages
