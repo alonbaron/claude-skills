@@ -1,0 +1,223 @@
+<svg width="1280" height="520" viewBox="0 0 1280 520" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t d">
+<title id="t">claude plugin eval suite — 19 behavioral cases and 120 trigger queries on Fable 5.1</title>
+<desc id="d">Telemetry dashboard of all 19 behavioral eval cases across the 6 skills (ponytail vendored from DietrichGebert/ponytail MIT, ask-the-council, prompt-generator, architect, review-swarm, up-to-date), scored with and without the plugin at the 0.7 threshold on Fable 5.1, plus trigger accuracy across 120 queries (20 per skill).</desc>
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1280" y2="520" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="#050814"/>
+    <stop offset=".5" stop-color="#0A1024"/>
+    <stop offset="1" stop-color="#0E1024"/>
+  </linearGradient>
+  <radialGradient id="gA" cx="220" cy="120" r="460" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="#125190" stop-opacity=".35"/>
+    <stop offset="1" stop-color="#125190" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="gB" cx="1060" cy="400" r="480" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="#7C3AED" stop-opacity=".25"/>
+    <stop offset="1" stop-color="#7C3AED" stop-opacity="0"/>
+  </radialGradient>
+  <linearGradient id="edge" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#38BDF8" stop-opacity=".55"/>
+    <stop offset=".5" stop-color="#4174A6" stop-opacity=".28"/>
+    <stop offset="1" stop-color="#10B981" stop-opacity=".55"/>
+  </linearGradient>
+  <linearGradient id="card" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#131C38" stop-opacity=".9"/>
+    <stop offset="1" stop-color="#0B1124" stop-opacity=".95"/>
+  </linearGradient>
+  <linearGradient id="barHi" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0" stop-color="#06B6D4"/>
+    <stop offset=".6" stop-color="#3B82F6"/>
+    <stop offset="1" stop-color="#8B5CF6"/>
+  </linearGradient>
+  <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
+    <circle cx="2" cy="2" r="1" fill="#8DABCA" fill-opacity=".16"/>
+  </pattern>
+  <filter id="shadow" x="-8%" y="-8%" width="116%" height="120%">
+    <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#02040A" flood-opacity=".6"/>
+  </filter>
+  <clipPath id="clip">
+    <rect width="1280" height="520" rx="24"/>
+  </clipPath>
+  <style><![CDATA[
+    .sans { font-family: 'Manrope', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    .mono { font-family: ui-monospace, 'Cascadia Code', 'SFMono-Regular', Menlo, Consolas, monospace; }
+  ]]></style>
+</defs>
+
+<g clip-path="url(#clip)">
+  <rect width="1280" height="520" fill="url(#bg)"/>
+  <rect width="1280" height="520" fill="url(#gA)"/>
+  <rect width="1280" height="520" fill="url(#gB)"/>
+  <rect width="1280" height="520" fill="url(#dots)"/>
+
+  <!-- Header -->
+  <g class="mono">
+    <text x="44" y="42" font-size="13" font-weight="700" letter-spacing="2" fill="#38BDF8">◢ EVAL SUITE TELEMETRY · 19 BEHAVIORAL CASES (0.7 THRESHOLD) · 120 TRIGGER QUERIES · FABLE 5.1</text>
+    <text x="1236" y="42" text-anchor="end" font-size="12" fill="#34D399" font-weight="700">19 / 19 PASSING · 0 FALSE FIRES</text>
+  </g>
+  <line x1="44" y1="58" x2="1236" y2="58" stroke="#1E293B" stroke-width="1.5"/>
+
+  <!-- 6 Skill Cards in 3x2 Bento Grid -->
+  <!-- Card 1: review-swarm -->
+  <g transform="translate(44 78)" filter="url(#shadow)">
+    <rect width="382" height="196" rx="16" fill="url(#card)" stroke="#38BDF8" stroke-opacity=".55" stroke-width="1.5"/>
+    <line x1="16" y1="1.5" x2="366" y2="1.5" stroke="#FFFFFF" stroke-opacity=".28"/>
+    <text x="20" y="28" class="sans" font-size="16" font-weight="800" fill="#F8FAFC">review-swarm</text>
+    <text x="362" y="27" text-anchor="end" class="mono" font-size="11" fill="#38BDF8">trigger: 16/20 · 0 false</text>
+    <line x1="20" y1="40" x2="362" y2="40" stroke="#1E293B"/>
+    <g transform="translate(20 62)" class="mono" font-size="11.5">
+      <text x="0" y="0" fill="#CBD5E1">ranked report</text>
+      <rect x="150" y="-10" width="120" height="8" rx="4" fill="url(#barHi)"/>
+      <rect x="150" y="1" width="48" height="5" rx="2.5" fill="#334155"/>
+      <text x="342" y="-1" text-anchor="end" fill="#38BDF8" font-weight="700">1.00 <tspan fill="#64748B" font-weight="400">/ 0.40</tspan></text>
+
+      <text x="0" y="40" fill="#CBD5E1">security hand-off</text>
+      <rect x="150" y="30" width="120" height="8" rx="4" fill="url(#barHi)"/>
+      <rect x="150" y="41" width="40" height="5" rx="2.5" fill="#334155"/>
+      <text x="342" y="39" text-anchor="end" fill="#38BDF8" font-weight="700">1.00 <tspan fill="#64748B" font-weight="400">/ 0.33</tspan></text>
+
+      <text x="0" y="80" fill="#CBD5E1">trivial diff (boundary)</text>
+      <rect x="150" y="70" width="120" height="8" rx="4" fill="#10B981"/>
+      <rect x="150" y="81" width="120" height="5" rx="2.5" fill="#334155"/>
+      <text x="342" y="79" text-anchor="end" fill="#34D399" font-weight="700">1.00 <tspan fill="#64748B" font-weight="400">/ 1.00</tspan></text>
+    </g>
+    <text x="20" y="180" class="mono" font-size="10.5" fill="#64748B">3 cases · Sonnet reviewers → Opus verifiers</text>
+  </g>
+
+  <!-- Card 2: ask-the-council -->
+  <g transform="translate(449 78)" filter="url(#shadow)">
+    <rect width="382" height="196" rx="16" fill="url(#card)" stroke="#8B5CF6" stroke-opacity=".55" stroke-width="1.5"/>
+    <line x1="16" y1="1.5" x2="366" y2="1.5" stroke="#FFFFFF" stroke-opacity=".28"/>
+    <text x="20" y="28" class="sans" font-size="16" font-weight="800" fill="#F8FAFC">ask-the-council</text>
+    <text x="362" y="27" text-anchor="end" class="mono" font-size="11" fill="#C084FC">trigger: 17/20 · 0 false</text>
+    <line x1="20" y1="40" x2="362" y2="40" stroke="#1E293B"/>
+    <g transform="translate(20 62)" class="mono" font-size="11.5">
+      <text x="0" y="0" fill="#CBD5E1">declines low stakes</text>
+      <rect x="150" y="-10" width="120" height="8" rx="4" fill="url(#barHi)"/>
+      <rect x="150" y="1" width="90" height="5" rx="2.5" fill="#334155"/>
+      <text x="342" y="-1" text-anchor="end" fill="#38BDF8" font-weight="700">1.00 <tspan fill="#64748B" font-weight="400">/ 0.75</tspan></text>
+
+      <text x="0" y="40" fill="#CBD5E1">forces divergence</text>
+      <rect x="150" y="30" width="108" height="8" rx="4" fill="url(#barHi)"/>
+      <rect x="150" y="41" width="84" height="5" rx="2.5" fill="#334155"/>
+      <text x="342" y="39" text-anchor="end" fill="#38BDF8" font-weight="700">0.90 <tspan fill="#64748B" font-weight="400">/ 0.70</tspan></text>
+
+      <text x="0" y="80" fill="#CBD5E1">hands off after verdict</text>
+      <rect x="150" y="70" width="120" height="8" rx="4" fill="url(#barHi)"/>
+      <rect x="150" y="81" width="40" height="5" rx="2.5" fill="#334155"/>
+      <text x="342" y="79" text-anchor="end" fill="#38BDF8" font-weight="700">1.00 <tspan fill="#64748B" font-weight="400">/ 0.33</tspan></text>
+    </g>
+    <text x="20" y="180" class="mono" font-size="10.5" fill="#64748B">3 cases · Opus advisors + Chairman recommendation</text>
+  </g>
+
+  <!-- Card 3: architect -->
+  <g transform="translate(854 78)" filter="url(#shadow)">
+    <rect width="382" height="196" rx="16" fill="url(#card)" stroke="#06B6D4" stroke-opacity=".55" stroke-width="1.5"/>
+    <line x1="16" y1="1.5" x2="366" y2="1.5" stroke="#FFFFFF" stroke-opacity=".28"/>
+    <text x="20" y="28" class="sans" font-size="16" font-weight="800" fill="#F8FAFC">architect</text>
+    <text x="362" y="27" text-anchor="end" class="mono" font-size="11" fill="#22D3EE">trigger: 18/20 · 0 false</text>
+    <line x1="20" y1="40" x2="362" y2="40" stroke="#1E293B"/>
+    <g transform="translate(20 62)" class="mono" font-size="11.5">
+      <text x="0" y="0" fill="#CBD5E1">new feature spec</text>
+      <rect x="150" y="-10" width="120" height="8" rx="4" fill="url(#barHi)"/>
+      <rect x="150" y="1" width="80" height="5" rx="2.5" fill="#334155"/>
+      <text x="342" y="-1" text-anchor="end" fill="#38BDF8" font-weight="700">1.00 <tspan fill="#64748B" font-weight="400">/ 0.67</tspan></text>
+
+      <text x="0" y="40" fill="#CBD5E1">small fix (boundary)</text>
+      <rect x="150" y="30" width="120" height="8" rx="4" fill="url(#barHi)"/>
+      <rect x="150" y="41" width="106" height="5" rx="2.5" fill="#334155"/>
+      <text x="342" y="39" text-anchor="end" fill="#38BDF8" font-weight="700">1.00 <tspan fill="#64748B" font-weight="400">/ 0.88</tspan></text>
+
+      <text x="0" y="80" fill="#CBD5E1">audit existing docs</text>
+      <rect x="150" y="70" width="120" height="8" rx="4" fill="#10B981"/>
+      <rect x="150" y="81" width="120" height="5" rx="2.5" fill="#334155"/>
+      <text x="342" y="79" text-anchor="end" fill="#34D399" font-weight="700">1.00 <tspan fill="#64748B" font-weight="400">/ 1.00</tspan></text>
+    </g>
+    <text x="20" y="180" class="mono" font-size="10.5" fill="#64748B">3 cases · domain model + invariants + failure paths</text>
+  </g>
+
+  <!-- Card 4: ponytail (vendored) -->
+  <g transform="translate(44 294)" filter="url(#shadow)">
+    <rect width="382" height="196" rx="16" fill="url(#card)" stroke="#EC4899" stroke-opacity=".55" stroke-width="1.5"/>
+    <line x1="16" y1="1.5" x2="366" y2="1.5" stroke="#FFFFFF" stroke-opacity=".28"/>
+    <text x="20" y="28" class="sans" font-size="16" font-weight="800" fill="#F8FAFC">ponytail <tspan class="mono" font-size="11" font-weight="500" fill="#94A3B8">(vendored · MIT)</tspan></text>
+    <text x="362" y="27" text-anchor="end" class="mono" font-size="11" fill="#F472B6">trigger: 17/20 · 0 false</text>
+    <line x1="20" y1="40" x2="362" y2="40" stroke="#1E293B"/>
+    <g transform="translate(20 58)" class="mono" font-size="11">
+      <text x="0" y="0" fill="#CBD5E1">pushback on abstraction</text>
+      <rect x="160" y="-9" width="99" height="7" rx="3.5" fill="url(#barHi)"/>
+      <rect x="160" y="1" width="55" height="4" rx="2" fill="#334155"/>
+      <text x="342" y="-1" text-anchor="end" fill="#38BDF8" font-weight="700">0.90 <tspan fill="#64748B" font-weight="400">/ 0.50</tspan></text>
+
+      <text x="0" y="30" fill="#CBD5E1">trust boundary (quiet)</text>
+      <rect x="160" y="21" width="91" height="7" rx="3.5" fill="#10B981"/>
+      <rect x="160" y="31" width="91" height="4" rx="2" fill="#334155"/>
+      <text x="342" y="29" text-anchor="end" fill="#34D399" font-weight="700">0.83 <tspan fill="#64748B" font-weight="400">/ 0.83</tspan></text>
+
+      <text x="0" y="60" fill="#CBD5E1">defers to /simplify</text>
+      <rect x="160" y="51" width="110" height="7" rx="3.5" fill="#10B981"/>
+      <rect x="160" y="61" width="110" height="4" rx="2" fill="#334155"/>
+      <text x="342" y="59" text-anchor="end" fill="#34D399" font-weight="700">1.00 <tspan fill="#64748B" font-weight="400">/ 1.00</tspan></text>
+
+      <text x="0" y="90" fill="#CBD5E1">root cause</text>
+      <rect x="160" y="81" width="110" height="7" rx="3.5" fill="#10B981"/>
+      <rect x="160" y="91" width="110" height="4" rx="2" fill="#334155"/>
+      <text x="342" y="89" text-anchor="end" fill="#34D399" font-weight="700">1.00 <tspan fill="#64748B" font-weight="400">/ 1.00</tspan></text>
+    </g>
+    <text x="20" y="180" class="mono" font-size="10.5" fill="#64748B">4 cases · DietrichGebert/ponytail (MIT)</text>
+  </g>
+
+  <!-- Card 5: prompt-generator -->
+  <g transform="translate(449 294)" filter="url(#shadow)">
+    <rect width="382" height="196" rx="16" fill="url(#card)" stroke="#6366F1" stroke-opacity=".55" stroke-width="1.5"/>
+    <line x1="16" y1="1.5" x2="366" y2="1.5" stroke="#FFFFFF" stroke-opacity=".28"/>
+    <text x="20" y="28" class="sans" font-size="16" font-weight="800" fill="#F8FAFC">prompt-generator</text>
+    <text x="362" y="27" text-anchor="end" class="mono" font-size="11" fill="#818CF8">trigger: 15/20 · 0 false</text>
+    <line x1="20" y1="40" x2="362" y2="40" stroke="#1E293B"/>
+    <g transform="translate(20 62)" class="mono" font-size="11.5">
+      <text x="0" y="0" fill="#CBD5E1">coding-agent prompt</text>
+      <rect x="150" y="-10" width="112" height="8" rx="4" fill="url(#barHi)"/>
+      <rect x="150" y="1" width="85" height="5" rx="2.5" fill="#334155"/>
+      <text x="342" y="-1" text-anchor="end" fill="#38BDF8" font-weight="700">0.93 <tspan fill="#64748B" font-weight="400">/ 0.71</tspan></text>
+
+      <text x="0" y="40" fill="#CBD5E1">whole-build scope check</text>
+      <rect x="150" y="30" width="120" height="8" rx="4" fill="url(#barHi)"/>
+      <rect x="150" y="41" width="80" height="5" rx="2.5" fill="#334155"/>
+      <text x="342" y="39" text-anchor="end" fill="#38BDF8" font-weight="700">1.00 <tspan fill="#64748B" font-weight="400">/ 0.67</tspan></text>
+
+      <text x="0" y="80" fill="#CBD5E1">human prose (boundary)</text>
+      <rect x="150" y="70" width="120" height="8" rx="4" fill="#10B981"/>
+      <rect x="150" y="81" width="120" height="5" rx="2.5" fill="#334155"/>
+      <text x="342" y="79" text-anchor="end" fill="#34D399" font-weight="700">1.00 <tspan fill="#64748B" font-weight="400">/ 1.00</tspan></text>
+    </g>
+    <text x="20" y="180" class="mono" font-size="10.5" fill="#64748B">3 cases · anti-hallucination + strict agent rules</text>
+  </g>
+
+  <!-- Card 6: up-to-date -->
+  <g transform="translate(854 294)" filter="url(#shadow)">
+    <rect width="382" height="196" rx="16" fill="url(#card)" stroke="#10B981" stroke-opacity=".55" stroke-width="1.5"/>
+    <line x1="16" y1="1.5" x2="366" y2="1.5" stroke="#FFFFFF" stroke-opacity=".28"/>
+    <text x="20" y="28" class="sans" font-size="16" font-weight="800" fill="#F8FAFC">up-to-date</text>
+    <text x="362" y="27" text-anchor="end" class="mono" font-size="11" fill="#34D399">trigger: 20/20 · 0 false</text>
+    <line x1="20" y1="40" x2="362" y2="40" stroke="#1E293B"/>
+    <g transform="translate(20 62)" class="mono" font-size="11.5">
+      <text x="0" y="0" fill="#CBD5E1">dirty and behind</text>
+      <rect x="150" y="-10" width="120" height="8" rx="4" fill="url(#barHi)"/>
+      <rect x="150" y="1" width="84" height="5" rx="2.5" fill="#334155"/>
+      <text x="342" y="-1" text-anchor="end" fill="#38BDF8" font-weight="700">1.00 <tspan fill="#64748B" font-weight="400">/ 0.70</tspan></text>
+
+      <text x="0" y="40" fill="#CBD5E1">no upstream branch</text>
+      <rect x="150" y="30" width="106" height="8" rx="4" fill="url(#barHi)"/>
+      <rect x="150" y="41" width="74" height="5" rx="2.5" fill="#334155"/>
+      <text x="342" y="39" text-anchor="end" fill="#38BDF8" font-weight="700">0.88 <tspan fill="#64748B" font-weight="400">/ 0.62</tspan></text>
+
+      <text x="0" y="80" fill="#CBD5E1">no remote (boundary)</text>
+      <rect x="150" y="70" width="120" height="8" rx="4" fill="#10B981"/>
+      <rect x="150" y="81" width="120" height="5" rx="2.5" fill="#334155"/>
+      <text x="342" y="79" text-anchor="end" fill="#34D399" font-weight="700">1.00 <tspan fill="#64748B" font-weight="400">/ 1.00</tspan></text>
+    </g>
+    <text x="20" y="180" class="mono" font-size="10.5" fill="#64748B">3 cases · read-only preflight sync + brief</text>
+  </g>
+</g>
+<rect x="1" y="1" width="1278" height="518" rx="23" fill="none" stroke="url(#edge)" stroke-width="1.5"/>
+</svg>

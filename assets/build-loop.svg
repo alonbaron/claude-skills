@@ -1,0 +1,298 @@
+<svg width="1280" height="560" viewBox="0 0 1280 560" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t d">
+<title id="t">/alon-skills:build-loop — 11-stage unattended build workflow</title>
+<desc id="d">Architecture diagram of /alon-skills:build-loop: 11 stages (plan, scout, spec, research, build, measure, refute with 6 lenses, merge, arbiter, fix, close) running as fresh subagents across Fable 5.1, Opus 5.5, Sonnet 5.5, and Haiku 5.5, reading and writing state in the repo (TODO_WORKFLOW.md, SOURCE_OF_TRUTH.md, spec.md, docs/handoff.md).</desc>
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1280" y2="560" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="#050814"/>
+    <stop offset=".5" stop-color="#0A1024"/>
+    <stop offset="1" stop-color="#0E1024"/>
+  </linearGradient>
+  <radialGradient id="glow1" cx="280" cy="180" r="460" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="#125190" stop-opacity=".38"/>
+    <stop offset="1" stop-color="#125190" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="glow2" cx="980" cy="360" r="500" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="#7C3AED" stop-opacity=".26"/>
+    <stop offset="1" stop-color="#7C3AED" stop-opacity="0"/>
+  </radialGradient>
+  <linearGradient id="edge" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#38BDF8" stop-opacity=".55"/>
+    <stop offset=".5" stop-color="#4174A6" stop-opacity=".28"/>
+    <stop offset="1" stop-color="#A855F7" stop-opacity=".55"/>
+  </linearGradient>
+  <linearGradient id="cardBg" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#141E3A" stop-opacity=".9"/>
+    <stop offset="1" stop-color="#0B1124" stop-opacity=".95"/>
+  </linearGradient>
+  <linearGradient id="railGrad" x1="60" y1="0" x2="1220" y2="0" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="#A855F7"/>
+    <stop offset=".35" stop-color="#38BDF8"/>
+    <stop offset=".7" stop-color="#10B981"/>
+    <stop offset="1" stop-color="#EC4899"/>
+  </linearGradient>
+  <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
+    <circle cx="2" cy="2" r="1" fill="#8DABCA" fill-opacity=".16"/>
+  </pattern>
+  <pattern id="grid" width="88" height="88" patternUnits="userSpaceOnUse">
+    <path d="M88 0H0V88" fill="none" stroke="#4174A6" stroke-opacity=".1" stroke-width="1"/>
+  </pattern>
+  <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+    <feGaussianBlur stdDeviation="5" result="b"/>
+    <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>
+  <filter id="shadow" x="-10%" y="-10%" width="120%" height="125%">
+    <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#02040A" flood-opacity=".6"/>
+  </filter>
+  <clipPath id="clip">
+    <rect width="1280" height="560" rx="24"/>
+  </clipPath>
+  <style><![CDATA[
+    .sans { font-family: 'Manrope', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    .mono { font-family: ui-monospace, 'Cascadia Code', 'SFMono-Regular', Menlo, Consolas, monospace; }
+    .flow { stroke-dasharray: 12 180; animation: move 3.6s linear infinite; }
+    .flowRev { stroke-dasharray: 8 120; animation: moveRev 2.8s linear infinite; }
+    @keyframes move { to { stroke-dashoffset: -192; } }
+    @keyframes moveRev { to { stroke-dashoffset: 128; } }
+    @media (prefers-reduced-motion: reduce) { .flow, .flowRev { animation: none; } }
+  ]]></style>
+</defs>
+
+<g clip-path="url(#clip)">
+  <rect width="1280" height="560" fill="url(#bg)"/>
+  <rect width="1280" height="560" fill="url(#glow1)"/>
+  <rect width="1280" height="560" fill="url(#glow2)"/>
+  <rect width="1280" height="560" fill="url(#grid)"/>
+  <rect width="1280" height="560" fill="url(#dots)"/>
+
+  <!-- Header Bar -->
+  <g class="mono">
+    <text x="44" y="42" font-size="13" font-weight="700" letter-spacing="2" fill="#38BDF8">◢ /alon-skills:build-loop · FRESH SUBAGENT PER STAGE · STATE IN REPO</text>
+    <!-- Model Tier Legend -->
+    <g transform="translate(650 26)" font-size="11.5" font-weight="600">
+      <circle cx="0" cy="11" r="5" fill="#A855F7"/>
+      <text x="11" y="15" fill="#E2E8F0">Fable 5.1 <tspan fill="#64748B">(decisions)</tspan></text>
+      <circle cx="152" cy="11" r="5" fill="#38BDF8"/>
+      <text x="163" y="15" fill="#E2E8F0">Opus 5.5 <tspan fill="#64748B">(review &amp; fix)</tspan></text>
+      <circle cx="318" cy="11" r="5" fill="#10B981"/>
+      <text x="329" y="15" fill="#E2E8F0">Sonnet 5.5 <tspan fill="#64748B">(build)</tspan></text>
+      <circle cx="458" cy="11" r="5" fill="#F59E0B"/>
+      <text x="469" y="15" fill="#E2E8F0">Haiku 5.5 <tspan fill="#64748B">(scout/measure)</tspan></text>
+    </g>
+  </g>
+  <line x1="44" y1="58" x2="1236" y2="58" stroke="#1E293B" stroke-width="1.5"/>
+
+  <!-- TOP ROW: Stages 01 to 06 (Left to Right) -->
+  <!-- Connecting Rail Row 1 -->
+  <line x1="120" y1="138" x2="1160" y2="138" stroke="#1E293B" stroke-width="4"/>
+  <line x1="120" y1="138" x2="1160" y2="138" stroke="url(#railGrad)" stroke-width="2" stroke-opacity=".5"/>
+  <path class="flow" d="M120 138 L1160 138" stroke="#38BDF8" stroke-width="3" stroke-linecap="round" filter="url(#glow)" fill="none"/>
+
+  <!-- Turn-around conduit from Stage 06 (measure) down to Stage 07 (refute) -->
+  <path d="M1146 192 C1146 236, 980 220, 420 248" stroke="#38BDF8" stroke-opacity=".35" stroke-width="2" fill="none"/>
+  <path class="flow" d="M1146 192 C1146 236, 980 220, 420 248" stroke="#38BDF8" stroke-width="2.5" stroke-linecap="round" filter="url(#glow)" fill="none"/>
+
+  <!-- Stage 01: plan -->
+  <g transform="translate(44 82)" filter="url(#shadow)">
+    <rect width="178" height="112" rx="14" fill="url(#cardBg)" stroke="#A855F7" stroke-opacity=".7" stroke-width="1.5"/>
+    <line x1="14" y1="1.5" x2="164" y2="1.5" stroke="#FFFFFF" stroke-opacity=".28"/>
+    <text x="16" y="25" class="mono" font-size="11" font-weight="700" fill="#C084FC">01 · PLAN</text>
+    <rect x="112" y="12" width="52" height="18" rx="9" fill="#A855F7" fill-opacity=".2" stroke="#A855F7" stroke-opacity=".5"/>
+    <text x="138" y="24.5" text-anchor="middle" class="mono" font-size="10" font-weight="700" fill="#E9D5FF">fable·hi</text>
+    <text x="16" y="48" class="sans" font-size="12.5" font-weight="700" fill="#F8FAFC">Pick eligible row</text>
+    <text x="16" y="66" class="mono" font-size="10.5" fill="#94A3B8">→ [IN PROGRESS]</text>
+    <text x="16" y="83" class="mono" font-size="10.5" fill="#94A3B8">→ branch + plan.json</text>
+    <text x="16" y="100" class="mono" font-size="10" fill="#64748B">checks Commands table</text>
+  </g>
+
+  <!-- Stage 02: scout -->
+  <g transform="translate(242 82)" filter="url(#shadow)">
+    <rect width="178" height="112" rx="14" fill="url(#cardBg)" stroke="#F59E0B" stroke-opacity=".7" stroke-width="1.5"/>
+    <line x1="14" y1="1.5" x2="164" y2="1.5" stroke="#FFFFFF" stroke-opacity=".28"/>
+    <text x="16" y="25" class="mono" font-size="11" font-weight="700" fill="#FBBF24">02 · SCOUT</text>
+    <rect x="108" y="12" width="56" height="18" rx="9" fill="#F59E0B" fill-opacity=".2" stroke="#F59E0B" stroke-opacity=".5"/>
+    <text x="136" y="24.5" text-anchor="middle" class="mono" font-size="10" font-weight="700" fill="#FDE68A">haiku·low</text>
+    <text x="16" y="48" class="sans" font-size="12.5" font-weight="700" fill="#F8FAFC">Locate scope &amp; docs</text>
+    <text x="16" y="66" class="mono" font-size="10.5" fill="#94A3B8">grep / glob excerpts</text>
+    <text x="16" y="83" class="mono" font-size="10.5" fill="#94A3B8">files, tests, docSections</text>
+    <text x="16" y="100" class="mono" font-size="10" fill="#64748B">read-only (writes nothing)</text>
+  </g>
+
+  <!-- Stage 03: spec -->
+  <g transform="translate(440 82)" filter="url(#shadow)">
+    <rect width="188" height="112" rx="14" fill="url(#cardBg)" stroke="#A855F7" stroke-opacity=".7" stroke-width="1.5"/>
+    <line x1="14" y1="1.5" x2="174" y2="1.5" stroke="#FFFFFF" stroke-opacity=".28"/>
+    <text x="16" y="25" class="mono" font-size="11" font-weight="700" fill="#C084FC">03 · SPEC</text>
+    <rect x="122" y="12" width="52" height="18" rx="9" fill="#A855F7" fill-opacity=".2" stroke="#A855F7" stroke-opacity=".5"/>
+    <text x="148" y="24.5" text-anchor="middle" class="mono" font-size="10" font-weight="700" fill="#E9D5FF">fable·hi</text>
+    <text x="16" y="48" class="sans" font-size="12.5" font-weight="700" fill="#F8FAFC">8-section spec.md</text>
+    <text x="16" y="66" class="mono" font-size="10.5" fill="#94A3B8">SoT → Roadmap → NN docs</text>
+    <text x="16" y="83" class="mono" font-size="10.5" fill="#94A3B8">acceptance + verify cmds</text>
+    <text x="16" y="100" class="mono" font-size="10" fill="#64748B">refuses to guess decisions</text>
+  </g>
+
+  <!-- Stage 04: research -->
+  <g transform="translate(648 82)" filter="url(#shadow)">
+    <rect width="194" height="112" rx="14" fill="url(#cardBg)" stroke="#10B981" stroke-opacity=".65" stroke-width="1.5" stroke-dasharray="5 3"/>
+    <line x1="14" y1="1.5" x2="180" y2="1.5" stroke="#FFFFFF" stroke-opacity=".24"/>
+    <text x="16" y="25" class="mono" font-size="11" font-weight="700" fill="#34D399">04 · RESEARCH</text>
+    <rect x="116" y="12" width="64" height="18" rx="9" fill="#10B981" fill-opacity=".18" stroke="#10B981" stroke-opacity=".5"/>
+    <text x="148" y="24.5" text-anchor="middle" class="mono" font-size="10" font-weight="700" fill="#A7F3D0">sonnet·med</text>
+    <text x="16" y="48" class="sans" font-size="12.5" font-weight="700" fill="#F8FAFC">Verify unknown APIs</text>
+    <text x="16" y="66" class="mono" font-size="10.5" fill="#94A3B8">manifests, types, context7</text>
+    <text x="16" y="83" class="mono" font-size="10.5" fill="#94A3B8">→ research.md</text>
+    <text x="16" y="100" class="mono" font-size="10" fill="#38BDF8">skipped when APIs verified</text>
+  </g>
+
+  <!-- Stage 05: build -->
+  <g transform="translate(862 82)" filter="url(#shadow)">
+    <rect width="182" height="112" rx="14" fill="url(#cardBg)" stroke="#10B981" stroke-opacity=".75" stroke-width="1.5"/>
+    <line x1="14" y1="1.5" x2="168" y2="1.5" stroke="#FFFFFF" stroke-opacity=".28"/>
+    <text x="16" y="25" class="mono" font-size="11" font-weight="700" fill="#34D399">05 · BUILD</text>
+    <rect x="104" y="12" width="64" height="18" rx="9" fill="#10B981" fill-opacity=".2" stroke="#10B981" stroke-opacity=".5"/>
+    <text x="136" y="24.5" text-anchor="middle" class="mono" font-size="10" font-weight="700" fill="#A7F3D0">sonnet·med</text>
+    <text x="16" y="48" class="sans" font-size="12.5" font-weight="700" fill="#F8FAFC">Code + tests</text>
+    <text x="16" y="66" class="mono" font-size="10.5" fill="#94A3B8">micro-commits + build.md</text>
+    <text x="16" y="83" class="mono" font-size="10.5" fill="#94A3B8">testsPassed · lintPassed</text>
+    <text x="16" y="100" class="mono" font-size="10" fill="#64748B">stops on blockedReason</text>
+  </g>
+
+  <!-- Stage 06: measure -->
+  <g transform="translate(1064 82)" filter="url(#shadow)">
+    <rect width="172" height="112" rx="14" fill="url(#cardBg)" stroke="#F59E0B" stroke-opacity=".7" stroke-width="1.5"/>
+    <line x1="14" y1="1.5" x2="158" y2="1.5" stroke="#FFFFFF" stroke-opacity=".28"/>
+    <text x="16" y="25" class="mono" font-size="11" font-weight="700" fill="#FBBF24">06 · MEASURE</text>
+    <rect x="104" y="12" width="54" height="18" rx="9" fill="#F59E0B" fill-opacity=".2" stroke="#F59E0B" stroke-opacity=".5"/>
+    <text x="131" y="24.5" text-anchor="middle" class="mono" font-size="10" font-weight="700" fill="#FDE68A">haiku·low</text>
+    <text x="16" y="48" class="sans" font-size="12.5" font-weight="700" fill="#F8FAFC">Independent diff check</text>
+    <text x="16" y="66" class="mono" font-size="10.5" fill="#94A3B8">git diff base..HEAD</text>
+    <text x="16" y="83" class="mono" font-size="10.5" fill="#94A3B8">touchesTrustBoundary</text>
+    <text x="16" y="100" class="mono" font-size="10" fill="#64748B">triggers security lens</text>
+  </g>
+
+  <!-- SECOND ROW: Stage 07 Refute Swarm -> 08 Merge -> 09 Arbiter -> 10 Fix -> 11 Close -->
+  <line x1="480" y1="322" x2="1150" y2="322" stroke="#1E293B" stroke-width="4"/>
+  <path class="flow" d="M480 322 L1150 322" stroke="#A855F7" stroke-width="3" stroke-linecap="round" filter="url(#glow)" fill="none"/>
+
+  <!-- Dispute / Fix Loop Arc between 07 Refute, 09 Arbiter, and 10 Fix -->
+  <path d="M980 250 C980 218, 810 218, 810 250" stroke="#EC4899" stroke-opacity=".55" stroke-width="1.8" stroke-dasharray="4 4" fill="none"/>
+  <path class="flowRev" d="M980 250 C980 218, 810 218, 810 250" stroke="#EC4899" stroke-width="2.5" stroke-linecap="round" filter="url(#glow)" fill="none"/>
+  <text x="895" y="222" text-anchor="middle" class="mono" font-size="10" fill="#F472B6">disputed finding → arbiter; round 2+ re-runs blocking lenses</text>
+
+  <!-- Stage 07: refute (Multi-Lens Parallel Panel) -->
+  <g transform="translate(44 242)" filter="url(#shadow)">
+    <rect width="466" height="168" rx="16" fill="url(#cardBg)" stroke="#38BDF8" stroke-opacity=".8" stroke-width="1.5"/>
+    <line x1="18" y1="1.5" x2="448" y2="1.5" stroke="#FFFFFF" stroke-opacity=".3"/>
+    <text x="20" y="26" class="mono" font-size="12" font-weight="700" fill="#38BDF8">07 · REFUTE — INDEPENDENT REVIEW LENSES</text>
+    <text x="448" y="26" text-anchor="end" class="mono" font-size="10.5" fill="#94A3B8">verdict · blocking · advisory</text>
+
+    <!-- 6 Lenses Grid (2x3) -->
+    <g transform="translate(18 40)" class="mono" font-size="11">
+      <rect width="136" height="52" rx="8" fill="#0F172A" stroke="#10B981" stroke-opacity=".5"/>
+      <text x="10" y="20" font-weight="700" fill="#F8FAFC">correctness</text>
+      <text x="10" y="38" font-size="10" fill="#34D399">sonnet · every round</text>
+
+      <rect x="147" width="136" height="52" rx="8" fill="#0F172A" stroke="#10B981" stroke-opacity=".5"/>
+      <text x="157" y="20" font-weight="700" fill="#F8FAFC">acceptance</text>
+      <text x="157" y="38" font-size="10" fill="#34D399">sonnet · every round</text>
+
+      <rect x="294" width="136" height="52" rx="8" fill="#0F172A" stroke="#38BDF8" stroke-opacity=".6"/>
+      <text x="304" y="20" font-weight="700" fill="#F8FAFC">invariants</text>
+      <text x="304" y="38" font-size="10" fill="#38BDF8">opus · SoT rules</text>
+
+      <rect y="62" width="136" height="52" rx="8" fill="#0F172A" stroke="#10B981" stroke-opacity=".45" stroke-dasharray="4 2"/>
+      <text x="10" y="82" font-weight="700" fill="#F8FAFC">security</text>
+      <text x="10" y="100" font-size="10" fill="#94A3B8">sonnet · trust path</text>
+
+      <rect x="147" y="62" width="136" height="52" rx="8" fill="#0F172A" stroke="#38BDF8" stroke-opacity=".55" stroke-dasharray="4 2"/>
+      <text x="157" y="82" font-weight="700" fill="#F8FAFC">critic (r1)</text>
+      <text x="157" y="100" font-size="10" fill="#38BDF8">opus · spec vs TODO</text>
+
+      <rect x="294" y="62" width="136" height="52" rx="8" fill="#0F172A" stroke="#EC4899" stroke-opacity=".55" stroke-dasharray="4 2"/>
+      <text x="304" y="82" font-weight="700" fill="#F8FAFC">adversary (r1)</text>
+      <text x="304" y="100" font-size="10" fill="#F472B6">sonnet · breaking test</text>
+    </g>
+  </g>
+
+  <!-- Stage 08: merge (script) -->
+  <g transform="translate(530 250)" filter="url(#shadow)">
+    <rect width="166" height="152" rx="14" fill="url(#cardBg)" stroke="#64748B" stroke-opacity=".7" stroke-width="1.5"/>
+    <line x1="14" y1="1.5" x2="152" y2="1.5" stroke="#FFFFFF" stroke-opacity=".22"/>
+    <text x="16" y="25" class="mono" font-size="11" font-weight="700" fill="#CBD5E1">08 · MERGE</text>
+    <rect x="106" y="12" width="46" height="18" rx="9" fill="#334155"/>
+    <text x="129" y="24.5" text-anchor="middle" class="mono" font-size="10" font-weight="700" fill="#E2E8F0">script</text>
+    <text x="16" y="50" class="sans" font-size="12.5" font-weight="700" fill="#F8FAFC">Vote &amp; citation gate</text>
+    <text x="16" y="70" class="mono" font-size="10.5" fill="#94A3B8">cited file:line →</text>
+    <text x="16" y="85" class="mono" font-size="10.5" fill="#38BDF8" font-weight="700">always blocks</text>
+    <text x="16" y="106" class="mono" font-size="10.5" fill="#94A3B8">uncited fail →</text>
+    <text x="16" y="121" class="mono" font-size="10.5" fill="#CBD5E1">blocks if ≥2 agree</text>
+  </g>
+
+  <!-- Stage 09: arbiter -->
+  <g transform="translate(716 250)" filter="url(#shadow)">
+    <rect width="166" height="152" rx="14" fill="url(#cardBg)" stroke="#A855F7" stroke-opacity=".7" stroke-width="1.5" stroke-dasharray="5 3"/>
+    <line x1="14" y1="1.5" x2="152" y2="1.5" stroke="#FFFFFF" stroke-opacity=".25"/>
+    <text x="16" y="25" class="mono" font-size="11" font-weight="700" fill="#C084FC">09 · ARBITER</text>
+    <rect x="110" y="12" width="42" height="18" rx="9" fill="#A855F7" fill-opacity=".2" stroke="#A855F7" stroke-opacity=".5"/>
+    <text x="131" y="24.5" text-anchor="middle" class="mono" font-size="10" font-weight="700" fill="#E9D5FF">fable</text>
+    <text x="16" y="50" class="sans" font-size="12.5" font-weight="700" fill="#F8FAFC">Dispute referee</text>
+    <text x="16" y="70" class="mono" font-size="10.5" fill="#94A3B8">runs only when a</text>
+    <text x="16" y="85" class="mono" font-size="10.5" fill="#94A3B8">disputed finding returns</text>
+    <text x="16" y="106" class="mono" font-size="10.5" fill="#C084FC">upheld or dismissed</text>
+    <text x="16" y="121" class="mono" font-size="10" fill="#64748B">cannot dispute twice</text>
+  </g>
+
+  <!-- Stage 10: fix -->
+  <g transform="translate(902 250)" filter="url(#shadow)">
+    <rect width="166" height="152" rx="14" fill="url(#cardBg)" stroke="#38BDF8" stroke-opacity=".75" stroke-width="1.5"/>
+    <line x1="14" y1="1.5" x2="152" y2="1.5" stroke="#FFFFFF" stroke-opacity=".28"/>
+    <text x="16" y="25" class="mono" font-size="11" font-weight="700" fill="#38BDF8">10 · FIX</text>
+    <rect x="102" y="12" width="50" height="18" rx="9" fill="#38BDF8" fill-opacity=".2" stroke="#38BDF8" stroke-opacity=".5"/>
+    <text x="127" y="24.5" text-anchor="middle" class="mono" font-size="10" font-weight="700" fill="#BAE6FD">opus·hi</text>
+    <text x="16" y="50" class="sans" font-size="12.5" font-weight="700" fill="#F8FAFC">Repair &amp; adopt test</text>
+    <text x="16" y="70" class="mono" font-size="10.5" fill="#94A3B8">maxFixRounds: 2</text>
+    <text x="16" y="85" class="mono" font-size="10.5" fill="#94A3B8">fixes + tests, commits</text>
+    <text x="16" y="106" class="mono" font-size="10.5" fill="#94A3B8">adopts adversary test</text>
+    <text x="16" y="121" class="mono" font-size="10" fill="#64748B">unresolved → [BLOCKED]</text>
+  </g>
+
+  <!-- Stage 11: close -->
+  <g transform="translate(1088 250)" filter="url(#shadow)">
+    <rect width="148" height="152" rx="14" fill="url(#cardBg)" stroke="#10B981" stroke-opacity=".85" stroke-width="1.5"/>
+    <line x1="14" y1="1.5" x2="134" y2="1.5" stroke="#FFFFFF" stroke-opacity=".28"/>
+    <text x="16" y="25" class="mono" font-size="11" font-weight="700" fill="#34D399">11 · CLOSE</text>
+    <rect x="80" y="12" width="56" height="18" rx="9" fill="#10B981" fill-opacity=".2" stroke="#10B981" stroke-opacity=".5"/>
+    <text x="108" y="24.5" text-anchor="middle" class="mono" font-size="10" font-weight="700" fill="#A7F3D0">sonnet·lo</text>
+    <text x="16" y="50" class="sans" font-size="12.5" font-weight="700" fill="#F8FAFC">Record handoff</text>
+    <text x="16" y="70" class="mono" font-size="10.5" fill="#94A3B8">updates TODO row</text>
+    <text x="16" y="85" class="mono" font-size="10.5" fill="#94A3B8">Left for &lt;id&gt; note</text>
+    <text x="16" y="106" class="mono" font-size="10.5" fill="#34D399">docs/handoff.md</text>
+    <text x="16" y="121" class="mono" font-size="10" fill="#64748B">runs on every exit</text>
+  </g>
+
+  <!-- Bottom Persistent Repo State Bus -->
+  <g transform="translate(44 434)" filter="url(#shadow)">
+    <rect width="1192" height="94" rx="16" fill="#0B132B" fill-opacity=".9" stroke="url(#edge)" stroke-width="1.5"/>
+    <line x1="24" y1="1.5" x2="1168" y2="1.5" stroke="#FFFFFF" stroke-opacity=".22"/>
+    <text x="24" y="28" class="mono" font-size="11.5" font-weight="700" letter-spacing="1.8" fill="#7DD3FC">◢ REPO STATE BUS (NO STATE IN CHAT) · ARCHITECT DOC SET + SCRATCH ARTIFACTS</text>
+    <text x="1168" y="28" text-anchor="end" class="mono" font-size="11" fill="#34D399">owner-only commits · no Co-Authored-By trailer</text>
+
+    <g transform="translate(24 42)" class="mono" font-size="11.5">
+      <rect width="210" height="36" rx="8" fill="#131C38" stroke="#4174A6" stroke-opacity=".5"/>
+      <text x="105" y="22.5" text-anchor="middle" fill="#F8FAFC">TODO_WORKFLOW.md</text>
+
+      <rect x="224" width="218" height="36" rx="8" fill="#131C38" stroke="#4174A6" stroke-opacity=".5"/>
+      <text x="333" y="22.5" text-anchor="middle" fill="#F8FAFC">SOURCE_OF_TRUTH.md</text>
+
+      <rect x="456" width="228" height="36" rx="8" fill="#131C38" stroke="#4174A6" stroke-opacity=".5"/>
+      <text x="570" y="22.5" text-anchor="middle" fill="#F8FAFC">CLAUDE.md <tspan fill="#7DD3FC">## Commands</tspan></text>
+
+      <rect x="698" width="256" height="36" rx="8" fill="#131C38" stroke="#38BDF8" stroke-opacity=".5"/>
+      <text x="826" y="22.5" text-anchor="middle" fill="#BAE6FD">.claude/scratch/build-loop/&lt;id&gt;/</text>
+
+      <rect x="968" width="176" height="36" rx="8" fill="#131C38" stroke="#10B981" stroke-opacity=".5"/>
+      <text x="1056" y="22.5" text-anchor="middle" fill="#A7F3D0">docs/handoff.md</text>
+    </g>
+  </g>
+</g>
+<rect x="1" y="1" width="1278" height="558" rx="23" fill="none" stroke="url(#edge)" stroke-width="1.5"/>
+</svg>
