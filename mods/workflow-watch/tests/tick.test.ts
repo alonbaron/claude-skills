@@ -66,6 +66,7 @@ describe('tick', () => {
     expect(run?.argv[0]).toBe('C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe')
     expect(run?.argv.join(' ')).not.toContain(SID)
     expect(norm(run?.env.WW_LOG ?? '')).toBe(SESSION)
+    expect(run?.env.WW_TAIL).toBe(String(3.5 * 1024 * 1024))
   })
 
   test('elsewhere perl reads it, the path as its own argument', async ($, on) => {

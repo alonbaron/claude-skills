@@ -1,0 +1,39 @@
+# Runs workflow-watch's slim child (the filter a session log past the 4 MiB read limit goes through) on each OS's
+# real interpreter: Windows PowerShell on Windows, perl elsewhere. On macOS it also runs every system perl in
+# /usr/bin, which is what a Mac without Homebrew perl uses. No secrets, no Claude calls.
+name: tracker-slim
+on:
+  workflow_dispatch:
+  push:
+    paths: ["mods/workflow-watch/**", ".github/workflows/tracker-slim.yml"]
+  pull_request:
+    paths: ["mods/workflow-watch/**", ".github/workflows/tracker-slim.yml"]
+jobs:
+  slim:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: The child readSlimmed runs on this OS
+        run: node mods/workflow-watch/tests/slim-check.mjs
+      - name: Every system perl on macOS
+        if: runner.os == 'macOS'
+        run: |
+          sw_vers
+          for p in /usr/bin/perl /usr/bin/perl5.*; do
+            [ -x "$p" ] || continue
+            echo "== $p"
+            node mods/workflow-watch/tests/slim-check.mjs --perl "$p"
+          done
+      - name: perl on Windows too
+        if: runner.os == 'Windows'
+        run: node mods/workflow-watch/tests/slim-check.mjs --perl perl

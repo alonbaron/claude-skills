@@ -201,6 +201,11 @@ One catch worth knowing about humanizer: as of v2.9.1 the plugin puts `SKILL.md`
 
 ---
 
+## ◢ What's new in workflow-watch 0.4.1
+
+- A very long session no longer leaves the pane stuck. If a log is still over 3.5 MiB after filtering, which took more than 30 MB of log on the sessions measured, the tracker keeps its newest lines and shows the latest work. The earliest turns drop out of the cards and the counts.
+- The filter is checked on real Windows PowerShell and perl, on macOS (every system perl), Ubuntu and Windows, by the `tracker-slim` CI job.
+
 ## ◢ What's new in workflow-watch 0.4
 
 - The tracker lives only in its side pane. The band above the prompt, the status line entry, the toasts and the "pane not placed" log line are gone.

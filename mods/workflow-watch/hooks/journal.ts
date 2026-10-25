@@ -774,6 +774,34 @@ export const SLIM = {
 export const slimLog = (text: string): string =>
   text.replace(new RegExp(SLIM.meta, 'gm'), '').replace(new RegExp(SLIM.image, 'g'), '"data":""').replace(new RegExp(SLIM.long, 'g'), '"$1..."')
 
+/** Bytes a slimmed log keeps at most, under the 4 MiB stdout cap: past it only its newest whole lines are kept. */
+export const SLIM_TAIL = 3.5 * 1024 * 1024
+
+// The log path, the SLIM patterns and the tail size reach the child as environment variables, never spliced into its script.
+const POWERSHELL_SCRIPT = [
+  "$ErrorActionPreference='Stop'",
+  '[Console]::OutputEncoding=[Text.Encoding]::UTF8',
+  '$t=[IO.File]::ReadAllText($env:WW_LOG)',
+  "$t=[regex]::Replace($t,$env:WW_META,'',[Text.RegularExpressions.RegexOptions]::Multiline)",
+  `$t=[regex]::Replace($t,$env:WW_IMAGE,'"data":""')`,
+  `$t=[regex]::Replace($t,$env:WW_LONG,'"$1..."')`,
+  '$b=[Text.Encoding]::UTF8.GetBytes($t)',
+  '$n=[int]$env:WW_TAIL',
+  'if($b.Length -gt $n){$i=[Array]::IndexOf($b,[byte]10,$b.Length-$n); $t=[Text.Encoding]::UTF8.GetString($b,$i+1,$b.Length-$i-1)}',
+  '[Console]::Out.Write($t)',
+].join('; ')
+const PERL_SCRIPT =
+  's/$ENV{WW_META}//gm; s/$ENV{WW_IMAGE}/"data":""/g; s/$ENV{WW_LONG}/"$1..."/g; ' +
+  '$_ = substr($_, index($_, "\\n", length($_) - $ENV{WW_TAIL}) + 1) if length($_) > $ENV{WW_TAIL}'
+
+/** The child that slims a log: Windows PowerShell by its full path when SystemRoot is set, perl elsewhere. */
+export function slimCommand(path: string, systemRoot: string | null | undefined, perl = 'perl'): { argv: string[]; env: Record<string, string> } {
+  const argv = systemRoot
+    ? [`${systemRoot}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe`, '-NoProfile', '-NonInteractive', '-Command', POWERSHELL_SCRIPT]
+    : [perl, '-0777', '-pe', PERL_SCRIPT, path]
+  return { argv, env: { WW_LOG: path, WW_META: SLIM.meta, WW_IMAGE: SLIM.image, WW_LONG: SLIM.long, WW_TAIL: String(SLIM_TAIL) } }
+}
+
 export function mergeStages(sessionStages: Stage[], workflowStages: Stage[]): Stage[] {
   if (sessionStages.length === 0) return workflowStages
   if (workflowStages.length === 0) return sessionStages
