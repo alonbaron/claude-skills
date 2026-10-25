@@ -53,6 +53,30 @@ export function headerCard(w: Watch, tokens: number, theme: Theme): Card {
   return { source: svg(h, body, theme), alt: `${w.run}: ${tally(w)} · ${toks}`, width: W, height: h }
 }
 
+/** The minimized pane: the run's name and counts, then the live item (or the last one) on one row with its state pill. */
+export function compactCard(w: Watch, latest: Stage, now: number, theme: Theme): Card {
+  const h = 96
+  const counts = tally(w)
+    .split(' · ')
+    .filter(part => !/^0 /.test(part) || part.endsWith('running'))
+    .join(' · ')
+  const t = tone(latest)
+  const st = state(latest)
+  const pw = textW(st, 12) + 22
+  const detail = elapsed((latest.endedAt ?? now) - latest.startedAt)
+  const label = fit(latest.label, W - 92 - pw - textW(detail, 12) - 24, 13)
+  const body =
+    frame(h, latest.endedAt === null ? 'card live' : 'card') +
+    `<text class="p" x="18" y="30" font-size="15" font-weight="700">${esc(fit(w.run ?? '', W - 36 - textW(counts, 12) - 12, 15))}</text>` +
+    `<text class="m" x="${W - 18}" y="30" font-size="12" text-anchor="end">${esc(counts)}</text>` +
+    `<rect class="track" x="10" y="46" width="${W - 20}" height="40" rx="12"/>` +
+    `<circle cx="34" cy="66" r="12" fill="${KIND_FILL[kindOf(latest)]}"/><text class="ink" x="34" y="70.5" font-size="11" font-weight="700" text-anchor="middle">${KIND_LETTER[kindOf(latest)]}</text>` +
+    `<text class="t" x="56" y="71" font-size="13" font-weight="600">${esc(label)}</text>` +
+    `<text class="m" x="${W - 28 - pw}" y="71" font-size="12" text-anchor="end">${esc(detail)}</text>` +
+    `<rect class="pill-${t}" x="${W - 20 - pw}" y="54" width="${pw}" height="24" rx="12"/><text class="tx-${t}" x="${W - 20 - pw / 2}" y="70" font-size="12" font-weight="700" text-anchor="middle">${esc(st)}</text>`
+  return { source: svg(h, body, theme), alt: `${w.run}: ${counts} | ${st} ${latest.label} ${detail}`, width: W, height: h }
+}
+
 /** Each item's span on the shared clock as a rounded bar in its kind color, on a soft track. */
 export function timelineCard(stages: Stage[], t0: number, total: number, now: number, theme: Theme): Card {
   const rows = stages.slice(-10)

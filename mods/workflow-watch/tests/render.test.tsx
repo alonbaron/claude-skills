@@ -94,6 +94,51 @@ describe('render', () => {
     await ui.unmount()
   })
 
+  test('an idle session folds the pane to one strip; Expand and Minimize flip it, and Hide closes the pane', async ($, on) => {
+    mock.clock(on)
+    const done = WATCH.stages.map(s => ({ ...s, endedAt: s.endedAt ?? 9000, summary: s.summary ?? 'PASS blocking=0 advisory=0 testsRan=true' }))
+    const IDLE = { ...WATCH, stages: done, now: 60000, isIdle: true }
+    on('state.get', { plugin: 'workflow-watch', key: 'watch' }, () => ({ value: { value: IDLE, version: 1 } }))
+    const closed: string[] = []
+    on('ui.close', (_$: any, e: any) => {
+      closed.push(e.id)
+      return { value: undefined }
+    })
+    const ui = await $.ui.mount({
+      plugin: 'workflow-watch',
+      surface: 'vscode',
+      component: 'Pane',
+      requestId: 'workflow-watch',
+      props: { title: 'Workflow', isFocused: false, bodyColumns: 60, placement: 'dock', ...SITE },
+    })
+    const alts = async () => (await ui.findAll({ type: 'Svg' })).map(n => String(n.props.alt))
+    expect((await ui.find({ key: 'size' }))?.props.label).toBe('+ Expand')
+    expect(await alts()).toEqual(['wf_1: 2 done · 1 failed · 0 running | ✓ done refute:correctness:1.2:r1 0:08'])
+    await ui.press({ key: 'size' })
+    expect((await ui.find({ key: 'size' }))?.props.label).toBe('− Minimize')
+    expect((await alts())[0]).toBe('wf_1: 2 done · 1 failed · 0 running · 0.0k output tokens')
+    await ui.press({ key: 'size' })
+    expect((await alts()).length).toBe(1)
+    await ui.press({ key: 'hide' })
+    expect(closed).toEqual(['workflow-watch'])
+    await ui.unmount()
+  })
+
+  test('a busy session draws every card, the live item first, with Minimize on offer', async ($, on) => {
+    mock.clock(on)
+    on('state.get', { plugin: 'workflow-watch', key: 'watch' }, () => ({ value: { value: { ...WATCH, isIdle: false }, version: 1 } }))
+    const ui = await $.ui.mount({
+      plugin: 'workflow-watch',
+      surface: 'vscode',
+      component: 'Pane',
+      requestId: 'workflow-watch',
+      props: { title: 'Workflow', isFocused: false, bodyColumns: 60, placement: 'dock', ...SITE },
+    })
+    expect((await ui.find({ key: 'size' }))?.props.label).toBe('− Minimize')
+    expect((await ui.findAll({ type: 'Svg' })).length).toBeGreaterThan(3)
+    await ui.unmount()
+  })
+
   test('the timeline folds to its +/- button and opens again', async ($, on) => {
     mock.clock(on)
     on('state.get', { plugin: 'workflow-watch', key: 'watch' }, () => ({ value: { value: WATCH, version: 1 } }))

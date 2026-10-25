@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./assets/workflow-watch.png" alt="workflow-watch tracking a live Claude Code build-loop session in a side pane" width="840">
+  <img src="./assets/hero.svg" alt="alon-skills: six Claude Code skills and a build loop, 19 of 19 eval cases passing, one selected case per skill scored with and without the plugin" width="900">
 </p>
 
 <p align="center">
@@ -10,7 +10,7 @@
   <img alt="Claude Code plugin marketplace" src="https://img.shields.io/badge/Claude_Code-2_plugins-125190?style=flat-square&labelColor=0E1024">&nbsp;
   <img alt="6 skills + 1 workflow" src="https://img.shields.io/badge/skills-6_+_1_workflow-4174A6?style=flat-square&labelColor=0E1024">&nbsp;
   <img alt="alon-skills v3.2.2" src="https://img.shields.io/badge/alon--skills-v3.2.2-125190?style=flat-square&labelColor=0E1024">&nbsp;
-  <img alt="workflow-watch 0.4.1" src="https://img.shields.io/badge/workflow--watch-0.4.1-4174A6?style=flat-square&labelColor=0E1024">&nbsp;
+  <img alt="workflow-watch 0.4.2" src="https://img.shields.io/badge/workflow--watch-0.4.2-4174A6?style=flat-square&labelColor=0E1024">&nbsp;
   <a href="#-evals"><img alt="evals: 19/19 passing" src="https://img.shields.io/badge/evals-19%2F19_passing-067647?style=flat-square&labelColor=0E1024"></a>&nbsp;
   <img alt="MIT license" src="https://img.shields.io/badge/license-MIT-067647?style=flat-square&labelColor=0E1024">&nbsp;
   <a href="https://github.com/alonbaron"><img alt="by alonbaron" src="https://img.shields.io/badge/by-alonbaron-125190?style=flat-square&labelColor=0E1024&logo=github&logoColor=white"></a>
@@ -47,10 +47,6 @@ Across 120 trigger prompts, each skill fired on 75 to 100% of the runs meant for
 ---
 
 ## ◢ The skills
-
-<p align="center">
-  <img src="./assets/hero.svg" width="100%" alt="">
-</p>
 
 `alon-skills` holds six skills and one unattended build loop, tuned to one consistent working style: model-first, failure-path-aware, YAGNI. The second plugin, `workflow-watch`, is the tracker (see [Watching a session or a run](#-watching-a-session-or-a-run)). You can install either one alone.
 
@@ -129,6 +125,8 @@ The driver runs `claude -p` once per task (permission mode under [Permissions](#
 
 **Measured once, 2026-09-23:** `autobuild.mjs --tasks 1` on a throwaway Node repo with a two-row TODO built row 1.1 in about four minutes: plan, scout, spec, build (two commits, tests green), measure, four refute lenses (all pass, five advisory notes), close. The driver reported $1.75 for the session. The driver runs every session with `{"attribution": {"commit": "", "pr": "", "sessionUrl": false}}`, so its commits carry no `Co-Authored-By` or `Claude-Session` trailer (measured: 3/3 commits had both without it, 0/3 with it, and a second build-loop task came out clean). Running `/alon-skills:build-loop` in your own session uses your settings instead; put the same `attribution` block in `~/.claude/settings.json` to get owner-only commits there too.
 
+**Measured again, 2026-10-12:** `autobuild.mjs --tasks 1` on a throwaway Node repo built row 1.2, `truncateSlug(slug, max)`, in 11 stages: plan, scout, spec, build, measure, five refute lenses and close. The loop skipped research because the spec listed no unverified APIs, and it needed no fix round because every lens passed with no blocking finding. The run took 5:29 and 8.1k output tokens, and the driver reported $4.29 for the session. The row closed as `[FINISHED - PENDING MERGE]` after six commits, all authored by the owner with no trailer. Every alias resolved as documented (fable → `claude-fable-5-1`, opus → `claude-opus-5-5`, sonnet → `claude-sonnet-5-5`, haiku → `claude-haiku-5-5`), and every stage recorded its effort level, with scout and measure at `low` on Haiku 5.5. Two of the loop's rules came from the v3.1 run: the fixer may not dispute a finding the arbiter upheld, and the build stage names its effort (`medium`) instead of inheriting the launching session's.
+
 ---
 
 ## ◢ Permissions
@@ -143,15 +141,20 @@ The skills and build-loop run on auto. They approve their own actions and don't 
 
 ## ◢ Watching a session or a run
 
-<p align="center"><img alt="The workflow-watch pane for one build-loop run, in its dark and light themes: a header with the run name, counts and output tokens, a timeline of the last ten stages, then the 11 stages as rounded cards newest first, each with its state, model, effort, result and details" src="assets/workflow-watch.png" width="900"></p>
+<p align="center"><img alt="The Tracker pane in its dark and light themes during a review: Minimize, theme and Hide buttons, a header with the session name, 8 done, 0 failed, 3 running and 16.5k output tokens, a timeline of the last ten items, then the review-swarm lens cards newest first, two of them running with an amber outline" src="assets/workflow-watch.png" width="880"></p>
+<p align="center"><sub>Generated session data, drawn by the pane's own card code.</sub></p>
 
-The tracker follows any open session, not only Workflow runs, and shows everything that happens while an agent builds: main-thread turns (`TURN`), skills fired (`SKILL`), spawned subagents (`AGENT`, such as parallel review-swarm lenses and verifiers or council advisors), git commits (`COMMIT`), and Workflow stages (`STAGE`). The picture is the `Tracker` pane from workflow-watch in its dark and light themes. A header card holds the counts and output tokens, a timeline plots the last ten items on a shared clock, and every item then gets a rounded card, newest first, under a pill naming its phase (`Turn N`, `Skill · <name>`, or the Workflow phase). `scripts/tracker.mjs` draws the same feed as an HTML page, in run order: a header KPI strip, a **Timeline Waterfall** colored by model tier and outcome, and a card per item with metric pills (duration, tool calls, output tokens) and a fold that reveals the span bar, the tool call trail (`Bash`, `Read`, `Grep`, etc.) and the full output. Only running items start open. Three ways to get it:
+The tracker follows any open session, not only Workflow runs, and shows everything that happens while an agent builds: main-thread turns (`TURN`), skills fired (`SKILL`), spawned subagents (`AGENT`, such as parallel review-swarm lenses and verifiers or council advisors), git commits (`COMMIT`), and Workflow stages (`STAGE`). Above, review-swarm is halfway through a branch review: five lenses are done, and the tests lens and a verifier are still running. A header card holds the counts and output tokens, a timeline plots the last ten items on a shared clock, and every item then gets a rounded card, newest first, under a pill naming its phase (`Turn N`, `Skill · <name>`, or the Workflow phase). `scripts/tracker.mjs` draws the same feed as an HTML page, in run order: a header KPI strip, a **Timeline Waterfall** colored by model tier and outcome, and a card per item with metric pills (duration, tool calls, output tokens) and a fold that reveals the span bar, the tool call trail (`Bash`, `Read`, `Grep`, etc.) and the full output. Only running items start open. Three ways to get it:
 
 - **`scripts/tracker.mjs`**, from any shell: `node <plugin-root>/scripts/tracker.mjs [--session <id> | --run <dir|wf_id>] [--out tracker.html] [--png tracker.png] [--watch]`. With no flags it picks the newest Claude Code session (CLI or VS Code extension) under `~/.claude/projects/<project>/`. `--session <id>` (or an id prefix) renders that session's full activity feed: `<session>.jsonl`, `<session>/subagents/agent-*` and any `workflows/<run>/journal.jsonl`. `--run` renders a single workflow run, by directory or by its `wf_…` name. `--png` adds a screenshot via Playwright (`--playwright <path>` when not in default module resolution). `--watch` re-renders every five seconds, until the last stage ends for a workflow run, or until Ctrl+C for a session.
 - **In VS Code** (the Claude Code extension): run `node scripts/tracker.mjs --watch` in the integrated terminal and open `tracker.html` with **Simple Browser** or **Live Preview**. With `--watch` the page reloads itself every five seconds and keeps your scroll position and open folds.
-- **`mods/workflow-watch`** (0.4.1), inside Claude Code: a mod (a plugin of function hooks) that opens on `session.start` and follows the active session and its workflows live in the `Tracker` pane beside the chat. It draws nothing else, so the chat gets no band above the prompt, status line entry or toasts. In VS Code the pane is drawn as rounded cards, newest first, with a dark/light toggle and a timeline you can fold. `/plugin install workflow-watch@alonbaron`, or `claude --plugin-dir mods/workflow-watch` for one session; `/tracker` (or `/workflow-watch`) opens the pane and prints the report as text. On Windows it finds the home directory from `USERPROFILE` when `HOME` is unset, as in the VS Code extension host.
+- **`mods/workflow-watch`** (0.4.2), inside Claude Code: a mod (a plugin of function hooks) that opens on `session.start` and follows the active session and its workflows live in the `Tracker` pane beside the chat. It draws nothing else, so the chat gets no band above the prompt, status line entry or toasts. In VS Code the pane is drawn as rounded cards, newest first, with a dark/light toggle and a timeline you can fold. `/plugin install workflow-watch@alonbaron`, or `claude --plugin-dir mods/workflow-watch` for one session; `/tracker` (or `/workflow-watch`) opens the pane and prints the report as text. On Windows it finds the home directory from `USERPROFILE` when `HOME` is unset, as in the VS Code extension host.
 
-The picture above is one build-loop task on a throwaway Node repo, run on 2026-10-12 with `autobuild.mjs --tasks 1`: row 1.2, `truncateSlug(slug, max)`. It took 11 stages: plan, scout, spec, build, measure, five refute lenses and close. The loop skipped research because the spec listed no unverified APIs, and it needed no fix round because every lens passed with no blocking finding. The run took 5:29 and 8.1k output tokens, and the driver reported $4.29 for the session. The row closed as `[FINISHED - PENDING MERGE]` after six commits, all authored by the owner with no trailer. Every alias resolved as documented (fable → `claude-fable-5-1`, opus → `claude-opus-5-5`, sonnet → `claude-sonnet-5-5`, haiku → `claude-haiku-5-5`), and every stage recorded its effort level, with scout and measure at `low` on Haiku 5.5. Two of the loop's rules came from the v3.1 run: the fixer may not dispute a finding the arbiter upheld, and the build stage names its effort (`medium`) instead of inheriting the launching session's.
+### Minimize and hide
+
+<p align="center"><img alt="The pane minimized to one strip, twice: on the left in dark mode mid-run, showing the session name, 8 done and 3 running, and the running verifier with its time; on the right in light mode after the session went idle, showing 11 done and 0 running, and turn 2 as the last item done" src="assets/workflow-watch-minimized.png" width="880"></p>
+
+The pane sizes itself to what the session is doing. While anything runs you get every card. After 20 seconds with nothing running it folds down to one strip: the session name, its counts, and the item that finished last. **− Minimize** and **+ Expand** override that until the session next starts or stops working, and then the pane goes back to sizing itself. **✕ Hide** closes the pane. It opens again when the next turn starts, or when you type `/tracker`, which always opens it at full size. The terminal folds the same way, without the buttons.
 
 ---
 
@@ -214,6 +217,10 @@ Not shipped here and not mine. Two third-party skills the hand-offs above are wr
 One catch worth knowing about humanizer: as of v2.9.1 the plugin puts `SKILL.md` at its root instead of `skills/humanizer/SKILL.md`. Claude Code installs it, reports it enabled, and never loads it. Copy `SKILL.md` out of `~/.claude/plugins/cache/humanizer/humanizer/<version>/` into `~/.claude/skills/humanizer/` and it works.
 
 ---
+
+## ◢ What's new in workflow-watch 0.4.2
+
+- The pane folds to one strip after 20 seconds with nothing running, and opens to full cards when work starts. **− Minimize** / **+ Expand** override that, and **✕ Hide** closes it until the next turn or `/tracker`. See [Minimize and hide](#minimize-and-hide).
 
 ## ◢ What's new in workflow-watch 0.4.1
 

@@ -1,15 +1,23 @@
 import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 
-import type { Stage, Theme, Watch } from '../types'
-import { KIND_FILL, PANE_BG, headerCard, phaseChip, stageCard, timelineCard } from './cards'
-import { EMPTY, READ_LIMIT, SLIM_CUT, SLIM_TIMEOUT_MS, applyEntries, elapsed, mergeStages, parseLines, parseSession, phaseRuns, phaseTitle, readMeta, readMetaInfo, readTranscript, report, running, slimCommand, stageDetail, stageResult, state, tally, timelineBar, tone, who, withFacts } from './journal'
+import type { PaneView, Stage, Theme, Watch } from '../types'
+import { KIND_FILL, PANE_BG, compactCard, headerCard, phaseChip, stageCard, timelineCard } from './cards'
+import { EMPTY, READ_LIMIT, SLIM_CUT, SLIM_TIMEOUT_MS, applyEntries, elapsed, mergeStages, parseLines, parseSession, phaseRuns, phaseTitle, readMeta, readMetaInfo, readTranscript, report, slimCommand, stageDetail, stageResult, state, tally, timelineBar, tone, who, withFacts } from './journal'
 
 const PANE = 'workflow-watch'
 const TITLE = 'Tracker'
 const watch = atom({ plugin: 'workflow-watch', key: 'watch' } as const, EMPTY)
 const theme = atom({ plugin: 'workflow-watch', key: 'theme' } as const, 'dark' as Theme)
 const isTimelineOpen = atom({ plugin: 'workflow-watch', key: 'isTimelineOpen' } as const, true)
+const pinnedView = atom({ plugin: 'workflow-watch', key: 'pinnedView' } as const, null as PaneView | null)
+
+/** How long nothing has to run before the pane folds to its compact strip. */
+export const IDLE_MS = 20000
+
+/** The item the compact strip shows: the newest one running, else the one that finished last. */
+const latestOf = (stages: Stage[]): Stage | undefined =>
+  [...stages].reverse().find(s => s.endedAt === null) ?? stages.reduce<Stage | undefined>((m, s) => (!m || (s.endedAt ?? 0) > (m.endedAt ?? 0) ? s : m), undefined)
 
 type Engine = Parameters<Parameters<Register>[0]>[2] extends (...a: infer A) => unknown ? A[0] : never
 type Listing = Awaited<ReturnType<Engine['fs']['list']>>
@@ -240,10 +248,17 @@ async function tick($: Engine): Promise<void> {
     : isCut
       ? 'This session’s log is too long to read in full, so only its most recent part is shown. Turn numbers start from there.'
       : null
-  const next: Watch = { journal: journalKey, run, stages, now, notice }
-  if (!sameRun && stages.length) void openPane($)
+  const isBusy = stages.some(s => s.endedAt === null)
+  const lastEnd = stages.reduce((m, s) => Math.max(m, s.endedAt ?? 0), 0)
+  const isIdle = stages.length > 0 && !isBusy && now - lastEnd >= IDLE_MS
+  const next: Watch = { journal: journalKey, run, stages, now, notice, isIdle }
+  // A pane the person hid comes back when work starts again: a new run, or the first item running after a quiet spell.
+  const isWaking = isBusy && !prev.stages.some(s => s.endedAt === null)
+  if (stages.length && (!sameRun || isWaking)) void openPane($)
+  // A Minimize or Expand press holds until the session next turns busy or idle; then the pane sizes itself again.
+  if (!sameRun || Boolean(prev.isIdle) !== isIdle) await update($, pinnedView, () => null)
 
-  const changed = !sameRun || prev.notice !== notice || JSON.stringify(prev.stages) !== JSON.stringify(stages) || running(next).length > 0
+  const changed = !sameRun || prev.notice !== notice || Boolean(prev.isIdle) !== isIdle || JSON.stringify(prev.stages) !== JSON.stringify(stages) || isBusy
   if (changed) await update($, watch, () => next)
 }
 
@@ -266,6 +281,7 @@ async function runCommand($: Engine): Promise<{ text: string }> {
     w = await read($, watch)
   }
   const opened = await $.ui.open({ id: PANE, title: TITLE })
+  await update($, pinnedView, () => 'full')
   if (!w.run || w.stages.length === 0) return { text: 'No session or workflow activity recorded yet; send a prompt or start a Workflow, then type /tracker again.' }
   const where = opened.isPlaced ? 'pane open' : 'no pane on this surface; this text is the view, type /tracker again for a fresh one'
   return { text: `${report(w)}\n(${where})` }
@@ -319,6 +335,10 @@ export const register: Register = on => {
     // Phases are cut in run order, so each chip keeps its opener's kind and round; then groups and members are reversed.
     const groups = phaseRuns(w.stages).reverse()
     const newestOf = (g: { stages: Stage[] }): Stage[] => [...g.stages].reverse()
+    // Idle, the pane folds to one strip (the run, its counts, the latest item); busy, it opens to every card. A press overrides either.
+    const pinned = await read($, pinnedView)
+    const isCompact = pinned ? pinned === 'compact' : Boolean(w.isIdle)
+    const latest = latestOf(w.stages) as Stage
     // A header card, a timeline card (when 2+ items exist), then one card per stage, newest first, under a colored phase chip.
     // A surface with Svg (desktop, vscode, mobile) draws each card as a rounded vector card; the terminal draws them in box glyphs.
     if (Svg) {
@@ -326,19 +346,34 @@ export const register: Register = on => {
       const isOpen = await read($, isTimelineOpen)
       const head = headerCard(w, tokens, mode)
       const tl = timelineCard(w.stages, t0, total, w.now, mode)
+      const bar = (
+        <Box justifyContent="flex-end" gap={1} marginBottom={1}>
+          <Button key="size" label={isCompact ? '+ Expand' : '− Minimize'} onPress={() => void update($, pinnedView, () => (isCompact ? 'full' : 'compact')).catch(() => undefined)} />
+          <Button
+            key="theme"
+            label={mode === 'dark' ? '☀ Light mode' : '☾ Dark mode'}
+            onPress={() => {
+              void update($, theme, m => (m === 'dark' ? 'light' : 'dark'))
+                .then(m => $.store.set('theme', m))
+                .catch(() => undefined)
+            }}
+          />
+          <Button key="hide" label="✕ Hide" onPress={() => void $.ui.close({ id: PANE }).catch(() => undefined)} />
+        </Box>
+      )
+      if (isCompact) {
+        const c = compactCard(w, latest, w.now, mode)
+        return (
+          <Box flexDirection="column" paddingX={1} paddingY={1} backgroundColor={PANE_BG[mode]}>
+            {bar}
+            {notice}
+            <Svg source={c.source} alt={c.alt} width={c.width} height={c.height} />
+          </Box>
+        )
+      }
       return (
         <Box flexDirection="column" paddingX={1} paddingY={1} backgroundColor={PANE_BG[mode]}>
-          <Box justifyContent="flex-end" marginBottom={1}>
-            <Button
-              key="theme"
-              label={mode === 'dark' ? '☀ Light mode' : '☾ Dark mode'}
-              onPress={() => {
-                void update($, theme, m => (m === 'dark' ? 'light' : 'dark'))
-                  .then(m => $.store.set('theme', m))
-                  .catch(() => undefined)
-              }}
-            />
-          </Box>
+          {bar}
           {notice}
           <Svg source={head.source} alt={head.alt} width={head.width} height={head.height} />
           {w.stages.length > 1 && (
@@ -402,8 +437,15 @@ export const register: Register = on => {
               ))}
             <Text color="subtle">{`  ${(tokens / 1000).toFixed(1)}k output tokens`}</Text>
           </Text>
+          {isCompact && (
+            <Text wrap="truncate-end">
+              <Text bold backgroundColor={tone(latest)} color="inverseText">{` ${state(latest)} `}</Text>
+              {`  ${latest.label} `}
+              <Text color="subtle">{`(${elapsed((latest.endedAt ?? w.now) - latest.startedAt)})`}</Text>
+            </Text>
+          )}
         </Box>
-        {w.stages.length > 1 && (
+        {!isCompact && w.stages.length > 1 && (
           <Box flexDirection="column" borderStyle="round" borderColor="subtle" paddingX={1} marginTop={1}>
             <Text bold color="claude" wrap="truncate-end">
               {`Timeline · ${elapsed(total)} elapsed`}
@@ -421,7 +463,7 @@ export const register: Register = on => {
             ))}
           </Box>
         )}
-        {groups.map((g, i) => (
+        {!isCompact && groups.map((g, i) => (
           <Box key={`phase-${i}`} flexDirection="column" marginTop={1}>
             <Text wrap="truncate-end">
               <Text bold backgroundColor={fill(g.stages[0])} color={INK}>{` ${phaseTitle(g)} `}</Text>

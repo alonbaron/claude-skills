@@ -1,6 +1,9 @@
 /** The pane's card theme, picked with its toggle and kept between sessions. */
 export type Theme = 'dark' | 'light'
 
+/** The pane's size the person picked with its Minimize/Expand button, until the session next turns busy or idle. */
+export type PaneView = 'full' | 'compact'
+
 export type StageKind = 'stage' | 'turn' | 'skill' | 'agent' | 'commit'
 
 export type Stage = {
@@ -52,10 +55,12 @@ export type Watch = {
   now: number
   /** Set while a log could not be read: what the pane says above the items it kept. */
   notice?: string | null
+  /** True once nothing has run for IDLE_MS: the pane folds to its compact strip unless the person expanded it. */
+  isIdle?: boolean
 }
 
 declare module 'claude-code' {
   interface PluginState {
-    'workflow-watch': { watch: Watch; theme: Theme; isTimelineOpen: boolean }
+    'workflow-watch': { watch: Watch; theme: Theme; isTimelineOpen: boolean; pinnedView: PaneView | null }
   }
 }

@@ -1,6 +1,6 @@
 <svg width="1280" height="640" viewBox="0 0 1280 640" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t d">
 <title id="t">alon-skills — Six Claude Code skills and a build loop, measured with and without the plugin</title>
-<desc id="d">Light-mode architecture banner for alon-skills v3.2.2 and workflow-watch 0.4.1. Shows the frosted glass identity card, 3D sapphire-porcelain core sculpture, the six slash commands (/architect, /review-swarm, /ask-the-council, /prompt-generator, /up-to-date, and /ponytail vendored from DietrichGebert/ponytail MIT), and five vertical eval uplift cards on Fable 5.1 (19/19 passing at 0.7 threshold).</desc>
+<desc id="d">Light-mode architecture banner for alon-skills v3.2.2 and workflow-watch 0.4.2. Shows the frosted glass identity card, 3D sapphire-porcelain core sculpture, the six slash commands (/architect, /review-swarm, /ask-the-council, /prompt-generator, /up-to-date, and /ponytail vendored from DietrichGebert/ponytail MIT), and five vertical eval uplift cards on Fable 5.1 (19/19 passing at 0.7 threshold).</desc>
 <defs>
   <linearGradient id="bg" x1="0" y1="0" x2="1280" y2="640" gradientUnits="userSpaceOnUse">
     <stop offset="0" stop-color="#F6F7FB"/>
@@ -55,7 +55,7 @@
 
     <text x="28" y="96" class="sans" font-size="54" font-weight="900" letter-spacing="-1.5" fill="#0E1024">alon-skills <tspan font-size="26" font-weight="700" fill="#125190">v3.2.2</tspan></text>
     <text x="28" y="128" class="sans" font-size="15.5" font-weight="800" fill="#0E1024">Six Claude Code skills and a build loop, <tspan fill="#125190">measured with and without the plugin.</tspan></text>
-    <text x="28" y="154" class="sans" font-size="14" fill="#545A75">Plus <tspan font-weight="700" fill="#0E1024">workflow-watch 0.4.1</tspan> side-pane tracker · CLI &amp; VS Code · macOS &amp; Windows</text>
+    <text x="28" y="154" class="sans" font-size="14" fill="#545A75">Plus <tspan font-weight="700" fill="#0E1024">workflow-watch 0.4.2</tspan> side-pane tracker · CLI &amp; VS Code · macOS &amp; Windows</text>
   </g>
 
   <!-- TOP RIGHT: KPI Summary Glass Card -->

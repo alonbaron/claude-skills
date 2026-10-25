@@ -11,16 +11,19 @@ const BIG = 5 * 1024 * 1024
 const norm = (p: string): string => p.split(String.fromCharCode(92)).join('/').replace(/^[A-Za-z]:/, '')
 const ran = (stdout: string, exitCode = 0) => ({ exitCode, stdout, stderr: exitCode ? 'failed' : '', isStdoutTruncated: false, isStderrTruncated: false })
 
-type World = { size: number; isReadBroken: boolean; isRunBroken: boolean; result: ReturnType<typeof ran>; runs: Array<{ argv: string[]; env: Record<string, string> }>; saved: Map<string, unknown>; sets: Array<[string, unknown]> }
+type World = { text: string; opens: number; size: number; isReadBroken: boolean; isRunBroken: boolean; result: ReturnType<typeof ran>; runs: Array<{ argv: string[]; env: Record<string, string> }>; saved: Map<string, unknown>; sets: Array<[string, unknown]> }
 
 /** A home with one session log, the engine's file, process and store ops answered from `w`. */
 function world(on: any, env: Record<string, string> = {}): { w: World; clock: ReturnType<typeof mock.clock> } {
-  const w: World = { size: 1000, isReadBroken: false, isRunBroken: false, result: ran(`${USER}\n${REPLY}`), runs: [], saved: new Map(), sets: [] }
+  const w: World = { text: `${USER}\n${REPLY}`, opens: 0, size: 1000, isReadBroken: false, isRunBroken: false, result: ran(`${USER}\n${REPLY}`), runs: [], saved: new Map(), sets: [] }
   const clock = mock.clock(on)
   mock.env(on, { HOME, ...env })
   on('session.id', () => ({ value: SID }))
   on('session.start', (_$: any, e: any) => ({ cwd: e.cwd }))
-  on('ui.open', () => ({ value: { isPlaced: true } }))
+  on('ui.open', () => {
+    w.opens += 1
+    return { value: { isPlaced: true } }
+  })
   on('ui.panes', () => ({ value: [] }))
   on('command.register', () => ({ value: { isNew: true } }))
   on('fs.list', (_$: any, e: any) => ({ value: norm(e.path) === `${HOME}/.claude/projects` ? [{ name: 'p1', kind: 'dir', size: 0, mtimeMs: 0, isLink: false }] : [] }))
@@ -28,7 +31,7 @@ function world(on: any, env: Record<string, string> = {}): { w: World; clock: Re
   on('fs.stat', () => ({ value: { kind: 'file', size: w.size, mtimeMs: 1, isLink: false } }))
   on('fs.read', () => {
     if (w.isReadBroken) throw new Error('unreadable')
-    return { value: `${USER}\n${REPLY}` }
+    return { value: w.text }
   })
   on('process.run', (_$: any, e: any) => {
     w.runs.push({ argv: [...e.argv], env: { ...(e.init?.env ?? {}) } })
@@ -124,6 +127,21 @@ describe('tick', () => {
     w.size = BIG + 10
     await clock.advance(2000)
     expect(w.runs.length).toBe(2)
+  })
+
+  test('a pane the person hid opens again when the next turn starts, not while the session stays quiet', async ($, on) => {
+    const { w, clock } = world(on)
+    await $.session.start(START)
+    await clock.settle()
+    const opens = w.opens
+    await clock.advance(2000)
+    await clock.advance(2000)
+    expect(w.opens).toBe(opens)
+    w.text = `${USER}\n${REPLY}\n${USER.replace('08:00:00', '08:01:00').replace('hello there', 'next please')}`
+    await clock.advance(2000)
+    expect(w.opens).toBe(opens + 1)
+    await clock.advance(2000)
+    expect(w.opens).toBe(opens + 1)
   })
 
   test('the saved theme and fold come back in a new session, and a press saves the new value', async ($, on) => {
