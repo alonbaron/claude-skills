@@ -1,5 +1,9 @@
 <p align="center">
-  <img src="./assets/hero.svg" alt="alon-skills — Claude Code skills that prove they work, one selected eval case per skill with and without the plugin" width="900">
+  <img src="./assets/workflow-watch.png" alt="workflow-watch tracking a live Claude Code build-loop session in a side pane" width="100%">
+</p>
+
+<p align="center">
+  <b>A live session tracker for Claude Code, plus six skills measured with and without the plugin. 19/19 evals passing.</b>
 </p>
 
 <p align="center">
@@ -12,9 +16,7 @@
 </p>
 
 <p align="center">
-  <b>Six Claude Code skills and one unattended build loop, tuned to one engineering style: model-first, failure-path-aware, YAGNI.</b><br>
-  <sub>Every skill is measured with and without the plugin, so the uplift is a number, not a promise.</sub><br>
-  <sub>One install. Usable in the Claude Code CLI and the VS Code extension.</sub>
+  <sub>Six skills and one unattended build loop, tuned to one consistent working style: model-first, failure-path-aware, YAGNI.</sub>
 </p>
 
 ---
@@ -24,9 +26,12 @@
 ```text
 /plugin marketplace add alonbaron/claude-skills
 /plugin install alon-skills@alonbaron
+/plugin install workflow-watch@alonbaron
 ```
 
-The live session tracker is a second plugin in the same marketplace, optional: `/plugin install workflow-watch@alonbaron` (see [Watching a session or a run](#-watching-a-session-or-a-run)).
+Works in the Claude Code CLI and the VS Code extension.
+
+The second line installs the skills and the third installs the tracker. They're separate plugins, so you can install either one alone (see [Watching a session or a run](#-watching-a-session-or-a-run)).
 
 Pull updates anytime with `/plugin marketplace update alonbaron` — the marketplace tracks `main`, so you're always on the latest. [Tagged releases](https://github.com/alonbaron/claude-skills/releases) mark the milestones.
 
@@ -45,8 +50,6 @@ Most skill packs ask you to trust them. This one runs each skill through a [`cla
 | A branch that was never pushed: **up-to-date** says so and compares against `main` instead of faking a sync | **0.88** | 0.62 |
 
 All 19 cases pass at the 0.7 threshold, each measured on the skill text this release ships. Across 120 trigger prompts, each skill fired on 75 to 100% of the runs meant for it and never on the ones meant for something else. Full table and method under [Evals](#-evals).
-
-<!-- GIF: a 20-second recording of review-swarm spawning its reviewers on a real diff goes here. -->
 
 ---
 
