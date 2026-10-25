@@ -7,16 +7,16 @@
 </p>
 
 <p align="center">
-  <img alt="Claude Code plugin marketplace" src="https://img.shields.io/badge/Claude_Code-2_plugins-125190?style=flat-square&labelColor=0A1024">&nbsp;
-  <img alt="6 skills + 1 workflow" src="https://img.shields.io/badge/skills-6_+_1_workflow-0284C7?style=flat-square&labelColor=0A1024">&nbsp;
-  <img alt="alon-skills v3.2.2" src="https://img.shields.io/badge/alon--skills-v3.2.2-4F46E5?style=flat-square&labelColor=0A1024">&nbsp;
-  <img alt="workflow-watch 0.4.1" src="https://img.shields.io/badge/workflow--watch-0.4.1-7C3AED?style=flat-square&labelColor=0A1024">&nbsp;
-  <a href="#-evals"><img alt="evals: 19/19 passing" src="https://img.shields.io/badge/evals-19%2F19_passing-059669?style=flat-square&labelColor=0A1024"></a>&nbsp;
-  <img alt="MIT license" src="https://img.shields.io/badge/license-MIT-059669?style=flat-square&labelColor=0A1024">&nbsp;
-  <a href="https://github.com/alonbaron"><img alt="by alonbaron" src="https://img.shields.io/badge/by-alonbaron-C026D3?style=flat-square&labelColor=0A1024&logo=github&logoColor=white"></a>
+  <img alt="Claude Code plugin marketplace" src="https://img.shields.io/badge/Claude_Code-2_plugins-125190?style=flat-square&labelColor=0E1024">&nbsp;
+  <img alt="6 skills + 1 workflow" src="https://img.shields.io/badge/skills-6_+_1_workflow-4174A6?style=flat-square&labelColor=0E1024">&nbsp;
+  <img alt="alon-skills v3.2.2" src="https://img.shields.io/badge/alon--skills-v3.2.2-125190?style=flat-square&labelColor=0E1024">&nbsp;
+  <img alt="workflow-watch 0.4.1" src="https://img.shields.io/badge/workflow--watch-0.4.1-4174A6?style=flat-square&labelColor=0E1024">&nbsp;
+  <a href="#-evals"><img alt="evals: 19/19 passing" src="https://img.shields.io/badge/evals-19%2F19_passing-067647?style=flat-square&labelColor=0E1024"></a>&nbsp;
+  <img alt="MIT license" src="https://img.shields.io/badge/license-MIT-067647?style=flat-square&labelColor=0E1024">&nbsp;
+  <a href="https://github.com/alonbaron"><img alt="by alonbaron" src="https://img.shields.io/badge/by-alonbaron-125190?style=flat-square&labelColor=0E1024&logo=github&logoColor=white"></a>
 </p>
 
-<p align="center"><img src="./assets/divider.svg" width="100%" alt=""></p>
+---
 
 ## ◢ Install
 
@@ -28,7 +28,7 @@
 
 Works in the Claude Code CLI and the VS Code extension. Tested on macOS and Windows.
 
-<p align="center"><img src="./assets/divider.svg" width="100%" alt=""></p>
+---
 
 ## ◢ Measured with and without the plugin
 
@@ -44,7 +44,7 @@ The [`claude plugin eval`](https://code.claude.com/docs/en/plugin-evals) suite h
 
 Across 120 trigger prompts, each skill fired on 75 to 100% of the runs meant for it and never on the ones meant for another skill. Full table and method under [Evals](#-evals).
 
-<p align="center"><img src="./assets/divider.svg" width="100%" alt=""></p>
+---
 
 ## ◢ The skills
 
@@ -70,7 +70,7 @@ Each skill also triggers from plain language — e.g. *"spec this out before we 
 ### Trigger map
 
 | Skill | Fires on | Stays quiet on |
-|:---|:---|:---|
+|---|---|---|
 | architect | a new app, feature, or workstream with no design docs; "architect", "design doc", "spec this out", "roadmap", "audit the docs" | a small fix already covered by current docs; pure implementation of a designed phase |
 | review-swarm | "review / check / assess this diff, branch, PR"; a non-trivial implementation just finished | a trivial diff (docs, rename, one-liner); "fix it" asks; security-only asks (`/security-review`); `/code-review` named explicitly |
 | ask-the-council | high-stakes, expensive-to-reverse decisions with competing options; "ask the council", "get a panel" | fact-finding; one-obvious-answer calls; anything reversible in an afternoon |
@@ -78,7 +78,7 @@ Each skill also triggers from plain language — e.g. *"spec this out before we 
 | up-to-date | work about to start in a repo with a remote; "up-to-date", "sync first", "pull latest", "catch me up" | a repo with no remote (one line, then start); a mid-task re-check |
 | ponytail | a solution outgrowing the minimum: one-caller abstractions, a dependency for a few lines, scaffolding "for later"; "ponytail", "be lazy", "yagni", "do less" | trust boundaries; the full version explicitly asked; tidying an already-written diff (`/simplify`) |
 
-<p align="center"><img src="./assets/divider.svg" width="100%" alt=""></p>
+---
 
 ## ◢ The build loop
 
@@ -89,7 +89,7 @@ Each skill also triggers from plain language — e.g. *"spec this out before we 
 `/alon-skills:build-loop` builds `TODO_WORKFLOW.md` rows one at a time without supervision, in any repo that carries the architect doc set. Each stage is a fresh subagent with an empty context; state between runs lives in the repo, never in chat. Fable 5.1 makes the calls everything downstream inherits (which row, what done means, who wins a dispute), Opus 5.5 reviews and repairs, Sonnet 5.5 builds, Haiku 5.5 searches and counts. Stages name model aliases, so each follows the newest model of its tier.
 
 | Stage | Model | Reads | Writes | Returns | Stops the loop when |
-|:---|:---|:---|:---|:---|:---|
+|---|---|---|---|---|---|
 | plan | fable, effort high | `TODO_WORKFLOW.md`, git status/branch/log, the `## Commands` table in `CLAUDE.md`, `<scratch>/<id>/plan.json` of a stale row | TODO row → `[IN PROGRESS]` (commit), the branch, `plan.json` | taskId, taskRow, branch, baseCommit, docsToRead, leftForThisTask, commands, resuming, stopReason, staleBlocked | dirty tree; `TODO_WORKFLOW.md` or `SOURCE_OF_TRUTH.md` missing; no `## Commands` table and no single root manifest; no eligible row (names the first two rejected); a stale `[IN PROGRESS]` row it cannot safely resume (closed `[BLOCKED]` for a human) |
 | scout | haiku, low | grep/glob excerpts, doc headings | nothing | files with scope, tests, docSections, notes | returns nothing → row back to `[ ]` with a note |
 | spec | fable, high | SoT sections, the scout's locations, existing `spec.md` when resuming | SoT → Roadmap → NN docs (committed when a fact changes), `<scratch>/<id>/spec.md` (8 sections, incl. acceptance criteria and unverified APIs) | specPath, docsChanged, unverifiedApis, verifyCommands, stopReason | a missing decision it refuses to guess → row back to `[ ]` with the decision named |
@@ -129,7 +129,7 @@ The driver runs `claude -p` once per task (permission mode under [Permissions](#
 
 **Measured once, 2026-09-23:** `autobuild.mjs --tasks 1` on a throwaway Node repo with a two-row TODO built row 1.1 in about four minutes: plan, scout, spec, build (two commits, tests green), measure, four refute lenses (all pass, five advisory notes), close. The driver reported $1.75 for the session. The driver runs every session with `{"attribution": {"commit": "", "pr": "", "sessionUrl": false}}`, so its commits carry no `Co-Authored-By` or `Claude-Session` trailer (measured: 3/3 commits had both without it, 0/3 with it, and a second build-loop task came out clean). Running `/alon-skills:build-loop` in your own session uses your settings instead; put the same `attribution` block in `~/.claude/settings.json` to get owner-only commits there too.
 
-<p align="center"><img src="./assets/divider.svg" width="100%" alt=""></p>
+---
 
 ## ◢ Permissions
 
@@ -139,7 +139,7 @@ The skills and build-loop run on auto. They approve their own actions and don't 
 - `scripts/autobuild.mjs` runs `claude -p` with `--permission-mode auto`, once per task, with the Workflow tool pre-approved.
 - In don't-ask mode, a skill that sets its own tool rules (review-swarm, up-to-date) is refused unless the Skill tool is pre-approved, for example with `--allowedTools Skill`. Interactive sessions ask instead. Measured 2026-09-24.
 
-<p align="center"><img src="./assets/divider.svg" width="100%" alt=""></p>
+---
 
 ## ◢ Watching a session or a run
 
@@ -153,13 +153,9 @@ The tracker follows any open session, not only Workflow runs, and shows everythi
 
 The picture above is one build-loop task on a throwaway Node repo, run on 2026-10-12 with `autobuild.mjs --tasks 1`: row 1.2, `truncateSlug(slug, max)`. It took 11 stages: plan, scout, spec, build, measure, five refute lenses and close. The loop skipped research because the spec listed no unverified APIs, and it needed no fix round because every lens passed with no blocking finding. The run took 5:29 and 8.1k output tokens, and the driver reported $4.29 for the session. The row closed as `[FINISHED - PENDING MERGE]` after six commits, all authored by the owner with no trailer. Every alias resolved as documented (fable → `claude-fable-5-1`, opus → `claude-opus-5-5`, sonnet → `claude-sonnet-5-5`, haiku → `claude-haiku-5-5`), and every stage recorded its effort level, with scout and measure at `low` on Haiku 5.5. Two of the loop's rules came from the v3.1 run: the fixer may not dispute a finding the arbiter upheld, and the build stage names its effort (`medium`) instead of inheriting the launching session's.
 
-<p align="center"><img src="./assets/divider.svg" width="100%" alt=""></p>
+---
 
 ## ◢ Evals
-
-<p align="center">
-  <img src="./assets/evals-overview.svg" width="100%" alt="">
-</p>
 
 `evals/` is a [`claude plugin eval`](https://code.claude.com/docs/en/plugin-evals) suite: 19 behavioral cases, three per skill (four for ponytail), each with a skill-fired grader, a PASS/FAIL rubric on the result, and a process grader wherever the behavior is a tool fact (which model a subagent was spawned with, that no file was edited). Fixtures are real git repos built by `fixture.sh` scaffolds.
 
@@ -190,34 +186,34 @@ Two cases the session limit spoiled on 2026-10-04 now have clean numbers. real-d
 
 Trigger accuracy (120 queries, 20 per skill, half should fire, each run twice, on Fable 5.1 on a local machine, 2026-10-17 and 2026-10-18). Out of 20 should-fire runs per skill, architect fired on 18, ask-the-council 17, ponytail 17, prompt-generator 15, review-swarm 16 and up-to-date 20. No skill fired on a should-not query. The architect queries and 19 of the ask-the-council ones ran with a budget of 6 turns and 180 s per run. The rest ran with 3 turns and 90 s, which is enough to catch the first Skill call. From 2026-10-18 the grader also stopped counting a same-named skill from another namespace, because a session can list claude.ai custom skills called ponytail and prompt-generator. Per-run detail is in [`STEP7.md`](evals/history/STEP7.md).
 
-<p align="center"><img src="./assets/divider.svg" width="100%" alt=""></p>
+---
 
 ## ◢ Living with Claude Code's built-ins
 
 A skill that fires when a built-in should have, or stays quiet because a built-in got there first, is a bug even when both are good on their own. The overlaps are settled inside the descriptions, so the choice gets made at trigger time instead of after you already have the wrong answer.
 
 | Overlap | Who wins | Why |
-|:---|:---:|:---|
+|---|---|---|
 | **ponytail** vs `/simplify` | split | ponytail governs what gets *built*, before and while you write it. `/simplify` cleans a diff that already exists. |
 | **review-swarm** vs `/code-review` | review-swarm | It's the default for a real diff. `/code-review` takes over when you name it, or for a one-liner not worth a swarm. |
 | **review-swarm** vs `/security-review` | depends on the ask | Security is one of the swarm's six lenses. When security is the whole question, `/security-review` goes deeper. |
 
 If you also run a UX skill or a prose skill, two hand-offs are worth wiring: review-swarm passes UI and accessibility hunks to the design reviewer instead of guessing at them, and architect's executive summaries are prose worth humanizing. Its tables, invariants, and API contracts are not.
 
-<p align="center"><img src="./assets/divider.svg" width="100%" alt=""></p>
+---
 
 ## ◢ Companion skills
 
 Not shipped here and not mine. Two third-party skills the hand-offs above are written against, if you want somewhere for them to go. Install them separately.
 
 | Skill | Source | Pairs with |
-|:---|:---|:---|
+|---|---|---|
 | **ux-designer** | [szilu/ux-designer-skill](https://github.com/szilu/ux-designer-skill) (MIT) | review-swarm, which passes UI and accessibility hunks to it |
 | **humanizer** | [blader/humanizer](https://github.com/blader/humanizer) (MIT) | architect, for executive summaries and README prose |
 
 One catch worth knowing about humanizer: as of v2.9.1 the plugin puts `SKILL.md` at its root instead of `skills/humanizer/SKILL.md`. Claude Code installs it, reports it enabled, and never loads it. Copy `SKILL.md` out of `~/.claude/plugins/cache/humanizer/humanizer/<version>/` into `~/.claude/skills/humanizer/` and it works.
 
-<p align="center"><img src="./assets/divider.svg" width="100%" alt=""></p>
+---
 
 ## ◢ What's new in workflow-watch 0.4.1
 
@@ -275,7 +271,7 @@ v3 rewrites all six skills for Claude Fable 5.1, adds a workflow that builds TOD
 - The architect templates gained what the build loop reads: a `## Commands` table in `CLAUDE.md`, the `Left for <id>` note convention, and `docs/handoff.md`.
 - New: `workflows/build-loop.js` and `scripts/autobuild.mjs` (above), and the `evals/` suite.
 
-<p align="center"><img src="./assets/divider.svg" width="100%" alt=""></p>
+---
 
 ## ◢ What they share
 
@@ -285,7 +281,7 @@ v3 rewrites all six skills for Claude Fable 5.1, adds a workflow that builds TOD
 - **Design the failure paths** as deliberately as the happy ones; enforce rules at the core.
 - **Question whether the code needs to exist at all** before writing it.
 
-<p align="center"><img src="./assets/divider.svg" width="100%" alt=""></p>
+---
 
 ## ◢ Manage
 
@@ -297,7 +293,7 @@ Pull updates anytime with `/plugin marketplace update alonbaron`. The marketplac
 /plugin uninstall alon-skills@alonbaron
 ```
 
-<p align="center"><img src="./assets/divider.svg" width="100%" alt=""></p>
+---
 
 ## ◢ License
 
