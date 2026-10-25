@@ -1,7 +1,7 @@
 import { describe, expect, mock, test } from 'claude-code/testing'
 
 import { headerCard, phaseChip, stageCard, timelineCard } from '../hooks/cards'
-import { EMPTY, parseSession, report, slimLog } from '../hooks/journal'
+import { EMPTY, SLIM_CUT, parseSession, report, slimLog } from '../hooks/journal'
 import type { Stage } from '../types'
 
 const line = (o: unknown): string => JSON.stringify(o)
@@ -25,15 +25,16 @@ describe('slimmed logs', () => {
     expect(slim[1]!.length).toBeLessThan(long.length)
   })
 
-  test('a log cut to its newest lines, so it opens mid-turn on a reply and a tool result, still reads its next turn', async () => {
+  test('a log cut to its newest lines skips the cut marker, and an opening mid-turn becomes one promptless turn', async () => {
     const lines = [
+      SLIM_CUT,
       line({ type: 'assistant', timestamp: '2026-10-22T08:00:01.000Z', message: { model: 'claude-opus-5-5', stop_reason: 'end_turn', content: [{ type: 'text', text: 'earlier reply' }] } }),
       line({ type: 'user', timestamp: '2026-10-22T08:00:02.000Z', toolUseResult: { stdout: 'ok' }, message: { content: [{ type: 'tool_result', tool_use_id: 'gone', content: 'ok' }] } }),
       line({ type: 'user', timestamp: '2026-10-22T08:00:10.000Z', message: { content: 'next prompt' } }),
       line({ type: 'assistant', timestamp: '2026-10-22T08:00:12.000Z', message: { model: 'claude-opus-5-5', stop_reason: 'end_turn', content: [{ type: 'text', text: 'done' }] } }),
     ].join('\n')
     const turns = parseSession(lines, Date.parse('2026-10-22T08:01:00.000Z')).filter(s => s.kind === 'turn')
-    expect(turns.at(-1)?.prompt).toBe('next prompt')
+    expect(turns.map(s => s.prompt ?? null)).toEqual([null, 'next prompt'])
     expect(turns.at(-1)?.summary).toBe('done')
   })
 

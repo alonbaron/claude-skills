@@ -4,9 +4,8 @@
 name: tracker-slim
 on:
   workflow_dispatch:
+  # Push only: a branch with a PR open would otherwise run every job twice.
   push:
-    paths: ["mods/workflow-watch/**", ".github/workflows/tracker-slim.yml"]
-  pull_request:
     paths: ["mods/workflow-watch/**", ".github/workflows/tracker-slim.yml"]
 jobs:
   slim:
@@ -29,11 +28,13 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           sw_vers
+          [ -x /usr/bin/perl ] || { echo "no /usr/bin/perl on this runner"; exit 1; }
+          rc=0; n=0
           for p in /usr/bin/perl /usr/bin/perl5.*; do
             [ -x "$p" ] || continue
+            n=$((n + 1))
             echo "== $p"
-            node mods/workflow-watch/tests/slim-check.mjs --perl "$p"
+            node mods/workflow-watch/tests/slim-check.mjs --perl "$p" || rc=1
           done
-      - name: perl on Windows too
-        if: runner.os == 'Windows'
-        run: node mods/workflow-watch/tests/slim-check.mjs --perl perl
+          echo "checked $n system perls"
+          exit $rc

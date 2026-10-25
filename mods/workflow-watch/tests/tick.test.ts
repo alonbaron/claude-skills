@@ -1,5 +1,7 @@
 import { describe, expect, mock, test } from 'claude-code/testing'
 
+import { SLIM_CUT, SLIM_TAIL } from '../hooks/journal'
+
 const HOME = '/home/u'
 const SID = 'sid12345-abcd'
 const SESSION = `${HOME}/.claude/projects/p1/${SID}.jsonl`
@@ -9,11 +11,11 @@ const BIG = 5 * 1024 * 1024
 const norm = (p: string): string => p.split(String.fromCharCode(92)).join('/').replace(/^[A-Za-z]:/, '')
 const ran = (stdout: string, exitCode = 0) => ({ exitCode, stdout, stderr: exitCode ? 'failed' : '', isStdoutTruncated: false, isStderrTruncated: false })
 
-type World = { size: number; isReadBroken: boolean; result: ReturnType<typeof ran>; runs: Array<{ argv: string[]; env: Record<string, string> }>; saved: Map<string, unknown>; sets: Array<[string, unknown]> }
+type World = { size: number; isReadBroken: boolean; isRunBroken: boolean; result: ReturnType<typeof ran>; runs: Array<{ argv: string[]; env: Record<string, string> }>; saved: Map<string, unknown>; sets: Array<[string, unknown]> }
 
 /** A home with one session log, the engine's file, process and store ops answered from `w`. */
 function world(on: any, env: Record<string, string> = {}): { w: World; clock: ReturnType<typeof mock.clock> } {
-  const w: World = { size: 1000, isReadBroken: false, result: ran(`${USER}\n${REPLY}`), runs: [], saved: new Map(), sets: [] }
+  const w: World = { size: 1000, isReadBroken: false, isRunBroken: false, result: ran(`${USER}\n${REPLY}`), runs: [], saved: new Map(), sets: [] }
   const clock = mock.clock(on)
   mock.env(on, { HOME, ...env })
   on('session.id', () => ({ value: SID }))
@@ -30,6 +32,7 @@ function world(on: any, env: Record<string, string> = {}): { w: World; clock: Re
   })
   on('process.run', (_$: any, e: any) => {
     w.runs.push({ argv: [...e.argv], env: { ...(e.init?.env ?? {}) } })
+    if (w.isRunBroken) throw new Error('timed out')
     return { value: w.result }
   })
   on('store.get', (_$: any, e: any) => ({ value: w.saved.get(e.key) }))
@@ -66,17 +69,48 @@ describe('tick', () => {
     expect(run?.argv[0]).toBe('C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe')
     expect(run?.argv.join(' ')).not.toContain(SID)
     expect(norm(run?.env.WW_LOG ?? '')).toBe(SESSION)
-    expect(run?.env.WW_TAIL).toBe(String(3.5 * 1024 * 1024))
+    expect(run?.env.WW_TAIL).toBe(String(SLIM_TAIL))
   })
 
-  test('elsewhere perl reads it, the path as its own argument', async ($, on) => {
+  test('elsewhere perl reads it, the path as its own argument, counting bytes whatever the user set for perl', async ($, on) => {
     const { w, clock } = world(on)
     w.size = BIG
     await $.session.start(START)
     await clock.settle()
     expect(w.runs[0]?.argv[0]).toBe('perl')
+    expect(w.runs[0]?.argv[1]).toBe('-C0')
+    expect(w.runs[0]?.env.PERL5OPT).toBe('')
     expect(norm(w.runs[0]?.argv.at(-1) ?? '')).toBe(SESSION)
   })
+
+  test('a log the filter had to cut shows its newest part and says so', async ($, on) => {
+    const { w, clock } = world(on)
+    w.size = BIG
+    w.result = ran(`${SLIM_CUT}\n${USER}\n${REPLY}`)
+    await $.session.start(START)
+    await clock.settle()
+    expect((await $.command.run({ command: 'tracker' })).text).toContain('hi back')
+    const ui = await $.ui.mount({ plugin: 'workflow-watch', surface: 'terminal', component: 'Pane', requestId: 'workflow-watch', props: { title: 'Tracker', isFocused: false, bodyColumns: 120, placement: 'dock', scroll: { offset: 0, bodyRows: 40 }, view: {} } })
+    expect(await ui.find({ type: 'Text', text: 'This session’s log is too long to read in full, so only its most recent part is shown. Turn numbers start from there.' })).toBeDefined()
+    await ui.unmount()
+  })
+
+  for (const [what, broken] of [
+    ['a non-zero exit', (w: World) => (w.result = ran(USER, 1))],
+    ['cut-off output', (w: World) => (w.result = { ...ran(USER), isStdoutTruncated: true })],
+    ['a run that times out or cannot start', (w: World) => (w.isRunBroken = true)],
+  ] as const) {
+    test(`a slimmed read with ${what} counts as unreadable`, async ($, on) => {
+      const { w, clock } = world(on)
+      w.size = BIG
+      broken(w)
+      await $.session.start(START)
+      await clock.settle()
+      const ui = await $.ui.mount({ plugin: 'workflow-watch', surface: 'terminal', component: 'Pane', requestId: 'workflow-watch', props: { title: 'Tracker', isFocused: false, bodyColumns: 120, placement: 'dock', scroll: { offset: 0, bodyRows: 40 }, view: {} } })
+      expect(await ui.find({ type: 'Text', text: 'Could not read the session log; showing what was last read.' })).toBeDefined()
+      await ui.unmount()
+    })
+  }
 
   test('a failed slimmed read is not run again until the log grows, and an empty result counts as failed', async ($, on) => {
     const { w, clock } = world(on, { SystemRoot: 'C:\\Windows' })
