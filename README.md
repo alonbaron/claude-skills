@@ -1,22 +1,19 @@
 <p align="center">
-  <img src="./assets/workflow-watch.png" alt="workflow-watch tracking a live Claude Code build-loop session in a side pane" width="100%">
+  <img src="./assets/workflow-watch.png" alt="workflow-watch tracking a live Claude Code build-loop session in a side pane" width="840">
 </p>
 
 <p align="center">
-  <b>A live session tracker for Claude Code, plus six skills measured with and without the plugin. 19/19 evals passing.</b>
+  <b>Six Claude Code skills and a build loop, measured with and without the plugin, plus a live tracker that sits beside the chat.</b>
 </p>
 
 <p align="center">
-  <img alt="Claude Code plugin" src="https://img.shields.io/badge/Claude_Code-plugin-0891B2?style=flat-square&labelColor=0F1E33">&nbsp;
-  <img alt="6 skills + 1 workflow" src="https://img.shields.io/badge/skills-6_+_1_workflow-4F46E5?style=flat-square&labelColor=0F1E33">&nbsp;
-  <img alt="version" src="https://img.shields.io/badge/version-v3.2.2-7C3AED?style=flat-square&labelColor=0F1E33">&nbsp;
-  <a href="#-evals"><img alt="evals: 19/19 passing" src="https://img.shields.io/badge/evals-19%2F19_passing-059669?style=flat-square&labelColor=0F1E33"></a>&nbsp;
-  <img alt="MIT license" src="https://img.shields.io/badge/license-MIT-059669?style=flat-square&labelColor=0F1E33">&nbsp;
-  <a href="https://github.com/alonbaron"><img alt="by alonbaron" src="https://img.shields.io/badge/by-alonbaron-C026D3?style=flat-square&labelColor=0F1E33&logo=github&logoColor=white"></a>
-</p>
-
-<p align="center">
-  <sub>Six skills and one unattended build loop, tuned to one consistent working style: model-first, failure-path-aware, YAGNI.</sub>
+  <img alt="Claude Code plugin marketplace" src="https://img.shields.io/badge/Claude_Code-2_plugins-125190?style=flat-square&labelColor=0E1024">&nbsp;
+  <img alt="6 skills + 1 workflow" src="https://img.shields.io/badge/skills-6_+_1_workflow-4174A6?style=flat-square&labelColor=0E1024">&nbsp;
+  <img alt="alon-skills v3.2.2" src="https://img.shields.io/badge/alon--skills-v3.2.2-125190?style=flat-square&labelColor=0E1024">&nbsp;
+  <img alt="workflow-watch 0.4.1" src="https://img.shields.io/badge/workflow--watch-0.4.1-4174A6?style=flat-square&labelColor=0E1024">&nbsp;
+  <a href="#-evals"><img alt="evals: 19/19 passing" src="https://img.shields.io/badge/evals-19%2F19_passing-067647?style=flat-square&labelColor=0E1024"></a>&nbsp;
+  <img alt="MIT license" src="https://img.shields.io/badge/license-MIT-067647?style=flat-square&labelColor=0E1024">&nbsp;
+  <a href="https://github.com/alonbaron"><img alt="by alonbaron" src="https://img.shields.io/badge/by-alonbaron-125190?style=flat-square&labelColor=0E1024&logo=github&logoColor=white"></a>
 </p>
 
 ---
@@ -29,44 +26,46 @@
 /plugin install workflow-watch@alonbaron
 ```
 
-Works in the Claude Code CLI and the VS Code extension.
-
-The second line installs the skills and the third installs the tracker. They're separate plugins, so you can install either one alone (see [Watching a session or a run](#-watching-a-session-or-a-run)).
-
-Pull updates anytime with `/plugin marketplace update alonbaron` — the marketplace tracks `main`, so you're always on the latest. [Tagged releases](https://github.com/alonbaron/claude-skills/releases) mark the milestones.
+Works in the Claude Code CLI and the VS Code extension. Tested on macOS and Windows.
 
 ---
 
-## ◢ Proof, not promises
+## ◢ Measured with and without the plugin
 
-Most skill packs ask you to trust them. This one runs each skill through a [`claude plugin eval`](https://code.claude.com/docs/en/plugin-evals) suite twice, once with the plugin and once without, and reports both. One selected eval case per skill:
+The [`claude plugin eval`](https://code.claude.com/docs/en/plugin-evals) suite has 19 behavioral cases, and each one runs with the plugin and without it. All 19 pass at the 0.7 threshold on Fable 5.1. The scores below are one selected case per skill, not an average:
 
-| The situation | With the plugin | Without |
-|---|---|---|
+| One selected case per skill | With the plugin | Without |
+|:---|:---:|:---:|
 | A real diff with an N+1 query goes to **review-swarm**: parallel reviewers, verifiers, ranked report | **1.00** | 0.40 |
 | Someone asks for a pluggable-backend cache interface with one caller; **ponytail** ships the simple version | **0.90** | 0.50 |
 | A decision that should end by handing the build to another skill: **ask-the-council** | **1.00** | 0.33 |
 | A feature spec from scratch: **architect** asks the few questions that matter and right-sizes the docs | **1.00** | 0.67 |
 | A branch that was never pushed: **up-to-date** says so and compares against `main` instead of faking a sync | **0.88** | 0.62 |
 
-All 19 cases pass at the 0.7 threshold, each measured on the skill text this release ships. Across 120 trigger prompts, each skill fired on 75 to 100% of the runs meant for it and never on the ones meant for something else. Full table and method under [Evals](#-evals).
+Across 120 trigger prompts, each skill fired on 75 to 100% of the runs meant for it and never on the ones meant for another skill. Full table and method under [Evals](#-evals).
 
 ---
 
 ## ◢ The skills
 
+<p align="center">
+  <img src="./assets/hero.svg" width="100%" alt="">
+</p>
+
+`alon-skills` holds six skills and one unattended build loop, tuned to one consistent working style: model-first, failure-path-aware, YAGNI. The second plugin, `workflow-watch`, is the tracker (see [Watching a session or a run](#-watching-a-session-or-a-run)). You can install either one alone.
+
 | Skill | Invoke | What it does |
-|---|---|---|
+|:---|:---:|:---|
 | **architect** | `/architect` | Design docs *before* code — domain model + invariants → failure-path design → API contracts → a sequenced workstream. `architect audit` checks existing docs against the code. |
 | **review-swarm** | `/review-swarm` | Six parallel specialist reviewers on Sonnet → Opus verifiers that try to refute each finding → a ranked, `file:line` report. Never edits. |
 | **ask-the-council** | `/ask-the-council` | Four (or six) Opus advisors forced to disagree, then a Chairman in the main thread who **commits** to one recommendation with the tradeoff named. |
 | **prompt-generator** | `/prompt-generator` | Vague ask → rigorous prompt. Anti-hallucination, anti-tokenmaxing, strict agent rules baked into the prompt itself. |
 | **up-to-date** | `/up-to-date` | Preflight repo sync + situational brief before you start. Read-only by default — never touches a dirty tree without your OK. |
-| **ponytail** | `/ponytail` | Lazy-senior-dev mode: the simplest thing that actually works. *(MIT, vendored — see License.)* |
+| **ponytail** | `/ponytail` | Lazy-senior-dev mode: the simplest thing that actually works. *(Vendored from [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail), MIT. Not mine; see License.)* |
 
 Each skill also triggers from plain language — e.g. *"spec this out before we build"*, *"swarm review this diff"*, *"ask the council whether…"*, *"catch me up on the repo"*, *"be lazy here"*.
 
-**Proactive by default.** The skills fire on task *shape*, not just keywords: starting a new feature invokes **architect**, opening work in a repo with a remote invokes **up-to-date**, finishing a non-trivial implementation invokes **review-swarm**, a solution growing past the minimum invokes **ponytail** — announced in one line, no permission asked. Each skill carries a "when not to use" boundary so it stays out of the way on trivial work.
+**Proactive by default.** The skills fire on task *shape*, not just keywords: starting a new feature invokes **architect**, opening work in a repo with a remote invokes **up-to-date**, finishing a non-trivial implementation invokes **review-swarm**, a solution growing past the minimum invokes **ponytail** — announced in one line, no permission asked (see [Permissions](#-permissions)). Each skill carries a "when not to use" boundary so it stays out of the way on trivial work.
 
 ### Trigger map
 
@@ -82,6 +81,10 @@ Each skill also triggers from plain language — e.g. *"spec this out before we 
 ---
 
 ## ◢ The build loop
+
+<p align="center">
+  <img src="./assets/build-loop.svg" width="100%" alt="">
+</p>
 
 `/alon-skills:build-loop` builds `TODO_WORKFLOW.md` rows one at a time without supervision, in any repo that carries the architect doc set. Each stage is a fresh subagent with an empty context; state between runs lives in the repo, never in chat. Fable 5.1 makes the calls everything downstream inherits (which row, what done means, who wins a dispute), Opus 5.5 reviews and repairs, Sonnet 5.5 builds, Haiku 5.5 searches and counts. Stages name model aliases, so each follows the newest model of its tier.
 
@@ -120,13 +123,21 @@ One thing to know about in-session runs (measured 2026-10-04, CLI 2.1.289): the 
 node <plugin-root>/scripts/autobuild.mjs --tasks 5 [--task 2.1] [--dry-run] [--repo <path>] [--config <path>] [--plugin-dir <path>]
 ```
 
-The driver runs `claude -p` with `--permission-mode auto` once per task, asks it to run the workflow with `maxTasks: 1`, parses the JSON it returns, and stops on anything but `reached maxTasks`, on a non-zero exit, or on a usage-limit reply. `--config` defaults to `<repo>/.claude/build-loop.json` and is merged into the workflow args, so per-repo model overrides live there. A lock file under `<repo>/.claude/scratch/build-loop/` stops two drivers from running on the same tree; the log is `autobuild.log` next to it. While a session runs, each stage is printed as it starts and finishes when Claude Code's workflow journal is where the driver expects it; that layout is internal, so the driver goes quiet rather than failing when it is not.
+The driver runs `claude -p` once per task (permission mode under [Permissions](#-permissions)), asks it to run the workflow with `maxTasks: 1`, parses the JSON it returns, and stops on anything but `reached maxTasks`, on a non-zero exit, or on a usage-limit reply. `--config` defaults to `<repo>/.claude/build-loop.json` and is merged into the workflow args, so per-repo model overrides live there. A lock file under `<repo>/.claude/scratch/build-loop/` stops two drivers from running on the same tree; the log is `autobuild.log` next to it. While a session runs, each stage is printed as it starts and finishes when Claude Code's workflow journal is where the driver expects it; that layout is internal, so the driver goes quiet rather than failing when it is not.
 
 **What the repo needs** (the architect skill's templates carry all of it): `TODO_WORKFLOW.md` rows of `# | Task | Architecture Ref | Status | Branch` with the five status strings, `SOURCE_OF_TRUTH.md`, a `## Commands` table in `CLAUDE.md` (Scope | Install | Test | Lint | Format; the loop never guesses a package manager or a test command), and the `Left for <id>: …` note convention. `docs/handoff.md` is created on the first close.
 
-**Unattended runs and review-swarm.** A skill that sets its own tool rules (review-swarm, up-to-date) is refused in don't-ask mode unless the Skill tool is pre-approved, e.g. `--allowedTools Skill`. Interactive sessions just ask. Measured 2026-09-24.
-
 **Measured once, 2026-09-23:** `autobuild.mjs --tasks 1` on a throwaway Node repo with a two-row TODO built row 1.1 in about four minutes: plan, scout, spec, build (two commits, tests green), measure, four refute lenses (all pass, five advisory notes), close. The driver reported $1.75 for the session. The driver runs every session with `{"attribution": {"commit": "", "pr": "", "sessionUrl": false}}`, so its commits carry no `Co-Authored-By` or `Claude-Session` trailer (measured: 3/3 commits had both without it, 0/3 with it, and a second build-loop task came out clean). Running `/alon-skills:build-loop` in your own session uses your settings instead; put the same `attribution` block in `~/.claude/settings.json` to get owner-only commits there too.
+
+---
+
+## ◢ Permissions
+
+The skills and build-loop run on auto. They approve their own actions and don't stop to ask first.
+
+- Skills fire on the shape of the task and announce themselves in one line instead of asking. review-swarm and up-to-date pre-approve the read-only git and gh commands they always run, and review-swarm switches off editing tools for the length of the review.
+- `scripts/autobuild.mjs` runs `claude -p` with `--permission-mode auto`, once per task, with the Workflow tool pre-approved.
+- In don't-ask mode, a skill that sets its own tool rules (review-swarm, up-to-date) is refused unless the Skill tool is pre-approved, for example with `--allowedTools Skill`. Interactive sessions ask instead. Measured 2026-09-24.
 
 ---
 
@@ -136,9 +147,9 @@ The driver runs `claude -p` with `--permission-mode auto` once per task, asks it
 
 The tracker follows any open session, not only Workflow runs, and shows everything that happens while an agent builds: main-thread turns (`TURN`), skills fired (`SKILL`), spawned subagents (`AGENT`, such as parallel review-swarm lenses and verifiers or council advisors), git commits (`COMMIT`), and Workflow stages (`STAGE`). The picture is the `Tracker` pane from workflow-watch in its dark and light themes. A header card holds the counts and output tokens, a timeline plots the last ten items on a shared clock, and every item then gets a rounded card, newest first, under a pill naming its phase (`Turn N`, `Skill · <name>`, or the Workflow phase). `scripts/tracker.mjs` draws the same feed as an HTML page, in run order: a header KPI strip, a **Timeline Waterfall** colored by model tier and outcome, and a card per item with metric pills (duration, tool calls, output tokens) and a fold that reveals the span bar, the tool call trail (`Bash`, `Read`, `Grep`, etc.) and the full output. Only running items start open. Three ways to get it:
 
-- **`scripts/tracker.mjs`**, from any shell: `node <plugin-root>/scripts/tracker.mjs [--session <id> | --run <dir|wf_id>] [--source auto|claude|antigravity] [--out tracker.html] [--png tracker.png] [--watch]`. With no flags it picks the newest session across both agents: Claude Code (CLI and VS Code extension) under `~/.claude/projects/<project>/`, and Antigravity (VS Code extension, IDE and 2.0) under `~/.gemini/antigravity/brain/<conversation-id>/`. `--source` limits the search to one of them. `--session <id>` (or an id prefix) renders that session's full activity feed: `<session>.jsonl`, `<session>/subagents/agent-*` and any `workflows/<run>/journal.jsonl` for Claude Code, or the conversation's transcript plus each spawned subagent's own conversation for Antigravity (read from the untruncated `transcript_full.jsonl` when present). `--run` renders a single workflow run, by directory or by its `wf_…` name. `--png` adds a screenshot via Playwright (`--playwright <path>` when not in default module resolution). `--watch` re-renders every five seconds, until the last stage ends for a workflow run, or until Ctrl+C for a session.
-- **In VS Code** (the Claude Code extension or the Antigravity extension): run `node scripts/tracker.mjs --watch` in the integrated terminal and open `tracker.html` with **Simple Browser** or **Live Preview**. With `--watch` the page reloads itself every five seconds and keeps your scroll position and open folds. The header pill names the source (`CLAUDE CODE · SESSION TRACKER`, `ANTIGRAVITY · SESSION TRACKER`), and Gemini models get their own `gemini` badge and bar color.
-- **`mods/workflow-watch`**, inside Claude Code: a mod (a plugin of function hooks) that opens on `session.start` and follows the active session and its workflows live in the `Tracker` pane beside the chat. It draws nothing else, so the chat gets no band above the prompt, status line entry or toasts. In VS Code and the desktop app the pane is drawn as rounded cards, newest first, with a dark/light toggle and a timeline you can fold. `/plugin install workflow-watch@alonbaron`, or `claude --plugin-dir mods/workflow-watch` for one session; `/tracker` (or `/workflow-watch`) opens the pane and prints the report as text. On Windows it finds the home directory from `USERPROFILE` when `HOME` is unset, as in the VS Code extension host.
+- **`scripts/tracker.mjs`**, from any shell: `node <plugin-root>/scripts/tracker.mjs [--session <id> | --run <dir|wf_id>] [--out tracker.html] [--png tracker.png] [--watch]`. With no flags it picks the newest Claude Code session (CLI or VS Code extension) under `~/.claude/projects/<project>/`. `--session <id>` (or an id prefix) renders that session's full activity feed: `<session>.jsonl`, `<session>/subagents/agent-*` and any `workflows/<run>/journal.jsonl`. `--run` renders a single workflow run, by directory or by its `wf_…` name. `--png` adds a screenshot via Playwright (`--playwright <path>` when not in default module resolution). `--watch` re-renders every five seconds, until the last stage ends for a workflow run, or until Ctrl+C for a session.
+- **In VS Code** (the Claude Code extension): run `node scripts/tracker.mjs --watch` in the integrated terminal and open `tracker.html` with **Simple Browser** or **Live Preview**. With `--watch` the page reloads itself every five seconds and keeps your scroll position and open folds.
+- **`mods/workflow-watch`** (0.4.1), inside Claude Code: a mod (a plugin of function hooks) that opens on `session.start` and follows the active session and its workflows live in the `Tracker` pane beside the chat. It draws nothing else, so the chat gets no band above the prompt, status line entry or toasts. In VS Code the pane is drawn as rounded cards, newest first, with a dark/light toggle and a timeline you can fold. `/plugin install workflow-watch@alonbaron`, or `claude --plugin-dir mods/workflow-watch` for one session; `/tracker` (or `/workflow-watch`) opens the pane and prints the report as text. On Windows it finds the home directory from `USERPROFILE` when `HOME` is unset, as in the VS Code extension host.
 
 The picture above is one build-loop task on a throwaway Node repo, run on 2026-10-12 with `autobuild.mjs --tasks 1`: row 1.2, `truncateSlug(slug, max)`. It took 11 stages: plan, scout, spec, build, measure, five refute lenses and close. The loop skipped research because the spec listed no unverified APIs, and it needed no fix round because every lens passed with no blocking finding. The run took 5:29 and 8.1k output tokens, and the driver reported $4.29 for the session. The row closed as `[FINISHED - PENDING MERGE]` after six commits, all authored by the owner with no trailer. Every alias resolved as documented (fable → `claude-fable-5-1`, opus → `claude-opus-5-5`, sonnet → `claude-sonnet-5-5`, haiku → `claude-haiku-5-5`), and every stage recorded its effort level, with scout and measure at `low` on Haiku 5.5. Two of the loop's rules came from the v3.1 run: the fixer may not dispute a finding the arbiter upheld, and the build stage names its effort (`medium`) instead of inheriting the launching session's.
 
@@ -155,7 +166,7 @@ claude plugin eval <absolute path to this repo> --runs 2 -j 4 --allow-tools Writ
 `--runs 2`, with and without the plugin; 19 of 19 cases pass at 0.7. Every case was measured again for v3.2 on Fable 5.1 on the GitHub runner, 2026-10-14 and 2026-10-15. ponytail, ask-the-council and prompt-generator ran in run 38520925302 ($34.03 API-equivalent, 9 of 10 at 0.7). architect, review-swarm and up-to-date took three runs ($57.10 together, 8 of 9 at 0.7): 38523993370 hit the plan's session limit, and the eight cases it spoiled were run again in 38690586571 and 38727606834. v3.2.1 changed two skills and re-measured them on 2026-10-19: review-swarm's security hand-off in 39206713941 ($7.18), and all three ask-the-council cases in 39207379482 ($24.76). v3.2.2 changed review-swarm's description again and re-ran all three of its cases on 2026-10-19, since the description steers triggering on every one: 39210606875 ($19.05) measured the security hand-off and the trivial diff, and 39245286149 ($22.14) re-ran the ranked report after the first run hit the plan's session limit on it. The other four skills are unchanged since those runs. Each run's summary is on the `eval-results` branch under `results/<run id>.txt`. Details in `evals/README.md`, per-case history in [`evals/history/STEP7.md`](evals/history/STEP7.md); the 2026-10-04 numbers are in [`STEP5.md`](evals/history/STEP5.md) and [`STEP6.md`](evals/history/STEP6.md):
 
 | Skill | Cases | With plugin | Without | Model |
-|---|---|---|---|---|
+|:---|:---:|:---|:---|:---:|
 | ponytail | 4 | 0.90 (pushback), 0.83 (trust boundary), 1.00 (defers to simplify), 1.00 (root cause) | 0.50, 0.83, 1.00, 1.00 | Fable 5.1 |
 | ask-the-council | 3 | 1.00 (declines low stakes), 0.90 (forces divergence), 1.00 (hands off after verdict) | 0.75, 0.70, 0.33 | Fable 5.1 |
 | prompt-generator | 3 | 0.93 (coding-agent prompt), 1.00 (human prose boundary), 1.00 (whole-build scope check) | 0.71, 1.00, 0.67 | Fable 5.1 |
@@ -214,7 +225,7 @@ One catch worth knowing about humanizer: as of v2.9.1 the plugin puts `SKILL.md`
 ## ◢ What's new in workflow-watch 0.4
 
 - The tracker lives only in its side pane. The band above the prompt, the status line entry, the toasts and the "pane not placed" log line are gone.
-- In VS Code and the desktop app every item is a rounded card: a round avatar in its kind color, a state pill, and an amber outline while it runs. Cards come newest first, so the live work stays in view.
+- In VS Code every item is a rounded card: a round avatar in its kind color, a state pill, and an amber outline while it runs. Cards come newest first, so the live work stays in view.
 - A button switches the cards between dark and light whatever the system theme is, and another folds the timeline. Both choices carry over to new sessions.
 - Turn cards show your prompt. A message sent while Claude works stays in the same turn as `(mid-turn) …`, and an interrupt ends the turn instead of opening a fake one.
 - A session log past the 4 MiB read limit no longer blanks the pane. It's read through a filter that drops the engine's bookkeeping lines and pasted image data and cuts long strings, so a 12 MiB log comes to about 1 MiB. If a read still fails, the pane keeps the last items and says so.
@@ -254,7 +265,7 @@ v3 rewrites all six skills for Claude Fable 5.1, adds a workflow that builds TOD
 - Every `SKILL.md` was rewritten for Claude Fable 5.1: judgment rules with the reason attached, instead of numbered procedures the model no longer needs. Frontmatter splits `description` (what it does) from `when_to_use` (when it fires and when it stays quiet), and the combined length stays under the listing's truncation limit.
 - The skills now spawn with explicit models: review-swarm reviewers on Sonnet and verifiers on Opus, council advisors on Opus. Naming the model in the spawn makes the behavior the same on every install, whatever the local subagent default is.
 - `effort: max` is pinned on architect, ask-the-council, and review-swarm, the three judgment-heavy skills.
-- review-swarm and up-to-date pre-approve the read-only git and gh commands they always run, and review-swarm has editing tools switched off for the duration of the review.
+- review-swarm and up-to-date pre-approve the read-only git and gh commands they always run, and review-swarm has editing tools switched off for the duration of the review (see [Permissions](#-permissions)).
 - Context injection: up-to-date runs its whole git and GitHub block before the model reads the skill and reasons over the output; review-swarm sees the working tree's status and diff shape; architect sees which design docs exist, so create-vs-audit mode is known before the first tool call.
 - The shared "global rules" block is gone from every skill. One portable line replaces it (verify or say you don't know; commits are the repo owner's alone), because installers without a CLAUDE.md still need those two rules.
 - The architect templates gained what the build loop reads: a `## Commands` table in `CLAUDE.md`, the `Left for <id>` note convention, and `docs/handoff.md`.
@@ -273,6 +284,8 @@ v3 rewrites all six skills for Claude Fable 5.1, adds a workflow that builds TOD
 ---
 
 ## ◢ Manage
+
+Pull updates anytime with `/plugin marketplace update alonbaron`. The marketplace tracks `main`, so you're always on the latest, and [tagged releases](https://github.com/alonbaron/claude-skills/releases) mark the milestones.
 
 ```text
 /plugin list                            # what's installed
