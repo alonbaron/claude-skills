@@ -120,6 +120,21 @@ function addInputs(target: TokenSums, usage: Rec, id: unknown, seen: Set<string>
   target.cacheWriteTokens = (target.cacheWriteTokens ?? 0) + num(usage.cache_creation_input_tokens)
 }
 
+const EDIT_TOOLS = new Set(['Edit', 'Write', 'NotebookEdit'])
+const SHELL_TOOLS = new Set(['Bash', 'PowerShell'])
+
+/** One tool call onto a turn's counters: its trail (last eight, as `lastTool` shows them), its shell commands and the files it edited. */
+function noteTool(turn: Stage, name: unknown, input: Rec): void {
+  const tool = oneLine(name ?? '?')
+  turn.tools = [...(turn.tools ?? []), turn.lastTool ?? tool].slice(-8)
+  if (SHELL_TOOLS.has(tool)) turn.commands = (turn.commands ?? 0) + 1
+  if (EDIT_TOOLS.has(tool) && typeof input.file_path === 'string') {
+    const file = str(input.file_path, 80)
+    const files = (turn.files ??= [])
+    if (!files.includes(file) && files.length < 12) files.push(file)
+  }
+}
+
 /** Reads model, effort, output tokens, tool calls and the first and last timestamps off a transcript's lines (Claude Code or Antigravity). */
 export function readTranscript(text: string): TranscriptFacts {
   const facts: TranscriptFacts = { model: null, effort: null, outputTokens: 0, calls: 0, lastTool: null, first: null, last: null, handback: null, lastText: null }
@@ -413,7 +428,7 @@ export function parseSession(text: string, now: number): Stage[] {
           currentTurn.isSettled = true
         }
         seenTurnSkills.clear()
-        currentTurn = openTurn(t, str(cleaned, 100))
+        currentTurn = openTurn(t, str(cleaned, 600))
         currentTurn.model = agyModel ?? 'gemini'
         currentTurn.alias = agyAlias ?? 'gemini'
         currentTurn.effort = agyEffort
@@ -430,7 +445,10 @@ export function parseSession(text: string, now: number): Stage[] {
       }
       lastTurnAt = t
       if (typeof e.output_tokens === 'number') currentTurn.outputTokens += e.output_tokens
-      if (typeof e.content === 'string' && oneLine(e.content)) currentTurn.summary = str(e.content, 100)
+      if (typeof e.content === 'string' && oneLine(e.content)) {
+        currentTurn.answer = str(e.content, 600)
+        currentTurn.summary = firstSentence(currentTurn.answer, 100)
+      }
       const tcs = Array.isArray(e.tool_calls) ? e.tool_calls : []
       if (tcs.length === 0) {
         currentTurn.endedAt = t
@@ -447,6 +465,8 @@ export function parseSession(text: string, now: number): Stage[] {
         currentTurn.calls += 1
         const arg = [args.CommandLine, args.AbsolutePath, args.TargetFile, args.query, args.Url, args.toolSummary].map(unquoteArg).find(v => v.length > 0)
         currentTurn.lastTool = `${name}${arg ? ' ' + str(arg, 50) : ''}`
+        // ponytail: Antigravity's tool names differ from Claude Code's, so only the trail is kept; map its edit and shell tools when a digest is wanted there.
+        noteTool(currentTurn, name, {})
         const id = `step_${String(e.step_index ?? stages.length)}_${currentTurn.calls}`
 
         const pathArg = unquoteArg(args.AbsolutePath)
@@ -668,7 +688,7 @@ export function parseSession(text: string, now: number): Stage[] {
             currentTurn.endedAt = lastTurnAt
             currentTurn.isSettled = true
           }
-          currentTurn = openTurn(t, str(prompt, 100))
+          currentTurn = openTurn(t, str(prompt, 600))
         }
       }
     } else if (e.type === 'attachment') {
@@ -676,7 +696,7 @@ export function parseSession(text: string, now: number): Stage[] {
       const att = rec(e.attachment)
       if (att.type === 'queued_command' && att.commandMode === 'prompt' && currentTurn) {
         const text = cleanPrompt(att.prompt)
-        if (text) currentTurn.prompt = str(`(mid-turn) ${text}`, 100)
+        if (text) currentTurn.prompt = str(`(mid-turn) ${text}`, 600)
       }
     } else if (e.type === 'assistant') {
       if (!currentTurn) currentTurn = openTurn(t, null)
@@ -713,13 +733,15 @@ export function parseSession(text: string, now: number): Stage[] {
         const b = rec(block)
         // The client's own filler after an interrupt (<synthetic> "No response requested.") is not Claude's answer.
         if (b.type === 'text' && typeof b.text === 'string' && oneLine(b.text) && msg.model !== '<synthetic>') {
-          currentTurn.summary = str(b.text, 100)
+          currentTurn.answer = str(b.text, 600)
+          currentTurn.summary = firstSentence(currentTurn.answer, 100)
         }
         if (b.type !== 'tool_use') continue
         currentTurn.calls += 1
         const input = rec(b.input)
         const arg = [input.command, input.file_path, input.pattern, input.description, input.skill].find(v => typeof v === 'string') as string | undefined
         currentTurn.lastTool = `${oneLine(b.name ?? '?')}${arg ? ' ' + str(arg, 50) : ''}`
+        noteTool(currentTurn, b.name, input)
         const id = String(b.id ?? stages.length)
 
         if (b.name === 'Skill') {
@@ -964,9 +986,54 @@ export function who(s: Stage): string {
   return `${model} ${s.effort ?? 'n/a'}`
 }
 
-/** The head of a stage's block after its state: `build:1.2  sonnet→claude-sonnet-5-5 medium`. */
+/** The first sentence of a one-lined text (to its first `.`, `?` or `!` followed by a space or the end), clipped to `n`. */
+export function firstSentence(text: string, n: number): string {
+  const m = /^(.*?[.!?])(?:\s|$)/.exec(text)
+  return clip((m?.[1] ?? text).trim(), n)
+}
+
+/** A turn's title: its prompt's first sentence, cut at a word boundary to 60 characters; null without a prompt. */
+export function turnTitle(prompt: string | null | undefined): string | null {
+  if (!prompt) return null
+  const s = firstSentence(prompt, 1000)
+  if (s.length <= 60) return s
+  const cut = s.slice(0, 59)
+  const at = cut.lastIndexOf(' ')
+  return `${(at > 30 ? cut.slice(0, at) : cut).trimEnd()}…`
+}
+
+/** `turn:3 · Fix the login bug` for a turn with a prompt; the label alone otherwise. */
+export const labelWithTitle = (s: Stage): string => {
+  const title = s.kind === 'turn' ? turnTitle(s.prompt) : null
+  return title ? `${s.label} · ${title}` : s.label
+}
+
+/** The head of a stage's block after its state: `build:1.2  sonnet→claude-sonnet-5-5 medium`, a turn with its title first. */
 export function stageTitle(s: Stage): string {
-  return `${s.label}  ${who(s)}`
+  return `${labelWithTitle(s)}  ${who(s)}`
+}
+
+/**
+ * What a turn did: `edited 3 files · 7 commands · 1 commit · 2 agents · 1 skill`, from its own counters and every
+ * other item that started inside its span (a Skill call moves later items to another phase, so the span, not the
+ * phase, says what belongs to the turn). Empty when nothing counted.
+ */
+export function digest(turn: Stage, stages: Stage[], now: number): string {
+  const end = turn.endedAt ?? now
+  const n = { commit: 0, agent: 0, skill: 0 }
+  for (const s of stages) {
+    if (s === turn || !s.kind || !(s.kind in n) || s.startedAt < turn.startedAt || s.startedAt > end) continue
+    n[s.kind as keyof typeof n] += 1
+  }
+  return [
+    turn.files?.length ? `edited ${many(turn.files.length, 'file', 'files')}` : '',
+    turn.commands ? many(turn.commands, 'command', 'commands') : '',
+    n.commit ? many(n.commit, 'commit', 'commits') : '',
+    n.agent ? many(n.agent, 'agent', 'agents') : '',
+    n.skill ? many(n.skill, 'skill', 'skills') : '',
+  ]
+    .filter(Boolean)
+    .join(' · ')
 }
 
 /** The result in one line, or `no result yet` while the stage runs. */
@@ -1063,9 +1130,10 @@ export function usageView(u: Usage | null, stages: Stage[], now: number, cacheTt
 /** The usage card as lines of text: `ctx 32% · 320k of 1.0M`, `5h 18% · pace 23% (-5) · resets in 2h 13m`, then the figures. */
 export const usageText = (v: UsageView): string[] => [...v.meters.map(m => `${m.label} ${m.text}`), v.figures]
 
-/** One stage as a block: the head line, then its result and its details indented under it. */
-export function stageLines(s: Stage, now: number): string[] {
-  return [`${state(s)}  ${stageTitle(s)}`, ...(s.prompt ? [`    › ${s.prompt}`] : []), `    ${stageResult(s)}`, `    ${stageDetail(s, now)}`]
+/** One stage as a block: the head line, then its prompt, result, details and (for a turn that did something) its digest, indented under it. */
+export function stageLines(s: Stage, now: number, stages: Stage[] = []): string[] {
+  const did = s.kind === 'turn' ? digest(s, stages, now) : ''
+  return [`${state(s)}  ${stageTitle(s)}`, ...(s.prompt ? [`    › ${clip(s.prompt, 100)}`] : []), `    ${stageResult(s)}`, `    ${stageDetail(s, now)}`, ...(did ? [`    ${did}`] : [])]
 }
 
 /** The whole picture as plain text: what the command prints, the same blocks the pane draws, oldest first as a log reads. */
@@ -1073,7 +1141,7 @@ export function report(w: Watch, usage: string[] = []): string {
   const lines = [`${w.run}: ${tally(w)}`, ...usage.map(l => `    ${l}`)]
   for (const g of phaseRuns(w.stages)) {
     lines.push(`── ${phaseTitle(g)}`)
-    for (const s of g.stages) lines.push(...stageLines(s, w.now))
+    for (const s of g.stages) lines.push(...stageLines(s, w.now, w.stages))
   }
   return lines.join('\n')
 }

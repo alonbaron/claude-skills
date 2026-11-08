@@ -1,5 +1,5 @@
 import type { Stage, StageKind, Theme, Watch } from '../types'
-import { elapsed, phaseTitle, stageDetail, stageResult, state, tally, timelineBar, tone, usageText, who } from './journal'
+import { clip, elapsed, labelWithTitle, phaseTitle, stageDetail, stageResult, state, tally, timelineBar, tone, usageText, who } from './journal'
 import type { UsageView } from './journal'
 
 /** Card markup for the graphical surfaces (desktop, vscode, mobile): rounded cards, round kind avatars, pill badges. */
@@ -30,6 +30,25 @@ const fit = (v: string, px: number, size: number): string => {
   return v.length <= n ? v : `${v.slice(0, n - 1)}…`
 }
 const textW = (v: string, size: number): number => Math.ceil(v.length * size * 0.5)
+/** Breaks a line at spaces into lines that fit `px` at `size`; a word longer than a line is cut. */
+const wrap = (v: string, px: number, size: number): string[] => {
+  const n = Math.max(1, Math.floor(px / (size * 0.5)))
+  const lines: string[] = []
+  let line = ''
+  for (const word of v.split(' ')) {
+    if (line && line.length + 1 + word.length > n) {
+      lines.push(line)
+      line = ''
+    }
+    line = line ? `${line} ${word}` : word
+    while (line.length > n) {
+      lines.push(line.slice(0, n))
+      line = line.slice(n)
+    }
+  }
+  if (line) lines.push(line)
+  return lines
+}
 const svg = (h: number, body: string, theme: Theme): string =>
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${h}" width="${W}" height="${h}" ${FONT}>${STYLE[theme]}${body}</svg>`
 const frame = (h: number, cls = 'card'): string => `<rect class="${cls}" x="0.5" y="0.5" width="${W - 1}" height="${h - 1}" rx="16" stroke-width="1"/>`
@@ -136,27 +155,40 @@ export function phaseChip(g: { phase: string; stages: Stage[] }, theme: Theme): 
   return { source: svg(28, body, theme), alt: label, width: W, height: 28 }
 }
 
-/** One item: a round avatar in its kind color, the label and the model, a state pill, then prompt, result and details. */
-export function stageCard(s: Stage, now: number, theme: Theme): Card {
+/** What a card shows beyond its item: a turn's digest line, and whether the person unfolded it to the full prompt, answer and tool trail. */
+export type CardExtras = { digest?: string; isOpen?: boolean }
+
+/**
+ * One item: a round avatar in its kind color, the label (a turn with its title) and the model, a state pill, then prompt,
+ * result, details and digest. Unfolded, the prompt and the answer run to their full stored length and the tool trail follows.
+ */
+export function stageCard(s: Stage, now: number, theme: Theme, extras: CardExtras = {}): Card {
   const t = tone(s)
   const st = state(s)
   const pw = textW(st, 12) + 22
   const isLive = s.endedAt === null
-  const lines: Array<{ cls: string; v: string; size: number; italic?: boolean }> = []
-  if (s.prompt) lines.push({ cls: 'p', v: `› ${s.prompt}`, size: 13 })
-  lines.push({ cls: isLive ? 'm' : 't', v: stageResult(s), size: 13, italic: isLive })
-  lines.push({ cls: 'm', v: stageDetail(s, now), size: 12 })
-  const h = 64 + lines.length * 20 + 10
   const x = 62
+  const width = W - x - 18
+  const lines: Array<{ cls: string; v: string; size: number; italic?: boolean }> = []
+  if (s.prompt) {
+    if (extras.isOpen) lines.push(...wrap(`› ${s.prompt}`, width, 13).map(v => ({ cls: 'p', v, size: 13 })))
+    else lines.push({ cls: 'p', v: `› ${clip(s.prompt, 100)}`, size: 13 })
+  }
+  if (extras.isOpen && s.answer && !isLive) lines.push(...wrap(s.answer, width, 13).map(v => ({ cls: 't', v, size: 13 })))
+  else lines.push({ cls: isLive ? 'm' : 't', v: stageResult(s), size: 13, italic: isLive })
+  lines.push({ cls: 'm', v: stageDetail(s, now), size: 12 })
+  if (extras.digest) lines.push({ cls: 'm', v: extras.digest, size: 12 })
+  if (extras.isOpen) for (const tool of s.tools ?? []) lines.push({ cls: 'm', v: `· ${tool}`, size: 12 })
+  const h = 64 + lines.length * 20 + 10
   const rows = lines
-    .map((l, i) => `<text class="${l.cls}" x="${x}" y="${78 + i * 20}" font-size="${l.size}"${l.italic ? ' font-style="italic"' : ''}>${esc(fit(l.v, W - x - 18, l.size))}</text>`)
+    .map((l, i) => `<text class="${l.cls}" x="${x}" y="${78 + i * 20}" font-size="${l.size}"${l.italic ? ' font-style="italic"' : ''}>${esc(fit(l.v, width, l.size))}</text>`)
     .join('')
   const body =
     frame(h, s.endedAt === null ? 'card live' : 'card') +
     `<circle cx="34" cy="36" r="18" fill="${KIND_FILL[kindOf(s)]}"/><text class="ink" x="34" y="41" font-size="14" font-weight="700" text-anchor="middle">${KIND_LETTER[kindOf(s)]}</text>` +
-    `<text class="t" x="${x}" y="32" font-size="14" font-weight="700">${esc(fit(s.label, W - x - pw - 30, 14))}</text>` +
+    `<text class="t" x="${x}" y="32" font-size="14" font-weight="700">${esc(fit(labelWithTitle(s), W - x - pw - 30, 14))}</text>` +
     `<text class="who" x="${x}" y="52" font-size="12">${esc(fit(who(s), W - x - 18, 12))}</text>` +
     `<rect class="pill-${t}" x="${W - 16 - pw}" y="17" width="${pw}" height="24" rx="12"/><text class="tx-${t}" x="${W - 16 - pw / 2}" y="33" font-size="12" font-weight="700" text-anchor="middle">${esc(st)}</text>` +
     rows
-  return { source: svg(h, body, theme), alt: [`${st} ${s.label} ${who(s)}`, ...lines.map(l => l.v)].join(' | '), width: W, height: h }
+  return { source: svg(h, body, theme), alt: [`${st} ${labelWithTitle(s)} ${who(s)}`, ...lines.map(l => l.v)].join(' | '), width: W, height: h }
 }
