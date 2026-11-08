@@ -24,6 +24,9 @@ const autoOpenOn = atom({ plugin: 'workflow-watch', key: 'autoOpenOn' } as const
 /** How many entries TURNS shows until the person asks for all of them. */
 const TURNS_SHOWN = 8
 
+/** The fewest columns a card's box takes: about its 440-pixel grid at the surface's monospace size, so a narrow pane overflows rather than shrinking the text. */
+const CARD_MIN_COLS = 55
+
 /** The context fill, in percent, from which the pane offers to compact. */
 const COMPACT_AT = 80
 
@@ -462,7 +465,7 @@ export const register: Register = (on, options) => {
       )
       const draw = (c: Card | null, key: string) =>
         c ? (
-          <Box key={key}>
+          <Box key={key} minWidth={CARD_MIN_COLS}>
             <Svg source={c.source} alt={c.alt} />
           </Box>
         ) : null
@@ -539,7 +542,7 @@ export const register: Register = (on, options) => {
             const isUnfolded = unfolded.includes(s.key)
             const c = turnEntry(s, childrenOf(s), w.now, mode, { digest: s.kind === 'turn' ? digest(s, w.stages, w.now) : undefined, isOpen: isUnfolded })
             return (
-              <Box key={s.key} flexDirection="column">
+              <Box key={s.key} flexDirection="column" minWidth={CARD_MIN_COLS}>
                 <Svg source={c.source} alt={c.alt} />
                 {(hasMore(s) || (s.kind === 'turn' && s.prompt)) && (
                   <Box flexWrap="wrap" gap={1}>
