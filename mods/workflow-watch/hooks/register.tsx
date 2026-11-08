@@ -19,6 +19,7 @@ const copiedKey = atom({ plugin: 'workflow-watch', key: 'copiedKey' } as const, 
 const armed = atom({ plugin: 'workflow-watch', key: 'armed' } as const, false)
 const folded = atom({ plugin: 'workflow-watch', key: 'folded' } as const, [] as string[])
 const allTurns = atom({ plugin: 'workflow-watch', key: 'allTurns' } as const, false)
+const autoOpenOn = atom({ plugin: 'workflow-watch', key: 'autoOpenOn' } as const, null as boolean | null)
 
 /** How many entries TURNS shows until the person asks for all of them. */
 const TURNS_SHOWN = 8
@@ -209,7 +210,7 @@ async function openPane($: Engine): Promise<void> {
 
 /** An open the plugin makes on its own: only while auto-open is on and the person has not hidden the pane this session. */
 async function openPaneAuto($: Engine): Promise<void> {
-  if (autoOpen && !(await read($, isHidden))) await openPane($)
+  if (((await read($, autoOpenOn)) ?? autoOpen) && !(await read($, isHidden))) await openPane($)
 }
 
 async function tick($: Engine): Promise<void> {
@@ -339,6 +340,9 @@ export const register: Register = (on, options) => {
     if (saved === 'dark' || saved === 'light') await update($, theme, () => saved)
     const folds = await $.store.get('folded').catch(() => undefined)
     if (Array.isArray(folds) && folds.every(f => typeof f === 'string')) await update($, folded, () => folds as string[])
+    // The Auto-open choice the button kept on a host where the engine refused the /config write; it wins over the row.
+    const kept = await $.store.get('autoOpen').catch(() => undefined)
+    if (typeof kept === 'boolean') await update($, autoOpenOn, () => kept)
     $.clock.every(2000, () => void tickOnce($))
     void openPaneAuto($)
     void tickOnce($)
@@ -398,6 +402,7 @@ export const register: Register = (on, options) => {
       const isArmed = await read($, armed)
       const folds = await read($, folded)
       const isAll = await read($, allTurns)
+      const isAuto = (await read($, autoOpenOn)) ?? autoOpen
       const isBusy = w.stages.some(s => s.endedAt === null)
       // The offer to compact: its own row, so the bar's buttons keep their places; two presses; never while anything runs.
       const compactRow =
@@ -432,8 +437,16 @@ export const register: Register = (on, options) => {
           />
           <Button
             key="auto"
-            label={autoOpen ? 'Auto-open: on' : 'Auto-open: off'}
-            onPress={() => void $.config.set({ key: `${PANE}.autoOpen`, value: !autoOpen }).catch(() => undefined)}
+            label={isAuto ? 'Auto-open: on' : 'Auto-open: off'}
+            onPress={() => {
+              const next = !isAuto
+              // The /config row is the setting wherever the engine lets the pane write it. A relayed session (the desktop app's) refuses
+              // a plugin's write, so the choice is kept in the mod's own store then, and wins over the row at the next start.
+              void update($, autoOpenOn, () => next)
+                .then(() => $.config.set({ key: `${PANE}.autoOpen`, value: next }).then(r => !r.deny, () => false))
+                .then(isWritten => (isWritten ? $.store.delete('autoOpen') : $.store.set('autoOpen', next)))
+                .catch(() => undefined)
+            }}
           />
           <Button
             key="hide"
@@ -459,7 +472,7 @@ export const register: Register = (on, options) => {
       if (isCompact) {
         const waiting = w.signals ? decisionLines(w.signals).filter(l => l.includes('? waiting')) : []
         return (
-          <Box flexDirection="column" paddingX={1} paddingY={1}>
+          <Box flexDirection="column" paddingX={1} paddingY={1} gap={1}>
             {compactRow}
             {bar}
             {notice}
@@ -484,7 +497,7 @@ export const register: Register = (on, options) => {
           />
         )
       }
-      const section = (name: string, count: number, card: Card) => (
+      const section = (name: string, count: number, card: Card | null) => (
         <Box key={name} flexDirection="column">
           <Box>{foldButton(name, count)}</Box>
           {!folds.includes(name) && draw(card, `${name}-card`)}
@@ -496,16 +509,26 @@ export const register: Register = (on, options) => {
       const entries = w.stages.filter(isEntry).reverse()
       // ponytail: the cap is by recency alone; the entries are newest first, so the first eight are the last eight turns.
       const shown = isAll ? entries : entries.slice(0, TURNS_SHOWN)
-      const childrenOf = (t: Stage): Stage[] => (t.kind === 'turn' ? w.stages.filter(s => !isEntry(s) && parentOf(s) === t) : [])
+      // One pass over the stages per render: each item under its turn's key, read back per entry.
+      const childrenByTurn = new Map<string, Stage[]>()
+      for (const s of w.stages) {
+        if (isEntry(s)) continue
+        const t = parentOf(s) as Stage
+        const list = childrenByTurn.get(t.key)
+        if (list) list.push(s)
+        else childrenByTurn.set(t.key, [s])
+      }
+      const childrenOf = (t: Stage): Stage[] => (t.kind === 'turn' ? (childrenByTurn.get(t.key) ?? []) : [])
+      // One unit of air between every row of the console: the buttons, the rules, each section and each entry.
       return (
-        <Box flexDirection="column" paddingX={1} paddingY={1}>
+        <Box flexDirection="column" paddingX={1} paddingY={1} gap={1}>
           {compactRow}
           {bar}
           {notice}
           {draw(sessionRule(w, w.now, mode), 'session')}
           {draw(nowCard, 'now')}
-          {signalPanels(w.signals, w.stages, mode).map(p => section(p.name, p.count, p.card))}
-          {section('USAGE', view.meters.length, usagePanel(view, mode))}
+          {signalPanels(w.signals, w.stages, mode, folds).map(p => section(p.name, p.count, p.card))}
+          {section('USAGE', view.meters.length, folds.includes('USAGE') ? null : usagePanel(view, mode))}
           <Box gap={1}>
             {foldButton('TURNS', entries.length)}
             {!folds.includes('TURNS') && entries.length > TURNS_SHOWN && <Button key="turns:all" label={isAll ? `Last ${TURNS_SHOWN}` : `Show all ${entries.length}`} onPress={() => void update($, allTurns, v => !v).catch(() => undefined)} />}
