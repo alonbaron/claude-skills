@@ -37,6 +37,12 @@ export type Stage = {
   effort: string | null
   /** Output tokens the stage generated so far, thinking included. */
   outputTokens: number
+  /** Uncached input tokens its requests were answered over, counted once per response; absent until a response recorded any. */
+  inputTokens?: number
+  /** Input tokens the prompt cache served, counted once per response. */
+  cacheReadTokens?: number
+  /** Input tokens written to the prompt cache, counted once per response. */
+  cacheWriteTokens?: number
   /** Tool calls seen in the transcript so far. */
   calls: number
   /** The last tool the stage called, with a short argument. */
@@ -59,6 +65,16 @@ export type Watch = {
   isIdle?: boolean
 }
 
+/** What `$.session.usage()` last answered, kept to the fields the pane draws; null until the first answer. */
+export type Usage = {
+  /** The live context window: input tokens of the last response, the window size, and the fill as a whole percentage. */
+  context: { tokens?: number; window: number; percent?: number }
+  /** The rate-limit windows the last API response reported (`five_hour`, `seven_day`, a gateway's `spend_limit`); empty when none has a reading. */
+  rateLimits: Array<{ kind: string; percentUsed: number; resetsAt?: string }>
+  /** The session's cost in US dollars, absent where the host keeps no ledger. */
+  cost?: { usd: number }
+}
+
 declare module 'claude-code' {
   interface PluginState {
     'workflow-watch': {
@@ -68,6 +84,7 @@ declare module 'claude-code' {
       pinnedView: PaneView | null
       /** True once the person hid the pane this session: no automatic open until /tracker or a new session. */
       isHidden: boolean
+      usage: Usage | null
     }
   }
 }

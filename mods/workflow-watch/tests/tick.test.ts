@@ -31,6 +31,7 @@ function world(on: any, env: Record<string, string> = {}): { w: World; clock: Re
     return { value: undefined }
   })
   on('ui.panes', () => ({ value: [] }))
+  on('session.usage', () => ({ value: { startedAt: 0, context: { tokens: 320_000, window: 1_000_000, percent: 32 }, rateLimits: [{ kind: 'five_hour', percentUsed: 18 }], cost: { usd: 0.11 } } }))
   on('command.register', () => ({ value: { isNew: true } }))
   on('fs.list', (_$: any, e: any) => ({ value: norm(e.path) === `${HOME}/.claude/projects` ? [{ name: 'p1', kind: 'dir', size: 0, mtimeMs: 0, isLink: false }] : [] }))
   on('fs.exists', (_$: any, e: any) => ({ value: norm(e.path) === SESSION }))
@@ -166,6 +167,16 @@ describe('tick', () => {
     expect((await $.command.run({ command: 'tracker' })).text).toContain('next please')
     expect(w.opens).toBe(opens + 1)
     await ui.unmount()
+  })
+
+  test('the text report carries the engine usage figures under the header line', async ($, on) => {
+    const { clock } = world(on)
+    await $.session.start(START)
+    await clock.settle()
+    const text = (await $.command.run({ command: 'tracker' })).text
+    expect(text).toContain('    ctx 32% · 320k of 1.0M')
+    expect(text).toContain('    5h 18%')
+    expect(text).toContain('$0.11 · ')
   })
 
   test('with auto-open off nothing opens the pane but /tracker', { options: { autoOpen: false } }, async ($, on) => {

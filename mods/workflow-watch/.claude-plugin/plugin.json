@@ -1,6 +1,6 @@
 {
   "name": "workflow-watch",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Live session and Workflow tracker: main-thread turns, skills fired, spawned subagents, git commits and workflow stages with models, effort, tokens and timeline waterfall, drawn only in a side pane.",
   "types": "./types/index.d.ts",
   "userConfig": {
@@ -9,6 +9,14 @@
       "title": "Open the Tracker pane automatically",
       "description": "On: the pane opens when a session starts and when work resumes after a quiet spell, unless you hid it this session. Off: only /tracker opens it.",
       "default": true
+    },
+    "cacheTtlMinutes": {
+      "type": "number",
+      "title": "Prompt cache lifetime (minutes)",
+      "description": "How long the prompt cache stays warm after a request on your account: 5 by default, 60 on a one-hour cache. The usage card counts down from the last request.",
+      "default": 5,
+      "min": 1,
+      "max": 60
     }
   },
   "author": {

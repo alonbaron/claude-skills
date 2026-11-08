@@ -134,7 +134,7 @@ describe('transcript', () => {
     expect(s.startedAt).toBe(t0)
     expect(s.endedAt).toBe(t0 + 160_900)
     expect(s.isSettled).toBe(true)
-    expect(stageDetail(s, t0 + 3_600_000)).toBe('Ran for 2:40 · 0 tools · 0.1k tokens')
+    expect(stageDetail(s, t0 + 3_600_000)).toBe('Ran for 2:40 · 0 tools · 0.1k out')
     const [live] = applyEntries([], parseLines(STARTED), t0 + 5_000)
     const l = withFacts(live as NonNullable<typeof live>, readTranscript(stamped))
     expect(l.endedAt).toBe(null)
@@ -163,7 +163,7 @@ describe('transcript', () => {
     const [live] = applyEntries([], parseLines(STARTED), 1000)
     const s = { ...(live as NonNullable<typeof live>), ...readTranscript(TRANSCRIPT) }
     expect(stageDetail(s, 13000)).toBe('Running for 0:12 · 1 call · Bash npm test')
-    expect(stageDetail({ ...s, endedAt: 47000 }, 99000)).toBe('Ran for 0:46 · 1 tool · 0.8k tokens')
+    expect(stageDetail({ ...s, endedAt: 47000 }, 99000)).toBe('Ran for 0:46 · 1 tool · 0.8k out · 10 in · 0% cached')
   })
 })
 
