@@ -462,7 +462,7 @@ export const register: Register = (on, options) => {
       const draw = (c: Card | null, key: string) =>
         c ? (
           <Box key={key}>
-            <Svg source={c.source} alt={c.alt} width={c.width} height={c.height} />
+            <Svg source={c.source} alt={c.alt} />
           </Box>
         ) : null
       // NOW follows the live turn, else the last one; its children are the items that started inside its span.
@@ -539,7 +539,7 @@ export const register: Register = (on, options) => {
             const c = turnEntry(s, childrenOf(s), w.now, mode, { digest: s.kind === 'turn' ? digest(s, w.stages, w.now) : undefined, isOpen: isUnfolded })
             return (
               <Box key={s.key} flexDirection="column">
-                <Svg source={c.source} alt={c.alt} width={c.width} height={c.height} />
+                <Svg source={c.source} alt={c.alt} />
                 {(hasMore(s) || (s.kind === 'turn' && s.prompt)) && (
                   <Box gap={1} marginBottom={1}>
                     {hasMore(s) && (
