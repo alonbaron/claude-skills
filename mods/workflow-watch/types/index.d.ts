@@ -71,6 +71,36 @@ export type Watch = {
   notice?: string | null
   /** True once nothing has run for IDLE_MS: the pane folds to its compact strip unless the person expanded it. */
   isIdle?: boolean
+  /** The oversight signals read off the session log on the same pass as the stages. */
+  signals?: Signals
+}
+
+/** One step of the plan the agent declared (its task-list calls), as it stands now. */
+export type PlanItem = { text: string; status: 'pending' | 'in_progress' | 'completed' }
+
+/**
+ * A point where the person decides: `ask`, a question the agent left at the end of a turn (answered by the next
+ * prompt); `question`, an AskUserQuestion with its picked answer; `refused`, an action the host would not run.
+ */
+export type Decision = { kind: 'ask' | 'question' | 'refused'; at: number; text: string; answer: string | null; options?: string }
+
+/** One test run seen in a command's output. */
+export type TestRun = { at: number; pass: number; fail: number }
+
+/** The last review report: how many findings and what became of them, with up to three the agent left open or skipped. */
+export type Review = { at: number; total: number; fixed: number; skipped: number; open: number; items: string[] }
+
+/** What the oversight panels draw: the plan, the decisions, the tests, the review, the files edited and the commands run. */
+export type Signals = {
+  plan: PlanItem[]
+  /** The last six, oldest first. */
+  decisions: Decision[]
+  /** The last two, oldest first. */
+  tests: TestRun[]
+  review: Review | null
+  /** Edits per file, the path kept to its last two segments. */
+  files: Record<string, number>
+  commands: number
 }
 
 /** What `$.session.usage()` last answered, kept to the fields the pane draws; null until the first answer. */

@@ -1,6 +1,6 @@
 // Pure functions over a workflow run's files (journal.jsonl, agent-<id>.jsonl, agent-<id>.meta.json):
 // no `$`, so they test alone.
-import type { Stage, Usage, Watch } from '../types'
+import type { Decision, Signals, Stage, Usage, Watch } from '../types'
 
 export type Entry = {
   type: string
@@ -309,7 +309,58 @@ function cleanPrompt(content: unknown): string | null {
  * main-thread turns (`turn:N`), skill activations (`skill:<name>`), spawned subagents (`agent:<desc>`),
  * and git commits (`commit:<sha>`).
  */
-export function parseSession(text: string, now: number): Stage[] {
+export const emptySignals = (): Signals => ({ plan: [], decisions: [], tests: [], review: null, files: {}, commands: 0 })
+
+const PLAN_TOOLS = new Set(['mcp__ccd_turn__update_plan', 'TodoWrite'])
+const WRAP_UP = 'mcp__ccd_turn__wrap_up'
+const REFUSED = /denied by the Claude Code auto mode classifier\. Reason: (?:\[([^\]]+)\]|([^.]+))/
+/** Test runners' summary lines: this repo's (`62 pass\n 0 fail`), jest and vitest (`Tests: 3 failed, 10 passed`), pytest (`10 passed, 2 failed`). */
+const TEST_RUNS: Array<[RegExp, (m: RegExpExecArray) => [number, number]]> = [
+  [/(\d+) pass\s+(\d+) fail/, m => [Number(m[1]), Number(m[2])]],
+  [/Tests:\s+(?:(\d+) failed, )?(\d+) passed/, m => [Number(m[2]), Number(m[1] ?? 0)]],
+  [/(\d+) passed(?:, (\d+) failed)?/, m => [Number(m[1]), Number(m[2] ?? 0)]],
+]
+
+/** The agent's task list after one of its calls: a new list replaces, `advance` moves the marker, `done` and `start` (1-based) set items. */
+function applyPlan(signals: Signals, input: Rec): void {
+  const list = Array.isArray(input.items) ? input.items : Array.isArray(input.todos) ? input.todos : null
+  if (list) {
+    signals.plan = list.map(i => {
+      const r = rec(i)
+      return { text: str(r.content, 80), status: r.status === 'completed' || r.status === 'in_progress' ? r.status : 'pending' }
+    })
+    return
+  }
+  const plan = signals.plan
+  if (Array.isArray(input.done)) for (const n of input.done) plan[Number(n) - 1] && (plan[Number(n) - 1]!.status = 'completed')
+  if (input.advance === true) {
+    const cur = plan.find(i => i.status === 'in_progress')
+    if (cur) cur.status = 'completed'
+    const nxt = plan.find(i => i.status === 'pending')
+    if (nxt) nxt.status = 'in_progress'
+  }
+  if (typeof input.start === 'number' && plan[input.start - 1]) plan[input.start - 1]!.status = 'in_progress'
+}
+
+const pushDecision = (signals: Signals, d: Decision): void => {
+  signals.decisions = [...signals.decisions, d].slice(-6)
+}
+
+/** A command's output read for a test runner's summary and for the host's refusal; `cmd` names the command the result answers. */
+function noteResult(signals: Signals, cmd: string, out: string, at: number): void {
+  for (const [re, pick] of TEST_RUNS) {
+    const m = re.exec(out)
+    if (m) {
+      const [pass, fail] = pick(m)
+      signals.tests = [...signals.tests, { at, pass, fail }].slice(-2)
+      break
+    }
+  }
+  const refused = REFUSED.exec(out)
+  if (refused) pushDecision(signals, { kind: 'refused', at, text: str(cmd, 60), answer: str(refused[1] ?? refused[2], 60) })
+}
+
+export function parseSession(text: string, now: number, signals?: Signals): Stage[] {
   const stages: Stage[] = []
   const pendingAgents = new Map<string, Stage>()
   const agentsById = new Map<string, Stage>()
@@ -317,6 +368,8 @@ export function parseSession(text: string, now: number): Stage[] {
   const seenCommits = new Set<string>()
   const seenMsgTokens = new Map<string, number>()
   const seenMsgInputs = new Set<string>()
+  /** Shell commands and questions awaiting their result, by tool_use id, for the oversight signals. */
+  const pendingTools = new Map<string, { name: string; arg: string }>()
   let turnCount = 0
   let currentTurn: Stage | null = null
   let currentPhase = 'Session'
@@ -663,6 +716,18 @@ export function parseSession(text: string, now: number): Stage[] {
               if (outTxt && !ag.summary) ag.summary = str(outTxt, 100)
             }
           }
+          const pt = pendingTools.get(id)
+          if (pt && signals) {
+            pendingTools.delete(id)
+            const out = `${toolResultText(b.content)}\n${typeof rec(e.toolUseResult).stdout === 'string' ? String(rec(e.toolUseResult).stdout) : ''}`
+            if (pt.name === 'AskUserQuestion') {
+              const asked = [...signals.decisions].reverse().find(d => d.kind === 'question' && d.answer === null)
+              const picks = [...out.matchAll(/"[^"]*"="([^"]*)"/g)].map(m => m[1] ?? '')
+              if (asked && picks.length) asked.answer = str(picks.join(' · '), 60)
+            } else {
+              noteResult(signals, pt.arg, out, t)
+            }
+          }
           const pc = pendingCommits.get(id)
           if (pc) {
             pendingCommits.delete(id)
@@ -689,6 +754,9 @@ export function parseSession(text: string, now: number): Stage[] {
             currentTurn.isSettled = true
           }
           currentTurn = openTurn(t, str(prompt, 600))
+          // The prompt that opens a turn answers the question the agent left at the end of the last one.
+          const asked = signals ? [...signals.decisions].reverse().find(d => d.kind === 'ask' && d.answer === null) : undefined
+          if (asked) asked.answer = str(prompt, 60)
         }
       }
     } else if (e.type === 'attachment') {
@@ -743,6 +811,36 @@ export function parseSession(text: string, now: number): Stage[] {
         currentTurn.lastTool = `${oneLine(b.name ?? '?')}${arg ? ' ' + str(arg, 50) : ''}`
         noteTool(currentTurn, b.name, input)
         const id = String(b.id ?? stages.length)
+
+        if (signals) {
+          const name = oneLine(b.name ?? '')
+          if (PLAN_TOOLS.has(name)) applyPlan(signals, input)
+          if (name === WRAP_UP && typeof input.ask === 'string' && oneLine(input.ask)) {
+            const labels = Array.isArray(input.actions) ? input.actions.map(a => oneLine(rec(a).label ?? rec(a).action ?? '')).filter(Boolean) : []
+            pushDecision(signals, { kind: 'ask', at: t, text: str(input.ask, 80), answer: null, ...(labels.length ? { options: labels.join(' / ') } : {}) })
+          }
+          if (name === 'AskUserQuestion') {
+            const q = rec(Array.isArray(input.questions) ? input.questions[0] : undefined)
+            const labels = Array.isArray(q.options) ? q.options.map(o => oneLine(rec(o).label ?? '')).filter(Boolean) : []
+            pushDecision(signals, { kind: 'question', at: t, text: str(q.question, 80), answer: null, ...(labels.length ? { options: labels.join(' / ') } : {}) })
+            pendingTools.set(id, { name, arg: '' })
+          }
+          if (name === 'ReportFindings' && Array.isArray(input.findings)) {
+            const list = input.findings.map(rec)
+            const outcome = (f: Rec): string => (typeof f.outcome === 'string' ? f.outcome : 'open')
+            const tally = (o: string): number => list.filter(f => outcome(f) === o).length
+            const file = (f: Rec): string => String(f.file ?? '').split(/[\\/]/).slice(-1)[0] ?? ''
+            signals.review = { at: t, total: list.length, fixed: tally('fixed'), skipped: tally('skipped'), open: tally('open'), items: list.filter(f => outcome(f) !== 'fixed' && outcome(f) !== 'no_change_needed').slice(0, 3).map(f => str(`${file(f)}:${String(f.line ?? '?')} ${String(f.summary ?? '')}`, 70)) }
+          }
+          if (SHELL_TOOLS.has(name) && typeof input.command === 'string') {
+            signals.commands += 1
+            pendingTools.set(id, { name, arg: input.command })
+          }
+          if (EDIT_TOOLS.has(name) && typeof input.file_path === 'string') {
+            const short = input.file_path.split(/[\\/]/).slice(-2).join('/')
+            signals.files[short] = (signals.files[short] ?? 0) + 1
+          }
+        }
 
         if (b.name === 'Skill') {
           const rawSkill = oneLine(input.skill) || 'skill'
@@ -1136,9 +1234,48 @@ export function stageLines(s: Stage, now: number, stages: Stage[] = []): string[
   return [`${state(s)}  ${stageTitle(s)}`, ...(s.prompt ? [`    › ${clip(s.prompt, 100)}`] : []), `    ${stageResult(s)}`, `    ${stageDetail(s, now)}`, ...(did ? [`    ${did}`] : [])]
 }
 
+/** `✓` done, `●` under way, `○` to come: the plan's marks, so a step's state never rests on color. */
+const PLAN_MARK = { completed: '✓', in_progress: '●', pending: '○' } as const
+
+/**
+ * The oversight sections as text, each headed by its name and left out when it has nothing to say:
+ * NOW (the agent's plan), DECISIONS (waiting, answered, refused), CHANGES (tests, files, commits, commands), QUALITY (review, verdicts, skills).
+ */
+export function signalLines(s: Signals | undefined, stages: Stage[]): string[] {
+  if (!s) return []
+  const out: string[] = []
+  if (s.plan.length) out.push('NOW', ...s.plan.map(i => `  ${PLAN_MARK[i.status]} ${i.text}`))
+  if (s.decisions.length) {
+    out.push('DECISIONS')
+    for (const d of s.decisions) {
+      if (d.kind === 'refused') out.push(`  × refused  ${d.text} → ${d.answer ?? ''}`)
+      else if (d.answer === null) out.push(`  ? waiting  ${d.text}${d.options ? `  [${d.options}]` : ''}`)
+      else out.push(`  ✓ ${d.text} → ${d.answer}`)
+    }
+  }
+  const changes: string[] = []
+  const last = s.tests[s.tests.length - 1]
+  const before = s.tests[s.tests.length - 2]
+  if (last) changes.push(`  tests  ${last.pass} pass · ${last.fail} fail${before ? ` · was ${before.pass} · ${before.fail}` : ''}`)
+  const files = Object.entries(s.files).sort((a, b) => b[1] - a[1])
+  for (const [f, n] of files.slice(0, 4)) changes.push(`  files  ${f} ×${n}`)
+  if (files.length > 4) changes.push(`         + ${files.length - 4} more`)
+  for (const c of stages.filter(st => st.kind === 'commit').slice(-2)) changes.push(`  commit ${c.label.replace(/^commit:/, '')}  ${c.summary ?? ''}`)
+  if (s.commands) changes.push(`  ${many(s.commands, 'command', 'commands')} run`)
+  if (changes.length) out.push('CHANGES', ...changes)
+  const quality: string[] = []
+  if (s.review) quality.push(`  review ${s.review.total} findings · ${s.review.fixed} fixed · ${s.review.skipped} skipped · ${s.review.open} open`, ...s.review.items.map(i => `         ${i}`))
+  for (const a of stages.filter(st => st.kind === 'agent' && st.summary).slice(-2)) quality.push(`  verdict ${a.label.replace(/^agent:/, '')}  ${a.summary}`)
+  const skills = new Map<string, number>()
+  for (const st of stages) if (st.kind === 'skill') skills.set(st.label.replace(/^skill:/, ''), (skills.get(st.label.replace(/^skill:/, '')) ?? 0) + 1)
+  if (skills.size) quality.push(`  skills ${[...skills].map(([k, n]) => (n > 1 ? `${k} ×${n}` : k)).join(' · ')}`)
+  if (quality.length) out.push('QUALITY', ...quality)
+  return out
+}
+
 /** The whole picture as plain text: what the command prints, the same blocks the pane draws, oldest first as a log reads. */
 export function report(w: Watch, usage: string[] = []): string {
-  const lines = [`${w.run}: ${tally(w)}`, ...usage.map(l => `    ${l}`)]
+  const lines = [`${w.run}: ${tally(w)}`, ...usage.map(l => `    ${l}`), ...signalLines(w.signals, w.stages).map(l => `    ${l}`)]
   for (const g of phaseRuns(w.stages)) {
     lines.push(`── ${phaseTitle(g)}`)
     for (const s of g.stages) lines.push(...stageLines(s, w.now, w.stages))
