@@ -261,7 +261,7 @@ const count = (a: unknown): number => (Array.isArray(a) ? a.length : 0)
 /** One line: each run of whitespace and control characters (which the host refuses to draw) becomes one space. */
 const oneLine = (v: unknown): string => String(v ?? '').replace(/[\s\u0000-\u001f\u007f-\u009f]+/g, ' ').trim()
 /** At most n characters; a cut ends in `…`. */
-export const clip = (text: string, n: number): string => (text.length <= n ? text : n <= 0 ? '' : `${text.slice(0, n - 1)}…`)
+export const clip = (text: string, n: number): string => (text.length <= n ? text : n <= 0 ? '' : `${text.slice(0, n - 1).trimEnd()}…`)
 const str = (v: unknown, n = 80): string => clip(oneLine(v), n)
 
 function unquoteArg(v: unknown): string {
@@ -1094,10 +1094,10 @@ export function firstSentence(text: string, n: number): string {
 export function turnTitle(prompt: string | null | undefined): string | null {
   if (!prompt) return null
   const s = firstSentence(prompt, 1000)
-  if (s.length <= 60) return s
-  const cut = s.slice(0, 59)
+  if (s.length <= 100) return s
+  const cut = s.slice(0, 99)
   const at = cut.lastIndexOf(' ')
-  return `${(at > 30 ? cut.slice(0, at) : cut).trimEnd()}…`
+  return `${(at > 50 ? cut.slice(0, at) : cut).trimEnd()}…`
 }
 
 /** `turn:3 · Fix the login bug` for a turn with a prompt; the label alone otherwise. */
