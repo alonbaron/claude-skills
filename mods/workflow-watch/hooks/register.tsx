@@ -3,7 +3,7 @@ import type { Register } from 'claude-code'
 
 import type { PaneView, Stage, Theme, Usage, Watch } from '../types'
 import { KIND_FILL, PANE_BG, compactCard, headerCard, phaseChip, stageCard, timelineCard, usageCard } from './cards'
-import { EMPTY, READ_LIMIT, SLIM_CUT, SLIM_TIMEOUT_MS, applyEntries, elapsed, mergeStages, parseLines, parseSession, phaseRuns, phaseTitle, readMeta, readMetaInfo, readTranscript, report, slimCommand, stageDetail, stageResult, state, tally, timelineBar, tone, usageText, usageView, who, withFacts } from './journal'
+import { EMPTY, READ_LIMIT, SLIM_CUT, SLIM_TIMEOUT_MS, applyEntries, clip, digest, elapsed, labelWithTitle, mergeStages, parseLines, parseSession, phaseRuns, phaseTitle, readMeta, readMetaInfo, readTranscript, report, slimCommand, stageDetail, stageResult, state, tally, timelineBar, tone, usageText, usageView, who, withFacts } from './journal'
 
 const PANE = 'workflow-watch'
 const TITLE = 'Tracker'
@@ -13,6 +13,10 @@ const isTimelineOpen = atom({ plugin: 'workflow-watch', key: 'isTimelineOpen' } 
 const pinnedView = atom({ plugin: 'workflow-watch', key: 'pinnedView' } as const, null as PaneView | null)
 const isHidden = atom({ plugin: 'workflow-watch', key: 'isHidden' } as const, false)
 const usage = atom({ plugin: 'workflow-watch', key: 'usage' } as const, null as Usage | null)
+const openKeys = atom({ plugin: 'workflow-watch', key: 'openKeys' } as const, [] as string[])
+
+/** Whether a turn card has more than its lines show: a prompt past the clip, an answer longer than its first sentence, or a tool trail. */
+const hasMore = (s: Stage): boolean => s.kind === 'turn' && ((s.prompt?.length ?? 0) > 100 || (Boolean(s.answer) && s.answer !== s.summary) || (s.tools?.length ?? 0) > 0)
 
 /** The settings (plugin.json userConfig, rows under /config); a change there reloads the module with the new values. */
 let autoOpen = true
@@ -374,6 +378,7 @@ export const register: Register = (on, options) => {
     if (Svg) {
       const mode = await read($, theme)
       const isOpen = await read($, isTimelineOpen)
+      const unfolded = await read($, openKeys)
       const head = headerCard(w, tokens, mode)
       const use = usageCard(view, mode)
       const tl = timelineCard(w.stages, t0, total, w.now, mode)
@@ -449,10 +454,20 @@ export const register: Register = (on, options) => {
               <Box key={`phase-${i}`} flexDirection="column" marginTop={1}>
                 <Svg source={chip.source} alt={chip.alt} width={chip.width} height={chip.height} />
                 {newestOf(g).map(s => {
-                  const c = stageCard(s, w.now, mode)
+                  const isUnfolded = unfolded.includes(s.key)
+                  const c = stageCard(s, w.now, mode, { digest: s.kind === 'turn' ? digest(s, w.stages, w.now) : undefined, isOpen: isUnfolded })
                   return (
-                    <Box key={s.key} marginTop={1}>
+                    <Box key={s.key} flexDirection="column" marginTop={1}>
                       <Svg source={c.source} alt={c.alt} width={c.width} height={c.height} />
+                      {hasMore(s) && (
+                        <Box>
+                          <Button
+                            key={`fold:${s.key}`}
+                            label={isUnfolded ? '− less' : '+ more'}
+                            onPress={() => void update($, openKeys, keys => (isUnfolded ? keys.filter(k => k !== s.key) : [...keys, s.key])).catch(() => undefined)}
+                          />
+                        </Box>
+                      )}
                     </Box>
                   )
                 })}
@@ -525,12 +540,12 @@ export const register: Register = (on, options) => {
               <Box key={s.key} flexDirection="column" borderStyle="round" borderColor={s.endedAt === null ? tone(s) : 'subtle'} paddingX={1}>
                 <Text wrap="truncate-end">
                   <Text bold backgroundColor={tone(s)} color="inverseText">{` ${state(s)} `}</Text>
-                  <Text bold>{`  ${s.label}`}</Text>
+                  <Text bold>{`  ${labelWithTitle(s)}`}</Text>
                   <Text color="permission">{`  ${who(s)}`}</Text>
                 </Text>
                 {s.prompt && (
                   <Text color="claude" wrap="truncate-end">
-                    {`› ${s.prompt}`}
+                    {`› ${clip(s.prompt, 100)}`}
                   </Text>
                 )}
                 {s.endedAt === null ? (
@@ -541,6 +556,11 @@ export const register: Register = (on, options) => {
                 <Text color="subtle" wrap="truncate-end">
                   {stageDetail(s, w.now)}
                 </Text>
+                {s.kind === 'turn' && digest(s, w.stages, w.now) && (
+                  <Text color="subtle" wrap="truncate-end">
+                    {digest(s, w.stages, w.now)}
+                  </Text>
+                )}
               </Box>
             ))}
           </Box>
