@@ -1,38 +1,32 @@
-import type { Stage, StageKind, Theme, Watch } from '../types'
-import { clip, elapsed, labelWithTitle, phaseTitle, stageDetail, stageResult, state, tally, timelineBar, tone, usageText, who } from './journal'
+import type { Signals, Stage, StageKind, Theme, Watch } from '../types'
+import { changeLines, clip, decisionLines, elapsed, fmtTokens, planLines, qualityLines, stageResult, state, tally, turnTitle } from './journal'
 import type { UsageView } from './journal'
 
-/** Card markup for the graphical surfaces (desktop, vscode, mobile): rounded cards, round kind avatars, pill badges. */
+/** One panel of the console as SVG markup for the graphical surfaces (desktop, vscode, mobile); `alt` is its text, line by line. */
 export type Card = { source: string; alt: string; width: number; height: number }
 
 export const W = 440
-const FONT = `font-family="Segoe UI, -apple-system, system-ui, sans-serif"`
+const FONT = `font-family="JetBrains Mono, Cascadia Mono, ui-monospace, Consolas, SF Mono, monospace"`
 
-/** One fill per kind of item, the same as the terminal chips, read in dark ink. */
+/** One fill per kind of item, for the terminal's timeline bars. */
 export const KIND_FILL: Record<StageKind, string> = { turn: '#FB923C', skill: '#A78BFA', agent: '#2DD4BF', commit: '#60A5FA', stage: '#F472B6' }
-const KIND_LETTER: Record<StageKind, string> = { turn: 'T', skill: 'S', agent: 'A', commit: 'C', stage: 'W' }
-const kindOf = (s: Stage | undefined): StageKind => s?.kind ?? 'stage'
 
-// The pane's toggle picks the theme, whatever the system's: both name the same classes.
-const PILLS = `.ink{fill:#111}.pill-success{fill:rgba(52,199,89,.18)}.pill-warning{fill:rgba(245,176,65,.18)}.pill-error{fill:rgba(239,68,68,.18)}.pill-subtle{fill:rgba(154,156,161,.14)}`
+// One accent for what is alive or good, amber and red only for trouble; the pane's toggle picks the theme, whatever the host's.
 const STYLE: Record<Theme, string> = {
-  dark: `<style>${PILLS}.card{fill:#202124;stroke:#2f3033}.live{stroke:#f5b041}.t{fill:#ececec}.m{fill:#9a9ca1}.p{fill:#f0a35e}.who{fill:#8ab4f8}.track{fill:#2c2d31}.tx-success{fill:#5ee38a}.tx-warning{fill:#f7c35c}.tx-error{fill:#f87171}.tx-subtle{fill:#9a9ca1}</style>`,
-  light: `<style>${PILLS}.card{fill:#fff;stroke:#e7e7ea}.live{stroke:#d97706}.t{fill:#1a1a1a}.m{fill:#6b6d72}.p{fill:#c2560c}.who{fill:#1d4ed8}.track{fill:#efeff2}.tx-success{fill:#15803d}.tx-warning{fill:#b45309}.tx-error{fill:#b91c1c}.tx-subtle{fill:#6b6d72}</style>`,
+  dark: `<style>.bg{fill:#0e1116}.ink{fill:#d7dbe0}.mute{fill:#7c8591}.faint{fill:#46505c}.acc{fill:#7ee0c2}.bad{fill:#ff7b72}.warn{fill:#e3b341}.rule{stroke:#242a33}.seg{fill:#1b2027}.on{fill:#7ee0c2}.onw{fill:#e3b341}.onb{fill:#ff7b72}.accDim{fill:rgba(126,224,194,.12)}.warnDim{fill:rgba(227,179,65,.14)}.notch{stroke:#d7dbe0}.tree{stroke:#46505c}</style>`,
+  light: `<style>.bg{fill:#f6f3ee}.ink{fill:#1f2328}.mute{fill:#6e7681}.faint{fill:#a39b8f}.acc{fill:#0f7b6c}.bad{fill:#b42318}.warn{fill:#9a6700}.rule{stroke:#dcd5ca}.seg{fill:#e6e0d6}.on{fill:#0f7b6c}.onw{fill:#9a6700}.onb{fill:#b42318}.accDim{fill:rgba(15,123,108,.10)}.warnDim{fill:rgba(154,103,0,.12)}.notch{stroke:#1f2328}.tree{stroke:#a39b8f}</style>`,
 }
 
-/** The pane's own background under the cards in each theme. */
-export const PANE_BG: Record<Theme, string> = { dark: '#181818', light: '#f3f3f5' }
-
+const CH = 0.6
 const esc = (v: string): string => v.replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`)
-/** Cuts a line to what fits in `px` at `size`, estimating an average glyph at 0.5em. */
+/** Cuts a line to what fits in `px` at `size`, a monospace glyph being 0.6em wide. */
 const fit = (v: string, px: number, size: number): string => {
-  const n = Math.max(1, Math.floor(px / (size * 0.5)))
+  const n = Math.max(1, Math.floor(px / (size * CH)))
   return v.length <= n ? v : `${v.slice(0, n - 1)}…`
 }
-const textW = (v: string, size: number): number => Math.ceil(v.length * size * 0.5)
 /** Breaks a line at spaces into lines that fit `px` at `size`; a word longer than a line is cut. */
 const wrap = (v: string, px: number, size: number): string[] => {
-  const n = Math.max(1, Math.floor(px / (size * 0.5)))
+  const n = Math.max(1, Math.floor(px / (size * CH)))
   const lines: string[] = []
   let line = ''
   for (const word of v.split(' ')) {
@@ -50,145 +44,165 @@ const wrap = (v: string, px: number, size: number): string[] => {
   return lines
 }
 const svg = (h: number, body: string, theme: Theme): string =>
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${h}" width="${W}" height="${h}" ${FONT}>${STYLE[theme]}${body}</svg>`
-const frame = (h: number, cls = 'card'): string => `<rect class="${cls}" x="0.5" y="0.5" width="${W - 1}" height="${h - 1}" rx="16" stroke-width="1"/>`
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${h}" width="${W}" height="${h}" ${FONT} font-size="12">${STYLE[theme]}<rect class="bg" width="${W}" height="${h}"/>${body}</svg>`
+const text = (x: number, y: number, v: string, cls = 'ink', extra = ''): string => `<text class="${cls}" x="${x}" y="${y}"${extra}>${esc(v)}</text>`
+const END = ' text-anchor="end"'
 
-/** The run's name, the token total, and one pill per count, each with its number in a badge. */
-export function headerCard(w: Watch, tokens: number, theme: Theme): Card {
-  const h = 92
-  const toks = `${(tokens / 1000).toFixed(1)}k output tokens`
-  let x = 18
-  const pills = tally(w)
-    .split(' · ')
-    .map(part => {
-      const [count = '0', word = ''] = part.split(' ')
-      const t = count === '0' ? 'subtle' : word === 'done' ? 'success' : word === 'failed' ? 'error' : 'warning'
-      const pw = 30 + textW(word, 12) + 14
-      const out = `<rect class="pill-${t}" x="${x}" y="50" width="${pw}" height="28" rx="14"/><rect class="pill-${t}" x="${x + 4}" y="54" width="22" height="20" rx="10"/><text class="tx-${t}" x="${x + 15}" y="68" font-size="12" font-weight="700" text-anchor="middle">${esc(count)}</text><text class="tx-${t}" x="${x + 32}" y="68" font-size="12" font-weight="600">${esc(word)}</text>`
-      x += pw + 8
-      return out
-    })
-    .join('')
-  const body = `${frame(h)}<text class="p" x="18" y="32" font-size="17" font-weight="700">${esc(fit(w.run ?? '', W - 36 - textW(toks, 12) - 12, 17))}</text><text class="m" x="${W - 18}" y="31" font-size="12" text-anchor="end">${esc(toks)}</text>${pills}`
-  return { source: svg(h, body, theme), alt: `${w.run}: ${tally(w)} · ${toks}`, width: W, height: h }
+/** A hairline across the panel with its label inset at the left in small caps, and a second label at the right. */
+function rule(y: number, label: string, right = ''): string {
+  const cap = (x: number, v: string, anchor: string): string => `<rect class="bg" x="${x - 6}" y="${y - 8}" width="${v.length * 7.4 + 12}" height="16"/><text class="mute" x="${anchor === END ? x + 6 : x}" y="${y + 4}" font-size="10" letter-spacing="0.14em"${anchor}>${esc(v)}</text>`
+  return `<line class="rule" x1="0" y1="${y}" x2="${W}" y2="${y}"/>${cap(18, label, '')}${right ? cap(W - 12 - right.length * 7.4, right, END) : ''}`
 }
 
-/**
- * The usage card: one meter row per figure (context fill, the 5h and 7d windows) with a pace tick where the
- * even-burn target sits, then the session's figures on one line. A row the engine has not reported draws no bar.
- */
-export function usageCard(v: UsageView, theme: Theme): Card {
-  const rowH = 26
-  const top = 18
-  const h = top + v.meters.length * rowH + 30
-  const barX = 52
-  const barW = 110
+const GLYPH: Record<string, string> = { '✓': 'acc', '●': 'acc', '○': 'faint', '?': 'warn', '×': 'bad' }
+const LABELS = new Set(['tests', 'files', 'commit', 'review', 'verdict', 'skills'])
+const LINE_H = 18
+
+/** One text line of a section, colored by what it starts with: a state glyph in its tone, a label word muted, the rest in ink. */
+function paintLine(y: number, raw: string): string {
+  const indent = raw.length - raw.trimStart().length
+  const line = raw.trim()
+  if (!line) return ''
+  const glyph = line[0] ?? ''
+  const cls = GLYPH[glyph]
+  if (cls && line[1] === ' ') {
+    const rest = line.slice(2)
+    const band = glyph === '?' ? `<rect class="warnDim" x="12" y="${y - 13}" width="${W - 24}" height="${LINE_H}" rx="3"/>` : ''
+    return `${band}${text(18, y, glyph, cls)}${text(34, y, fit(rest, W - 34 - 16, 12), glyph === '○' ? 'mute' : 'ink')}`
+  }
+  if (indent >= 6) return text(96, y, fit(line, W - 96 - 16, 12), 'faint')
+  const word = line.split(/\s+/)[0] ?? ''
+  if (LABELS.has(word)) return `${text(18, y, word, 'mute')}${text(96, y, fit(line.slice(word.length).trim(), W - 96 - 16, 12))}`
+  return text(18, y, fit(line, W - 34, 12), 'mute')
+}
+
+/** A section: its rule, then its text lines; null when it has no lines. */
+export function linesPanel(label: string, right: string, lines: string[], theme: Theme): Card | null {
+  if (lines.length === 0) return null
+  const h = 30 + lines.length * LINE_H + 8
+  const body = rule(14, label, right) + lines.map((l, i) => paintLine(38 + i * LINE_H, l)).join('')
+  return { source: svg(h, body, theme), alt: [label, ...lines.map(l => l.trim())].join(' | '), width: W, height: h }
+}
+
+/** The run's own rule: its name and the counts as the pane's first line. */
+export function sessionRule(w: Watch, now: number, theme: Theme): Card {
+  const t0 = w.stages.reduce((m, s) => Math.min(m, s.startedAt), Infinity)
+  const counts = tally(w)
+    .split(' · ')
+    .filter(part => !/^0 /.test(part))
+    .map(part => part.replace('running', 'live').toUpperCase())
+    .join(' · ')
+  const right = `${counts}${Number.isFinite(t0) ? ` · ${elapsed(now - t0)}` : ''}`
+  const body = rule(14, `SESSION ${clip(w.run ?? '', 26)}`.toUpperCase(), right)
+  return { source: svg(24, body, theme), alt: `SESSION ${w.run ?? ''} | ${right}`, width: W, height: 24 }
+}
+
+const figures = (s: Stage): string => [`${s.calls} tools`, `${fmtTokens(s.outputTokens)} out`].join(' · ')
+const liveLine = (s: Stage): string => (s.endedAt === null ? `▸ ${s.lastTool ?? 'starting…'}` : stageResult(s))
+
+/** NOW: the live turn (or the last one), what it is doing or what came of it, and the agent's plan with the step it is on. */
+export function nowPanel(turn: Stage | undefined, signals: Signals | undefined, now: number, theme: Theme): Card {
+  const plan = signals ? planLines(signals) : []
+  const lines: string[] = []
+  if (turn) lines.push(turnTitle(turn.prompt) ?? turn.label, liveLine(turn))
+  else lines.push('waiting for the first turn')
+  const h = 30 + (lines.length + plan.length) * LINE_H + 10
+  const right = turn ? `${elapsed((turn.endedAt ?? now) - turn.startedAt)} · ${figures(turn)}` : ''
+  const isLive = turn?.endedAt === null
+  const body =
+    (isLive ? `<rect class="accDim" width="${W}" height="${h}" rx="4"/><rect class="acc" width="2" height="${h}"/>` : '') +
+    rule(14, 'NOW', right) +
+    (turn ? text(18, 40, fit(lines[0] ?? '', W - 34, 13), 'ink', ' font-size="13" font-weight="700"') + text(18, 58, fit(lines[1] ?? '', W - 34, 12), isLive ? 'mute' : 'ink') : text(18, 40, lines[0] ?? '', 'mute')) +
+    plan.map((l, i) => paintLine(38 + (lines.length + i) * LINE_H, l)).join('')
+  return { source: svg(h, body, theme), alt: ['NOW', right, ...lines, ...plan.map(l => l.trim())].filter(Boolean).join(' | '), width: W, height: h }
+}
+
+/** USAGE: one row per meter as twenty cells with a notch where an even pace would sit, then the figures line. */
+export function usagePanel(v: UsageView, theme: Theme): Card {
+  const rowH = 22
+  const h = 30 + v.meters.length * rowH + 28
   const rows = v.meters
     .map((m, i) => {
-      const y = top + i * rowH
-      const bar =
-        m.percent === null
-          ? ''
-          : `<rect class="track" x="${barX}" y="${y + 3}" width="${barW}" height="12" rx="6"/>` +
-            `<rect class="${m.percent >= 85 ? 'tx-error' : m.percent >= 60 ? 'tx-warning' : 'tx-success'}" x="${barX}" y="${y + 3}" width="${Math.max(0, Math.min(barW, (barW * m.percent) / 100))}" height="12" rx="6" opacity="0.7"/>` +
-            (m.pace === null ? '' : `<rect class="t" x="${barX + (barW * m.pace) / 100 - 1}" y="${y}" width="2" height="18" rx="1"/>`)
-      return `<text class="m" x="18" y="${y + 13}" font-size="12" font-weight="700">${esc(m.label)}</text>${bar}<text class="t" x="${barX + barW + 12}" y="${y + 13}" font-size="12">${esc(fit(m.text, W - barX - barW - 30, 12))}</text>`
+      const y = 42 + i * rowH
+      let cells = ''
+      if (m.percent !== null) {
+        const on = Math.round((Math.max(0, Math.min(100, m.percent)) / 100) * 20)
+        const cls = m.percent >= 85 ? 'onb' : m.percent >= 60 ? 'onw' : 'on'
+        for (let c = 0; c < 20; c++) cells += `<rect class="${c < on ? cls : 'seg'}" x="${60 + c * 9}" y="${y - 9}" width="7" height="10"/>`
+        if (m.pace !== null) cells += `<line class="notch" x1="${60 + (m.pace / 100) * 178}" y1="${y - 12}" x2="${60 + (m.pace / 100) * 178}" y2="${y + 4}" stroke-width="1.5"/>`
+      }
+      return `${text(18, y, m.label, 'mute')}${cells}${text(m.percent === null ? 60 : 250, y, fit(m.text, m.percent === null ? W - 76 : W - 266, 12))}`
     })
     .join('')
-  const fy = top + v.meters.length * rowH + 14
-  const body = `${frame(h)}${rows}<text class="m" x="18" y="${fy}" font-size="12">${esc(fit(v.figures, W - 36, 12))}</text>`
-  return { source: svg(h, body, theme), alt: usageText(v).join(' | '), width: W, height: h }
+  const body = rule(14, 'USAGE') + rows + text(18, 42 + v.meters.length * rowH + 6, fit(v.figures, W - 34, 12), 'mute')
+  return { source: svg(h, body, theme), alt: ['USAGE', ...v.meters.map(m => `${m.label} ${m.text}`), v.figures].join(' | '), width: W, height: h }
 }
 
-/** The minimized pane: the run's name and counts, then the live item (or the last one) on one row with its state pill. */
-export function compactCard(w: Watch, latest: Stage, now: number, theme: Theme, ctx: number | null = null): Card {
-  const h = 96
-  const counts =
-    tally(w)
-      .split(' · ')
-      .filter(part => !/^0 /.test(part) || part.endsWith('running'))
-      .join(' · ') + (ctx === null ? '' : ` · ctx ${ctx}%`)
-  const t = tone(latest)
-  const st = state(latest)
-  const pw = textW(st, 12) + 22
-  const detail = elapsed((latest.endedAt ?? now) - latest.startedAt)
-  const label = fit(latest.label, W - 92 - pw - textW(detail, 12) - 24, 13)
-  const body =
-    frame(h, latest.endedAt === null ? 'card live' : 'card') +
-    `<text class="p" x="18" y="30" font-size="15" font-weight="700">${esc(fit(w.run ?? '', W - 36 - textW(counts, 12) - 12, 15))}</text>` +
-    `<text class="m" x="${W - 18}" y="30" font-size="12" text-anchor="end">${esc(counts)}</text>` +
-    `<rect class="track" x="10" y="46" width="${W - 20}" height="40" rx="12"/>` +
-    `<circle cx="34" cy="66" r="12" fill="${KIND_FILL[kindOf(latest)]}"/><text class="ink" x="34" y="70.5" font-size="11" font-weight="700" text-anchor="middle">${KIND_LETTER[kindOf(latest)]}</text>` +
-    `<text class="t" x="56" y="71" font-size="13" font-weight="600">${esc(label)}</text>` +
-    `<text class="m" x="${W - 28 - pw}" y="71" font-size="12" text-anchor="end">${esc(detail)}</text>` +
-    `<rect class="pill-${t}" x="${W - 20 - pw}" y="54" width="${pw}" height="24" rx="12"/><text class="tx-${t}" x="${W - 20 - pw / 2}" y="70" font-size="12" font-weight="700" text-anchor="middle">${esc(st)}</text>`
-  return { source: svg(h, body, theme), alt: `${w.run}: ${counts} | ${st} ${latest.label} ${detail}`, width: W, height: h }
+/** The TURNS rule with how many entries follow of how many turns. */
+export function turnsRule(shown: number, total: number, theme: Theme): Card {
+  const right = shown < total ? `LAST ${shown} OF ${total}` : `${total} ENTRIES`
+  return { source: svg(24, rule(14, 'TURNS', right), theme), alt: `TURNS | ${right}`, width: W, height: 24 }
 }
 
-/** Each item's span on the shared clock as a rounded bar in its kind color, on a soft track. */
-export function timelineCard(stages: Stage[], t0: number, total: number, now: number, theme: Theme): Card {
-  const rows = stages.slice(-10)
-  const h = 50 + rows.length * 24 + 8
-  const tx = 132
-  const tw = W - tx - 62
-  const body = rows
-    .map((s, i) => {
-      const y = 50 + i * 24
-      const bar = timelineBar(s, t0, total, 40)
-      const start = bar.indexOf(bar.match(/[█▓]/)?.[0] ?? '█')
-      const len = (bar.match(/[█▓]+/)?.[0] ?? '█').length
-      const bx = tx + (start / 40) * tw
-      const bw = Math.max(8, (len / 40) * tw)
-      const dur = elapsed((s.endedAt ?? now) - s.startedAt)
-      return `<text class="t" x="18" y="${y + 13}" font-size="12">${esc(fit(s.label, tx - 26, 12))}</text><rect class="track" x="${tx}" y="${y + 3}" width="${tw}" height="12" rx="6"/><rect x="${bx}" y="${y + 3}" width="${bw}" height="12" rx="6" fill="${KIND_FILL[kindOf(s)]}" opacity="${s.endedAt === null ? 0.65 : 0.95}"/><text class="m" x="${W - 18}" y="${y + 13}" font-size="12" text-anchor="end">${esc(dur)}</text>`
-    })
-    .join('')
-  const title = `<text class="t" x="18" y="30" font-size="14" font-weight="700">Timeline</text><text class="m" x="${18 + textW('Timeline', 14) + 10}" y="30" font-size="12">${esc(`${elapsed(total)} elapsed`)}</text>`
-  return { source: svg(h, `${frame(h)}${title}${body}`, theme), alt: `Timeline, ${elapsed(total)} elapsed: ${rows.map(s => s.label).join(', ')}`, width: W, height: h }
-}
-
-/** The phase a run of cards belongs to, as a pill in its kind color at the left of a card-wide strip, so it scales as the cards do. */
-export function phaseChip(g: { phase: string; stages: Stage[] }, theme: Theme): Card {
-  const label = fit(phaseTitle(g), W - 40, 12)
-  const pw = textW(label, 12) + 28
-  const body = `<rect x="2" y="2" width="${pw}" height="24" rx="12" fill="${KIND_FILL[kindOf(g.stages[0])]}"/><text class="ink" x="${2 + pw / 2}" y="18" font-size="12" font-weight="700" text-anchor="middle">${esc(label)}</text>`
-  return { source: svg(28, body, theme), alt: label, width: W, height: 28 }
-}
-
-/** What a card shows beyond its item: a turn's digest line, and whether the person unfolded it to the full prompt, answer and tool trail. */
+/** What an entry shows beyond its item: its digest line, and whether the person unfolded it to the full prompt, answer and tool trail. */
 export type CardExtras = { digest?: string; isOpen?: boolean }
 
+const KIND_WORD: Record<StageKind, string> = { turn: 'turn', skill: 'skill', agent: 'agent', commit: 'commit', stage: 'stage' }
+
 /**
- * One item: a round avatar in its kind color, the label (a turn with its title) and the model, a state pill, then prompt,
- * result, details and digest. Unfolded, the prompt and the answer run to their full stored length and the tool trail follows.
+ * One entry of TURNS: the head row (number, state glyph and word, clock, figures), the title in bold, the prompt or
+ * what is running, the result, the digest, then the items that started inside it as rows on a thin tree.
+ * Unfolded, the prompt and the answer run to their stored length and the tool trail follows.
  */
-export function stageCard(s: Stage, now: number, theme: Theme, extras: CardExtras = {}): Card {
-  const t = tone(s)
-  const st = state(s)
-  const pw = textW(st, 12) + 22
+export function turnEntry(s: Stage, children: Stage[], now: number, theme: Theme, extras: CardExtras = {}): Card {
   const isLive = s.endedAt === null
-  const x = 62
-  const width = W - x - 18
-  const lines: Array<{ cls: string; v: string; size: number; italic?: boolean }> = []
+  const [glyph = '', word = ''] = state(s).split(' ')
+  const num = s.label.replace(/^turn:/, '')
+  const title = s.kind === 'turn' ? (turnTitle(s.prompt) ?? s.label) : s.label
+  const width = W - 42 - 16
+  const body: Array<[string, string]> = []
   if (s.prompt) {
-    if (extras.isOpen) lines.push(...wrap(`› ${s.prompt}`, width, 13).map(v => ({ cls: 'p', v, size: 13 })))
-    else lines.push({ cls: 'p', v: `› ${clip(s.prompt, 100)}`, size: 13 })
+    if (extras.isOpen) for (const l of wrap(`› ${s.prompt}`, width, 12)) body.push([l, 'mute'])
+    else body.push([`› ${clip(s.prompt, 100)}`, 'mute'])
   }
-  if (extras.isOpen && s.answer && !isLive) lines.push(...wrap(s.answer, width, 13).map(v => ({ cls: 't', v, size: 13 })))
-  else lines.push({ cls: isLive ? 'm' : 't', v: stageResult(s), size: 13, italic: isLive })
-  lines.push({ cls: 'm', v: stageDetail(s, now), size: 12 })
-  if (extras.digest) lines.push({ cls: 'm', v: extras.digest, size: 12 })
-  if (extras.isOpen) for (const tool of s.tools ?? []) lines.push({ cls: 'm', v: `· ${tool}`, size: 12 })
-  const h = 64 + lines.length * 20 + 10
-  const rows = lines
-    .map((l, i) => `<text class="${l.cls}" x="${x}" y="${78 + i * 20}" font-size="${l.size}"${l.italic ? ' font-style="italic"' : ''}>${esc(fit(l.v, width, l.size))}</text>`)
-    .join('')
-  const body =
-    frame(h, s.endedAt === null ? 'card live' : 'card') +
-    `<circle cx="34" cy="36" r="18" fill="${KIND_FILL[kindOf(s)]}"/><text class="ink" x="34" y="41" font-size="14" font-weight="700" text-anchor="middle">${KIND_LETTER[kindOf(s)]}</text>` +
-    `<text class="t" x="${x}" y="32" font-size="14" font-weight="700">${esc(fit(labelWithTitle(s), W - x - pw - 30, 14))}</text>` +
-    `<text class="who" x="${x}" y="52" font-size="12">${esc(fit(who(s), W - x - 18, 12))}</text>` +
-    `<rect class="pill-${t}" x="${W - 16 - pw}" y="17" width="${pw}" height="24" rx="12"/><text class="tx-${t}" x="${W - 16 - pw / 2}" y="33" font-size="12" font-weight="700" text-anchor="middle">${esc(st)}</text>` +
-    rows
-  return { source: svg(h, body, theme), alt: [`${st} ${labelWithTitle(s)} ${who(s)}`, ...lines.map(l => l.v)].join(' | '), width: W, height: h }
+  if (extras.isOpen && s.answer && !isLive) for (const l of wrap(s.answer, width, 12)) body.push([l, 'ink'])
+  else if (isLive || s.summary) body.push([liveLine(s), isLive ? 'mute' : 'ink'])
+  if (extras.digest) body.push([extras.digest, 'mute'])
+  if (extras.isOpen) for (const tool of s.tools ?? []) body.push([tool, 'faint'])
+  const rows = children.map(c => {
+    const kind = c.kind ?? 'stage'
+    const name = c.label.replace(/^[a-z]+:/, '')
+    const live = c.endedAt === null
+    const right = kind === 'agent' ? `${live ? '● ' : ''}${elapsed((c.endedAt ?? now) - c.startedAt)} · ${fmtTokens(c.outputTokens)} out` : ''
+    return { word: KIND_WORD[kind], name, note: c.summary ?? '', right, live }
+  })
+  const h = 30 + 20 + body.length * LINE_H + rows.length * LINE_H + 14
+  let y = 20
+  let out = `${text(18, y, num, 'mute')}${text(42, y, glyph, GLYPH[glyph] ?? 'acc')}${text(58, y, word.toUpperCase(), 'mute')}${text(58 + word.length * 7.4 + 14, y, elapsed((s.endedAt ?? now) - s.startedAt), 'mute')}${text(W - 12, y, isLive ? `${s.calls} calls` : figures(s), 'mute', END)}`
+  y += 21
+  out += text(42, y, fit(title, width, 13), 'ink', ' font-size="13" font-weight="700"')
+  for (const [v, cls] of body) {
+    y += LINE_H
+    out += text(42, y, fit(v, width, 12), cls)
+  }
+  if (rows.length) {
+    const top = y + 6
+    out += `<line class="tree" x1="47" y1="${top}" x2="47" y2="${top + (rows.length - 1) * LINE_H + 12}"/>`
+    for (const r of rows) {
+      y += LINE_H
+      out += `<line class="tree" x1="47" y1="${y - 4}" x2="58" y2="${y - 4}"/>${text(64, y, r.word, 'mute')}${text(112, y, fit(r.name, 150, 12))}`
+      if (r.right) out += text(W - 12, y, r.right, r.live ? 'acc' : 'mute', END)
+      else if (r.note) out += text(112 + Math.min(150, r.name.length * 7.4) + 12, y, fit(r.note, W - 12 - (112 + Math.min(150, r.name.length * 7.4) + 12), 12), 'mute')
+    }
+  }
+  out += `<line class="rule" x1="18" y1="${h - 1}" x2="${W - 18}" y2="${h - 1}"/>`
+  const alt = [`${num} ${glyph} ${word} ${elapsed((s.endedAt ?? now) - s.startedAt)} ${isLive ? `${s.calls} calls` : figures(s)}`, title, ...body.map(([v]) => v), ...rows.map(r => `${r.word} ${r.name}${r.right ? ` ${r.right}` : r.note ? ` ${r.note}` : ''}`)]
+  return { source: svg(h, out, theme), alt: alt.join(' | '), width: W, height: h }
+}
+
+/** The DECISIONS, CHANGES and QUALITY sections for a session, each null when empty. */
+export function signalPanels(signals: Signals | undefined, stages: Stage[], theme: Theme): Card[] {
+  if (!signals) return []
+  const waiting = signals.decisions.filter(d => d.kind === 'ask' && d.answer === null).length
+  return [linesPanel('DECISIONS', waiting ? `${waiting} WAITING` : '', decisionLines(signals), theme), linesPanel('CHANGES', '', changeLines(signals, stages), theme), linesPanel('QUALITY', '', qualityLines(signals, stages), theme)].filter((c): c is Card => c !== null)
 }

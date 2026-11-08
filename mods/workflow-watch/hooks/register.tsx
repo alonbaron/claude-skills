@@ -2,15 +2,15 @@ import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 
 import type { PaneView, Stage, Theme, Usage, Watch } from '../types'
-// The host draws the Buttons in its own theme colors, so the pane paints no background of its own under them: the cards carry their theme.
-import { KIND_FILL, compactCard, headerCard, phaseChip, stageCard, timelineCard, usageCard } from './cards'
-import { EMPTY, READ_LIMIT, SLIM_CUT, SLIM_TIMEOUT_MS, applyEntries, clip, digest, elapsed, emptySignals, labelWithTitle, mergeStages, parseLines, parseSession, phaseRuns, phaseTitle, readMeta, readMetaInfo, readTranscript, report, signalLines, slimCommand, stageDetail, stageResult, state, tally, timelineBar, tone, usageText, usageView, who, withFacts } from './journal'
+// The host draws the Buttons in its own theme colors, so the pane paints no background of its own under them: the panels carry their theme.
+import { KIND_FILL, linesPanel, nowPanel, sessionRule, signalPanels, turnEntry, turnsRule, usagePanel } from './cards'
+import type { Card } from './cards'
+import { EMPTY, READ_LIMIT, SLIM_CUT, SLIM_TIMEOUT_MS, applyEntries, clip, decisionLines, digest, elapsed, emptySignals, labelWithTitle, mergeStages, parseLines, parseSession, phaseRuns, phaseTitle, readMeta, readMetaInfo, readTranscript, report, signalLines, slimCommand, stageDetail, stageResult, state, tally, timelineBar, tone, usageText, usageView, who, withFacts } from './journal'
 
 const PANE = 'workflow-watch'
 const TITLE = 'Tracker'
 const watch = atom({ plugin: 'workflow-watch', key: 'watch' } as const, EMPTY)
 const theme = atom({ plugin: 'workflow-watch', key: 'theme' } as const, 'dark' as Theme)
-const isTimelineOpen = atom({ plugin: 'workflow-watch', key: 'isTimelineOpen' } as const, true)
 const pinnedView = atom({ plugin: 'workflow-watch', key: 'pinnedView' } as const, null as PaneView | null)
 const isHidden = atom({ plugin: 'workflow-watch', key: 'isHidden' } as const, false)
 const usage = atom({ plugin: 'workflow-watch', key: 'usage' } as const, null as Usage | null)
@@ -332,8 +332,6 @@ export const register: Register = (on, options) => {
     await $.command.register({ name: 'tracker', description })
     const saved = await $.store.get('theme').catch(() => undefined)
     if (saved === 'dark' || saved === 'light') await update($, theme, () => saved)
-    const savedOpen = await $.store.get('isTimelineOpen').catch(() => undefined)
-    if (typeof savedOpen === 'boolean') await update($, isTimelineOpen, () => savedOpen)
     $.clock.every(2000, () => void tickOnce($))
     void openPaneAuto($)
     void tickOnce($)
@@ -385,10 +383,9 @@ export const register: Register = (on, options) => {
     const latest = latestOf(w.stages) as Stage
     const view = usageView(await read($, usage), w.stages, w.now, cacheTtlMs)
     // A header card, the usage card, a timeline card (when 2+ items exist), then one card per stage, newest first, under a colored phase chip.
-    // A surface with Svg (desktop, vscode, mobile) draws each card as a rounded vector card; the terminal draws them in box glyphs.
+    // A surface with Svg (desktop, vscode, mobile) draws the console as panels; the terminal draws the same text in box glyphs.
     if (Svg) {
       const mode = await read($, theme)
-      const isOpen = await read($, isTimelineOpen)
       const unfolded = await read($, openKeys)
       const copied = await read($, copiedKey)
       const isArmed = await read($, armed)
@@ -412,9 +409,6 @@ export const register: Register = (on, options) => {
             />
           </Box>
         ) : null
-      const head = headerCard(w, tokens, mode)
-      const use = usageCard(view, mode)
-      const tl = timelineCard(w.stages, t0, total, w.now, mode)
       const bar = (
         <Box justifyContent="flex-end" gap={1} marginBottom={1}>
           <Button key="size" label={isCompact ? '+ Expand' : '− Minimize'} onPress={() => void update($, pinnedView, () => (isCompact ? 'full' : 'compact')).catch(() => undefined)} />
@@ -443,83 +437,72 @@ export const register: Register = (on, options) => {
           />
         </Box>
       )
+      const draw = (c: Card | null, key: string) =>
+        c ? (
+          <Box key={key}>
+            <Svg source={c.source} alt={c.alt} width={c.width} height={c.height} />
+          </Box>
+        ) : null
+      // NOW follows the live turn, else the last one; its children are the items that started inside its span.
+      const turns = w.stages.filter(s => s.kind === 'turn')
+      const liveTurn = [...turns].reverse().find(s => s.endedAt === null) ?? turns[turns.length - 1]
+      const nowCard = nowPanel(liveTurn, w.signals, w.now, mode)
       if (isCompact) {
-        const c = compactCard(w, latest, w.now, mode, view.ctx)
+        const waiting = w.signals ? decisionLines(w.signals).filter(l => l.includes('? waiting')) : []
         return (
           <Box flexDirection="column" paddingX={1} paddingY={1}>
             {compactRow}
             {bar}
             {notice}
-            <Svg source={c.source} alt={c.alt} width={c.width} height={c.height} />
+            {draw(nowCard, 'now')}
+            {draw(linesPanel('DECISIONS', `${waiting.length} WAITING`, waiting, mode), 'decisions')}
           </Box>
         )
       }
+      const spanOf = (t: Stage): [number, number] => [t.startedAt, t.endedAt ?? w.now]
+      const parentOf = (s: Stage): Stage | undefined => turns.find(t => s.startedAt >= spanOf(t)[0] && s.startedAt <= spanOf(t)[1])
+      const isEntry = (s: Stage): boolean => s.kind === 'turn' || !s.kind || s.kind === 'stage' || !parentOf(s)
+      const entries = w.stages.filter(isEntry).reverse()
+      const childrenOf = (t: Stage): Stage[] => (t.kind === 'turn' ? w.stages.filter(s => !isEntry(s) && parentOf(s) === t) : [])
       return (
         <Box flexDirection="column" paddingX={1} paddingY={1}>
           {compactRow}
           {bar}
           {notice}
-          <Svg source={head.source} alt={head.alt} width={head.width} height={head.height} />
-          <Box marginTop={1}>
-            <Svg source={use.source} alt={use.alt} width={use.width} height={use.height} />
-          </Box>
-          {w.stages.length > 1 && (
-            <Box flexDirection="column" marginTop={1}>
-              <Box>
-                <Button
-                  key="timeline"
-                  label={isOpen ? '− Timeline' : `+ Timeline · ${elapsed(total)} elapsed`}
-                  onPress={() => {
-                    void update($, isTimelineOpen, open => !open)
-                      .then(open => $.store.set('isTimelineOpen', open))
-                      .catch(() => undefined)
-                  }}
-                />
-              </Box>
-              {isOpen && (
-                <Box marginTop={1}>
-                  <Svg source={tl.source} alt={tl.alt} width={tl.width} height={tl.height} />
-                </Box>
-              )}
-            </Box>
-          )}
-          {groups.map((g, i) => {
-            const chip = phaseChip(g, mode)
+          {draw(sessionRule(w, w.now, mode), 'session')}
+          {draw(nowCard, 'now')}
+          {signalPanels(w.signals, w.stages, mode).map((c, i) => draw(c, `signal-${i}`))}
+          {draw(usagePanel(view, mode), 'usage')}
+          {draw(turnsRule(entries.length, entries.length, mode), 'turns')}
+          {entries.map(s => {
+            const isUnfolded = unfolded.includes(s.key)
+            const c = turnEntry(s, childrenOf(s), w.now, mode, { digest: s.kind === 'turn' ? digest(s, w.stages, w.now) : undefined, isOpen: isUnfolded })
             return (
-              <Box key={`phase-${i}`} flexDirection="column" marginTop={1}>
-                <Svg source={chip.source} alt={chip.alt} width={chip.width} height={chip.height} />
-                {newestOf(g).map(s => {
-                  const isUnfolded = unfolded.includes(s.key)
-                  const c = stageCard(s, w.now, mode, { digest: s.kind === 'turn' ? digest(s, w.stages, w.now) : undefined, isOpen: isUnfolded })
-                  return (
-                    <Box key={s.key} flexDirection="column" marginTop={1}>
-                      <Svg source={c.source} alt={c.alt} width={c.width} height={c.height} />
-                      {(hasMore(s) || (s.kind === 'turn' && s.prompt)) && (
-                        <Box gap={1}>
-                          {hasMore(s) && (
-                            <Button
-                              key={`fold:${s.key}`}
-                              label={isUnfolded ? '− less' : '+ more'}
-                              onPress={() => void update($, openKeys, keys => (isUnfolded ? keys.filter(k => k !== s.key) : [...keys, s.key])).catch(() => undefined)}
-                            />
-                          )}
-                          {s.kind === 'turn' && s.prompt && (
-                            <Button
-                              key={`copy:${s.key}`}
-                              label={copied === s.key ? 'Copied' : 'Copy prompt'}
-                              onPress={press => {
-                                void $.ui
-                                  .copy({ text: s.prompt ?? '', surface: press.surface })
-                                  .then(r => (r.isCopied ? update($, copiedKey, () => s.key) : undefined))
-                                  .catch(() => undefined)
-                              }}
-                            />
-                          )}
-                        </Box>
-                      )}
-                    </Box>
-                  )
-                })}
+              <Box key={s.key} flexDirection="column">
+                <Svg source={c.source} alt={c.alt} width={c.width} height={c.height} />
+                {(hasMore(s) || (s.kind === 'turn' && s.prompt)) && (
+                  <Box gap={1} marginBottom={1}>
+                    {hasMore(s) && (
+                      <Button
+                        key={`fold:${s.key}`}
+                        label={isUnfolded ? '− less' : '+ more'}
+                        onPress={() => void update($, openKeys, keys => (isUnfolded ? keys.filter(k => k !== s.key) : [...keys, s.key])).catch(() => undefined)}
+                      />
+                    )}
+                    {s.kind === 'turn' && s.prompt && (
+                      <Button
+                        key={`copy:${s.key}`}
+                        label={copied === s.key ? 'Copied' : 'Copy prompt'}
+                        onPress={press => {
+                          void $.ui
+                            .copy({ text: s.prompt ?? '', surface: press.surface })
+                            .then(r => (r.isCopied ? update($, copiedKey, () => s.key) : undefined))
+                            .catch(() => undefined)
+                        }}
+                      />
+                    )}
+                  </Box>
+                )}
               </Box>
             )
           })}
