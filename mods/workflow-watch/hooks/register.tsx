@@ -2,7 +2,8 @@ import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 
 import type { PaneView, Stage, Theme, Usage, Watch } from '../types'
-import { KIND_FILL, PANE_BG, compactCard, headerCard, phaseChip, stageCard, timelineCard, usageCard } from './cards'
+// The host draws the Buttons in its own theme colors, so the pane paints no background of its own under them: the cards carry their theme.
+import { KIND_FILL, compactCard, headerCard, phaseChip, stageCard, timelineCard, usageCard } from './cards'
 import { EMPTY, READ_LIMIT, SLIM_CUT, SLIM_TIMEOUT_MS, applyEntries, clip, digest, elapsed, labelWithTitle, mergeStages, parseLines, parseSession, phaseRuns, phaseTitle, readMeta, readMetaInfo, readTranscript, report, slimCommand, stageDetail, stageResult, state, tally, timelineBar, tone, usageText, usageView, who, withFacts } from './journal'
 
 const PANE = 'workflow-watch'
@@ -442,7 +443,7 @@ export const register: Register = (on, options) => {
       if (isCompact) {
         const c = compactCard(w, latest, w.now, mode, view.ctx)
         return (
-          <Box flexDirection="column" paddingX={1} paddingY={1} backgroundColor={PANE_BG[mode]}>
+          <Box flexDirection="column" paddingX={1} paddingY={1}>
             {compactRow}
             {bar}
             {notice}
@@ -451,7 +452,7 @@ export const register: Register = (on, options) => {
         )
       }
       return (
-        <Box flexDirection="column" paddingX={1} paddingY={1} backgroundColor={PANE_BG[mode]}>
+        <Box flexDirection="column" paddingX={1} paddingY={1}>
           {compactRow}
           {bar}
           {notice}
