@@ -17,6 +17,11 @@ const usage = atom({ plugin: 'workflow-watch', key: 'usage' } as const, null as 
 const openKeys = atom({ plugin: 'workflow-watch', key: 'openKeys' } as const, [] as string[])
 const copiedKey = atom({ plugin: 'workflow-watch', key: 'copiedKey' } as const, null as string | null)
 const armed = atom({ plugin: 'workflow-watch', key: 'armed' } as const, false)
+const folded = atom({ plugin: 'workflow-watch', key: 'folded' } as const, [] as string[])
+const allTurns = atom({ plugin: 'workflow-watch', key: 'allTurns' } as const, false)
+
+/** How many entries TURNS shows until the person asks for all of them. */
+const TURNS_SHOWN = 8
 
 /** The context fill, in percent, from which the pane offers to compact. */
 const COMPACT_AT = 80
@@ -332,6 +337,8 @@ export const register: Register = (on, options) => {
     await $.command.register({ name: 'tracker', description })
     const saved = await $.store.get('theme').catch(() => undefined)
     if (saved === 'dark' || saved === 'light') await update($, theme, () => saved)
+    const folds = await $.store.get('folded').catch(() => undefined)
+    if (Array.isArray(folds) && folds.every(f => typeof f === 'string')) await update($, folded, () => folds as string[])
     $.clock.every(2000, () => void tickOnce($))
     void openPaneAuto($)
     void tickOnce($)
@@ -389,6 +396,8 @@ export const register: Register = (on, options) => {
       const unfolded = await read($, openKeys)
       const copied = await read($, copiedKey)
       const isArmed = await read($, armed)
+      const folds = await read($, folded)
+      const isAll = await read($, allTurns)
       const isBusy = w.stages.some(s => s.endedAt === null)
       // The offer to compact: its own row, so the bar's buttons keep their places; two presses; never while anything runs.
       const compactRow =
@@ -459,10 +468,34 @@ export const register: Register = (on, options) => {
           </Box>
         )
       }
+      // Each section after NOW folds to its button: `− Changes` open, `+ Changes · 4` folded, the set kept between sessions.
+      const foldButton = (name: string, count: number) => {
+        const isFolded = folds.includes(name)
+        const word = name[0] + name.slice(1).toLowerCase()
+        return (
+          <Button
+            key={`panel:${name}`}
+            label={isFolded ? `+ ${word} · ${count}` : `− ${word}`}
+            onPress={() => {
+              void update($, folded, f => (f.includes(name) ? f.filter(n => n !== name) : [...f, name]))
+                .then(f => $.store.set('folded', f))
+                .catch(() => undefined)
+            }}
+          />
+        )
+      }
+      const section = (name: string, count: number, card: Card) => (
+        <Box key={name} flexDirection="column">
+          <Box>{foldButton(name, count)}</Box>
+          {!folds.includes(name) && draw(card, `${name}-card`)}
+        </Box>
+      )
       const spanOf = (t: Stage): [number, number] => [t.startedAt, t.endedAt ?? w.now]
       const parentOf = (s: Stage): Stage | undefined => turns.find(t => s.startedAt >= spanOf(t)[0] && s.startedAt <= spanOf(t)[1])
       const isEntry = (s: Stage): boolean => s.kind === 'turn' || !s.kind || s.kind === 'stage' || !parentOf(s)
       const entries = w.stages.filter(isEntry).reverse()
+      // ponytail: the cap is by recency alone; the entries are newest first, so the first eight are the last eight turns.
+      const shown = isAll ? entries : entries.slice(0, TURNS_SHOWN)
       const childrenOf = (t: Stage): Stage[] => (t.kind === 'turn' ? w.stages.filter(s => !isEntry(s) && parentOf(s) === t) : [])
       return (
         <Box flexDirection="column" paddingX={1} paddingY={1}>
@@ -471,10 +504,14 @@ export const register: Register = (on, options) => {
           {notice}
           {draw(sessionRule(w, w.now, mode), 'session')}
           {draw(nowCard, 'now')}
-          {signalPanels(w.signals, w.stages, mode).map((c, i) => draw(c, `signal-${i}`))}
-          {draw(usagePanel(view, mode), 'usage')}
-          {draw(turnsRule(entries.length, entries.length, mode), 'turns')}
-          {entries.map(s => {
+          {signalPanels(w.signals, w.stages, mode).map(p => section(p.name, p.count, p.card))}
+          {section('USAGE', view.meters.length, usagePanel(view, mode))}
+          <Box gap={1}>
+            {foldButton('TURNS', entries.length)}
+            {!folds.includes('TURNS') && entries.length > TURNS_SHOWN && <Button key="turns:all" label={isAll ? `Last ${TURNS_SHOWN}` : `Show all ${entries.length}`} onPress={() => void update($, allTurns, v => !v).catch(() => undefined)} />}
+          </Box>
+          {!folds.includes('TURNS') && draw(turnsRule(shown.length, entries.length, mode), 'turns')}
+          {!folds.includes('TURNS') && shown.map(s => {
             const isUnfolded = unfolded.includes(s.key)
             const c = turnEntry(s, childrenOf(s), w.now, mode, { digest: s.kind === 'turn' ? digest(s, w.stages, w.now) : undefined, isOpen: isUnfolded })
             return (

@@ -128,6 +128,10 @@ declare module 'claude-code' {
       copiedKey: string | null
       /** True between the first and the second press of the Compact button; dropped as soon as the session is busy. */
       armed: boolean
+      /** The sections the person folded (DECISIONS, CHANGES, QUALITY, USAGE, TURNS), kept between sessions. */
+      folded: string[]
+      /** True once the person asked TURNS for every entry instead of the last few; forgotten with the session. */
+      allTurns: boolean
     }
   }
 }

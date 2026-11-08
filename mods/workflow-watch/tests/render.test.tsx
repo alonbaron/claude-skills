@@ -127,6 +127,53 @@ describe('render', () => {
     await ui.unmount()
   })
 
+  test('a section folds to its button with its count and the fold is saved; NOW and SESSION have no fold', async ($, on) => {
+    mock.clock(on)
+    const signals: Signals = { plan: [], decisions: [{ kind: 'ask', at: 1, text: 'Start phase 5?', answer: null, options: 'Yes / No' }, { kind: 'refused', at: 2, text: 'gh pr merge 22', answer: 'Merge Without Review' }], tests: [], review: null, files: {}, commands: 0 }
+    on('state.get', { plugin: 'workflow-watch', key: 'watch' }, () => ({ value: { value: { ...WATCH, stages: [TURN], signals, isIdle: false }, version: 1 } }))
+    const sets: Array<[string, unknown]> = []
+    on('store.set', (_$: any, e: any) => {
+      sets.push([e.key, e.value])
+      return { value: undefined }
+    })
+    const ui = await $.ui.mount(PANE)
+    expect((await alts(ui)).some(a => a.startsWith('DECISIONS'))).toBe(true)
+    expect((await ui.find({ key: 'panel:DECISIONS' }))?.props.label).toBe('− Decisions')
+    expect((await ui.find({ key: 'panel:USAGE' }))?.props.label).toBe('− Usage')
+    expect((await ui.find({ key: 'panel:TURNS' }))?.props.label).toBe('− Turns')
+    expect(await ui.find({ key: 'panel:NOW' })).toBeUndefined()
+    expect(await ui.find({ key: 'panel:SESSION' })).toBeUndefined()
+    await ui.press({ key: 'panel:DECISIONS' })
+    expect((await alts(ui)).some(a => a.startsWith('DECISIONS'))).toBe(false)
+    expect((await ui.find({ key: 'panel:DECISIONS' }))?.props.label).toBe('+ Decisions · 2')
+    expect(sets).toEqual([['folded', ['DECISIONS']]])
+    await ui.press({ key: 'panel:TURNS' })
+    expect((await alts(ui)).some(a => a.startsWith('TURNS') || a.startsWith('1 ✓'))).toBe(false)
+    expect((await ui.find({ key: 'panel:TURNS' }))?.props.label).toBe('+ Turns · 1')
+    await ui.press({ key: 'panel:DECISIONS' })
+    expect((await alts(ui)).some(a => a.startsWith('DECISIONS'))).toBe(true)
+    expect(sets.at(-1)).toEqual(['folded', ['TURNS']])
+    await ui.unmount()
+  })
+
+  test('TURNS shows the last eight entries until Show all; the rule counts both', async ($, on) => {
+    mock.clock(on)
+    const turns = Array.from({ length: 10 }, (_, i) => ({ ...TURN, key: `turn:${i + 1}`, label: `turn:${i + 1}`, startedAt: 1000 + i * 100, endedAt: 1050 + i * 100 }))
+    on('state.get', { plugin: 'workflow-watch', key: 'watch' }, () => ({ value: { value: { ...WATCH, stages: turns, isIdle: false }, version: 1 } }))
+    const ui = await $.ui.mount(PANE)
+    const entries = async () => (await alts(ui)).filter(a => /^\d+ ✓/.test(a)).map(a => a.split(' ')[0])
+    expect((await alts(ui)).find(a => a.startsWith('TURNS'))).toBe('TURNS | LAST 8 OF 10')
+    expect(await entries()).toEqual(['10', '9', '8', '7', '6', '5', '4', '3'])
+    expect((await ui.find({ key: 'turns:all' }))?.props.label).toBe('Show all 10')
+    await ui.press({ key: 'turns:all' })
+    expect((await alts(ui)).find(a => a.startsWith('TURNS'))).toBe('TURNS | 10 ENTRIES')
+    expect((await entries()).length).toBe(10)
+    expect((await ui.find({ key: 'turns:all' }))?.props.label).toBe('Last 8')
+    await ui.press({ key: 'turns:all' })
+    expect((await entries()).length).toBe(8)
+    await ui.unmount()
+  })
+
   test('Copy prompt puts the turn prompt on the pressing surface and reads Copied; Compact needs two presses and only while idle', async ($, on) => {
     mock.clock(on)
     const full = { context: { tokens: 840_000, window: 1_000_000, percent: 84 }, rateLimits: [], cost: { usd: 1 } }

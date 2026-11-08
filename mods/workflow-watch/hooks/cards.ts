@@ -200,9 +200,20 @@ export function turnEntry(s: Stage, children: Stage[], now: number, theme: Theme
   return { source: svg(h, out, theme), alt: alt.join(' | '), width: W, height: h }
 }
 
-/** The DECISIONS, CHANGES and QUALITY sections for a session, each null when empty. */
-export function signalPanels(signals: Signals | undefined, stages: Stage[], theme: Theme): Card[] {
+/** A foldable section of the console: its name as its rule reads it, how many lines, meters or entries it holds, and its card. */
+export type Section = { name: string; count: number; card: Card }
+
+/** The DECISIONS, CHANGES and QUALITY sections for a session, each left out when empty. */
+export function signalPanels(signals: Signals | undefined, stages: Stage[], theme: Theme): Section[] {
   if (!signals) return []
   const waiting = signals.decisions.filter(d => d.kind === 'ask' && d.answer === null).length
-  return [linesPanel('DECISIONS', waiting ? `${waiting} WAITING` : '', decisionLines(signals), theme), linesPanel('CHANGES', '', changeLines(signals, stages), theme), linesPanel('QUALITY', '', qualityLines(signals, stages), theme)].filter((c): c is Card => c !== null)
+  const parts: Array<[string, string, string[]]> = [
+    ['DECISIONS', waiting ? `${waiting} WAITING` : '', decisionLines(signals)],
+    ['CHANGES', '', changeLines(signals, stages)],
+    ['QUALITY', '', qualityLines(signals, stages)],
+  ]
+  return parts.flatMap(([name, right, lines]) => {
+    const card = linesPanel(name, right, lines, theme)
+    return card ? [{ name, count: lines.length, card }] : []
+  })
 }
