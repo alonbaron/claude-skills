@@ -3,7 +3,7 @@ import type { Register } from 'claude-code'
 
 import type { PaneView, Stage, Theme, Usage, Watch } from '../types'
 // The host draws the Buttons in its own theme colors, so the pane paints no background of its own under them: the panels carry their theme.
-import { KIND_FILL, linesPanel, nowPanel, sessionRule, signalPanels, turnEntry, turnsRule, usagePanel } from './cards'
+import { KIND_FILL, linesPanel, nowPanel, sessionRule, setWidth, signalPanels, turnEntry, turnsRule, usagePanel } from './cards'
 import type { Card } from './cards'
 import { EMPTY, READ_LIMIT, SLIM_CUT, SLIM_TIMEOUT_MS, applyEntries, clip, decisionLines, digest, elapsed, emptySignals, labelWithTitle, mergeStages, parseLines, parseSession, phaseRuns, phaseTitle, readMeta, readMetaInfo, readTranscript, report, signalLines, slimCommand, stageDetail, stageResult, state, tally, timelineBar, tone, usageText, usageView, who, withFacts } from './journal'
 
@@ -24,8 +24,6 @@ const autoOpenOn = atom({ plugin: 'workflow-watch', key: 'autoOpenOn' } as const
 /** How many entries TURNS shows until the person asks for all of them. */
 const TURNS_SHOWN = 8
 
-/** The fewest columns a card's box takes: about its 440-pixel grid at the surface's monospace size, so a narrow pane overflows rather than shrinking the text. */
-const CARD_MIN_COLS = 55
 
 /** The context fill, in percent, from which the pane offers to compact. */
 const COMPACT_AT = 80
@@ -399,6 +397,8 @@ export const register: Register = (on, options) => {
     // A header card, the usage card, a timeline card (when 2+ items exist), then one card per stage, newest first, under a colored phase chip.
     // A surface with Svg (desktop, vscode, mobile) draws the console as panels; the terminal draws the same text in box glyphs.
     if (Svg) {
+      // The cards are laid out at the pane's width, so their text keeps its size whatever the pane's size or side.
+      setWidth(e.props.bodyColumns)
       const mode = await read($, theme)
       const unfolded = await read($, openKeys)
       const copied = await read($, copiedKey)
@@ -465,7 +465,7 @@ export const register: Register = (on, options) => {
       )
       const draw = (c: Card | null, key: string) =>
         c ? (
-          <Box key={key} minWidth={CARD_MIN_COLS}>
+          <Box key={key}>
             <Svg source={c.source} alt={c.alt} />
           </Box>
         ) : null
@@ -542,7 +542,7 @@ export const register: Register = (on, options) => {
             const isUnfolded = unfolded.includes(s.key)
             const c = turnEntry(s, childrenOf(s), w.now, mode, { digest: s.kind === 'turn' ? digest(s, w.stages, w.now) : undefined, isOpen: isUnfolded })
             return (
-              <Box key={s.key} flexDirection="column" minWidth={CARD_MIN_COLS}>
+              <Box key={s.key} flexDirection="column">
                 <Svg source={c.source} alt={c.alt} />
                 {(hasMore(s) || (s.kind === 'turn' && s.prompt)) && (
                   <Box flexWrap="wrap" gap={1}>
