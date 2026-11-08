@@ -7,15 +7,17 @@ const SID = 'sid12345-abcd'
 const SESSION = `${HOME}/.claude/projects/p1/${SID}.jsonl`
 const USER = '{"type":"user","timestamp":"2026-10-22T08:00:00.000Z","message":{"content":"hello there"}}'
 const REPLY = '{"type":"assistant","timestamp":"2026-10-22T08:00:05.000Z","message":{"model":"claude-opus-5-5","stop_reason":"end_turn","content":[{"type":"text","text":"hi back"}]}}'
+/** The same log once the person has typed again: a second turn, still running. */
+const NEXT_TURN = `${USER}\n${REPLY}\n${USER.replace('08:00:00', '08:01:00').replace('hello there', 'next please')}`
 const BIG = 5 * 1024 * 1024
 const norm = (p: string): string => p.split(String.fromCharCode(92)).join('/').replace(/^[A-Za-z]:/, '')
 const ran = (stdout: string, exitCode = 0) => ({ exitCode, stdout, stderr: exitCode ? 'failed' : '', isStdoutTruncated: false, isStderrTruncated: false })
 
-type World = { text: string; opens: number; size: number; isReadBroken: boolean; isRunBroken: boolean; result: ReturnType<typeof ran>; runs: Array<{ argv: string[]; env: Record<string, string> }>; saved: Map<string, unknown>; sets: Array<[string, unknown]> }
+type World = { text: string; opens: number; closes: number; size: number; isReadBroken: boolean; isRunBroken: boolean; result: ReturnType<typeof ran>; runs: Array<{ argv: string[]; env: Record<string, string> }>; saved: Map<string, unknown>; sets: Array<[string, unknown]> }
 
 /** A home with one session log, the engine's file, process and store ops answered from `w`. */
 function world(on: any, env: Record<string, string> = {}): { w: World; clock: ReturnType<typeof mock.clock> } {
-  const w: World = { text: `${USER}\n${REPLY}`, opens: 0, size: 1000, isReadBroken: false, isRunBroken: false, result: ran(`${USER}\n${REPLY}`), runs: [], saved: new Map(), sets: [] }
+  const w: World = { text: `${USER}\n${REPLY}`, opens: 0, closes: 0, size: 1000, isReadBroken: false, isRunBroken: false, result: ran(`${USER}\n${REPLY}`), runs: [], saved: new Map(), sets: [] }
   const clock = mock.clock(on)
   mock.env(on, { HOME, ...env })
   on('session.id', () => ({ value: SID }))
@@ -23,6 +25,10 @@ function world(on: any, env: Record<string, string> = {}): { w: World; clock: Re
   on('ui.open', () => {
     w.opens += 1
     return { value: { isPlaced: true } }
+  })
+  on('ui.close', () => {
+    w.closes += 1
+    return { value: undefined }
   })
   on('ui.panes', () => ({ value: [] }))
   on('command.register', () => ({ value: { isNew: true } }))
@@ -129,7 +135,7 @@ describe('tick', () => {
     expect(w.runs.length).toBe(2)
   })
 
-  test('a pane the person hid opens again when the next turn starts, not while the session stays quiet', async ($, on) => {
+  test('with auto-open on, a pane that closed opens again when the next turn starts, not while the session stays quiet', async ($, on) => {
     const { w, clock } = world(on)
     await $.session.start(START)
     await clock.settle()
@@ -137,11 +143,41 @@ describe('tick', () => {
     await clock.advance(2000)
     await clock.advance(2000)
     expect(w.opens).toBe(opens)
-    w.text = `${USER}\n${REPLY}\n${USER.replace('08:00:00', '08:01:00').replace('hello there', 'next please')}`
+    w.text = NEXT_TURN
     await clock.advance(2000)
     expect(w.opens).toBe(opens + 1)
     await clock.advance(2000)
     expect(w.opens).toBe(opens + 1)
+  })
+
+  test('after Hide the pane stays closed through the next turn; /tracker opens it and ends the hide', async ($, on) => {
+    const { w, clock } = world(on)
+    await $.session.start(START)
+    await clock.settle()
+    const ui = await $.ui.mount({ plugin: 'workflow-watch', surface: 'vscode', component: 'Pane', requestId: 'workflow-watch', props: { title: 'Tracker', isFocused: false, bodyColumns: 60, placement: 'dock', scroll: { offset: 0, bodyRows: 40 }, view: {} } })
+    await ui.press({ key: 'hide' })
+    await clock.settle()
+    expect(w.closes).toBe(1)
+    const opens = w.opens
+    w.text = NEXT_TURN
+    await clock.advance(2000)
+    await clock.advance(2000)
+    expect(w.opens).toBe(opens)
+    expect((await $.command.run({ command: 'tracker' })).text).toContain('next please')
+    expect(w.opens).toBe(opens + 1)
+    await ui.unmount()
+  })
+
+  test('with auto-open off nothing opens the pane but /tracker', { options: { autoOpen: false } }, async ($, on) => {
+    const { w, clock } = world(on)
+    await $.session.start(START)
+    await clock.settle()
+    expect(w.opens).toBe(0)
+    w.text = NEXT_TURN
+    await clock.advance(2000)
+    expect(w.opens).toBe(0)
+    expect((await $.command.run({ command: 'tracker' })).text).toContain('next please')
+    expect(w.opens).toBe(1)
   })
 
   test('the saved theme and fold come back in a new session, and a press saves the new value', async ($, on) => {

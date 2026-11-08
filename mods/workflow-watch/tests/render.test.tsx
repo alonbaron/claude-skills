@@ -124,6 +124,32 @@ describe('render', () => {
     await ui.unmount()
   })
 
+  for (const [autoOpen, label, flipped] of [
+    [true, 'Auto-open: on', false],
+    [false, 'Auto-open: off', true],
+  ] as const) {
+    test(`the Auto-open button reads "${label}" and flips the setting through /config`, { options: { autoOpen } }, async ($, on) => {
+      mock.clock(on)
+      on('state.get', { plugin: 'workflow-watch', key: 'watch' }, () => ({ value: { value: WATCH, version: 1 } }))
+      const sets: Array<[string, unknown]> = []
+      on('config.set', (_$: any, e: any) => {
+        sets.push([e.key, e.value])
+        return { value: e.value }
+      })
+      const ui = await $.ui.mount({
+        plugin: 'workflow-watch',
+        surface: 'desktop',
+        component: 'Pane',
+        requestId: 'workflow-watch',
+        props: { title: 'Workflow', isFocused: false, bodyColumns: 60, placement: 'dock', ...SITE },
+      })
+      expect((await ui.find({ key: 'auto' }))?.props.label).toBe(label)
+      await ui.press({ key: 'auto' })
+      expect(sets).toEqual([['workflow-watch.autoOpen', flipped]])
+      await ui.unmount()
+    })
+  }
+
   test('a busy session draws every card, the live item first, with Minimize on offer', async ($, on) => {
     mock.clock(on)
     on('state.get', { plugin: 'workflow-watch', key: 'watch' }, () => ({ value: { value: { ...WATCH, isIdle: false }, version: 1 } }))
