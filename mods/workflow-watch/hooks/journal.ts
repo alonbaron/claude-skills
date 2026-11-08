@@ -1,6 +1,6 @@
 // Pure functions over a workflow run's files (journal.jsonl, agent-<id>.jsonl, agent-<id>.meta.json):
 // no `$`, so they test alone.
-import type { Stage, Watch } from '../types'
+import type { Stage, Usage, Watch } from '../types'
 
 export type Entry = {
   type: string
@@ -100,12 +100,31 @@ export type TranscriptFacts = {
   last: number | null
   handback?: string | null
   lastText?: string | null
+  inputTokens?: number
+  cacheReadTokens?: number
+  cacheWriteTokens?: number
+}
+
+type TokenSums = Pick<Stage, 'inputTokens' | 'cacheReadTokens' | 'cacheWriteTokens'>
+
+/** One response's input and cache tokens onto `target`, once per message id: a streamed response is snapshotted several times with the same figures. */
+function addInputs(target: TokenSums, usage: Rec, id: unknown, seen: Set<string>): void {
+  if (typeof usage.input_tokens !== 'number') return
+  if (typeof id === 'string') {
+    if (seen.has(id)) return
+    seen.add(id)
+  }
+  const num = (v: unknown): number => (typeof v === 'number' ? v : 0)
+  target.inputTokens = (target.inputTokens ?? 0) + usage.input_tokens
+  target.cacheReadTokens = (target.cacheReadTokens ?? 0) + num(usage.cache_read_input_tokens)
+  target.cacheWriteTokens = (target.cacheWriteTokens ?? 0) + num(usage.cache_creation_input_tokens)
 }
 
 /** Reads model, effort, output tokens, tool calls and the first and last timestamps off a transcript's lines (Claude Code or Antigravity). */
 export function readTranscript(text: string): TranscriptFacts {
   const facts: TranscriptFacts = { model: null, effort: null, outputTokens: 0, calls: 0, lastTool: null, first: null, last: null, handback: null, lastText: null }
   const seenMsgTokens = new Map<string, number>()
+  const seenMsgInputs = new Set<string>()
   for (const line of text.split('\n')) {
     if (!line) continue
     let e: Rec
@@ -157,6 +176,7 @@ export function readTranscript(text: string): TranscriptFacts {
           facts.outputTokens += usage.output_tokens
         }
       }
+      addInputs(facts, usage, msg.id, seenMsgInputs)
     }
     const content = msg.content
     if (!Array.isArray(content)) continue
@@ -281,6 +301,7 @@ export function parseSession(text: string, now: number): Stage[] {
   const pendingCommits = new Map<string, { cmd: string; phase: string; alias: string | null; model: string | null; effort: string | null; at: number }>()
   const seenCommits = new Set<string>()
   const seenMsgTokens = new Map<string, number>()
+  const seenMsgInputs = new Set<string>()
   let turnCount = 0
   let currentTurn: Stage | null = null
   let currentPhase = 'Session'
@@ -677,6 +698,7 @@ export function parseSession(text: string, now: number): Stage[] {
           currentTurn.outputTokens += usage.output_tokens
         }
       }
+      addInputs(currentTurn, usage, msg.id, seenMsgInputs)
       if (msg.stop_reason === 'end_turn') {
         currentTurn.endedAt = t
         currentTurn.isSettled = true
@@ -952,16 +974,94 @@ export function stageResult(s: Stage): string {
   return s.endedAt === null ? 'no result yet' : (s.summary ?? '')
 }
 
+/** `842`, `4.2k`, `320k`, `1.0M`: a token count at the precision its size deserves. */
+export function fmtTokens(n: number): string {
+  return n < 1000 ? `${n}` : n < 1e6 ? `${(n / 1e3).toFixed(n < 10e3 ? 1 : 0)}k` : `${(n / 1e6).toFixed(1)}M`
+}
+
+/** All input tokens a stage's responses were answered over (uncached, cache read and cache written), or null when none was recorded. */
+const inputTotal = (s: TokenSums): number | null => (s.inputTokens === undefined ? null : s.inputTokens + (s.cacheReadTokens ?? 0) + (s.cacheWriteTokens ?? 0))
+
+/** `42k in`, `91% cached`: the input figures as parts, none when the stage recorded no input figure. */
+function inputParts(s: TokenSums): string[] {
+  const inp = inputTotal(s)
+  if (inp === null) return []
+  return [`${fmtTokens(inp)} in`, ...(inp > 0 ? [`${Math.round((100 * (s.cacheReadTokens ?? 0)) / inp)}% cached`] : [])]
+}
+
 /**
  * The details as one compact line, the element tables having no fold:
- * `Ran for 0:46 · 5 tools · 0.8k tokens`, or `Running for 0:12 · 3 calls · Bash npm test`.
+ * `Ran for 0:46 · 5 tools · 0.8k out · 42k in · 91% cached`, or `Running for 0:12 · 3 calls · Bash npm test`.
  */
 export function stageDetail(s: Stage, now: number): string {
   const isLive = s.endedAt === null
   const time = elapsed((isLive ? now : (s.endedAt as number)) - s.startedAt)
   if (isLive) return `Running for ${time} · ${many(s.calls, 'call', 'calls')} · ${s.lastTool ?? 'starting…'}`
-  return `Ran for ${time} · ${many(s.calls, 'tool', 'tools')} · ${(s.outputTokens / 1000).toFixed(1)}k tokens`
+  return [`Ran for ${time}`, many(s.calls, 'tool', 'tools'), `${(s.outputTokens / 1000).toFixed(1)}k out`, ...inputParts(s)].join(' · ')
 }
+
+export type UsageMeter = { label: string; percent: number | null; pace: number | null; text: string }
+/** The usage card's rows: one meter per figure the engine reports (context, 5h, 7d) and one line of session figures. */
+export type UsageView = { meters: UsageMeter[]; figures: string; ctx: number | null }
+
+const WINDOW_MS: Record<string, number> = { five_hour: 5 * 3600e3, seven_day: 7 * 86400e3 }
+const LIMIT_LABEL: Record<string, string> = { five_hour: '5h', seven_day: '7d' }
+
+/** `2h 13m`, `5d 3h`, `45m`: how long until a moment, floored to the minute. */
+export function countdown(ms: number): string {
+  const m = Math.max(0, Math.floor(ms / 60e3))
+  const h = Math.floor(m / 60)
+  const d = Math.floor(h / 24)
+  return d >= 1 ? `${d}d ${h % 24}h` : h >= 1 ? `${h}h ${m % 60}m` : `${m}m`
+}
+
+/** The share of a rate-limit window already elapsed, 0 to 100: what an even burn would have used by now. Null without a reset time. */
+export function paceTarget(resetsAt: string | undefined, windowMs: number | undefined, now: number): number | null {
+  const reset = resetsAt ? Date.parse(resetsAt) : NaN
+  if (!windowMs || !Number.isFinite(reset)) return null
+  return Math.round(Math.min(100, Math.max(0, 100 * (1 - (reset - now) / windowMs))))
+}
+
+/**
+ * What the usage card shows. A figure the engine has not reported reads `unknown` or is left out, never 0.
+ * The cache line counts down `cacheTtlMs` from the last finished item while nothing runs.
+ */
+export function usageView(u: Usage | null, stages: Stage[], now: number, cacheTtlMs: number): UsageView {
+  const ctx = u?.context.percent ?? null
+  const ctxText = ctx === null ? 'unknown' : `${ctx}%${u?.context.tokens !== undefined ? ` · ${fmtTokens(u.context.tokens)} of ${fmtTokens(u.context.window)}` : ''}`
+  const meters: UsageMeter[] = [{ label: 'ctx', percent: ctx, pace: null, text: ctxText }]
+  const limits = (u?.rateLimits ?? []).filter(r => r.kind in LIMIT_LABEL)
+  if (limits.length === 0) meters.push({ label: 'limits', percent: null, pace: null, text: 'unknown' })
+  for (const r of limits) {
+    const pace = paceTarget(r.resetsAt, WINDOW_MS[r.kind], now)
+    const reset = r.resetsAt ? Date.parse(r.resetsAt) : NaN
+    const parts = [`${r.percentUsed}%`]
+    if (pace !== null) {
+      const delta = Math.round(r.percentUsed - pace)
+      parts.push(`pace ${pace}% (${delta >= 0 ? '+' : ''}${delta})`)
+    }
+    if (Number.isFinite(reset)) parts.push(`resets in ${countdown(reset - now)}`)
+    meters.push({ label: LIMIT_LABEL[r.kind] ?? r.kind, percent: r.percentUsed, pace, text: parts.join(' · ') })
+  }
+  const figures: string[] = []
+  if (u?.cost) figures.push(`$${u.cost.usd.toFixed(2)}`)
+  figures.push(`${fmtTokens(stages.reduce((n, s) => n + s.outputTokens, 0))} out`)
+  const known = stages.filter(s => s.inputTokens !== undefined)
+  if (known.length) {
+    const sum = (k: keyof TokenSums): number => known.reduce((n, s) => n + (s[k] ?? 0), 0)
+    figures.push(...inputParts({ inputTokens: sum('inputTokens'), cacheReadTokens: sum('cacheReadTokens'), cacheWriteTokens: sum('cacheWriteTokens') }))
+  }
+  const lastEnd = stages.reduce((m, s) => Math.max(m, s.endedAt ?? 0), 0)
+  if (stages.some(s => s.endedAt === null)) figures.push('cache warm')
+  else if (lastEnd > 0) {
+    const left = lastEnd + cacheTtlMs - now
+    figures.push(left > 0 ? `cache ${countdown(left)} left` : 'cache expired')
+  }
+  return { meters, figures: figures.join(' · '), ctx }
+}
+
+/** The usage card as lines of text: `ctx 32% · 320k of 1.0M`, `5h 18% · pace 23% (-5) · resets in 2h 13m`, then the figures. */
+export const usageText = (v: UsageView): string[] => [...v.meters.map(m => `${m.label} ${m.text}`), v.figures]
 
 /** One stage as a block: the head line, then its result and its details indented under it. */
 export function stageLines(s: Stage, now: number): string[] {
@@ -969,8 +1069,8 @@ export function stageLines(s: Stage, now: number): string[] {
 }
 
 /** The whole picture as plain text: what the command prints, the same blocks the pane draws, oldest first as a log reads. */
-export function report(w: Watch): string {
-  const lines = [`${w.run}: ${tally(w)}`]
+export function report(w: Watch, usage: string[] = []): string {
+  const lines = [`${w.run}: ${tally(w)}`, ...usage.map(l => `    ${l}`)]
   for (const g of phaseRuns(w.stages)) {
     lines.push(`── ${phaseTitle(g)}`)
     for (const s of g.stages) lines.push(...stageLines(s, w.now))

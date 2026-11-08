@@ -1,5 +1,6 @@
 import type { Stage, StageKind, Theme, Watch } from '../types'
-import { elapsed, phaseTitle, stageDetail, stageResult, state, tally, timelineBar, tone, who } from './journal'
+import { elapsed, phaseTitle, stageDetail, stageResult, state, tally, timelineBar, tone, usageText, who } from './journal'
+import type { UsageView } from './journal'
 
 /** Card markup for the graphical surfaces (desktop, vscode, mobile): rounded cards, round kind avatars, pill badges. */
 export type Card = { source: string; alt: string; width: number; height: number }
@@ -53,13 +54,41 @@ export function headerCard(w: Watch, tokens: number, theme: Theme): Card {
   return { source: svg(h, body, theme), alt: `${w.run}: ${tally(w)} · ${toks}`, width: W, height: h }
 }
 
+/**
+ * The usage card: one meter row per figure (context fill, the 5h and 7d windows) with a pace tick where the
+ * even-burn target sits, then the session's figures on one line. A row the engine has not reported draws no bar.
+ */
+export function usageCard(v: UsageView, theme: Theme): Card {
+  const rowH = 26
+  const top = 18
+  const h = top + v.meters.length * rowH + 30
+  const barX = 52
+  const barW = 110
+  const rows = v.meters
+    .map((m, i) => {
+      const y = top + i * rowH
+      const bar =
+        m.percent === null
+          ? ''
+          : `<rect class="track" x="${barX}" y="${y + 3}" width="${barW}" height="12" rx="6"/>` +
+            `<rect class="${m.percent >= 85 ? 'tx-error' : m.percent >= 60 ? 'tx-warning' : 'tx-success'}" x="${barX}" y="${y + 3}" width="${Math.max(0, Math.min(barW, (barW * m.percent) / 100))}" height="12" rx="6" opacity="0.7"/>` +
+            (m.pace === null ? '' : `<rect class="t" x="${barX + (barW * m.pace) / 100 - 1}" y="${y}" width="2" height="18" rx="1"/>`)
+      return `<text class="m" x="18" y="${y + 13}" font-size="12" font-weight="700">${esc(m.label)}</text>${bar}<text class="t" x="${barX + barW + 12}" y="${y + 13}" font-size="12">${esc(fit(m.text, W - barX - barW - 30, 12))}</text>`
+    })
+    .join('')
+  const fy = top + v.meters.length * rowH + 14
+  const body = `${frame(h)}${rows}<text class="m" x="18" y="${fy}" font-size="12">${esc(fit(v.figures, W - 36, 12))}</text>`
+  return { source: svg(h, body, theme), alt: usageText(v).join(' | '), width: W, height: h }
+}
+
 /** The minimized pane: the run's name and counts, then the live item (or the last one) on one row with its state pill. */
-export function compactCard(w: Watch, latest: Stage, now: number, theme: Theme): Card {
+export function compactCard(w: Watch, latest: Stage, now: number, theme: Theme, ctx: number | null = null): Card {
   const h = 96
-  const counts = tally(w)
-    .split(' · ')
-    .filter(part => !/^0 /.test(part) || part.endsWith('running'))
-    .join(' · ')
+  const counts =
+    tally(w)
+      .split(' · ')
+      .filter(part => !/^0 /.test(part) || part.endsWith('running'))
+      .join(' · ') + (ctx === null ? '' : ` · ctx ${ctx}%`)
   const t = tone(latest)
   const st = state(latest)
   const pw = textW(st, 12) + 22

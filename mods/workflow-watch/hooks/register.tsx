@@ -1,9 +1,9 @@
 import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 
-import type { PaneView, Stage, Theme, Watch } from '../types'
-import { KIND_FILL, PANE_BG, compactCard, headerCard, phaseChip, stageCard, timelineCard } from './cards'
-import { EMPTY, READ_LIMIT, SLIM_CUT, SLIM_TIMEOUT_MS, applyEntries, elapsed, mergeStages, parseLines, parseSession, phaseRuns, phaseTitle, readMeta, readMetaInfo, readTranscript, report, slimCommand, stageDetail, stageResult, state, tally, timelineBar, tone, who, withFacts } from './journal'
+import type { PaneView, Stage, Theme, Usage, Watch } from '../types'
+import { KIND_FILL, PANE_BG, compactCard, headerCard, phaseChip, stageCard, timelineCard, usageCard } from './cards'
+import { EMPTY, READ_LIMIT, SLIM_CUT, SLIM_TIMEOUT_MS, applyEntries, elapsed, mergeStages, parseLines, parseSession, phaseRuns, phaseTitle, readMeta, readMetaInfo, readTranscript, report, slimCommand, stageDetail, stageResult, state, tally, timelineBar, tone, usageText, usageView, who, withFacts } from './journal'
 
 const PANE = 'workflow-watch'
 const TITLE = 'Tracker'
@@ -12,9 +12,11 @@ const theme = atom({ plugin: 'workflow-watch', key: 'theme' } as const, 'dark' a
 const isTimelineOpen = atom({ plugin: 'workflow-watch', key: 'isTimelineOpen' } as const, true)
 const pinnedView = atom({ plugin: 'workflow-watch', key: 'pinnedView' } as const, null as PaneView | null)
 const isHidden = atom({ plugin: 'workflow-watch', key: 'isHidden' } as const, false)
+const usage = atom({ plugin: 'workflow-watch', key: 'usage' } as const, null as Usage | null)
 
-/** The `autoOpen` setting (plugin.json userConfig, a /config row); a change there reloads the module with the new value. */
+/** The settings (plugin.json userConfig, rows under /config); a change there reloads the module with the new values. */
 let autoOpen = true
+let cacheTtlMs = 5 * 60e3
 
 /** How long nothing has to run before the pane folds to its compact strip. */
 export const IDLE_MS = 20000
@@ -269,6 +271,13 @@ async function tick($: Engine): Promise<void> {
 
   const changed = !sameRun || prev.notice !== notice || Boolean(prev.isIdle) !== isIdle || JSON.stringify(prev.stages) !== JSON.stringify(stages) || isBusy
   if (changed) await update($, watch, () => next)
+
+  // The engine's own figures (context fill, rate limits, cost), a free call; kept to the fields drawn, written only when they move.
+  const u = await $.session.usage().catch(() => null)
+  const fresh: Usage | null = u
+    ? { context: { tokens: u.context.tokens, window: u.context.window, percent: u.context.percent }, rateLimits: u.rateLimits.map(r => ({ kind: r.kind, percentUsed: r.percentUsed, resetsAt: r.resetsAt })), cost: u.cost }
+    : null
+  if (JSON.stringify(fresh) !== JSON.stringify(await read($, usage))) await update($, usage, () => fresh)
 }
 
 /** One tick at a time: a slow read (a slimmed log, many transcripts) skips the ticks that come due meanwhile. */
@@ -295,11 +304,13 @@ async function runCommand($: Engine): Promise<{ text: string }> {
   await update($, pinnedView, () => 'full')
   if (!w.run || w.stages.length === 0) return { text: 'No session or workflow activity recorded yet; send a prompt or start a Workflow, then type /tracker again.' }
   const where = opened.isPlaced ? 'pane open' : 'no pane on this surface; this text is the view, type /tracker again for a fresh one'
-  return { text: `${report(w)}\n(${where})` }
+  const view = usageView(await read($, usage), w.stages, w.now, cacheTtlMs)
+  return { text: `${report(w, usageText(view))}\n(${where})` }
 }
 
 export const register: Register = (on, options) => {
   autoOpen = options.autoOpen !== false
+  if (typeof options.cacheTtlMinutes === 'number' && options.cacheTtlMinutes > 0) cacheTtlMs = options.cacheTtlMinutes * 60e3
   on('session.start', async ($, e, next) => {
     const description = 'Live session & workflow tracker: turns, skills, subagents, commits and stages with models, effort, tokens and timeline'
     await $.command.register({ name: 'workflow-watch', description })
@@ -357,12 +368,14 @@ export const register: Register = (on, options) => {
     const pinned = await read($, pinnedView)
     const isCompact = pinned ? pinned === 'compact' : Boolean(w.isIdle)
     const latest = latestOf(w.stages) as Stage
-    // A header card, a timeline card (when 2+ items exist), then one card per stage, newest first, under a colored phase chip.
+    const view = usageView(await read($, usage), w.stages, w.now, cacheTtlMs)
+    // A header card, the usage card, a timeline card (when 2+ items exist), then one card per stage, newest first, under a colored phase chip.
     // A surface with Svg (desktop, vscode, mobile) draws each card as a rounded vector card; the terminal draws them in box glyphs.
     if (Svg) {
       const mode = await read($, theme)
       const isOpen = await read($, isTimelineOpen)
       const head = headerCard(w, tokens, mode)
+      const use = usageCard(view, mode)
       const tl = timelineCard(w.stages, t0, total, w.now, mode)
       const bar = (
         <Box justifyContent="flex-end" gap={1} marginBottom={1}>
@@ -393,7 +406,7 @@ export const register: Register = (on, options) => {
         </Box>
       )
       if (isCompact) {
-        const c = compactCard(w, latest, w.now, mode)
+        const c = compactCard(w, latest, w.now, mode, view.ctx)
         return (
           <Box flexDirection="column" paddingX={1} paddingY={1} backgroundColor={PANE_BG[mode]}>
             {bar}
@@ -407,6 +420,9 @@ export const register: Register = (on, options) => {
           {bar}
           {notice}
           <Svg source={head.source} alt={head.alt} width={head.width} height={head.height} />
+          <Box marginTop={1}>
+            <Svg source={use.source} alt={use.alt} width={use.width} height={use.height} />
+          </Box>
           {w.stages.length > 1 && (
             <Box flexDirection="column" marginTop={1}>
               <Box>
@@ -468,6 +484,12 @@ export const register: Register = (on, options) => {
               ))}
             <Text color="subtle">{`  ${(tokens / 1000).toFixed(1)}k output tokens`}</Text>
           </Text>
+          {!isCompact &&
+            usageText(view).map((l, i) => (
+              <Text key={`usage-${i}`} color="subtle" wrap="truncate-end">
+                {l}
+              </Text>
+            ))}
           {isCompact && (
             <Text wrap="truncate-end">
               <Text bold backgroundColor={tone(latest)} color="inverseText">{` ${state(latest)} `}</Text>
