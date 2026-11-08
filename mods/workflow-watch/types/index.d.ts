@@ -21,8 +21,16 @@ export type Stage = {
   endedAt: number | null
   /** One line about the result, or null while running. */
   summary: string | null
-  /** For a turn: the person's words that opened it, or the latest typed while it ran. */
+  /** For a turn: the person's words that opened it, or the latest typed while it ran; up to 600 characters, clipped where drawn. */
   prompt?: string | null
+  /** For a turn: Claude's closing text, one line of up to 600 characters; `summary` is its first sentence. */
+  answer?: string | null
+  /** For a turn: the files its Edit, Write and NotebookEdit calls touched, each once, at most 12. */
+  files?: string[]
+  /** For a turn: how many Bash and PowerShell calls it made. */
+  commands?: number
+  /** For a turn: its last eight tool calls, oldest first, each as `lastTool` showed it. */
+  tools?: string[]
   /** True when the journal recorded a null result, or a `failed` entry (the stage died before it returned). */
   isEmpty: boolean
   /** True when the result reports a failure: a failing verdict or `ok: false`. */
@@ -85,6 +93,8 @@ declare module 'claude-code' {
       /** True once the person hid the pane this session: no automatic open until /tracker or a new session. */
       isHidden: boolean
       usage: Usage | null
+      /** The keys of the turn cards the person unfolded this session. */
+      openKeys: string[]
     }
   }
 }

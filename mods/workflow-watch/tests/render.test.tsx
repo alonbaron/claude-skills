@@ -138,6 +138,28 @@ describe('render', () => {
     await ui.unmount()
   })
 
+  test('a turn card with more to show unfolds to its full prompt, answer and tool trail, and folds back', async ($, on) => {
+    mock.clock(on)
+    const prompt = `${'Please look at the tracker pane and tell me why it keeps opening every time I send a message. '.repeat(2)}Then plan.`
+    const turn = { ...stages[0]!, kind: 'turn' as const, key: 'turn:1', label: 'turn:1', phase: 'Turn 1', endedAt: 9000, prompt, answer: 'Done: it opens only when you say so. Two tests cover it.', summary: 'Done: it opens only when you say so.', tools: ['Edit src/a.ts', 'Bash npm test'], files: ['src/a.ts'], commands: 1 }
+    on('state.get', { plugin: 'workflow-watch', key: 'watch' }, () => ({ value: { value: { ...WATCH, stages: [turn], isIdle: false }, version: 1 } }))
+    const ui = await $.ui.mount({ plugin: 'workflow-watch', surface: 'desktop', component: 'Pane', requestId: 'workflow-watch', props: { title: 'Workflow', isFocused: false, bodyColumns: 60, placement: 'dock', ...SITE } })
+    const card = async () => String((await ui.findAll({ type: 'Svg' })).find(n => String(n.props.alt).startsWith('✓ done turn:1'))?.props.alt)
+    expect(await card()).toContain('turn:1 · Please look at the tracker pane and tell me why it keeps…')
+    expect(await card()).toContain(`› ${prompt.slice(0, 99)}…`)
+    expect(await card()).toContain('| edited 1 file · 1 command')
+    expect(await card()).not.toContain('Bash npm test')
+    expect((await ui.find({ key: 'fold:turn:1' }))?.props.label).toBe('+ more')
+    await ui.press({ key: 'fold:turn:1' })
+    expect((await ui.find({ key: 'fold:turn:1' }))?.props.label).toBe('− less')
+    expect((await card()).replace(/ \| /g, ' ')).toContain(prompt)
+    expect((await card()).replace(/ \| /g, ' ')).toContain('Done: it opens only when you say so. Two tests cover it.')
+    expect(await card()).toContain('| · Bash npm test')
+    await ui.press({ key: 'fold:turn:1' })
+    expect(await card()).not.toContain('Bash npm test')
+    await ui.unmount()
+  })
+
   for (const [autoOpen, label, flipped] of [
     [true, 'Auto-open: on', false],
     [false, 'Auto-open: off', true],
