@@ -191,6 +191,21 @@ describe('tick', () => {
     expect(w.opens).toBe(1)
   })
 
+  test('the saved folds come back in a new session, and a press saves the new set', async ($, on) => {
+    const { w, clock } = world(on)
+    w.saved.set('folded', ['USAGE'])
+    await $.session.start(START)
+    await clock.settle()
+    const ui = await $.ui.mount({ plugin: 'workflow-watch', surface: 'vscode', component: 'Pane', requestId: 'workflow-watch', props: { title: 'Tracker', isFocused: false, bodyColumns: 60, placement: 'dock', scroll: { offset: 0, bodyRows: 40 }, view: {} } })
+    expect((await ui.find({ key: 'panel:USAGE' }))?.props.label).toBe('+ Usage · 2')
+    expect((await ui.findAll({ type: 'Svg' })).some(n => String(n.props.alt).startsWith('USAGE'))).toBe(false)
+    await ui.press({ key: 'panel:USAGE' })
+    await clock.settle()
+    expect(w.sets).toContainEqual(['folded', []])
+    expect((await ui.find({ key: 'panel:USAGE' }))?.props.label).toBe('− Usage')
+    await ui.unmount()
+  })
+
   test('the saved theme comes back in a new session, and a press saves the new value', async ($, on) => {
     const { w, clock } = world(on)
     w.saved.set('theme', 'light')
