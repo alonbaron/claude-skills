@@ -2,7 +2,7 @@ import type { Signals, Stage, StageKind, Theme, Watch } from '../types'
 import { changeLines, clip, decisionLines, elapsed, fmtTokens, planLines, qualityLines, stageResult, state, tally, turnTitle } from './journal'
 import type { UsageView } from './journal'
 
-/** One panel of the console as SVG markup for the graphical surfaces (desktop, vscode, mobile); `alt` is its text, line by line. */
+/** One panel of the console as SVG markup for the graphical surfaces (desktop, vscode, mobile); `alt` is its text, line by line; `width` and `height` are its grid size, the drawing scaling to the pane. */
 export type Card = { source: string; alt: string; width: number; height: number }
 
 export const W = 440
@@ -43,8 +43,10 @@ const wrap = (v: string, px: number, size: number): string[] => {
   if (line) lines.push(line)
   return lines
 }
+// Laid out on a 440-unit grid and drawn at the pane's full width (width="100%", the height following the viewBox), so the
+// panels and the button row above them span the same width whatever size or side the pane has, minimized or not.
 const svg = (h: number, body: string, theme: Theme): string =>
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${h}" width="${W}" height="${h}" ${FONT} font-size="12">${STYLE[theme]}<rect class="bg" width="${W}" height="${h}"/>${body}</svg>`
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${h}" width="100%" ${FONT} font-size="12">${STYLE[theme]}<rect class="bg" width="${W}" height="${h}"/>${body}</svg>`
 const text = (x: number, y: number, v: string, cls = 'ink', extra = ''): string => `<text class="${cls}" x="${x}" y="${y}"${extra}>${esc(v)}</text>`
 const END = ' text-anchor="end"'
 
