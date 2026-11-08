@@ -4,7 +4,7 @@ import type { Register } from 'claude-code'
 import type { PaneView, Stage, Theme, Usage, Watch } from '../types'
 // The host draws the Buttons in its own theme colors, so the pane paints no background of its own under them: the cards carry their theme.
 import { KIND_FILL, compactCard, headerCard, phaseChip, stageCard, timelineCard, usageCard } from './cards'
-import { EMPTY, READ_LIMIT, SLIM_CUT, SLIM_TIMEOUT_MS, applyEntries, clip, digest, elapsed, labelWithTitle, mergeStages, parseLines, parseSession, phaseRuns, phaseTitle, readMeta, readMetaInfo, readTranscript, report, slimCommand, stageDetail, stageResult, state, tally, timelineBar, tone, usageText, usageView, who, withFacts } from './journal'
+import { EMPTY, READ_LIMIT, SLIM_CUT, SLIM_TIMEOUT_MS, applyEntries, clip, digest, elapsed, emptySignals, labelWithTitle, mergeStages, parseLines, parseSession, phaseRuns, phaseTitle, readMeta, readMetaInfo, readTranscript, report, signalLines, slimCommand, stageDetail, stageResult, state, tally, timelineBar, tone, usageText, usageView, who, withFacts } from './journal'
 
 const PANE = 'workflow-watch'
 const TITLE = 'Tracker'
@@ -219,13 +219,16 @@ async function tick($: Engine): Promise<void> {
 
   // A log that cannot be read this tick keeps what the last read found, and the pane says so instead of blanking.
   let sessionStages: Stage[] = base.filter(s => s.kind && s.kind !== 'stage')
+  let signals = prev.signals
   let unread: string | null = null
   let isCut = false
   if (target.sessionPath) {
     try {
       const text = await readTranscriptText($, target.sessionPath)
       isCut = text.startsWith(SLIM_CUT)
-      const raw = parseSession(text, now)
+      const found = emptySignals()
+      const raw = parseSession(text, now, found)
+      signals = found
       for (const s of raw) if (s.kind === 'agent') s.agentId ??= prevByKey.get(s.key)?.agentId ?? null
       if (target.subagentsDir) await linkSessionAgents($, target.subagentsDir, raw)
       const fresh: Stage[] = []
@@ -272,7 +275,7 @@ async function tick($: Engine): Promise<void> {
   const isBusy = stages.some(s => s.endedAt === null)
   const lastEnd = stages.reduce((m, s) => Math.max(m, s.endedAt ?? 0), 0)
   const isIdle = stages.length > 0 && !isBusy && now - lastEnd >= IDLE_MS
-  const next: Watch = { journal: journalKey, run, stages, now, notice, isIdle }
+  const next: Watch = { journal: journalKey, run, stages, now, notice, isIdle, ...(signals ? { signals } : {}) }
   // The pane comes back when work starts again (a new run, or the first item running after a quiet spell), unless hidden or auto-open is off.
   const isWaking = isBusy && !prev.stages.some(s => s.endedAt === null)
   if (stages.length && (!sameRun || isWaking)) void openPaneAuto($)
@@ -281,7 +284,7 @@ async function tick($: Engine): Promise<void> {
   // A Compact press that was waiting for its second press is forgotten once work starts: the engine refuses to compact mid-turn anyway.
   if (isBusy && (await read($, armed))) await update($, armed, () => false)
 
-  const changed = !sameRun || prev.notice !== notice || Boolean(prev.isIdle) !== isIdle || JSON.stringify(prev.stages) !== JSON.stringify(stages) || isBusy
+  const changed = !sameRun || prev.notice !== notice || Boolean(prev.isIdle) !== isIdle || JSON.stringify(prev.stages) !== JSON.stringify(stages) || JSON.stringify(prev.signals) !== JSON.stringify(signals) || isBusy
   if (changed) await update($, watch, () => next)
 
   // The engine's own figures (context fill, rate limits, cost), a free call; kept to the fields drawn, written only when they move.
@@ -548,6 +551,12 @@ export const register: Register = (on, options) => {
           {!isCompact &&
             usageText(view).map((l, i) => (
               <Text key={`usage-${i}`} color="subtle" wrap="truncate-end">
+                {l}
+              </Text>
+            ))}
+          {!isCompact &&
+            signalLines(w.signals, w.stages).map((l, i) => (
+              <Text key={`signal-${i}`} color={/^[A-Z]+$/.test(l) ? 'claude' : 'text'} bold={/^[A-Z]+$/.test(l)} wrap="truncate-end">
                 {l}
               </Text>
             ))}
