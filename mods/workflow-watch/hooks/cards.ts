@@ -5,7 +5,14 @@ import type { UsageView } from './journal'
 /** One panel of the console as SVG markup for the graphical surfaces (desktop, vscode, mobile); `alt` is its text, line by line; `width` and `height` are its grid size, the drawing scaling to the pane. */
 export type Card = { source: string; alt: string; width: number; height: number }
 
-export const W = 440
+/** The grid's width in CSS pixels: the pane's own, set by setWidth before a render, 440 until the surface says. */
+export let W = 440
+/** About how wide the desktop draws one column of the pane. */
+const COLUMN_PX = 8
+/** Lays the grid out at the pane's width, from the columns the surface reports, so text keeps its size and lines are cut to fit instead of the whole card scaling. */
+export function setWidth(columns: number | undefined): void {
+  W = typeof columns === 'number' && columns > 0 ? Math.max(240, Math.round(columns * COLUMN_PX)) : 440
+}
 const FONT = `font-family="JetBrains Mono, Cascadia Mono, ui-monospace, Consolas, SF Mono, monospace"`
 
 /** One fill per kind of item, for the terminal's timeline bars. */
