@@ -71,29 +71,67 @@ const GLYPH: Record<string, string> = { '✓': 'acc', '●': 'acc', '○': 'fain
 const LABELS = new Set(['tests', 'files', 'commit', 'review', 'verdict', 'skills'])
 const LINE_H = 18
 
-/** One text line of a section, colored by what it starts with: a state glyph in its tone, a label word muted, the rest in ink. */
-function paintLine(y: number, raw: string): string {
+/** The most rows one line of text takes once wrapped; what is left after them ends in an ellipsis. */
+const MAX_ROWS = 4
+
+/** Wraps a line to the rows that fit `px` at `size`, at most `max` of them, the last cut when more remains; a blank line is one empty row. */
+const wrapTo = (v: string, px: number, size: number, max = MAX_ROWS): string[] => {
+  const rows = wrap(v, px, size)
+  if (rows.length === 0) return ['']
+  if (rows.length <= max) return rows
+  const kept = rows.slice(0, max)
+  kept[max - 1] = fit(`${kept[max - 1]}…`, px, size)
+  return kept
+}
+
+/** Rows of one text column from `y` down, one `text` per row. */
+const column = (x: number, y: number, rows: string[], cls: string, extra = ''): string => rows.map((r, i) => text(x, y + i * LINE_H, r, cls, extra)).join('')
+
+/**
+ * One line of a section as the rows it wraps to, colored by what it starts with: a state glyph in its tone, a label
+ * word muted, the rest in ink. A sentence wraps onto further rows instead of being cut at the card's edge.
+ */
+function paintLine(y: number, raw: string): { svg: string; rows: number } {
   const indent = raw.length - raw.trimStart().length
   const line = raw.trim()
-  if (!line) return ''
+  if (!line) return { svg: '', rows: 1 }
   const glyph = line[0] ?? ''
   const cls = GLYPH[glyph]
-  if (cls && line[1] === ' ') {
-    const rest = line.slice(2)
-    const band = glyph === '?' ? `<rect class="warnDim" x="12" y="${y - 13}" width="${W - 24}" height="${LINE_H}" rx="3"/>` : ''
-    return `${band}${text(18, y, glyph, cls)}${text(34, y, fit(rest, W - 34 - 16, 12), glyph === '○' ? 'mute' : 'ink')}`
+  const body = (x: number, v: string, textCls: string): { svg: string; rows: number } => {
+    const rows = wrapTo(v, W - x - 16, 12)
+    return { svg: column(x, y, rows, textCls), rows: rows.length }
   }
-  if (indent >= 6) return text(96, y, fit(line, W - 96 - 16, 12), 'faint')
+  if (cls && line[1] === ' ') {
+    const rest = body(34, line.slice(2), glyph === '○' ? 'mute' : 'ink')
+    const band = glyph === '?' ? `<rect class="warnDim" x="12" y="${y - 13}" width="${W - 24}" height="${rest.rows * LINE_H}" rx="3"/>` : ''
+    return { svg: `${band}${text(18, y, glyph, cls)}${rest.svg}`, rows: rest.rows }
+  }
+  if (indent >= 6) return body(96, line, 'faint')
   const word = line.split(/\s+/)[0] ?? ''
-  if (LABELS.has(word)) return `${text(18, y, word, 'mute')}${text(96, y, fit(line.slice(word.length).trim(), W - 96 - 16, 12))}`
-  return text(18, y, fit(line, W - 34, 12), 'mute')
+  if (LABELS.has(word)) {
+    const rest = body(96, line.slice(word.length).trim(), 'ink')
+    return { svg: `${text(18, y, word, 'mute')}${rest.svg}`, rows: rest.rows }
+  }
+  return body(18, line, 'mute')
+}
+
+/** Paints lines from `y` down, each taking the rows it wraps to; `end` is the y the next line would start at. */
+function paintLines(y: number, lines: string[]): { svg: string; end: number } {
+  let svg = ''
+  for (const l of lines) {
+    const p = paintLine(y, l)
+    svg += p.svg
+    y += p.rows * LINE_H
+  }
+  return { svg, end: y }
 }
 
 /** A section: its rule, then its text lines; null when it has no lines. */
 export function linesPanel(label: string, right: string, lines: string[], theme: Theme): Card | null {
   if (lines.length === 0) return null
-  const h = 30 + lines.length * LINE_H + 8
-  const body = rule(14, label, right) + lines.map((l, i) => paintLine(38 + i * LINE_H, l)).join('')
+  const painted = paintLines(38, lines)
+  const h = 30 + (painted.end - 38) + 8
+  const body = rule(14, label, right) + painted.svg
   return { source: svg(h, body, theme), alt: [label, ...lines.map(l => l.trim())].join(' | '), width: W, height: h }
 }
 
@@ -119,35 +157,51 @@ export function nowPanel(turn: Stage | undefined, signals: Signals | undefined, 
   const lines: string[] = []
   if (turn) lines.push(turnTitle(turn.prompt) ?? turn.label, liveLine(turn))
   else lines.push('waiting for the first turn')
-  const h = 30 + (lines.length + plan.length) * LINE_H + 10
   const right = turn ? `${elapsed((turn.endedAt ?? now) - turn.startedAt)} · ${figures(turn)}` : ''
   const isLive = turn?.endedAt === null
-  const body =
-    (isLive ? `<rect class="accDim" width="${W}" height="${h}" rx="4"/><rect class="acc" width="2" height="${h}"/>` : '') +
-    rule(14, 'NOW', right) +
-    (turn ? text(18, 40, fit(lines[0] ?? '', W - 34, 13), 'ink', ' font-size="13" font-weight="700"') + text(18, 58, fit(lines[1] ?? '', W - 34, 12), isLive ? 'mute' : 'ink') : text(18, 40, lines[0] ?? '', 'mute')) +
-    plan.map((l, i) => paintLine(38 + (lines.length + i) * LINE_H, l)).join('')
+  // The title and the live line wrap to two rows each; the plan's steps to as many as they need.
+  let y = 40
+  let main = ''
+  if (turn) {
+    const title = wrapTo(lines[0] ?? '', W - 34, 13, 2)
+    main += column(18, y, title, 'ink', ' font-size="13" font-weight="700"')
+    y += title.length * LINE_H
+    const live = wrapTo(lines[1] ?? '', W - 34, 12, 2)
+    main += column(18, y, live, isLive ? 'mute' : 'ink')
+    y += live.length * LINE_H
+  } else {
+    main += text(18, y, lines[0] ?? '', 'mute')
+    y += LINE_H
+  }
+  const steps = paintLines(y - 2, plan)
+  const h = 30 + (steps.end - 38) + 10
+  const body = (isLive ? `<rect class="accDim" width="${W}" height="${h}" rx="4"/><rect class="acc" width="2" height="${h}"/>` : '') + rule(14, 'NOW', right) + main + steps.svg
   return { source: svg(h, body, theme), alt: ['NOW', right, ...lines, ...plan.map(l => l.trim())].filter(Boolean).join(' | '), width: W, height: h }
 }
 
 /** USAGE: one row per meter as twenty cells with a notch where an even pace would sit, then the figures line. */
 export function usagePanel(v: UsageView, theme: Theme): Card {
   const rowH = 22
-  const h = 30 + v.meters.length * rowH + 28
-  const rows = v.meters
-    .map((m, i) => {
-      const y = 42 + i * rowH
-      let cells = ''
-      if (m.percent !== null) {
-        const on = Math.round((Math.max(0, Math.min(100, m.percent)) / 100) * 20)
-        const cls = m.percent >= 85 ? 'onb' : m.percent >= 60 ? 'onw' : 'on'
-        for (let c = 0; c < 20; c++) cells += `<rect class="${c < on ? cls : 'seg'}" x="${60 + c * 9}" y="${y - 9}" width="7" height="10"/>`
-        if (m.pace !== null) cells += `<line class="notch" x1="${60 + (m.pace / 100) * 178}" y1="${y - 12}" x2="${60 + (m.pace / 100) * 178}" y2="${y + 4}" stroke-width="1.5"/>`
-      }
-      return `${text(18, y, m.label, 'mute')}${cells}${text(m.percent === null ? 60 : 250, y, fit(m.text, m.percent === null ? W - 76 : W - 266, 12))}`
-    })
-    .join('')
-  const body = rule(14, 'USAGE') + rows + text(18, 42 + v.meters.length * rowH + 6, fit(v.figures, W - 34, 12), 'mute')
+  // A meter's reading and the figures line wrap to a second row when the pane is narrow, the card growing by it.
+  let y = 42
+  let rows = ''
+  for (const m of v.meters) {
+    let cells = ''
+    if (m.percent !== null) {
+      const on = Math.round((Math.max(0, Math.min(100, m.percent)) / 100) * 20)
+      const cls = m.percent >= 85 ? 'onb' : m.percent >= 60 ? 'onw' : 'on'
+      for (let c = 0; c < 20; c++) cells += `<rect class="${c < on ? cls : 'seg'}" x="${60 + c * 9}" y="${y - 9}" width="7" height="10"/>`
+      if (m.pace !== null) cells += `<line class="notch" x1="${60 + (m.pace / 100) * 178}" y1="${y - 12}" x2="${60 + (m.pace / 100) * 178}" y2="${y + 4}" stroke-width="1.5"/>`
+    }
+    const x = m.percent === null ? 60 : 250
+    const reading = wrapTo(m.text, W - x - 16, 12, 2)
+    rows += `${text(18, y, m.label, 'mute')}${cells}${column(x, y, reading, 'ink')}`
+    y += rowH + (reading.length - 1) * LINE_H
+  }
+  const figures = wrapTo(v.figures, W - 34, 12, 2)
+  const figY = y + 6
+  const h = figY + 10 + (figures.length - 1) * LINE_H
+  const body = rule(14, 'USAGE') + rows + column(18, figY, figures, 'mute')
   return { source: svg(h, body, theme), alt: ['USAGE', ...v.meters.map(m => `${m.label} ${m.text}`), v.figures].join(' | '), width: W, height: h }
 }
 
@@ -189,14 +243,18 @@ export function turnEntry(s: Stage, children: Stage[], now: number, theme: Theme
     const right = kind === 'agent' ? `${live ? '● ' : ''}${elapsed((c.endedAt ?? now) - c.startedAt)} · ${fmtTokens(c.outputTokens)} out` : ''
     return { word: KIND_WORD[kind], name, note: c.summary ?? '', right, live }
   })
-  const h = 30 + 20 + body.length * LINE_H + rows.length * LINE_H + 14
+  // The title wraps to two rows and each body line to the rows it needs, so a sentence is read whole rather than cut.
+  const titleRows = wrapTo(title, width, 13, 2)
+  const bodyRows = body.flatMap(([v, cls]) => wrapTo(v, width, 12).map((r): [string, string] => [r, cls]))
+  const h = 30 + 20 + (titleRows.length - 1) * LINE_H + bodyRows.length * LINE_H + rows.length * LINE_H + 14
   let y = 20
   let out = `${text(18, y, num, 'mute')}${text(42, y, glyph, GLYPH[glyph] ?? 'acc')}${text(58, y, word.toUpperCase(), 'mute')}${text(58 + word.length * 7.4 + 14, y, elapsed((s.endedAt ?? now) - s.startedAt), 'mute')}${text(W - 12, y, isLive ? `${s.calls} calls` : figures(s), 'mute', END)}`
   y += 21
-  out += text(42, y, fit(title, width, 13), 'ink', ' font-size="13" font-weight="700"')
-  for (const [v, cls] of body) {
+  out += column(42, y, titleRows, 'ink', ' font-size="13" font-weight="700"')
+  y += (titleRows.length - 1) * LINE_H
+  for (const [v, cls] of bodyRows) {
     y += LINE_H
-    out += text(42, y, fit(v, width, 12), cls)
+    out += text(42, y, v, cls)
   }
   if (rows.length) {
     const top = y + 6

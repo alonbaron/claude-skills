@@ -18,12 +18,12 @@ const SESSION = [
 const stage = (over: Partial<Stage>): Stage => ({ kind: 'commit', key: 'c', agentId: null, label: 'commit:abc', phase: 'Turn 1', startedAt: 0, endedAt: 1, summary: null, isEmpty: false, isFailed: false, isDisputed: false, alias: null, model: null, effort: null, outputTokens: 0, calls: 0, lastTool: null, isSettled: true, ...over })
 
 describe('turns', () => {
-  test('a title is the first sentence of the prompt, cut at a word to 60 characters', async () => {
+  test('a title is the first sentence of the prompt, cut at a word to 100 characters', async () => {
     expect(turnTitle('Fix the login bug.')).toBe('Fix the login bug.')
     expect(turnTitle('Fix the login bug. Then deploy.')).toBe('Fix the login bug.')
     expect(turnTitle('why does it fail? no idea')).toBe('why does it fail?')
-    expect(turnTitle(LONG)).toBe('Please look at the tracker pane and tell me why it keeps…')
-    expect(turnTitle('a'.repeat(80))).toBe(`${'a'.repeat(59)}…`)
+    expect(turnTitle(LONG)).toBe('Please look at the tracker pane and tell me why it keeps opening every time I send a message, then…')
+    expect(turnTitle('a'.repeat(120))).toBe(`${'a'.repeat(99)}…`)
     expect(turnTitle('')).toBe(null)
     expect(turnTitle(null)).toBe(null)
     expect(firstSentence('no punctuation at all', 100)).toBe('no punctuation at all')
@@ -40,9 +40,9 @@ describe('turns', () => {
     expect(t?.commands).toBe(2)
     expect(t?.tools).toEqual(['Edit src/a.ts', 'Edit src/a.ts', 'Write src/b.ts', 'Bash npm test', 'PowerShell dir'])
     const lines = stageLines(t as Stage, NOW, parseSession(SESSION, NOW))
-    expect(lines[1]).toBe(`    › ${LONG.slice(0, 99)}…`)
+    expect(lines[1]).toBe(`    › ${LONG.slice(0, 99).trimEnd()}…`)
     expect(lines.at(-1)).toBe('    edited 2 files · 2 commands')
-    expect(lines[0]).toContain('turn:1 · Please look at the tracker pane and tell me why it keeps…')
+    expect(lines[0]).toContain('turn:1 · Please look at the tracker pane and tell me why it keeps opening every time I send a message, then…')
   })
 
   test('the digest counts the items that started inside the turn, whatever phase a skill moved them to', async () => {

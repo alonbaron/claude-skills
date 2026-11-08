@@ -11,7 +11,7 @@ The pane also sizes itself. While anything runs it shows every section. After 20
 TURNS lists one entry per turn, newest first, so the latest work sits just under the rule and older work further down. The pane scrolls by itself in VS Code and ignores a plugin's request to scroll, so this order keeps the live work in view without following the end. An entry shows:
 
 - a head row: the turn number, its state as a glyph and a word (`✓ DONE`, `● LIVE`, `× FAILED`, `× NO RESULT`), how long it ran, and at the right its tool count and output tokens, with the cache share once it is done;
-- a title taken from your prompt (its first sentence, cut at a word to 60 characters) in bold;
+- a title taken from your prompt (its first sentence, cut at a word to 100 characters) in bold;
 - your prompt on a `›` line, cut to 100 characters. A message you send while Claude works shows there as `(mid-turn) …` and opens no new turn;
 - while the turn runs, the tool it is in (`▸ Bash npm test`); once it is done, the first sentence of Claude's closing text (`(interrupted)` in front when you stopped it);
 - for a turn that did something, a digest: `edited 3 files · 7 commands · 1 commit · 2 agents · 1 skill`, counting the items that started while the turn ran;

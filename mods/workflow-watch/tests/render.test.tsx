@@ -112,7 +112,7 @@ describe('render', () => {
     on('state.get', { plugin: 'workflow-watch', key: 'watch' }, () => ({ value: { value: { ...WATCH, stages: [turn], isIdle: false }, version: 1 } }))
     const ui = await $.ui.mount(PANE)
     const card = async () => String((await ui.findAll({ type: 'Svg' })).find(n => String(n.props.alt).startsWith('1 ✓ done'))?.props.alt)
-    expect(await card()).toContain('| Please look at the tracker pane and tell me why it keeps… | › ')
+    expect(await card()).toContain('| Please look at the tracker pane and tell me why it keeps opening every time I send a message. | › ')
     expect(await card()).toContain(`› ${prompt.slice(0, 99)}…`)
     expect(await card()).toContain('| edited 1 file · 1 command')
     expect(await card()).not.toContain('Bash npm test')
