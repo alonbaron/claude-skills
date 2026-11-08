@@ -14,6 +14,11 @@ const pinnedView = atom({ plugin: 'workflow-watch', key: 'pinnedView' } as const
 const isHidden = atom({ plugin: 'workflow-watch', key: 'isHidden' } as const, false)
 const usage = atom({ plugin: 'workflow-watch', key: 'usage' } as const, null as Usage | null)
 const openKeys = atom({ plugin: 'workflow-watch', key: 'openKeys' } as const, [] as string[])
+const copiedKey = atom({ plugin: 'workflow-watch', key: 'copiedKey' } as const, null as string | null)
+const armed = atom({ plugin: 'workflow-watch', key: 'armed' } as const, false)
+
+/** The context fill, in percent, from which the pane offers to compact. */
+const COMPACT_AT = 80
 
 /** Whether a turn card has more than its lines show: a prompt past the clip, an answer longer than its first sentence, or a tool trail. */
 const hasMore = (s: Stage): boolean => s.kind === 'turn' && ((s.prompt?.length ?? 0) > 100 || (Boolean(s.answer) && s.answer !== s.summary) || (s.tools?.length ?? 0) > 0)
@@ -272,6 +277,8 @@ async function tick($: Engine): Promise<void> {
   if (stages.length && (!sameRun || isWaking)) void openPaneAuto($)
   // A Minimize or Expand press holds until the session next turns busy or idle; then the pane sizes itself again.
   if (!sameRun || Boolean(prev.isIdle) !== isIdle) await update($, pinnedView, () => null)
+  // A Compact press that was waiting for its second press is forgotten once work starts: the engine refuses to compact mid-turn anyway.
+  if (isBusy && (await read($, armed))) await update($, armed, () => false)
 
   const changed = !sameRun || prev.notice !== notice || Boolean(prev.isIdle) !== isIdle || JSON.stringify(prev.stages) !== JSON.stringify(stages) || isBusy
   if (changed) await update($, watch, () => next)
@@ -379,6 +386,28 @@ export const register: Register = (on, options) => {
       const mode = await read($, theme)
       const isOpen = await read($, isTimelineOpen)
       const unfolded = await read($, openKeys)
+      const copied = await read($, copiedKey)
+      const isArmed = await read($, armed)
+      const isBusy = w.stages.some(s => s.endedAt === null)
+      // The offer to compact: its own row, so the bar's buttons keep their places; two presses; never while anything runs.
+      const compactRow =
+        view.ctx !== null && view.ctx >= COMPACT_AT && !isBusy ? (
+          <Box justifyContent="flex-end" marginBottom={1}>
+            <Button
+              key="compact"
+              label={isArmed ? 'Press again to compact' : `Compact now · ctx ${view.ctx}%`}
+              onPress={() => {
+                if (!isArmed) {
+                  void update($, armed, () => true).catch(() => undefined)
+                  return
+                }
+                void update($, armed, () => false)
+                  .then(() => $.session.compact())
+                  .catch(() => undefined)
+              }}
+            />
+          </Box>
+        ) : null
       const head = headerCard(w, tokens, mode)
       const use = usageCard(view, mode)
       const tl = timelineCard(w.stages, t0, total, w.now, mode)
@@ -414,6 +443,7 @@ export const register: Register = (on, options) => {
         const c = compactCard(w, latest, w.now, mode, view.ctx)
         return (
           <Box flexDirection="column" paddingX={1} paddingY={1} backgroundColor={PANE_BG[mode]}>
+            {compactRow}
             {bar}
             {notice}
             <Svg source={c.source} alt={c.alt} width={c.width} height={c.height} />
@@ -422,6 +452,7 @@ export const register: Register = (on, options) => {
       }
       return (
         <Box flexDirection="column" paddingX={1} paddingY={1} backgroundColor={PANE_BG[mode]}>
+          {compactRow}
           {bar}
           {notice}
           <Svg source={head.source} alt={head.alt} width={head.width} height={head.height} />
@@ -459,13 +490,27 @@ export const register: Register = (on, options) => {
                   return (
                     <Box key={s.key} flexDirection="column" marginTop={1}>
                       <Svg source={c.source} alt={c.alt} width={c.width} height={c.height} />
-                      {hasMore(s) && (
-                        <Box>
-                          <Button
-                            key={`fold:${s.key}`}
-                            label={isUnfolded ? '− less' : '+ more'}
-                            onPress={() => void update($, openKeys, keys => (isUnfolded ? keys.filter(k => k !== s.key) : [...keys, s.key])).catch(() => undefined)}
-                          />
+                      {(hasMore(s) || (s.kind === 'turn' && s.prompt)) && (
+                        <Box gap={1}>
+                          {hasMore(s) && (
+                            <Button
+                              key={`fold:${s.key}`}
+                              label={isUnfolded ? '− less' : '+ more'}
+                              onPress={() => void update($, openKeys, keys => (isUnfolded ? keys.filter(k => k !== s.key) : [...keys, s.key])).catch(() => undefined)}
+                            />
+                          )}
+                          {s.kind === 'turn' && s.prompt && (
+                            <Button
+                              key={`copy:${s.key}`}
+                              label={copied === s.key ? 'Copied' : 'Copy prompt'}
+                              onPress={press => {
+                                void $.ui
+                                  .copy({ text: s.prompt ?? '', surface: press.surface })
+                                  .then(r => (r.isCopied ? update($, copiedKey, () => s.key) : undefined))
+                                  .catch(() => undefined)
+                              }}
+                            />
+                          )}
                         </Box>
                       )}
                     </Box>

@@ -160,6 +160,45 @@ describe('render', () => {
     await ui.unmount()
   })
 
+  test('Copy prompt puts the turn prompt on the pressing surface and reads Copied; Compact needs two presses and only while idle', async ($, on) => {
+    mock.clock(on)
+    const turn = { ...stages[0]!, kind: 'turn' as const, key: 'turn:1', label: 'turn:1', phase: 'Turn 1', endedAt: 9000, prompt: 'ship it', summary: 'done' }
+    const full = { context: { tokens: 840_000, window: 1_000_000, percent: 84 }, rateLimits: [], cost: { usd: 1 } }
+    on('state.get', { plugin: 'workflow-watch', key: 'usage' }, () => ({ value: { value: full, version: 1 } }))
+    const copies: Array<[string, string]> = []
+    on('ui.copy', (_$: any, e: any) => {
+      copies.push([e.text, e.surface])
+      return { value: { isCopied: true } }
+    })
+    let compactions = 0
+    on('session.compact', () => {
+      compactions += 1
+      return { skip: 'test' }
+    })
+    // Busy first: a turn still running, no offer to compact. Then idle at 84%: the offer, armed by one press, carried out by the second.
+    let watchNow: typeof WATCH = { ...WATCH, stages: [{ ...turn, endedAt: null }], isIdle: false }
+    on('state.get', { plugin: 'workflow-watch', key: 'watch' }, () => ({ value: { value: watchNow, version: 1 } }))
+    const site = { plugin: 'workflow-watch', surface: 'desktop', component: 'Pane', requestId: 'workflow-watch', props: { title: 'Workflow', isFocused: false, bodyColumns: 60, placement: 'dock', ...SITE } } as const
+    let ui = await $.ui.mount(site)
+    expect(await ui.find({ key: 'compact' })).toBeUndefined()
+    await ui.unmount()
+    watchNow = { ...WATCH, stages: [turn], isIdle: true }
+    ui = await $.ui.mount(site)
+    expect((await ui.find({ key: 'compact' }))?.props.label).toBe('Compact now · ctx 84%')
+    await ui.press({ key: 'compact' })
+    expect(compactions).toBe(0)
+    expect((await ui.find({ key: 'compact' }))?.props.label).toBe('Press again to compact')
+    await ui.press({ key: 'compact' })
+    expect(compactions).toBe(1)
+    expect((await ui.find({ key: 'compact' }))?.props.label).toBe('Compact now · ctx 84%')
+    await ui.press({ key: 'size' })
+    expect((await ui.find({ key: 'copy:turn:1' }))?.props.label).toBe('Copy prompt')
+    await ui.press({ key: 'copy:turn:1' })
+    expect(copies).toEqual([['ship it', 'desktop']])
+    expect((await ui.find({ key: 'copy:turn:1' }))?.props.label).toBe('Copied')
+    await ui.unmount()
+  })
+
   for (const [autoOpen, label, flipped] of [
     [true, 'Auto-open: on', false],
     [false, 'Auto-open: off', true],

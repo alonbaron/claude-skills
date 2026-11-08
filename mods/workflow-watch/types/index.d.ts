@@ -95,6 +95,10 @@ declare module 'claude-code' {
       usage: Usage | null
       /** The keys of the turn cards the person unfolded this session. */
       openKeys: string[]
+      /** The turn card whose prompt was copied last, so its button reads `Copied`; null until one is. */
+      copiedKey: string | null
+      /** True between the first and the second press of the Compact button; dropped as soon as the session is busy. */
+      armed: boolean
     }
   }
 }
