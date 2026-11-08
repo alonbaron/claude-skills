@@ -10,7 +10,7 @@
   <img alt="Claude Code plugin marketplace" src="https://img.shields.io/badge/Claude_Code-2_plugins-125190?style=flat-square&labelColor=0E1024">&nbsp;
   <img alt="6 skills + 1 workflow" src="https://img.shields.io/badge/skills-6_+_1_workflow-4174A6?style=flat-square&labelColor=0E1024">&nbsp;
   <img alt="alon-skills v3.2.2" src="https://img.shields.io/badge/alon--skills-v3.2.2-125190?style=flat-square&labelColor=0E1024">&nbsp;
-  <img alt="workflow-watch 0.4.2" src="https://img.shields.io/badge/workflow--watch-0.4.2-4174A6?style=flat-square&labelColor=0E1024">&nbsp;
+  <img alt="workflow-watch 0.5.0" src="https://img.shields.io/badge/workflow--watch-0.5.0-4174A6?style=flat-square&labelColor=0E1024">&nbsp;
   <a href="#-evals"><img alt="evals: 19/19 passing" src="https://img.shields.io/badge/evals-19%2F19_passing-067647?style=flat-square&labelColor=0E1024"></a>&nbsp;
   <img alt="MIT license" src="https://img.shields.io/badge/license-MIT-067647?style=flat-square&labelColor=0E1024">&nbsp;
   <a href="https://github.com/alonbaron"><img alt="by alonbaron" src="https://img.shields.io/badge/by-alonbaron-125190?style=flat-square&labelColor=0E1024&logo=github&logoColor=white"></a>
@@ -148,13 +148,13 @@ The tracker follows any open session, not only Workflow runs, and shows everythi
 
 - **`scripts/tracker.mjs`**, from any shell: `node <plugin-root>/scripts/tracker.mjs [--session <id> | --run <dir|wf_id>] [--out tracker.html] [--png tracker.png] [--watch]`. With no flags it picks the newest Claude Code session (CLI or VS Code extension) under `~/.claude/projects/<project>/`. `--session <id>` (or an id prefix) renders that session's full activity feed: `<session>.jsonl`, `<session>/subagents/agent-*` and any `workflows/<run>/journal.jsonl`. `--run` renders a single workflow run, by directory or by its `wf_…` name. `--png` adds a screenshot via Playwright (`--playwright <path>` when not in default module resolution). `--watch` re-renders every five seconds, until the last stage ends for a workflow run, or until Ctrl+C for a session.
 - **In VS Code** (the Claude Code extension): run `node scripts/tracker.mjs --watch` in the integrated terminal and open `tracker.html` with **Simple Browser** or **Live Preview**. With `--watch` the page reloads itself every five seconds and keeps your scroll position and open folds.
-- **`mods/workflow-watch`** (0.4.2), inside Claude Code: a mod (a plugin of function hooks) that opens on `session.start` and follows the active session and its workflows live in the `Tracker` pane beside the chat. It draws nothing else, so the chat gets no band above the prompt, status line entry or toasts. In VS Code the pane is drawn as rounded cards, newest first, with a dark/light toggle and a timeline you can fold. `/plugin install workflow-watch@alonbaron`, or `claude --plugin-dir mods/workflow-watch` for one session; `/tracker` (or `/workflow-watch`) opens the pane and prints the report as text. On Windows it finds the home directory from `USERPROFILE` when `HOME` is unset, as in the VS Code extension host.
+- **`mods/workflow-watch`** (0.5.0), inside Claude Code: a mod (a plugin of function hooks) that opens on `session.start` (unless you turn auto-open off) and follows the active session and its workflows live in the `Tracker` pane beside the chat. It draws nothing else, so the chat gets no band above the prompt, status line entry or toasts. In VS Code the pane is drawn as rounded cards, newest first, with a dark/light toggle and a timeline you can fold. `/plugin install workflow-watch@alonbaron`, or `claude --plugin-dir mods/workflow-watch` for one session; `/tracker` (or `/workflow-watch`) opens the pane and prints the report as text. On Windows it finds the home directory from `USERPROFILE` when `HOME` is unset, as in the VS Code extension host.
 
 ### Minimize and hide
 
 <p align="center"><img alt="The pane minimized to one strip, twice: on the left in dark mode mid-run, showing the session name, 13 done and 4 running, and the running verifier with its time; on the right in light mode after the session went idle, showing 6 done and 0 running, and turn 2 as the last item done" src="assets/workflow-watch-minimized.png" width="880"></p>
 
-The pane sizes itself to what the session is doing. While anything runs you get every card. After 20 seconds with nothing running it folds down to one strip: the session name, its counts, and the item that finished last. **− Minimize** and **+ Expand** override that until the session next starts or stops working, and then the pane goes back to sizing itself. **✕ Hide** closes the pane. It opens again when the next turn starts, or when you type `/tracker`, which always opens it at full size. The terminal folds the same way, without the buttons.
+The pane sizes itself to what the session is doing. While anything runs you get every card. After 20 seconds with nothing running it folds down to one strip: the session name, its counts, and the item that finished last. **− Minimize** and **+ Expand** override that until the session next starts or stops working, and then the pane goes back to sizing itself. **✕ Hide** closes the pane for the rest of the session. Only `/tracker`, which always opens it at full size, or a new session brings it back. The **Auto-open** button beside it is the same setting as a row under `/config` and decides whether the pane opens by itself at all. It is on by default, so the pane opens when a session starts and when work resumes after a quiet spell. Turn it off and only `/tracker` opens the pane. The terminal folds the same way, without the buttons.
 
 ---
 
@@ -217,6 +217,10 @@ Not shipped here and not mine. Two third-party skills the hand-offs above are wr
 One catch worth knowing about humanizer: as of v2.9.1 the plugin puts `SKILL.md` at its root instead of `skills/humanizer/SKILL.md`. Claude Code installs it, reports it enabled, and never loads it. Copy `SKILL.md` out of `~/.claude/plugins/cache/humanizer/humanizer/<version>/` into `~/.claude/skills/humanizer/` and it works.
 
 ---
+
+## ◢ What's new in workflow-watch 0.5.0
+
+- **✕ Hide** now holds for the whole session. Your next message no longer brings the pane back. A new **Auto-open** setting, a button in the pane and a row under `/config`, turns the automatic open off altogether, so only `/tracker` opens the pane. See [Minimize and hide](#minimize-and-hide).
 
 ## ◢ What's new in workflow-watch 0.4.2
 

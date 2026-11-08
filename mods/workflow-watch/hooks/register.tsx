@@ -11,6 +11,10 @@ const watch = atom({ plugin: 'workflow-watch', key: 'watch' } as const, EMPTY)
 const theme = atom({ plugin: 'workflow-watch', key: 'theme' } as const, 'dark' as Theme)
 const isTimelineOpen = atom({ plugin: 'workflow-watch', key: 'isTimelineOpen' } as const, true)
 const pinnedView = atom({ plugin: 'workflow-watch', key: 'pinnedView' } as const, null as PaneView | null)
+const isHidden = atom({ plugin: 'workflow-watch', key: 'isHidden' } as const, false)
+
+/** The `autoOpen` setting (plugin.json userConfig, a /config row); a change there reloads the module with the new value. */
+let autoOpen = true
 
 /** How long nothing has to run before the pane folds to its compact strip. */
 export const IDLE_MS = 20000
@@ -186,6 +190,11 @@ async function openPane($: Engine): Promise<void> {
   if (!isUp) await $.ui.open({ id: PANE, title: TITLE })
 }
 
+/** An open the plugin makes on its own: only while auto-open is on and the person has not hidden the pane this session. */
+async function openPaneAuto($: Engine): Promise<void> {
+  if (autoOpen && !(await read($, isHidden))) await openPane($)
+}
+
 async function tick($: Engine): Promise<void> {
   const target = await findTarget($)
   if (!target) return
@@ -252,9 +261,9 @@ async function tick($: Engine): Promise<void> {
   const lastEnd = stages.reduce((m, s) => Math.max(m, s.endedAt ?? 0), 0)
   const isIdle = stages.length > 0 && !isBusy && now - lastEnd >= IDLE_MS
   const next: Watch = { journal: journalKey, run, stages, now, notice, isIdle }
-  // A pane the person hid comes back when work starts again: a new run, or the first item running after a quiet spell.
+  // The pane comes back when work starts again (a new run, or the first item running after a quiet spell), unless hidden or auto-open is off.
   const isWaking = isBusy && !prev.stages.some(s => s.endedAt === null)
-  if (stages.length && (!sameRun || isWaking)) void openPane($)
+  if (stages.length && (!sameRun || isWaking)) void openPaneAuto($)
   // A Minimize or Expand press holds until the session next turns busy or idle; then the pane sizes itself again.
   if (!sameRun || Boolean(prev.isIdle) !== isIdle) await update($, pinnedView, () => null)
 
@@ -280,6 +289,8 @@ async function runCommand($: Engine): Promise<{ text: string }> {
     await tickOnce($)
     w = await read($, watch)
   }
+  // The person asked: the pane opens whatever the setting, and a Hide from earlier in the session is over.
+  await update($, isHidden, () => false)
   const opened = await $.ui.open({ id: PANE, title: TITLE })
   await update($, pinnedView, () => 'full')
   if (!w.run || w.stages.length === 0) return { text: 'No session or workflow activity recorded yet; send a prompt or start a Workflow, then type /tracker again.' }
@@ -287,7 +298,8 @@ async function runCommand($: Engine): Promise<{ text: string }> {
   return { text: `${report(w)}\n(${where})` }
 }
 
-export const register: Register = on => {
+export const register: Register = (on, options) => {
+  autoOpen = options.autoOpen !== false
   on('session.start', async ($, e, next) => {
     const description = 'Live session & workflow tracker: turns, skills, subagents, commits and stages with models, effort, tokens and timeline'
     await $.command.register({ name: 'workflow-watch', description })
@@ -297,10 +309,16 @@ export const register: Register = on => {
     const savedOpen = await $.store.get('isTimelineOpen').catch(() => undefined)
     if (typeof savedOpen === 'boolean') await update($, isTimelineOpen, () => savedOpen)
     $.clock.every(2000, () => void tickOnce($))
-    void openPane($)
+    void openPaneAuto($)
     void tickOnce($)
     return next(e)
   })
+
+  // A close the person made (the close mark or key) holds for the session, as the Hide button does.
+  on('ui.close', { id: PANE }, async ($, e, next) => {
+    if (e.origin.kind === 'person') await update($, isHidden, () => true)
+    return next(e)
+  }).catch((_$, e, next) => next(e))
 
   // Not every surface seats the pane; the text report below is what every surface can show, so it carries the whole picture.
   on('command.run', { command: 'workflow-watch' }, async $ => runCommand($))
@@ -358,7 +376,20 @@ export const register: Register = on => {
                 .catch(() => undefined)
             }}
           />
-          <Button key="hide" label="✕ Hide" onPress={() => void $.ui.close({ id: PANE }).catch(() => undefined)} />
+          <Button
+            key="auto"
+            label={autoOpen ? 'Auto-open: on' : 'Auto-open: off'}
+            onPress={() => void $.config.set({ key: `${PANE}.autoOpen`, value: !autoOpen }).catch(() => undefined)}
+          />
+          <Button
+            key="hide"
+            label="✕ Hide"
+            onPress={() => {
+              void update($, isHidden, () => true)
+                .then(() => $.ui.close({ id: PANE }))
+                .catch(() => undefined)
+            }}
+          />
         </Box>
       )
       if (isCompact) {

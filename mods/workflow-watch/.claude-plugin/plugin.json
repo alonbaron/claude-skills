@@ -1,8 +1,16 @@
 {
   "name": "workflow-watch",
-  "version": "0.4.2",
+  "version": "0.5.0",
   "description": "Live session and Workflow tracker: main-thread turns, skills fired, spawned subagents, git commits and workflow stages with models, effort, tokens and timeline waterfall, drawn only in a side pane.",
   "types": "./types/index.d.ts",
+  "userConfig": {
+    "autoOpen": {
+      "type": "boolean",
+      "title": "Open the Tracker pane automatically",
+      "description": "On: the pane opens when a session starts and when work resumes after a quiet spell, unless you hid it this session. Off: only /tracker opens it.",
+      "default": true
+    }
+  },
   "author": {
     "name": "Alon Baron",
     "url": "https://github.com/alonbaron"
