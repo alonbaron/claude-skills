@@ -191,10 +191,9 @@ describe('tick', () => {
     expect(w.opens).toBe(1)
   })
 
-  test('the saved theme and fold come back in a new session, and a press saves the new value', async ($, on) => {
+  test('the saved theme comes back in a new session, and a press saves the new value', async ($, on) => {
     const { w, clock } = world(on)
     w.saved.set('theme', 'light')
-    w.saved.set('isTimelineOpen', false)
     await $.session.start(START)
     await clock.settle()
     const ui = await $.ui.mount({ plugin: 'workflow-watch', surface: 'vscode', component: 'Pane', requestId: 'workflow-watch', props: { title: 'Tracker', isFocused: false, bodyColumns: 60, placement: 'dock', scroll: { offset: 0, bodyRows: 40 }, view: {} } })

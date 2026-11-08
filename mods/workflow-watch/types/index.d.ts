@@ -118,7 +118,6 @@ declare module 'claude-code' {
     'workflow-watch': {
       watch: Watch
       theme: Theme
-      isTimelineOpen: boolean
       pinnedView: PaneView | null
       /** True once the person hid the pane this session: no automatic open until /tracker or a new session. */
       isHidden: boolean

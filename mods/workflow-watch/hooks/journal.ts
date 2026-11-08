@@ -1241,36 +1241,38 @@ const PLAN_MARK = { completed: '✓', in_progress: '●', pending: '○' } as co
  * The oversight sections as text, each headed by its name and left out when it has nothing to say:
  * NOW (the agent's plan), DECISIONS (waiting, answered, refused), CHANGES (tests, files, commits, commands), QUALITY (review, verdicts, skills).
  */
-export function signalLines(s: Signals | undefined, stages: Stage[]): string[] {
-  if (!s) return []
+export const planLines = (s: Signals): string[] => s.plan.map(i => `  ${PLAN_MARK[i.status]} ${i.text}`)
+
+export const decisionLines = (s: Signals): string[] =>
+  s.decisions.map(d => (d.kind === 'refused' ? `  × refused  ${d.text} → ${d.answer ?? ''}` : d.answer === null ? `  ? waiting  ${d.text}${d.options ? `  [${d.options}]` : ''}` : `  ✓ ${d.text} → ${d.answer}`))
+
+export function changeLines(s: Signals, stages: Stage[]): string[] {
   const out: string[] = []
-  if (s.plan.length) out.push('NOW', ...s.plan.map(i => `  ${PLAN_MARK[i.status]} ${i.text}`))
-  if (s.decisions.length) {
-    out.push('DECISIONS')
-    for (const d of s.decisions) {
-      if (d.kind === 'refused') out.push(`  × refused  ${d.text} → ${d.answer ?? ''}`)
-      else if (d.answer === null) out.push(`  ? waiting  ${d.text}${d.options ? `  [${d.options}]` : ''}`)
-      else out.push(`  ✓ ${d.text} → ${d.answer}`)
-    }
-  }
-  const changes: string[] = []
   const last = s.tests[s.tests.length - 1]
   const before = s.tests[s.tests.length - 2]
-  if (last) changes.push(`  tests  ${last.pass} pass · ${last.fail} fail${before ? ` · was ${before.pass} · ${before.fail}` : ''}`)
+  if (last) out.push(`  tests  ${last.pass} pass · ${last.fail} fail${before ? ` · was ${before.pass} · ${before.fail}` : ''}`)
   const files = Object.entries(s.files).sort((a, b) => b[1] - a[1])
-  for (const [f, n] of files.slice(0, 4)) changes.push(`  files  ${f} ×${n}`)
-  if (files.length > 4) changes.push(`         + ${files.length - 4} more`)
-  for (const c of stages.filter(st => st.kind === 'commit').slice(-2)) changes.push(`  commit ${c.label.replace(/^commit:/, '')}  ${c.summary ?? ''}`)
-  if (s.commands) changes.push(`  ${many(s.commands, 'command', 'commands')} run`)
-  if (changes.length) out.push('CHANGES', ...changes)
-  const quality: string[] = []
-  if (s.review) quality.push(`  review ${s.review.total} findings · ${s.review.fixed} fixed · ${s.review.skipped} skipped · ${s.review.open} open`, ...s.review.items.map(i => `         ${i}`))
-  for (const a of stages.filter(st => st.kind === 'agent' && st.summary).slice(-2)) quality.push(`  verdict ${a.label.replace(/^agent:/, '')}  ${a.summary}`)
+  for (const [f, n] of files.slice(0, 4)) out.push(`  files  ${f} ×${n}`)
+  if (files.length > 4) out.push(`         + ${files.length - 4} more`)
+  for (const c of stages.filter(st => st.kind === 'commit').slice(-2)) out.push(`  commit ${c.label.replace(/^commit:/, '')}  ${c.summary ?? ''}`)
+  if (s.commands) out.push(`  ${many(s.commands, 'command', 'commands')} run`)
+  return out
+}
+
+export function qualityLines(s: Signals, stages: Stage[]): string[] {
+  const out: string[] = []
+  if (s.review) out.push(`  review ${s.review.total} findings · ${s.review.fixed} fixed · ${s.review.skipped} skipped · ${s.review.open} open`, ...s.review.items.map(i => `         ${i}`))
+  for (const a of stages.filter(st => st.kind === 'agent' && st.summary).slice(-2)) out.push(`  verdict ${a.label.replace(/^agent:/, '')}  ${a.summary}`)
   const skills = new Map<string, number>()
   for (const st of stages) if (st.kind === 'skill') skills.set(st.label.replace(/^skill:/, ''), (skills.get(st.label.replace(/^skill:/, '')) ?? 0) + 1)
-  if (skills.size) quality.push(`  skills ${[...skills].map(([k, n]) => (n > 1 ? `${k} ×${n}` : k)).join(' · ')}`)
-  if (quality.length) out.push('QUALITY', ...quality)
+  if (skills.size) out.push(`  skills ${[...skills].map(([k, n]) => (n > 1 ? `${k} ×${n}` : k)).join(' · ')}`)
   return out
+}
+
+export function signalLines(s: Signals | undefined, stages: Stage[]): string[] {
+  if (!s) return []
+  const section = (label: string, lines: string[]): string[] => (lines.length ? [label, ...lines] : [])
+  return [...section('NOW', planLines(s)), ...section('DECISIONS', decisionLines(s)), ...section('CHANGES', changeLines(s, stages)), ...section('QUALITY', qualityLines(s, stages))]
 }
 
 /** The whole picture as plain text: what the command prints, the same blocks the pane draws, oldest first as a log reads. */
