@@ -407,7 +407,7 @@ export const register: Register = (on, options) => {
       // The offer to compact: its own row, so the bar's buttons keep their places; two presses; never while anything runs.
       const compactRow =
         view.ctx !== null && view.ctx >= COMPACT_AT && !isBusy ? (
-          <Box justifyContent="flex-end" marginBottom={1}>
+          <Box justifyContent="flex-end">
             <Button
               key="compact"
               label={isArmed ? 'Press again to compact' : `Compact now · ctx ${view.ctx}%`}
@@ -423,8 +423,9 @@ export const register: Register = (on, options) => {
             />
           </Box>
         ) : null
+      // The rows of buttons wrap to the pane's width, so a narrow pane stacks them instead of cutting the leftmost off.
       const bar = (
-        <Box justifyContent="flex-end" gap={1} marginBottom={1}>
+        <Box justifyContent="flex-end" flexWrap="wrap" gap={1}>
           <Button key="size" label={isCompact ? '+ Expand' : '− Minimize'} onPress={() => void update($, pinnedView, () => (isCompact ? 'full' : 'compact')).catch(() => undefined)} />
           <Button
             key="theme"
@@ -529,7 +530,7 @@ export const register: Register = (on, options) => {
           {draw(nowCard, 'now')}
           {signalPanels(w.signals, w.stages, mode, folds).map(p => section(p.name, p.count, p.card))}
           {section('USAGE', view.meters.length, folds.includes('USAGE') ? null : usagePanel(view, mode))}
-          <Box gap={1}>
+          <Box flexWrap="wrap" gap={1}>
             {foldButton('TURNS', entries.length)}
             {!folds.includes('TURNS') && entries.length > TURNS_SHOWN && <Button key="turns:all" label={isAll ? `Last ${TURNS_SHOWN}` : `Show all ${entries.length}`} onPress={() => void update($, allTurns, v => !v).catch(() => undefined)} />}
           </Box>
@@ -541,7 +542,7 @@ export const register: Register = (on, options) => {
               <Box key={s.key} flexDirection="column">
                 <Svg source={c.source} alt={c.alt} />
                 {(hasMore(s) || (s.kind === 'turn' && s.prompt)) && (
-                  <Box gap={1} marginBottom={1}>
+                  <Box flexWrap="wrap" gap={1}>
                     {hasMore(s) && (
                       <Button
                         key={`fold:${s.key}`}
