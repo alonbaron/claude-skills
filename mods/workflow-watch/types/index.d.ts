@@ -132,6 +132,8 @@ declare module 'claude-code' {
       folded: string[]
       /** True once the person asked TURNS for every entry instead of the last few; forgotten with the session. */
       allTurns: boolean
+      /** The Auto-open choice the button made, or the one the store kept; null while the /config row stands. */
+      autoOpenOn: boolean | null
     }
   }
 }

@@ -50,8 +50,12 @@ const END = ' text-anchor="end"'
 
 /** A hairline across the panel with its label inset at the left in small caps, and a second label at the right. */
 function rule(y: number, label: string, right = ''): string {
-  const cap = (x: number, v: string, anchor: string): string => `<rect class="bg" x="${x - 6}" y="${y - 8}" width="${v.length * 7.4 + 12}" height="16"/><text class="mute" x="${anchor === END ? x + 6 : x}" y="${y + 4}" font-size="10" letter-spacing="0.14em"${anchor}>${esc(v)}</text>`
-  return `<line class="rule" x1="0" y1="${y}" x2="${W}" y2="${y}"/>${cap(18, label, '')}${right ? cap(W - 12 - right.length * 7.4, right, END) : ''}`
+  // The text is held to the width its cap covers (textLength), so a font wider than the 7.4px guess never runs past the cap onto the hairline.
+  const cap = (x: number, v: string, anchor: string): string => {
+    const w = v.length * 7.4
+    return `<rect class="bg" x="${anchor === END ? x - w - 6 : x - 6}" y="${y - 8}" width="${w + 12}" height="16"/><text class="mute" x="${x}" y="${y + 4}" font-size="10" letter-spacing="0.14em" textLength="${w}" lengthAdjust="spacingAndGlyphs"${anchor}>${esc(v)}</text>`
+  }
+  return `<line class="rule" x1="0" y1="${y}" x2="${W}" y2="${y}"/>${cap(18, label, '')}${right ? cap(W - 12, right, END) : ''}`
 }
 
 const GLYPH: Record<string, string> = { '✓': 'acc', '●': 'acc', '○': 'faint', '?': 'warn', '×': 'bad' }
@@ -200,11 +204,11 @@ export function turnEntry(s: Stage, children: Stage[], now: number, theme: Theme
   return { source: svg(h, out, theme), alt: alt.join(' | '), width: W, height: h }
 }
 
-/** A foldable section of the console: its name as its rule reads it, how many lines, meters or entries it holds, and its card. */
-export type Section = { name: string; count: number; card: Card }
+/** A foldable section of the console: its name as its rule reads it, how many lines, meters or entries it holds, and its card (null while folded: the count alone is drawn). */
+export type Section = { name: string; count: number; card: Card | null }
 
-/** The DECISIONS, CHANGES and QUALITY sections for a session, each left out when empty. */
-export function signalPanels(signals: Signals | undefined, stages: Stage[], theme: Theme): Section[] {
+/** The DECISIONS, CHANGES and QUALITY sections for a session, each left out when empty; a folded one keeps its count and skips its card. */
+export function signalPanels(signals: Signals | undefined, stages: Stage[], theme: Theme, folded: readonly string[] = []): Section[] {
   if (!signals) return []
   const waiting = signals.decisions.filter(d => d.kind === 'ask' && d.answer === null).length
   const parts: Array<[string, string, string[]]> = [
@@ -213,7 +217,7 @@ export function signalPanels(signals: Signals | undefined, stages: Stage[], them
     ['QUALITY', '', qualityLines(signals, stages)],
   ]
   return parts.flatMap(([name, right, lines]) => {
-    const card = linesPanel(name, right, lines, theme)
-    return card ? [{ name, count: lines.length, card }] : []
+    if (lines.length === 0) return []
+    return [{ name, count: lines.length, card: folded.includes(name) ? null : linesPanel(name, right, lines, theme) }]
   })
 }

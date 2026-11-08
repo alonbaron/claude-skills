@@ -191,6 +191,14 @@ describe('tick', () => {
     expect(w.opens).toBe(1)
   })
 
+  test('an Auto-open choice the store kept wins over the /config row', async ($, on) => {
+    const { w, clock } = world(on)
+    w.saved.set('autoOpen', false)
+    await $.session.start(START)
+    await clock.settle()
+    expect(w.opens).toBe(0)
+  })
+
   test('the saved folds come back in a new session, and a press saves the new set', async ($, on) => {
     const { w, clock } = world(on)
     w.saved.set('folded', ['USAGE'])

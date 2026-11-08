@@ -210,23 +210,52 @@ describe('render', () => {
     await ui.unmount()
   })
 
-  for (const [autoOpen, label, flipped] of [
-    [true, 'Auto-open: on', false],
-    [false, 'Auto-open: off', true],
+  for (const [autoOpen, label, flipped, flippedLabel] of [
+    [true, 'Auto-open: on', false, 'Auto-open: off'],
+    [false, 'Auto-open: off', true, 'Auto-open: on'],
   ] as const) {
-    test(`the Auto-open button reads "${label}" and flips the setting through /config`, { options: { autoOpen } }, async ($, on) => {
+    test(`the Auto-open button reads "${label}", flips at once and writes the setting through /config`, { options: { autoOpen } }, async ($, on) => {
       mock.clock(on)
       on('state.get', { plugin: 'workflow-watch', key: 'watch' }, () => ({ value: { value: WATCH, version: 1 } }))
       const sets: Array<[string, unknown]> = []
+      const stored: Array<[string, unknown]> = []
       on('config.set', (_$: any, e: any) => {
         sets.push([e.key, e.value])
         return { value: e.value }
       })
+      on('store.set', (_$: any, e: any) => {
+        stored.push([e.key, e.value])
+        return { value: undefined }
+      })
+      on('store.delete', (_$: any, e: any) => {
+        stored.push([e.key, 'deleted'])
+        return { value: undefined }
+      })
       const ui = await $.ui.mount(PANE)
       expect((await ui.find({ key: 'auto' }))?.props.label).toBe(label)
       await ui.press({ key: 'auto' })
+      expect((await ui.find({ key: 'auto' }))?.props.label).toBe(flippedLabel)
       expect(sets).toEqual([['workflow-watch.autoOpen', flipped]])
+      // The row took the write, so no store override is left behind.
+      expect(stored).toEqual([['autoOpen', 'deleted']])
       await ui.unmount()
     })
   }
+
+  test('where the engine refuses the /config write (a relayed session), the Auto-open choice is kept in the store', async ($, on) => {
+    mock.clock(on)
+    on('state.get', { plugin: 'workflow-watch', key: 'watch' }, () => ({ value: { value: WATCH, version: 1 } }))
+    const stored: Array<[string, unknown]> = []
+    on('config.set', () => ({ deny: "a plugin's settings can't be changed over Remote Control or from a relayed message" }))
+    on('store.set', (_$: any, e: any) => {
+      stored.push([e.key, e.value])
+      return { value: undefined }
+    })
+    const ui = await $.ui.mount(PANE)
+    expect((await ui.find({ key: 'auto' }))?.props.label).toBe('Auto-open: on')
+    await ui.press({ key: 'auto' })
+    expect((await ui.find({ key: 'auto' }))?.props.label).toBe('Auto-open: off')
+    expect(stored).toEqual([['autoOpen', false]])
+    await ui.unmount()
+  })
 })
