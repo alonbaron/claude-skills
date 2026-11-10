@@ -52,7 +52,7 @@ jobs:
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
           bwrap --ro-bind / / --dev /dev --proc /proc --unshare-all true && echo "bwrap works"
       - name: Install Claude Code
-        run: npm install -g @anthropic-ai/claude-code && claude --version
+        run: npm install -g @anthropic-ai/claude-code@2.1.303 && claude --version
       - name: Run the cases
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
