@@ -161,6 +161,11 @@ right doc and cross-linked; it does not get re-authored from scratch.
 - A choice you made that the user didn't give (a status code, a limit, fail-open
   vs fail-closed, a library) is a proposal, not a fact: mark it `(proposed)` in
   the doc and list it under "Decisions to confirm" in your reply.
+- Every invariant row names two enforcement points in its `Enforced at` cell,
+  each by mechanism: the check in app code, and the platform or storage layer
+  behind it. If the second is not settled, name the candidate you would pick,
+  mark it `(proposed)`, and put the open question after it. Never write "no
+  second boundary yet" or point at the Decisions section instead of naming it.
 - Decision-dense: tables and bullets, not prose. Call out reversed or forbidden
   decisions inline (`> Do not reintroduce X without an explicit decision`).
 - Verify or say you don't know; never invent a path, API, number, or fact.
