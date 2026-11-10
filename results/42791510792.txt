@@ -1,0 +1,91 @@
+run: 42791510792 https://github.com/alonbaron/claude-skills/actions/runs/42791510792
+event: workflow_dispatch  commit: 4cf2f44641f6079e4d3b2210a27b0eeef4bdd0e0  ref: main
+model: claude-fable-5-2  cases: sandboxed  job status at publish: failure
+cli: 2.1.303 (Claude Code)
+started: 2026-11-10T10:14:36Z
+
+valid 9 of 9 (3 TRUNCATED: architect/right-sized-new-feature review-swarm/real-diff-ranked-report review-swarm/security-alone-hands-off)
+re-run: none
+cost $21.58  runner aggregates over the 9 cases in the results: {"casesTotal": 9, "casesPassed": 8, "overallScore": 0.798148148148148, "overallPassRate": 0.5, "meanDelta": 0.09259259259259262}
+
+== audit-drift-citation  with 1.00  without 1.00
+   citation-discipline                with PP   without PP
+   no-edit                            with PP   without PP
+   no-write                           with PP   without PP
+   skill-fired                        with PP   without 
+
+== right-sized-new-feature  with 0.83  without 0.67  TRUNCATED
+   TRUNCATED with#0: timed out after 900s
+   TRUNCATED with#1: timed out after 900s
+   no-modular-set                     with PP   without PP
+   no-subagents                       with PP   without PP
+   right-sized-process                with .P   without ..
+   skill-fired                        with PP   without 
+   FAIL with#0 right-sized-process: judge votes: FAIL FAIL FAIL
+      evidence: {"type":"system","subtype":"init","cwd":"/tmp/claude-eval-mr69Bs/home/cwd","session_id":"f56dae2f-0172-461c-8e2f-12e6024a27a1","tools":["Task","Bash","Edit","NotebookEdit","Read","Skill","TaskStop","ToolSearch","Write"],"mcp_servers":[],"model":"claude-fable-5-2","permissionMode":"dontAsk","slash_commands":["deep-research","alon-skills:build-loop","alon-skills:architect","alon-skills:ask-the-council","alon-skills:ponytail","alon-skills:prompt-generator","alon-skills:review-swarm","alon-skills:up-to-date","dataviz","update-config","verify","debug","code-review","simplify","batch","fewer-permission-prompts","doctor","loop","claude-api","workflow-authoring","run","run-skill-generator","plugin-a
+
+== small-fix-boundary  with 0.88  without 0.75
+   no-invention                       with PP   without ..
+   no-subagents                       with PP   without PP
+   skill-fired                        with PP   without 
+   targeted-addition                  with PP   without PP
+   two-boundary-enforcement           with P.   without PP
+   FAIL with#1 two-boundary-enforcement: judge votes: FAIL FAIL FAIL
+      evidence: # Source of Truth — Auth Service | | ## Scope | Cloudflare Workers auth service (Hono + D1). Issues and validates session | tokens for POST /login, POST /logout, GET /session. | | ## Domain model | - `users` (D1): id, email, password_hash, created_at | - `sessions` (D1): id, user_id, token, expires_at | | ## Invariants | | # | Invariant | Enforced at | | |---|---|---| | | 1 | Password hashes use scrypt, never stored plaintext | app layer (hash on write) + DB column has no plaintext default | | | 2 | A session token is single-use per refresh | app layer (rotate on use) + DB unique index on token | | | 3 | POST /login accepts at most 100 requests per minute per client IP | app layer (rate-limi
+
+== real-diff-ranked-report  with 0.80  without 0.40  TRUNCATED
+   TRUNCATED with#0: timed out after 1500s
+   TRUNCATED with#1: timed out after 1500s
+   no-edit-calls                      with PP   without PP
+   no-write-calls                     with PP   without PP
+   ranked-report-shape                with ..   without ..
+   reviewers-sonnet                   with PP   without ..
+   skill-fired                        with PP   without 
+   verifiers-opus                     with PP   without ..
+   FAIL with#0 ranked-report-shape: judge votes: FAIL FAIL FAIL
+      evidence: Running review-swarm on the uncommitted working-tree diff in `app/routes.py`. First, reading the diff and its surroundings.
+   FAIL with#1 ranked-report-shape: judge votes: FAIL FAIL FAIL
+      evidence: Diff is one file, 11 added lines — small, but it's a new endpoint with DB access and a caller-supplied ID, so it warrants the full panel. Spawning the six specialists in parallel.
+
+== security-alone-hands-off  with 0.00  without 0.33  TRUNCATED
+   TRUNCATED with#0: timed out after 900s
+   TRUNCATED with#1: timed out after 900s
+   hands-off-to-security-review       with ..   without ..
+   no-swarm-spawn                     with ..   without ..
+   skill-not-fired                    with ..   without PP
+   FAIL with#0 hands-off-to-security-review: judge votes: FAIL FAIL FAIL
+      evidence: Second reviewer (header parsing / trust boundary) is back: no bypass in lines 4–5 or 7, one should-fix around the 500-instead-of-401 behaviour. Still waiting on the failure-paths reviewer before the refutation pass.
+   FAIL with#0 no-swarm-spawn: Agent called 3x (expected 0..0)
+   FAIL with#0 skill-not-fired: Skill called 1x (expected 0..0)
+   FAIL with#1 hands-off-to-security-review: judge votes: FAIL FAIL FAIL
+      evidence: Two of three reviewers are in (forgery, token misuse); still waiting on the failure-paths reviewer before the verification pass.
+   FAIL with#1 no-swarm-spawn: Agent called 3x (expected 0..0)
+   FAIL with#1 skill-not-fired: Skill called 1x (expected 0..0)
+
+== trivial-diff-declines  with 1.00  without 1.00
+   agent-spawn-limit                  with PP   without PP
+   declines-with-alternative          with PP   without PP
+
+== dirty-and-behind  with 0.80  without 0.70
+   leaves-decision-to-user            with PP   without P.
+   no-pull-run                        with ..   without P.
+   no-subagents                       with PP   without PP
+   reports-behind                     with PP   without .P
+   reports-dirty                      with PP   without PP
+   skill-fired                        with PP   without 
+   FAIL with#0 no-pull-run: Bash called 1x (expected 0..0)
+   FAIL with#1 no-pull-run: Bash called 1x (expected 0..0)
+
+== fresh-branch-no-upstream  with 0.88  without 0.50
+   falls-back-to-default-branch       with PP   without ..
+   no-in-sync-claim                   with PP   without PP
+   no-subagents                       with PP   without PP
+   says-no-upstream                   with P.   without ..
+   skill-fired                        with PP   without 
+   FAIL with#1 says-no-upstream: judge votes: FAIL FAIL FAIL
+      evidence: `retry_with_backoff` in `src/retry.py` now does real exponential backoff instead of passing straight through. The change is uncommitted, and nothing is rebased or pushed. | | - **Behaviour:** it retries up to 4 attempts, with a randomised delay that doubles from 0.5s and is capped at 8s, then re-raises the last error. | - **What gets retried:** only a new `TransientError` exception. Anything else, such as a declined card, fails immediately. | - **Verification:** an ad hoc script passed (success on the third try, giving up after the last attempt, no retry on other errors, delay cap). The repo has no test suite, so no test file was added. | | Not done yet: | | - **`charge()` is not wired in.**
+
+== no-remote-boundary  with 1.00  without 1.00
+   no-subagents                       with PP   without PP
+   result                             with PP   without PP
+   skill-fired                        with PP   without 
