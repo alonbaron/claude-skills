@@ -1,0 +1,781 @@
+{
+  "schemaVersion": 1,
+  "claudeVersion": "2.1.303",
+  "startedAt": "2026-11-10T14:10:01.121Z",
+  "durationSeconds": 234,
+  "costUsd": 1.1592222,
+  "partial": false,
+  "suite": {
+    "root": "/home/runner/work/claude-skills/claude-skills",
+    "ablation": "with-without",
+    "modelOverride": "claude-fable-5-2",
+    "judgeModel": "sonnet",
+    "threshold": 0.7,
+    "concurrency": 2,
+    "plugins": [
+      {
+        "name": "alon-skills",
+        "version": "3.2.2",
+        "path": "/home/runner/work/claude-skills/claude-skills"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "trivial-diff-declines",
+      "dir": "evals-ci/review-swarm/trivial-diff-declines",
+      "source": "mixed",
+      "promptMarkdown": "I renamed `userId` to `accountId` across `src/users.js`, `src/orders.js`, and `src/session.js` in our Node API, and fixed a typo in a comment while I was in there (`recieve` -> `receive`). Nothing's committed yet. Can you run review-swarm on this before I open the PR?",
+      "runsPerCase": 3,
+      "timeoutSeconds": 900,
+      "maxTurns": 40,
+      "graders": [
+        {
+          "name": "agent-spawn-limit",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "min": 0,
+            "max": 2
+          }
+        },
+        {
+          "name": "declines-with-alternative",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the response treats this diff (a variable rename plus a comment typo fix across three files) as too small for the six-specialist swarm, does not run that swarm, and either gives a single-pass review itself or points to one (a single read or `/code-review`) as the next step.\n\nFAIL if it runs the six-lens swarm on this diff, or declines without reviewing the diff and without offering any way to review it.",
+          "config": {
+            "criteria": "PASS if the response treats this diff (a variable rename plus a comment typo fix across three files) as too small for the six-specialist swarm, does not run that swarm, and either gives a single-pass review itself or points to one (a single read or `/code-review`) as the next step.\n\nFAIL if it runs the six-lens swarm on this diff, or declines without reviewing the diff and without offering any way to review it.",
+            "focus": "last_message"
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 5,
+            "costUsd": 0.0741593,
+            "judgeCostUsd": 0.007362,
+            "durationSeconds": 22,
+            "startedAt": "2026-11-10T14:10:01.155Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-lunbZE/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "agent-spawn-limit",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..2)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "declines-with-alternative",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "The rename is safe to open a PR on: I found no blockers or should-fix items. I skipped the swarm because this is a 7-line rename; this is a single-pass read of the diff and the three files, and there are no tests in the repo to run.\n\n**What I checked**\n- **Rename completeness:** every `userId` in the three files is now `accountId`, in both the signature and the body, with no leftover or half-renamed references.\n- **Callers:** these are positional parameters and the exported names (`getUser`, `getOrders`, `loadSession`) are unchanged, so no call site can break.\n- **Queries:** both SQL statements are still parameterised with the same placeholders, so behaviour is identical.\n- **Typo:** `recieve` is now `receive` at `src/users.js:2`, and there are no other occurrences.\n\n**Nits (optional)**\n- `src/orders.js:2`: the parameter is now `accountId` but the column is still `user_id`. That is correct if the schema hasn't changed; a line in the PR description saying the column rename is out of scope would pre-empt the question.\n- `src/users.js:1-3`: `getUser(accountId)` still reads from `users` and the comment says \"user record\", so the vocabulary is now mixed.\n\n**Before you commit**\nThe working tree has untracked dotfiles at the repo root (`.bashrc`, `.gitconfig`, `.mcp.json`, `.idea`, `.vscode` and others). Stage the three `src/` files explicitly rather than using `git add -A`."
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 5,
+            "costUsd": 0.07526090000000002,
+            "judgeCostUsd": 0.008747999999999999,
+            "durationSeconds": 22,
+            "startedAt": "2026-11-10T14:10:01.155Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-0L7zwT/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "agent-spawn-limit",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..2)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "declines-with-alternative",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "The rename is safe to open a PR on: I read the full diff and all three files and found no blockers, only one naming nit.\n\n**Nit**\n- `src/orders.js:2` — the parameter is now `accountId`, but the query still filters on the `user_id` column. The behaviour is unchanged, and it is correct as long as the column hasn't been renamed. If the mixed vocabulary is intentional, say so in the PR description so reviewers don't wonder whether a migration was missed.\n\n**What's solid**\n- **Rename is complete:** there are no leftover `userId` references anywhere in the repo.\n- **No caller can break:** all three are positional parameters (`getUser`, `getOrders`, `loadSession`) and the exported names are unchanged.\n- **Queries are untouched in substance:** they are still parameterized, with only the bound variable renamed.\n- **Typo fix is correct:** `src/users.js:2` now reads `receive`, and no other `recieve` remains.\n\nThere are no tests in the repo, so nothing was run.\n\n**Before you commit**\n- The working directory has untracked dotfiles (`.bashrc`, `.gitconfig`, `.mcp.json`, `.idea`, `.vscode` and others). Stage the three `src/` files explicitly rather than using `git add -A`."
+              }
+            ]
+          }
+        ],
+        "without": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 5,
+            "costUsd": 0.0698029,
+            "judgeCostUsd": 0.007571999999999999,
+            "durationSeconds": 21,
+            "startedAt": "2026-11-10T14:10:23.187Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-SuNqfU/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "agent-spawn-limit",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..2)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "declines-with-alternative",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I couldn't run review-swarm: there's no skill by that name in this session. The diff is six changed lines across three files, so I reviewed it directly instead.\n\n**The change is safe to PR.** I found no bugs:\n\n- **Rename is complete.** No `userId` references remain anywhere in the repo, and each function's parameter and its single use were renamed together.\n- **No caller impact.** The parameters are positional, so nothing calling `getUser`, `getOrders`, or `loadSession` is affected, and the exports are unchanged.\n- **Typo fix is clean.** `recieve` → `receive` in `src/users.js:2`, and no other occurrences exist.\n- **Syntax checks pass.** All three files pass `node --check`; the repo has no tests to run.\n\nOne thing to decide before you open the PR: the SQL in `src/orders.js:2` still filters on the `user_id` column while the parameter is now `accountId`. That is correct as long as the DB column hasn't been renamed, but the mismatch reads oddly. If the column is staying, a mention in the PR description will pre-empt the reviewer question.\n\nThe built-in `/code-review` skill is available if you still want a formal pass, though I wouldn't expect it to find more on a diff this size."
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 3,
+            "costUsd": 0.0621858,
+            "judgeCostUsd": 0.006222,
+            "durationSeconds": 17,
+            "startedAt": "2026-11-10T14:10:23.394Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-ZpoHtZ/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "agent-spawn-limit",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..2)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "declines-with-alternative",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "There's no `review-swarm` skill installed in this session, so I couldn't run it. The diff is small enough that I reviewed it directly instead, and it looks safe to open the PR.\n\n- **Rename is complete:** no `userId` references remain anywhere in `src/`, and the diff touches nothing beyond the three parameter renames and the comment typo.\n- **Callers are unaffected:** `getUser`, `getOrders` and `loadSession` take the ID positionally, so the rename can't break anything outside these files.\n- **No tests were run:** the repo has only the three source files and no test suite.\n\nOne thing to decide before the PR: the query in `src/orders.js:2` still filters on the `user_id` column while the parameter is now `accountId`. That's correct if the DB schema isn't changing, but a reviewer may ask about the mismatch, so it's worth a line in the PR description.\n\nIf you want a deeper multi-agent pass anyway, the built-in `/code-review` is available here."
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 1,
+        "passRate": 1,
+        "scoreWithout": 1,
+        "passRateWithout": 1,
+        "delta": 0
+      }
+    },
+    {
+      "name": "fresh-branch-no-upstream",
+      "dir": "evals-ci/up-to-date/fresh-branch-no-upstream",
+      "source": "mixed",
+      "promptMarkdown": "Let's keep going on the ShiftManager payment work -- I branched off\nyesterday for the retry-backoff logic on flaky card charges but haven't\npushed it up yet. Pick up where I left off.",
+      "runsPerCase": 3,
+      "timeoutSeconds": 300,
+      "maxTurns": 15,
+      "graders": [
+        {
+          "name": "falls-back-to-default-branch",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final message compares the branch against origin's default branch (origin/main) and says that is what it compared against.\n\nFAIL if it gives no comparison at all, or gives ahead/behind numbers without saying what they are relative to.",
+          "config": {
+            "criteria": "PASS if the final message compares the branch against origin's default branch (origin/main) and says that is what it compared against.\n\nFAIL if it gives no comparison at all, or gives ahead/behind numbers without saying what they are relative to.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "no-in-sync-claim",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final message never calls the branch in sync or up to date.\n\nFAIL if it calls the branch in sync, up to date, or current with its remote.",
+          "config": {
+            "criteria": "PASS if the final message never calls the branch in sync or up to date.\n\nFAIL if it calls the branch in sync, up to date, or current with its remote.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "no-subagents",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "says-no-upstream",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final message notes that the branch has no upstream, has no tracking branch, or is unpushed / local-only (any of those phrasings counts).\n\nFAIL if it does not mention that the branch is unpushed / has no upstream, or implies the branch has its own upstream tracking branch that it was compared against.",
+          "config": {
+            "criteria": "PASS if the final message notes that the branch has no upstream, has no tracking branch, or is unpushed / local-only (any of those phrasings counts).\n\nFAIL if it does not mention that the branch is unpushed / has no upstream, or implies the branch has its own upstream tracking branch that it was compared against.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "skill-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?up-to-date\""
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 6,
+            "costUsd": 0.10825649999999999,
+            "judgeCostUsd": 0.01512599999999999,
+            "durationSeconds": 51,
+            "startedAt": "2026-11-10T14:10:40.789Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-oLCn1s/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "falls-back-to-default-branch",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "Running up-to-date on ShiftManager before touching anything: your branch has diverged from `origin/main`, so I've stopped to ask before changing anything.\n\n- **Branch:** `feature/payment-retry` has no upstream (never pushed). Against `origin/main` it is 1 ahead and 1 behind, and tracked files are clean.\n- **Your commit:** `1b07faa start retry-backoff logic` adds `src/retry.py`, which is still a stub — `retry_with_backoff(fn)` just calls `fn()` once.\n- **New on main:** `2491f48 add refund handling` adds a `refund(amount)` function next to `charge` in `src/payments.py`.\n- **Open PRs/issues:** not checked — `gh` isn't authenticated here.\n- **Warnings:** the two commits touch different files, so a rebase applies cleanly. Wiring retries into `charge()` later will edit `src/payments.py`, the file main just changed.\n\n**Recommended first action:** rebase `feature/payment-retry` onto `origin/main`. The branch is unpushed, so rewriting it affects no one, and you'd build the retry work on top of the refund code.\n\nOnce that's settled, my plan is:\n1. Implement the backoff in `src/retry.py`: exponential delay with jitter, a cap on attempts, and retries only for errors marked as transient.\n2. Wrap `charge()` with it.\n3. Add tests.\n\nRetrying a card charge can double-charge unless the charge call carries an idempotency key, and `charge(amount)` has none today — I'd add one as part of step 2 unless you say otherwise.\n\nShould I run `git rebase origin/main` and continue, or would you rather merge, or stay on the current base?"
+              },
+              {
+                "name": "no-in-sync-claim",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "Running up-to-date on ShiftManager before touching anything: your branch has diverged from `origin/main`, so I've stopped to ask before changing anything.\n\n- **Branch:** `feature/payment-retry` has no upstream (never pushed). Against `origin/main` it is 1 ahead and 1 behind, and tracked files are clean.\n- **Your commit:** `1b07faa start retry-backoff logic` adds `src/retry.py`, which is still a stub — `retry_with_backoff(fn)` just calls `fn()` once.\n- **New on main:** `2491f48 add refund handling` adds a `refund(amount)` function next to `charge` in `src/payments.py`.\n- **Open PRs/issues:** not checked — `gh` isn't authenticated here.\n- **Warnings:** the two commits touch different files, so a rebase applies cleanly. Wiring retries into `charge()` later will edit `src/payments.py`, the file main just changed.\n\n**Recommended first action:** rebase `feature/payment-retry` onto `origin/main`. The branch is unpushed, so rewriting it affects no one, and you'd build the retry work on top of the refund code.\n\nOnce that's settled, my plan is:\n1. Implement the backoff in `src/retry.py`: exponential delay with jitter, a cap on attempts, and retries only for errors marked as transient.\n2. Wrap `charge()` with it.\n3. Add tests.\n\nRetrying a card charge can double-charge unless the charge call carries an idempotency key, and `charge(amount)` has none today — I'd add one as part of step 2 unless you say otherwise.\n\nShould I run `git rebase origin/main` and continue, or would you rather merge, or stay on the current base?"
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "says-no-upstream",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "Running up-to-date on ShiftManager before touching anything: your branch has diverged from `origin/main`, so I've stopped to ask before changing anything.\n\n- **Branch:** `feature/payment-retry` has no upstream (never pushed). Against `origin/main` it is 1 ahead and 1 behind, and tracked files are clean.\n- **Your commit:** `1b07faa start retry-backoff logic` adds `src/retry.py`, which is still a stub — `retry_with_backoff(fn)` just calls `fn()` once.\n- **New on main:** `2491f48 add refund handling` adds a `refund(amount)` function next to `charge` in `src/payments.py`.\n- **Open PRs/issues:** not checked — `gh` isn't authenticated here.\n- **Warnings:** the two commits touch different files, so a rebase applies cleanly. Wiring retries into `charge()` later will edit `src/payments.py`, the file main just changed.\n\n**Recommended first action:** rebase `feature/payment-retry` onto `origin/main`. The branch is unpushed, so rewriting it affects no one, and you'd build the retry work on top of the refund code.\n\nOnce that's settled, my plan is:\n1. Implement the backoff in `src/retry.py`: exponential delay with jitter, a cap on attempts, and retries only for errors marked as transient.\n2. Wrap `charge()` with it.\n3. Add tests.\n\nRetrying a card charge can double-charge unless the charge call carries an idempotency key, and `charge(amount)` has none today — I'd add one as part of step 2 unless you say otherwise.\n\nShould I run `git rebase origin/main` and continue, or would you rather merge, or stay on the current base?"
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 1x (expected 1..∞)",
+                "withOnly": true,
+                "scored": false
+              }
+            ]
+          },
+          {
+            "score": 0.75,
+            "passed": false,
+            "turns": 8,
+            "costUsd": 0.142157,
+            "judgeCostUsd": 0.014436000000000011,
+            "durationSeconds": 70,
+            "startedAt": "2026-11-10T14:10:44.219Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-qIg8K7/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "falls-back-to-default-branch",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "`retry_with_backoff` in `src/retry.py` is now a real implementation, uncommitted in your working tree. It is not yet wired into `charge()`, and the branch is still unrebased and unpushed.\n\nWhat it does:\n\n- **Backoff:** up to 4 attempts by default, with exponential delays starting at 0.5s, capped at 8s, and randomised (full jitter).\n- **What gets retried:** only exceptions listed in `retry_on`, which defaults to a new `TransientError` marker class. Anything else propagates immediately, so a hard decline is never retried.\n- **Giving up:** after the last attempt the original exception is re-raised.\n- **Compatibility:** `retry_with_backoff(fn)` still works as before, and `sleep` is injectable for tests.\n\nI checked it with an ad-hoc script (first-try success, recovery after failures, giving up, delay cap, non-retryable errors), and all checks passed. The repo has no test suite, so I didn't add a test file.\n\nBefore this goes near real charges:\n\n- **Double-charge risk:** if a charge times out after the processor accepted it, a retry charges the card twice. `charge()` needs an idempotency key, or something equivalent, before it is wrapped.\n- **`TransientError` is my invention:** `charge()` is currently a stub that returns `True`, so nothing raises it yet. Tell me what a flaky failure actually looks like (exception type, or a `False` return) and I'll match it.\n\nWant me to commit this and rebase onto `origin/main`? The rebase should be clean, since the branch only touches `src/retry.py` and main only touched `src/payments.py`, and nothing has been pushed. After that I'd wire the retry into `charge()` on top of the refund change and push with an upstream if you'd like."
+              },
+              {
+                "name": "no-in-sync-claim",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "`retry_with_backoff` in `src/retry.py` is now a real implementation, uncommitted in your working tree. It is not yet wired into `charge()`, and the branch is still unrebased and unpushed.\n\nWhat it does:\n\n- **Backoff:** up to 4 attempts by default, with exponential delays starting at 0.5s, capped at 8s, and randomised (full jitter).\n- **What gets retried:** only exceptions listed in `retry_on`, which defaults to a new `TransientError` marker class. Anything else propagates immediately, so a hard decline is never retried.\n- **Giving up:** after the last attempt the original exception is re-raised.\n- **Compatibility:** `retry_with_backoff(fn)` still works as before, and `sleep` is injectable for tests.\n\nI checked it with an ad-hoc script (first-try success, recovery after failures, giving up, delay cap, non-retryable errors), and all checks passed. The repo has no test suite, so I didn't add a test file.\n\nBefore this goes near real charges:\n\n- **Double-charge risk:** if a charge times out after the processor accepted it, a retry charges the card twice. `charge()` needs an idempotency key, or something equivalent, before it is wrapped.\n- **`TransientError` is my invention:** `charge()` is currently a stub that returns `True`, so nothing raises it yet. Tell me what a flaky failure actually looks like (exception type, or a `False` return) and I'll match it.\n\nWant me to commit this and rebase onto `origin/main`? The rebase should be clean, since the branch only touches `src/retry.py` and main only touched `src/payments.py`, and nothing has been pushed. After that I'd wire the retry into `charge()` on top of the refund change and push with an upstream if you'd like."
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "says-no-upstream",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "`retry_with_backoff` in `src/retry.py` is now a real implementation, uncommitted in your working tree. It is not yet wired into `charge()`, and the branch is still unrebased and unpushed.\n\nWhat it does:\n\n- **Backoff:** up to 4 attempts by default, with exponential delays starting at 0.5s, capped at 8s, and randomised (full jitter).\n- **What gets retried:** only exceptions listed in `retry_on`, which defaults to a new `TransientError` marker class. Anything else propagates immediately, so a hard decline is never retried.\n- **Giving up:** after the last attempt the original exception is re-raised.\n- **Compatibility:** `retry_with_backoff(fn)` still works as before, and `sleep` is injectable for tests.\n\nI checked it with an ad-hoc script (first-try success, recovery after failures, giving up, delay cap, non-retryable errors), and all checks passed. The repo has no test suite, so I didn't add a test file.\n\nBefore this goes near real charges:\n\n- **Double-charge risk:** if a charge times out after the processor accepted it, a retry charges the card twice. `charge()` needs an idempotency key, or something equivalent, before it is wrapped.\n- **`TransientError` is my invention:** `charge()` is currently a stub that returns `True`, so nothing raises it yet. Tell me what a flaky failure actually looks like (exception type, or a `False` return) and I'll match it.\n\nWant me to commit this and rebase onto `origin/main`? The rebase should be clean, since the branch only touches `src/retry.py` and main only touched `src/payments.py`, and nothing has been pushed. After that I'd wire the retry into `charge()` on top of the refund change and push with an upstream if you'd like."
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 1x (expected 1..∞)",
+                "withOnly": true,
+                "scored": false
+              }
+            ]
+          }
+        ],
+        "without": [
+          {
+            "score": 0.75,
+            "passed": false,
+            "turns": 9,
+            "costUsd": 0.1337151,
+            "judgeCostUsd": 0.015542,
+            "durationSeconds": 64,
+            "startedAt": "2026-11-10T14:11:32.224Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-qwIKE8/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "falls-back-to-default-branch",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL PASS FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  true,
+                  false
+                ],
+                "evidence": "`retry_with_backoff` in `src/retry.py` is now a real implementation instead of the pass-through stub, but it is not yet wired into `charge()` and nothing is committed or pushed.\n\n**Rebase:** `main` had moved one commit ahead of your branch point (\"add refund handling\", which touches `src/payments.py`). Since the branch was unpushed, I rebased it onto `origin/main`; it applied cleanly, and your commit is now `94740f7` (was `ccfd8cb`).\n\n**What the retry does:**\n- **Attempts:** it calls `fn` up to `max_attempts` times (default 3) and re-raises the last error once they run out.\n- **Backoff:** exponential with full jitter — a random sleep between 0 and `base_delay * 2^(attempt-1)`, capped at `max_delay` (defaults 0.5s and 8s).\n- **What gets retried:** only the exception types in `retry_on`, which defaults to `ConnectionError` and `TimeoutError`. Anything else propagates immediately, so a hard decline is not retried.\n- **Testing hook:** `sleep` is injectable so tests don't have to wait.\n\nI checked it with a throwaway script (first-try success, recovery after transient failures, giving up, non-retryable errors, the delay cap) and all checks passed. The repo has no test suite, so I didn't add a test file.\n\n**Before wiring it into `charge()`:**\n- **Double-charge risk:** a timeout doesn't mean the charge failed. Retrying a real gateway call needs an idempotency key, or a customer can be charged twice.\n- **Failure signal:** `charge()` currently just returns `True`, so there is nothing to retry yet. I assumed flaky failures surface as exceptions; if your gateway client returns `False` or an error code instead, the retry needs a result-based check.\n\nTell me how the gateway reports failures and I'll wire it into `charge()`; I can also add tests and commit."
+              },
+              {
+                "name": "no-in-sync-claim",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "`retry_with_backoff` in `src/retry.py` is now a real implementation instead of the pass-through stub, but it is not yet wired into `charge()` and nothing is committed or pushed.\n\n**Rebase:** `main` had moved one commit ahead of your branch point (\"add refund handling\", which touches `src/payments.py`). Since the branch was unpushed, I rebased it onto `origin/main`; it applied cleanly, and your commit is now `94740f7` (was `ccfd8cb`).\n\n**What the retry does:**\n- **Attempts:** it calls `fn` up to `max_attempts` times (default 3) and re-raises the last error once they run out.\n- **Backoff:** exponential with full jitter — a random sleep between 0 and `base_delay * 2^(attempt-1)`, capped at `max_delay` (defaults 0.5s and 8s).\n- **What gets retried:** only the exception types in `retry_on`, which defaults to `ConnectionError` and `TimeoutError`. Anything else propagates immediately, so a hard decline is not retried.\n- **Testing hook:** `sleep` is injectable so tests don't have to wait.\n\nI checked it with a throwaway script (first-try success, recovery after transient failures, giving up, non-retryable errors, the delay cap) and all checks passed. The repo has no test suite, so I didn't add a test file.\n\n**Before wiring it into `charge()`:**\n- **Double-charge risk:** a timeout doesn't mean the charge failed. Retrying a real gateway call needs an idempotency key, or a customer can be charged twice.\n- **Failure signal:** `charge()` currently just returns `True`, so there is nothing to retry yet. I assumed flaky failures surface as exceptions; if your gateway client returns `False` or an error code instead, the retry needs a result-based check.\n\nTell me how the gateway reports failures and I'll wire it into `charge()`; I can also add tests and commit."
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "says-no-upstream",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "`retry_with_backoff` in `src/retry.py` is now a real implementation instead of the pass-through stub, but it is not yet wired into `charge()` and nothing is committed or pushed.\n\n**Rebase:** `main` had moved one commit ahead of your branch point (\"add refund handling\", which touches `src/payments.py`). Since the branch was unpushed, I rebased it onto `origin/main`; it applied cleanly, and your commit is now `94740f7` (was `ccfd8cb`).\n\n**What the retry does:**\n- **Attempts:** it calls `fn` up to `max_attempts` times (default 3) and re-raises the last error once they run out.\n- **Backoff:** exponential with full jitter — a random sleep between 0 and `base_delay * 2^(attempt-1)`, capped at `max_delay` (defaults 0.5s and 8s).\n- **What gets retried:** only the exception types in `retry_on`, which defaults to `ConnectionError` and `TimeoutError`. Anything else propagates immediately, so a hard decline is not retried.\n- **Testing hook:** `sleep` is injectable so tests don't have to wait.\n\nI checked it with a throwaway script (first-try success, recovery after transient failures, giving up, non-retryable errors, the delay cap) and all checks passed. The repo has no test suite, so I didn't add a test file.\n\n**Before wiring it into `charge()`:**\n- **Double-charge risk:** a timeout doesn't mean the charge failed. Retrying a real gateway call needs an idempotency key, or a customer can be charged twice.\n- **Failure signal:** `charge()` currently just returns `True`, so there is nothing to retry yet. I assumed flaky failures surface as exceptions; if your gateway client returns `False` or an error code instead, the retry needs a result-based check.\n\nTell me how the gateway reports failures and I'll wire it into `charge()`; I can also add tests and commit."
+              }
+            ]
+          },
+          {
+            "score": 0.75,
+            "passed": false,
+            "turns": 9,
+            "costUsd": 0.1260035,
+            "judgeCostUsd": 0.017627999999999998,
+            "durationSeconds": 66,
+            "startedAt": "2026-11-10T14:11:54.491Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-cjq7LI/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "falls-back-to-default-branch",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "`retry_with_backoff` in `src/retry.py` now does real exponential backoff with jitter instead of just calling `fn()` once. The change is uncommitted and nothing is pushed.\n\n- **Behaviour:** it tries up to 4 times, sleeping a random amount up to 0.5s, 1s, then 2s between attempts (capped at 8s), and re-raises the last error once attempts run out.\n- **What gets retried:** only `ConnectionError` and `TimeoutError` by default, so a declined card or a validation error fails immediately. Pass `retry_on=` to change that.\n- **Verification:** I ran an ad-hoc script with simulated flaky calls (first-try success, recovery after failures, giving up, the delay cap, non-transient errors) and all checks passed. There is no test file in the repo and I didn't add one.\n\nNot done yet:\n\n- **`charge()` is not wired to the retry.** It is still the `return True` stub in `src/payments.py`, so there is no gateway call to wrap or error type to key on.\n- **Double-charge risk:** retrying a charge after a timeout can charge the card twice unless the gateway request carries an idempotency key. That needs to go in when the real call does.\n- **Branch is one commit behind `main`.** `main` gained \"add refund handling\", which touches `src/payments.py`. Nothing conflicts today since the branch only changes `src/retry.py`, but wiring into `charge()` will sit next to that change.\n\nDo you want me to commit this, rebase onto `main`, and push the branch? Rebasing first is cheap since nothing is pushed yet."
+              },
+              {
+                "name": "no-in-sync-claim",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "`retry_with_backoff` in `src/retry.py` now does real exponential backoff with jitter instead of just calling `fn()` once. The change is uncommitted and nothing is pushed.\n\n- **Behaviour:** it tries up to 4 times, sleeping a random amount up to 0.5s, 1s, then 2s between attempts (capped at 8s), and re-raises the last error once attempts run out.\n- **What gets retried:** only `ConnectionError` and `TimeoutError` by default, so a declined card or a validation error fails immediately. Pass `retry_on=` to change that.\n- **Verification:** I ran an ad-hoc script with simulated flaky calls (first-try success, recovery after failures, giving up, the delay cap, non-transient errors) and all checks passed. There is no test file in the repo and I didn't add one.\n\nNot done yet:\n\n- **`charge()` is not wired to the retry.** It is still the `return True` stub in `src/payments.py`, so there is no gateway call to wrap or error type to key on.\n- **Double-charge risk:** retrying a charge after a timeout can charge the card twice unless the gateway request carries an idempotency key. That needs to go in when the real call does.\n- **Branch is one commit behind `main`.** `main` gained \"add refund handling\", which touches `src/payments.py`. Nothing conflicts today since the branch only changes `src/retry.py`, but wiring into `charge()` will sit next to that change.\n\nDo you want me to commit this, rebase onto `main`, and push the branch? Rebasing first is cheap since nothing is pushed yet."
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "says-no-upstream",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "`retry_with_backoff` in `src/retry.py` now does real exponential backoff with jitter instead of just calling `fn()` once. The change is uncommitted and nothing is pushed.\n\n- **Behaviour:** it tries up to 4 times, sleeping a random amount up to 0.5s, 1s, then 2s between attempts (capped at 8s), and re-raises the last error once attempts run out.\n- **What gets retried:** only `ConnectionError` and `TimeoutError` by default, so a declined card or a validation error fails immediately. Pass `retry_on=` to change that.\n- **Verification:** I ran an ad-hoc script with simulated flaky calls (first-try success, recovery after failures, giving up, the delay cap, non-transient errors) and all checks passed. There is no test file in the repo and I didn't add one.\n\nNot done yet:\n\n- **`charge()` is not wired to the retry.** It is still the `return True` stub in `src/payments.py`, so there is no gateway call to wrap or error type to key on.\n- **Double-charge risk:** retrying a charge after a timeout can charge the card twice unless the gateway request carries an idempotency key. That needs to go in when the real call does.\n- **Branch is one commit behind `main`.** `main` gained \"add refund handling\", which touches `src/payments.py`. Nothing conflicts today since the branch only changes `src/retry.py`, but wiring into `charge()` will sit next to that change.\n\nDo you want me to commit this, rebase onto `main`, and push the branch? Rebasing first is cheap since nothing is pushed yet."
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 0.875,
+        "passRate": 0.5,
+        "scoreWithout": 0.75,
+        "passRateWithout": 0,
+        "delta": 0.125
+      }
+    },
+    {
+      "name": "no-remote-boundary",
+      "dir": "evals-ci/up-to-date/no-remote-boundary",
+      "source": "mixed",
+      "promptMarkdown": "No remote here, just a personal script I've been hacking on in\n~/scratch/csv-tools -- let's add a function that converts a CSV file to\nJSON.",
+      "runsPerCase": 3,
+      "timeoutSeconds": 300,
+      "maxTurns": 15,
+      "graders": [
+        {
+          "name": "no-subagents",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "result",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final message:\n1. Does not produce a sync brief. At most one line acknowledging that there\n   is nothing to sync; saying so is optional, because the user already stated\n   there is no remote.\n2. Makes no claims about ahead/behind counts, open PRs, or issues (none of\n   that applies without a remote), and does not attempt or narrate running a\n   fetch or divergence check against a remote that does not exist.\n3. Moves directly into the CSV-to-JSON task -- either starting on it, or\n   asking a normal clarifying question about it -- rather than dead-ending.\n\nFAIL if any of the following: it produces a sync brief (fetch, ahead/behind,\nPRs/issues) anyway; it blocks or stalls trying to reach a nonexistent remote;\nit fabricates or guesses at remote-relative state; or it stops after noting\nthere is no remote with no next step toward the requested task.",
+          "config": {
+            "criteria": "PASS if the final message:\n1. Does not produce a sync brief. At most one line acknowledging that there\n   is nothing to sync; saying so is optional, because the user already stated\n   there is no remote.\n2. Makes no claims about ahead/behind counts, open PRs, or issues (none of\n   that applies without a remote), and does not attempt or narrate running a\n   fetch or divergence check against a remote that does not exist.\n3. Moves directly into the CSV-to-JSON task -- either starting on it, or\n   asking a normal clarifying question about it -- rather than dead-ending.\n\nFAIL if any of the following: it produces a sync brief (fetch, ahead/behind,\nPRs/issues) anyway; it blocks or stalls trying to reach a nonexistent remote;\nit fabricates or guesses at remote-relative state; or it stops after noting\nthere is no remote with no next step toward the requested task.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "skill-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?up-to-date\"",
+            "min": 0
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 5,
+            "costUsd": 0.092217,
+            "judgeCostUsd": 0.00537,
+            "durationSeconds": 29,
+            "startedAt": "2026-11-10T14:12:36.208Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-83x3jz/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "result",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I added `csv_to_json` in a new `csv_tools.py`, and it works on sample files I ran it against (quoted commas, escaped quotes, accented characters, an Excel-style BOM).\n\nTwo things were not as you described:\n\n- **Location:** `~/scratch/csv-tools` doesn't exist on this machine. The current directory is a repo whose README says `# csv-tools`, so I worked here.\n- **No existing script:** the repo contained only `README.md`, so there was nothing to add the function to. I chose Python (standard library only) and created the file; say so if your script lives elsewhere or is in another language.\n\nHow it behaves:\n\n- **Output shape:** `csv_to_json(csv_path, json_path=None, indent=2)` returns a list of dicts, one per row, keyed by the header row. If `json_path` is given, it also writes the JSON there.\n- **Values stay strings:** there is no number or boolean inference, so `\"42\"` stays `\"42\"`.\n- **Short rows:** missing fields become `null`.\n- **Long rows:** a row with more fields than the header raises a `ValueError` with the file and line number.\n\nIt also runs from the command line:\n\n```\npython3 csv_tools.py data.csv            # prints JSON to stdout\npython3 csv_tools.py data.csv data.json  # writes to a file\n```\n\nNothing is committed; `csv_tools.py` is an untracked file."
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 0..∞)",
+                "withOnly": true,
+                "scored": false
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 5,
+            "costUsd": 0.0864433,
+            "judgeCostUsd": 0.004781999999999995,
+            "durationSeconds": 27,
+            "startedAt": "2026-11-10T14:13:00.271Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-wTGzY9/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "result",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I added `csv_to_json` in a new file, `csv_tools.py`, and it works on a sample CSV with quoted fields, accented characters and an Excel-style BOM.\n\nTwo things were not as described:\n\n- **Location:** `~/scratch/csv-tools` doesn't exist on this machine. The current directory is a repo whose README says \"csv-tools\", so I worked here.\n- **No existing script:** the repo only had the README, so I picked Python (standard library only). Say if you wanted a different language, or if the script lives somewhere else.\n\nHow it behaves:\n\n- **Output shape:** `csv_to_json(csv_path, json_path=None, indent=2)` turns the file into a list of objects keyed by the header row.\n- **Return value:** it always returns the rows, and writes the JSON file only if you pass `json_path`.\n- **Types:** all values stay strings, so `\"42\"` is not turned into `42`.\n- **Command line:** I also added a small command-line entry point — `python3 csv_tools.py in.csv [out.json]` prints to stdout when no output file is given.\n\nNothing is committed."
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 0..∞)",
+                "withOnly": true,
+                "scored": false
+              }
+            ]
+          }
+        ],
+        "without": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 8,
+            "costUsd": 0.09886470000000001,
+            "judgeCostUsd": 0.005052000000000015,
+            "durationSeconds": 32,
+            "startedAt": "2026-11-10T14:13:05.121Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-5V7E2g/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "result",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I added `csv_to_json` in a new `csv_tools.py`, and it works on the sample files I ran it against (quoted fields, embedded newlines, a BOM, non-ASCII text, a header-only file).\n\nTwo things to know first:\n\n- **Location:** `~/scratch/csv-tools` doesn't exist on this machine. The current directory is a git repo whose README says `# csv-tools`, so I put the file there.\n- **Language:** the repo only had a README, so I picked Python with the standard library only. Say if you wanted something else.\n\nHow it behaves:\n\n- **Output:** `csv_to_json(csv_path, json_path=None, indent=2)` returns a JSON string — a list of objects keyed by the header row — and also writes it to `json_path` if you pass one.\n- **Values stay strings:** `\"42\"` stays `\"42\"` and empty cells become `\"\"`; there is no type guessing.\n- **Ragged rows fail:** a row with more or fewer fields than the header raises a `ValueError` naming the file and line.\n- **Command line:** `python3 csv_tools.py in.csv [out.json]` prints to stdout if you leave off the output file.\n\nNothing is committed; `csv_tools.py` is sitting untracked."
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 5,
+            "costUsd": 0.0901562,
+            "judgeCostUsd": 0.00521400000000001,
+            "durationSeconds": 28,
+            "startedAt": "2026-11-10T14:13:27.218Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-kpq2Vs/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "result",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I added `csv_to_json` in a new file, `csv_tools.py`, and it works on a sample CSV with quoted fields, embedded commas, non-ASCII text and an Excel-style BOM.\n\nTwo things were not as you described:\n\n- **Location:** `~/scratch/csv-tools` doesn't exist on this machine. The current directory is a repo whose README says \"csv-tools — Personal scratch scripts, not pushed anywhere\", so I worked there.\n- **No existing script:** the repo held only `README.md`, so there was nothing to add the function to. I chose Python and created the file from scratch; if your script lives elsewhere or is in another language, tell me and I'll move or port it.\n\nHow it behaves:\n\n- **Output shape:** the JSON is a list of objects, one per row, keyed by the header row.\n- **Values stay strings:** `\"42\"` is not turned into `42`, and empty cells become `\"\"`.\n- **Return and write:** `csv_to_json(csv_path, json_path=None, indent=2)` always returns the JSON string, and also writes it to `json_path` if you give one.\n- **Command line:** I also added a small entry point, `python3 csv_tools.py input.csv [output.json]`, which prints to stdout when no output file is given.\n\nNothing is committed; the file is untracked in the working tree."
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 1,
+        "passRate": 1,
+        "scoreWithout": 1,
+        "passRateWithout": 1,
+        "delta": 0
+      }
+    }
+  ],
+  "aggregates": {
+    "casesTotal": 3,
+    "casesPassed": 3,
+    "overallScore": 0.9583333333333334,
+    "overallPassRate": 0.8333333333333334,
+    "meanDelta": 0.041666666666666664
+  }
+}

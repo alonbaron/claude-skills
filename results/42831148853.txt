@@ -1,0 +1,28 @@
+run: 42831148853 https://github.com/alonbaron/claude-skills/actions/runs/42831148853
+event: workflow_dispatch  commit: c1af5ff6f2b558752d241430b1d72a14ad58ac8e  ref: fix/fable-5-2-evals
+model: claude-fable-5-2  cases: sandboxed  job status at publish: success
+only: review-swarm/trivial-diff-declines up-to-date/fresh-branch-no-upstream up-to-date/no-remote-boundary
+cli: 2.1.303 (Claude Code)
+started: 2026-11-10T14:13:56Z
+
+valid 3 of 3
+re-run: none
+cost $1.16  runner aggregates over the 3 cases in the results: {"casesTotal": 3, "casesPassed": 3, "overallScore": 0.9583333333333334, "overallPassRate": 0.8333333333333334, "meanDelta": 0.041666666666666664}
+
+== trivial-diff-declines  with 1.00  without 1.00
+   agent-spawn-limit                  with PP   without PP
+   declines-with-alternative          with PP   without PP
+
+== fresh-branch-no-upstream  with 0.88  without 0.75
+   falls-back-to-default-branch       with P.   without ..
+   no-in-sync-claim                   with PP   without PP
+   no-subagents                       with PP   without PP
+   says-no-upstream                   with PP   without PP
+   skill-fired                        with PP   without 
+   FAIL with#1 falls-back-to-default-branch: judge votes: FAIL FAIL FAIL
+      evidence: `retry_with_backoff` in `src/retry.py` is now a real implementation, uncommitted in your working tree. It is not yet wired into `charge()`, and the branch is still unrebased and unpushed. | | What it does: | | - **Backoff:** up to 4 attempts by default, with exponential delays starting at 0.5s, capped at 8s, and randomised (full jitter). | - **What gets retried:** only exceptions listed in `retry_on`, which defaults to a new `TransientError` marker class. Anything else propagates immediately, so a hard decline is never retried. | - **Giving up:** after the last attempt the original exception is re-raised. | - **Compatibility:** `retry_with_backoff(fn)` still works as before, and `sleep` is i
+
+== no-remote-boundary  with 1.00  without 1.00
+   no-subagents                       with PP   without PP
+   result                             with PP   without PP
+   skill-fired                        with PP   without 
