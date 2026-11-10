@@ -1,0 +1,19 @@
+run: 42790253764 https://github.com/alonbaron/claude-skills/actions/runs/42790253764
+event: workflow_dispatch  commit: 0b4c924f4730e1c3ec65d5a8f918426f06777c80  ref: evals-api-key
+model: claude-fable-5-2  cases: sandboxed  job status at publish: success
+only: architect/small-fix-boundary
+cli: 2.1.303 (Claude Code)
+started: 2026-11-10T09:31:10Z
+
+valid 1 of 1
+re-run: none
+cost $3.40  runner aggregates over the 1 cases in the results: {"casesTotal": 1, "casesPassed": 1, "overallScore": 0.875, "overallPassRate": 0.5, "meanDelta": 0.125}
+
+== small-fix-boundary  with 0.88  without 0.75
+   no-invention                       with PP   without .P
+   no-subagents                       with PP   without PP
+   skill-fired                        with PP   without 
+   targeted-addition                  with PP   without PP
+   two-boundary-enforcement           with P.   without P.
+   FAIL with#1 two-boundary-enforcement: judge votes: FAIL FAIL FAIL
+      evidence: # Source of Truth — Auth Service | | ## Scope | Cloudflare Workers auth service (Hono + D1). Issues and validates session | tokens for POST /login, POST /logout, GET /session. Rate-limits POST /login | per client IP (invariant 3). | | Not covered: per-account lockout; rate limits on any other endpoint. Both are | open questions in ARCHITECTURE_ROADMAP.md §3.1. | | ## Domain model | - `users` (D1): id, email, password_hash, created_at | - `sessions` (D1): id, user_id, token, expires_at | | ## Invariants | | # | Invariant | Enforced at | | |---|---|---| | | 1 | Password hashes use scrypt, never stored plaintext | app layer (hash on write) + DB column has no plaintext default | | | 2 | A sessio

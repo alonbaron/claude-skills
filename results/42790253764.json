@@ -1,0 +1,381 @@
+{
+  "schemaVersion": 1,
+  "claudeVersion": "2.1.303",
+  "startedAt": "2026-11-10T09:23:24.652Z",
+  "durationSeconds": 465,
+  "costUsd": 3.3966593999999994,
+  "partial": false,
+  "suite": {
+    "root": "/home/runner/work/claude-skills/claude-skills",
+    "ablation": "with-without",
+    "modelOverride": "claude-fable-5-2",
+    "judgeModel": "sonnet",
+    "threshold": 0.7,
+    "concurrency": 4,
+    "plugins": [
+      {
+        "name": "alon-skills",
+        "version": "3.2.2",
+        "path": "/home/runner/work/claude-skills/claude-skills"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "small-fix-boundary",
+      "dir": "evals-ci/architect/small-fix-boundary",
+      "source": "mixed",
+      "promptMarkdown": "We already have SOURCE_OF_TRUTH.md and ARCHITECTURE_ROADMAP.md for our Cloudflare Workers auth service (Hono + D1). Product wants a rate limit of 100 requests/minute per IP on POST /login before we ship password reset next sprint. Can you spec that out?",
+      "runsPerCase": 3,
+      "timeoutSeconds": 900,
+      "maxTurns": 40,
+      "graders": [
+        {
+          "name": "no-invention",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the response does not state invented specifics — a specific\nrate-limiting library, a counter schema, an exact HTTP status/header\nconvention — as settled fact when they were not given and are not already in\nthe docs. Naming a concrete option while flagging it as an assumption or open\nquestion is fine.\n\nFAIL if it presents invented implementation details as decided fact with no\nflag that they are an assumption.",
+          "config": {
+            "criteria": "PASS if the response does not state invented specifics — a specific\nrate-limiting library, a counter schema, an exact HTTP status/header\nconvention — as settled fact when they were not given and are not already in\nthe docs. Naming a concrete option while flagging it as an assumption or open\nquestion is fine.\n\nFAIL if it presents invented implementation details as decided fact with no\nflag that they are an assumption.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "no-subagents",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "skill-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?architect\""
+          }
+        },
+        {
+          "name": "targeted-addition",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the response treats this as a targeted addition to the auth service's\nexisting design docs: it adds the new rate-limiting invariant (100\nrequests/minute per IP on POST /login), says where it lives (e.g. wired into\nSOURCE_OF_TRUTH.md's invariants table and ARCHITECTURE_ROADMAP.md), and does\nthis without re-authoring or regenerating the whole SOURCE_OF_TRUTH.md /\nARCHITECTURE_ROADMAP.md / TODO_WORKFLOW.md / CLAUDE.md set from scratch. It\nshould build on the existing login/logout/session model and D1 schema rather\nthan re-deriving unrelated sections.\n\nFAIL if it re-authors the whole doc set for a one-endpoint change, ignores the\ndocs that already exist, or jumps straight to implementation code instead of\na design addition.",
+          "config": {
+            "criteria": "PASS if the response treats this as a targeted addition to the auth service's\nexisting design docs: it adds the new rate-limiting invariant (100\nrequests/minute per IP on POST /login), says where it lives (e.g. wired into\nSOURCE_OF_TRUTH.md's invariants table and ARCHITECTURE_ROADMAP.md), and does\nthis without re-authoring or regenerating the whole SOURCE_OF_TRUTH.md /\nARCHITECTURE_ROADMAP.md / TODO_WORKFLOW.md / CLAUDE.md set from scratch. It\nshould build on the existing login/logout/session model and D1 schema rather\nthan re-deriving unrelated sections.\n\nFAIL if it re-authors the whole doc set for a one-endpoint change, ignores the\ndocs that already exist, or jumps straight to implementation code instead of\na design addition.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "two-boundary-enforcement",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if SOURCE_OF_TRUTH.md states the new login rate-limit invariant and names\ntwo places it is enforced, e.g. a Hono middleware check AND a platform or\nstorage layer behind it (a Workers Rate Limiting binding, D1, KV, a Durable\nObject). Both must be named, not just \"rate limiting is applied\".\n\nFAIL if the invariant is missing, or only one enforcement point is named.",
+          "config": {
+            "criteria": "PASS if SOURCE_OF_TRUTH.md states the new login rate-limit invariant and names\ntwo places it is enforced, e.g. a Hono middleware check AND a platform or\nstorage layer behind it (a Workers Rate Limiting binding, D1, KV, a Durable\nObject). Both must be named, not just \"rate limiting is applied\".\n\nFAIL if the invariant is missing, or only one enforcement point is named.",
+            "focus": {
+              "source": "file",
+              "path": "SOURCE_OF_TRUTH.md"
+            }
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 20,
+            "costUsd": 1.3018879999999997,
+            "judgeCostUsd": 0.023502000000000002,
+            "durationSeconds": 441,
+            "startedAt": "2026-11-10T09:23:24.669Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-mqDKd7/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-invention",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "The spec is written into your three existing docs, uncommitted. It is docs only, with no code, and `CLAUDE.md` is untouched.\n\nOne caveat first: I couldn't reach Cloudflare's docs or npm from this sandbox, so the platform facts are from memory. They are listed as assumptions in §3.1, and TODO #3 verifies them before build.\n\n## What the spec says\n- **Limit:** 100 requests per 60 s per client IP on POST /login only. Every request counts, whatever its outcome.\n- **Where it runs:** first thing on the route, so a rejected request costs no D1 query and no scrypt work.\n- **Client IP:** taken from `CF-Connecting-IP`, never `X-Forwarded-For`.\n- **No schema change:** counters live in a Workers Rate Limiting binding, not D1.\n- **Sequencing:** a new Phase 1.5, and the password reset task is marked as not shippable until the rate limit is deployed.\n\n## Where it lives\n- `SOURCE_OF_TRUTH.md:16` — new invariant 3, plus two proposed decisions at lines 20–21.\n- `ARCHITECTURE_ROADMAP.md:28` — new §3.1 with the spec table, request order, failure modes, assumptions and open questions; small touches to §1, §2, §3, §5 and §6.\n- `TODO_WORKFLOW.md:7` — task #3 (sign-off and verification) and task #4 (build).\n\n## Decisions to confirm\nThese are my choices, marked `(proposed)` in the docs.\n\n| # | Proposed | Alternative |\n|---|---|---|\n| 1 | Workers Rate Limiting binding called from Hono middleware. It counts per Cloudflare location and is eventually consistent, so 100/min is approximate. | Durable Object counter if the limit must be exact and global, at the cost of an extra hop per login. |\n| 2 | Over the limit returns `429` with `Retry-After: 60`. | — |\n| 3 | If the limiter itself errors, login fails open and the error is logged. | Fail closed, where a limiter outage becomes a login outage. |\n| 4 | IPv6 is counted per /64 prefix. | Per full address, which is bypassable by rotating addresses. |\n| 5 | A missing `CF-Connecting-IP` counts against one shared `unknown` bucket. | Reject the request, or skip limiting. |\n\n## Open questions\n1. **Who calls POST /login? (blocking)** If the main app's backend or another Worker calls it on users' behalf, every user shares that caller's IP and the whole product is capped at 100 logins/min. The spec assumes end users reach the Worker directly.\n2. **Is the Worker on a zone hostname, and on which plan?** That decides whether a WAF rate limiting rule can be a second boundary that rejects floods before the Worker runs.\n3. **Do you want a per-account limit, and limits on the reset endpoints?** Per-IP does not bound guesses against one account from many IPs, and the reset endpoints aren't in §3 yet.\n4. **What error body does the service return today?** The 429 should match it, and there is no code in this repo for me to check."
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 1x (expected 1..∞)",
+                "withOnly": true,
+                "scored": false
+              },
+              {
+                "name": "targeted-addition",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "The spec is written into your three existing docs, uncommitted. It is docs only, with no code, and `CLAUDE.md` is untouched.\n\nOne caveat first: I couldn't reach Cloudflare's docs or npm from this sandbox, so the platform facts are from memory. They are listed as assumptions in §3.1, and TODO #3 verifies them before build.\n\n## What the spec says\n- **Limit:** 100 requests per 60 s per client IP on POST /login only. Every request counts, whatever its outcome.\n- **Where it runs:** first thing on the route, so a rejected request costs no D1 query and no scrypt work.\n- **Client IP:** taken from `CF-Connecting-IP`, never `X-Forwarded-For`.\n- **No schema change:** counters live in a Workers Rate Limiting binding, not D1.\n- **Sequencing:** a new Phase 1.5, and the password reset task is marked as not shippable until the rate limit is deployed.\n\n## Where it lives\n- `SOURCE_OF_TRUTH.md:16` — new invariant 3, plus two proposed decisions at lines 20–21.\n- `ARCHITECTURE_ROADMAP.md:28` — new §3.1 with the spec table, request order, failure modes, assumptions and open questions; small touches to §1, §2, §3, §5 and §6.\n- `TODO_WORKFLOW.md:7` — task #3 (sign-off and verification) and task #4 (build).\n\n## Decisions to confirm\nThese are my choices, marked `(proposed)` in the docs.\n\n| # | Proposed | Alternative |\n|---|---|---|\n| 1 | Workers Rate Limiting binding called from Hono middleware. It counts per Cloudflare location and is eventually consistent, so 100/min is approximate. | Durable Object counter if the limit must be exact and global, at the cost of an extra hop per login. |\n| 2 | Over the limit returns `429` with `Retry-After: 60`. | — |\n| 3 | If the limiter itself errors, login fails open and the error is logged. | Fail closed, where a limiter outage becomes a login outage. |\n| 4 | IPv6 is counted per /64 prefix. | Per full address, which is bypassable by rotating addresses. |\n| 5 | A missing `CF-Connecting-IP` counts against one shared `unknown` bucket. | Reject the request, or skip limiting. |\n\n## Open questions\n1. **Who calls POST /login? (blocking)** If the main app's backend or another Worker calls it on users' behalf, every user shares that caller's IP and the whole product is capped at 100 logins/min. The spec assumes end users reach the Worker directly.\n2. **Is the Worker on a zone hostname, and on which plan?** That decides whether a WAF rate limiting rule can be a second boundary that rejects floods before the Worker runs.\n3. **Do you want a per-account limit, and limits on the reset endpoints?** Per-IP does not bound guesses against one account from many IPs, and the reset endpoints aren't in §3 yet.\n4. **What error body does the service return today?** The 429 should match it, and there is no code in this repo for me to check."
+              },
+              {
+                "name": "two-boundary-enforcement",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "# Source of Truth — Auth Service\n\n## Scope\nCloudflare Workers auth service (Hono + D1). Issues and validates session\ntokens for POST /login, POST /logout, GET /session.\n\n## Domain model\n- `users` (D1): id, email, password_hash, created_at\n- `sessions` (D1): id, user_id, token, expires_at\n\n## Invariants\n| # | Invariant | Enforced at |\n|---|---|---|\n| 1 | Password hashes use scrypt, never stored plaintext | app layer (hash on write) + DB column has no plaintext default |\n| 2 | A session token is single-use per refresh | app layer (rotate on use) + DB unique index on token |\n| 3 | POST /login is rate limited to 100 requests per minute per client IP; over-limit requests are rejected before any D1 or scrypt work | app layer: route middleware + Workers Rate Limiting binding (proposed) — ARCHITECTURE_ROADMAP.md §3.1. Second boundary (zone-level WAF rule): open, §3.1 Q2 |\n\n## Decisions\n- **Decision:** D1 over KV for sessions. **Why:** need a relational lookup by user_id for \"log out everywhere\". **Alternative rejected:** KV (no secondary index).\n- **Decision (proposed):** Rate-limit counters live in a Workers Rate Limiting binding, checked in middleware before the login handler — not in D1. **Why:** the check adds no storage round trip to the login path (p95 < 150ms), and a login flood never becomes D1 writes on the database the limit protects. **Trade-off accepted:** the binding counts per Cloudflare location and is eventually consistent, so 100/min is enforced approximately, not exactly. **Alternatives rejected:** D1 counter table (one write per attempt); Durable Object counter (exact and global, but an extra hop and per-request cost — the fallback if product needs exact enforcement); KV (eventually consistent, cannot count); WAF rate limiting rule alone (configured outside this repo, depends on zone + plan — kept as a candidate second boundary).\n- **Decision (proposed):** If the rate limiter itself errors, POST /login fails open: the request proceeds and the error is logged. **Why:** the limiter is an abuse control; its outage must not become a login outage for every user. **Alternative rejected:** fail closed.\n"
+              }
+            ]
+          },
+          {
+            "score": 0.75,
+            "passed": false,
+            "turns": 16,
+            "costUsd": 1.3467831999999997,
+            "judgeCostUsd": 0.030275999999999997,
+            "durationSeconds": 465,
+            "startedAt": "2026-11-10T09:23:24.669Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-nySu54/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-invention",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "The rate limit is specced into your three existing docs (uncommitted, `CLAUDE.md` untouched), but one question has to be answered before anyone builds it.\n\n**Blocking question: who calls `POST /login`?** I assumed end-user clients call it directly, so the IP Cloudflare reports is the user's. If the main app's backend calls it on users' behalf, every login arrives from the backend's address and all users share one 100/min budget. TODO #3 is marked `[BLOCKED]` on this.\n\n## What the spec says\n- **Behaviour:** every `POST /login` hits a rate-limit middleware first. Over the limit, it returns 429 before body parsing, any D1 query or scrypt.\n- **Counting:** all requests count, not only failed logins (the literal reading of \"100 requests/minute\").\n- **Storage:** the counter lives in the Workers Rate Limiting binding, so there is no D1 schema change and no D1 write on the login path.\n- **Sequencing:** it is Phase 1.5 in the roadmap and TODO #3; TODO #2 (password reset) now says it ships only after #3 is live.\n\nThe full contract, failure modes and acceptance criteria are in `ARCHITECTURE_ROADMAP.md` §3.1. The invariant and decisions are in `SOURCE_OF_TRUTH.md`. I also bumped the roadmap version from 0.3 to 0.4.\n\n## Decisions to confirm\nThese are my choices, marked `(proposed)` in the docs.\n\n| # | Decision | Proposed | Alternative |\n|---|---|---|---|\n| 1 | Where the count lives | Workers Rate Limiting binding called from Hono middleware; the cap is approximate (per-location, eventually consistent counters) | Durable Object per IP for an exact global cap |\n| 2 | Over-limit response | 429 with `Retry-After: 60`, body in your existing error format | — |\n| 3 | Limiter outage | Fail open: login proceeds and the failure is logged, which matches today's behaviour | Fail closed: a limiter outage takes login down |\n| 4 | What \"per IP\" means | `CF-Connecting-IP`; IPv6 counted per /64; `X-Forwarded-For` ignored; missing header shares one bucket | Full IPv6 address, which is bypassable by rotating addresses |\n| 5 | Counter scope | Dedicated to `/login`; password reset gets its own | — |\n| 6 | Logging | Every 429 and every limiter failure logged as its own event | — |\n\n## Flagged\n- **Cloudflare facts are unverified.** The sandbox blocked `developers.cloudflare.com`, so the binding's behaviour (60 s period, per-location counting, config syntax) is from memory. Checking it is the first step of TODO #3.\n- **No code in this repo.** I couldn't see your error format, wrangler version or middleware layout, so the spec names responsibilities, not file paths.\n- **This is not brute-force protection.** 100/min per IP still allows about 144,000 guesses a day from one IP and does nothing against attempts spread across IPs. Per-account throttling is recorded as an open question, out of scope.\n- **Password reset has no limits specified.** Product only named `/login`; the reset endpoints' limits are left to that spec.\n- **Shared IPs.** Users behind one address (office NAT, mobile carrier) get 429s if together they pass 100/min.\n- **Second enforcement layer.** A Cloudflare WAF rate-limiting rule in front of the Worker is left as an open question, since it depends on your plan and domain setup.\n- **Existing mismatch, left alone.** The roadmap says Phase 2 is \"in progress\" while TODO #2 is `[ ]`."
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 1x (expected 1..∞)",
+                "withOnly": true,
+                "scored": false
+              },
+              {
+                "name": "targeted-addition",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "The rate limit is specced into your three existing docs (uncommitted, `CLAUDE.md` untouched), but one question has to be answered before anyone builds it.\n\n**Blocking question: who calls `POST /login`?** I assumed end-user clients call it directly, so the IP Cloudflare reports is the user's. If the main app's backend calls it on users' behalf, every login arrives from the backend's address and all users share one 100/min budget. TODO #3 is marked `[BLOCKED]` on this.\n\n## What the spec says\n- **Behaviour:** every `POST /login` hits a rate-limit middleware first. Over the limit, it returns 429 before body parsing, any D1 query or scrypt.\n- **Counting:** all requests count, not only failed logins (the literal reading of \"100 requests/minute\").\n- **Storage:** the counter lives in the Workers Rate Limiting binding, so there is no D1 schema change and no D1 write on the login path.\n- **Sequencing:** it is Phase 1.5 in the roadmap and TODO #3; TODO #2 (password reset) now says it ships only after #3 is live.\n\nThe full contract, failure modes and acceptance criteria are in `ARCHITECTURE_ROADMAP.md` §3.1. The invariant and decisions are in `SOURCE_OF_TRUTH.md`. I also bumped the roadmap version from 0.3 to 0.4.\n\n## Decisions to confirm\nThese are my choices, marked `(proposed)` in the docs.\n\n| # | Decision | Proposed | Alternative |\n|---|---|---|---|\n| 1 | Where the count lives | Workers Rate Limiting binding called from Hono middleware; the cap is approximate (per-location, eventually consistent counters) | Durable Object per IP for an exact global cap |\n| 2 | Over-limit response | 429 with `Retry-After: 60`, body in your existing error format | — |\n| 3 | Limiter outage | Fail open: login proceeds and the failure is logged, which matches today's behaviour | Fail closed: a limiter outage takes login down |\n| 4 | What \"per IP\" means | `CF-Connecting-IP`; IPv6 counted per /64; `X-Forwarded-For` ignored; missing header shares one bucket | Full IPv6 address, which is bypassable by rotating addresses |\n| 5 | Counter scope | Dedicated to `/login`; password reset gets its own | — |\n| 6 | Logging | Every 429 and every limiter failure logged as its own event | — |\n\n## Flagged\n- **Cloudflare facts are unverified.** The sandbox blocked `developers.cloudflare.com`, so the binding's behaviour (60 s period, per-location counting, config syntax) is from memory. Checking it is the first step of TODO #3.\n- **No code in this repo.** I couldn't see your error format, wrangler version or middleware layout, so the spec names responsibilities, not file paths.\n- **This is not brute-force protection.** 100/min per IP still allows about 144,000 guesses a day from one IP and does nothing against attempts spread across IPs. Per-account throttling is recorded as an open question, out of scope.\n- **Password reset has no limits specified.** Product only named `/login`; the reset endpoints' limits are left to that spec.\n- **Shared IPs.** Users behind one address (office NAT, mobile carrier) get 429s if together they pass 100/min.\n- **Second enforcement layer.** A Cloudflare WAF rate-limiting rule in front of the Worker is left as an open question, since it depends on your plan and domain setup.\n- **Existing mismatch, left alone.** The roadmap says Phase 2 is \"in progress\" while TODO #2 is `[ ]`."
+              },
+              {
+                "name": "two-boundary-enforcement",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "# Source of Truth — Auth Service\n\n## Scope\nCloudflare Workers auth service (Hono + D1). Issues and validates session\ntokens for POST /login, POST /logout, GET /session. Rate-limits POST /login\nper client IP (invariant 3).\n\nNot covered: per-account lockout; rate limits on any other endpoint. Both are\nopen questions in ARCHITECTURE_ROADMAP.md §3.1.\n\n## Domain model\n- `users` (D1): id, email, password_hash, created_at\n- `sessions` (D1): id, user_id, token, expires_at\n\n## Invariants\n| # | Invariant | Enforced at |\n|---|---|---|\n| 1 | Password hashes use scrypt, never stored plaintext | app layer (hash on write) + DB column has no plaintext default |\n| 2 | A session token is single-use per refresh | app layer (rotate on use) + DB unique index on token |\n| 3 | POST /login accepts at most 100 requests per minute per client IP; requests over the limit are rejected before any credential work (D1 lookup, scrypt). The cap is approximate — see Decisions | app layer (rate-limit middleware ahead of the /login handler; counter in the Workers Rate Limiting binding) *(proposed)* + no second boundary yet (ARCHITECTURE_ROADMAP.md §3.1, open question 3) |\n\n## Decisions\n- **Decision:** D1 over KV for sessions. **Why:** need a relational lookup by user_id for \"log out everywhere\". **Alternative rejected:** KV (no secondary index).\n- **Decision (proposed):** Count /login requests in the Workers Rate Limiting binding, called from Hono middleware. **Why:** no D1 write on the login path, so a login flood cannot become D1 write load and the p95 < 150ms target is not put at risk; 100 per 60 s is a direct setting of the binding. **Trade-off accepted:** counters are kept per Cloudflare location and are eventually consistent, so a burst can pass 100 before the limit bites. **Alternatives rejected:** D1 counter table (a write per attempt, on the database that also serves sessions); Durable Object per IP (exact and global, but an extra hop and a new component for precision product did not ask for); KV (eventually consistent, not a counter store).\n  > Do not move rate-limit counters into D1 without an explicit decision.\n- **Decision (proposed):** The rate-limit key is the client IP from `CF-Connecting-IP`: IPv4 by full address, IPv6 by /64 prefix. `X-Forwarded-For` is never read. **Why:** Cloudflare sets `CF-Connecting-IP`, while a client can send its own `X-Forwarded-For`; one IPv6 subscriber usually controls a whole /64, so a per-address limit is bypassed by rotating addresses. **Alternative rejected:** full IPv6 address as the key.\n- **Decision (proposed):** If the limiter itself fails, POST /login fails open: the request proceeds and the failure is logged. **Why:** fail-open equals today's behaviour (no limit); failing closed would add a new way for login to go down. **Alternative rejected:** fail closed (a limiter outage becomes a login outage).\n\nDecisions marked *(proposed)* are not final. What has to be confirmed is listed\nin ARCHITECTURE_ROADMAP.md §3.1 (open questions).\n"
+              }
+            ]
+          }
+        ],
+        "without": [
+          {
+            "score": 0.75,
+            "passed": false,
+            "turns": 15,
+            "costUsd": 0.37801880000000004,
+            "judgeCostUsd": 0.04414000000000001,
+            "durationSeconds": 113,
+            "startedAt": "2026-11-10T09:23:24.669Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-hUlUtY/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-invention",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I've written the spec into the three existing docs; the changes are uncommitted in the working tree. The Cloudflare binding details are from memory, because the sandbox blocked the Cloudflare docs, and this repo has no code to check the error body or wrangler setup against.\n\n## The design\n- **Mechanism:** a Hono middleware on `POST /login` only, backed by a Workers Rate Limiting binding (`LOGIN_RATE_LIMITER`, limit 100, period 60). It runs before body parsing, D1 and scrypt, so a rejected request costs almost nothing.\n- **Why not D1:** a D1 counter would add a write to every login attempt, which eats into the p95 < 150ms budget and turns attack traffic into database writes. Durable Objects and a WAF rule are also recorded as rejected alternatives.\n- **Key:** `CF-Connecting-IP`, which the client can't forge.\n- **On exceed:** 429 with `Retry-After: 60` and `{\"error\":\"rate_limited\"}`. The binding only returns allow/deny, so there are no `X-RateLimit-*` headers.\n- **Counting:** every request counts, whatever the login outcome.\n\n## Where it landed\n- **`SOURCE_OF_TRUTH.md`:** invariant #3 and three decisions (mechanism, IP key, fail-open).\n- **`ARCHITECTURE_ROADMAP.md`:** new §3.1 with behaviour and acceptance criteria, a tech stack row, and the phase and latency lines updated. I also bumped the version to 0.4.\n- **`TODO_WORKFLOW.md`:** task #3, marked as shipping before password reset.\n\n## Things to confirm\n1. **Who calls `/login`?** The spec assumes browsers or clients hit it directly. If the main app's backend proxies logins, every user shares that backend's IP and one bucket, and the design needs a different key.\n2. **Approximate cap:** the binding counts per Cloudflare location and is eventually consistent, so \"100/min\" is not exact. If product needs an exact cap, that means a Durable Object instead.\n3. **IPv6 keyed by /64:** I keyed IPv6 by /64 rather than full address, since one subscriber usually holds a whole /64 and could otherwise rotate addresses freely. This departs slightly from a literal \"per IP\".\n4. **Fail open:** if the limiter errors, the login goes through and is logged, so a limiter fault doesn't lock everyone out. Say if you'd rather fail closed.\n5. **Binding syntax:** check the wrangler config syntax and minimum wrangler version against Cloudflare's docs before building.\n6. **Error body:** I guessed `{\"error\":\"rate_limited\"}`; align it with the service's real error shape.\n\n## What this limit doesn't cover\n- **Password guessing:** 100/min per IP stops volumetric abuse, but still allows about 144,000 guesses a day from one IP, and does nothing against credential stuffing spread across many IPs. A per-account failed-attempt limit would cover that; I left it out as beyond what product asked for.\n- **Password reset routes:** these will need their own, much tighter limits (per IP and per email). The middleware is specced as reusable for that, with the numbers left to the reset task."
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "targeted-addition",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I've written the spec into the three existing docs; the changes are uncommitted in the working tree. The Cloudflare binding details are from memory, because the sandbox blocked the Cloudflare docs, and this repo has no code to check the error body or wrangler setup against.\n\n## The design\n- **Mechanism:** a Hono middleware on `POST /login` only, backed by a Workers Rate Limiting binding (`LOGIN_RATE_LIMITER`, limit 100, period 60). It runs before body parsing, D1 and scrypt, so a rejected request costs almost nothing.\n- **Why not D1:** a D1 counter would add a write to every login attempt, which eats into the p95 < 150ms budget and turns attack traffic into database writes. Durable Objects and a WAF rule are also recorded as rejected alternatives.\n- **Key:** `CF-Connecting-IP`, which the client can't forge.\n- **On exceed:** 429 with `Retry-After: 60` and `{\"error\":\"rate_limited\"}`. The binding only returns allow/deny, so there are no `X-RateLimit-*` headers.\n- **Counting:** every request counts, whatever the login outcome.\n\n## Where it landed\n- **`SOURCE_OF_TRUTH.md`:** invariant #3 and three decisions (mechanism, IP key, fail-open).\n- **`ARCHITECTURE_ROADMAP.md`:** new §3.1 with behaviour and acceptance criteria, a tech stack row, and the phase and latency lines updated. I also bumped the version to 0.4.\n- **`TODO_WORKFLOW.md`:** task #3, marked as shipping before password reset.\n\n## Things to confirm\n1. **Who calls `/login`?** The spec assumes browsers or clients hit it directly. If the main app's backend proxies logins, every user shares that backend's IP and one bucket, and the design needs a different key.\n2. **Approximate cap:** the binding counts per Cloudflare location and is eventually consistent, so \"100/min\" is not exact. If product needs an exact cap, that means a Durable Object instead.\n3. **IPv6 keyed by /64:** I keyed IPv6 by /64 rather than full address, since one subscriber usually holds a whole /64 and could otherwise rotate addresses freely. This departs slightly from a literal \"per IP\".\n4. **Fail open:** if the limiter errors, the login goes through and is logged, so a limiter fault doesn't lock everyone out. Say if you'd rather fail closed.\n5. **Binding syntax:** check the wrangler config syntax and minimum wrangler version against Cloudflare's docs before building.\n6. **Error body:** I guessed `{\"error\":\"rate_limited\"}`; align it with the service's real error shape.\n\n## What this limit doesn't cover\n- **Password guessing:** 100/min per IP stops volumetric abuse, but still allows about 144,000 guesses a day from one IP, and does nothing against credential stuffing spread across many IPs. A per-account failed-attempt limit would cover that; I left it out as beyond what product asked for.\n- **Password reset routes:** these will need their own, much tighter limits (per IP and per email). The middleware is specced as reusable for that, with the numbers left to the reset task."
+              },
+              {
+                "name": "two-boundary-enforcement",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "# Source of Truth — Auth Service\n\n## Scope\nCloudflare Workers auth service (Hono + D1). Issues and validates session\ntokens for POST /login, POST /logout, GET /session.\n\n## Domain model\n- `users` (D1): id, email, password_hash, created_at\n- `sessions` (D1): id, user_id, token, expires_at\n\n## Invariants\n| # | Invariant | Enforced at |\n|---|---|---|\n| 1 | Password hashes use scrypt, never stored plaintext | app layer (hash on write) + DB column has no plaintext default |\n| 2 | A session token is single-use per refresh | app layer (rotate on use) + DB unique index on token |\n| 3 | POST /login accepts at most 100 requests per 60s per client IP; excess requests get 429 before any D1 or scrypt work | app layer (Hono middleware on the route) + Workers Rate Limiting binding `LOGIN_RATE_LIMITER` (counted per Cloudflare location, so the cap is approximate) |\n\n## Decisions\n- **Decision:** D1 over KV for sessions. **Why:** need a relational lookup by user_id for \"log out everywhere\". **Alternative rejected:** KV (no secondary index).\n- **Decision:** Workers Rate Limiting binding for the login limit. **Why:** the check is local to the Cloudflare location, so it adds no D1 round trip to login (p95 < 150ms) and attack traffic never becomes D1 writes. **Alternative rejected:** D1 counter table (a write per attempt on the path being protected); Durable Object counter (exact, but a new component and an extra hop for a limit that doesn't need to be exact); WAF rate limiting rule (lives in zone config outside the repo, can't be tested with the service).\n- **Decision:** Client IP is `CF-Connecting-IP`; IPv6 is keyed by /64. **Why:** Cloudflare sets the header and the client can't forge it; one IPv6 subscriber usually holds a whole /64, so per-address keys are trivial to rotate. **Alternative rejected:** `X-Forwarded-For` (client-controlled); full IPv6 address.\n- **Decision:** The limiter fails open. **Why:** a limiter fault must not lock every user out of login. **Alternative rejected:** fail closed.\n"
+              }
+            ]
+          },
+          {
+            "score": 0.75,
+            "passed": false,
+            "turns": 10,
+            "costUsd": 0.36996939999999995,
+            "judgeCostUsd": 0.04922200000000001,
+            "durationSeconds": 115,
+            "startedAt": "2026-11-10T09:23:24.669Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-NmEkls/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-invention",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "The spec is written into your three existing docs, uncommitted on `master`. One thing to raise with product: 100/min per IP is abuse and load protection, not brute-force protection. It still allows about 144,000 password guesses a day from one IP, so protecting individual accounts would need a per-email limit, which I left out.\n\nThe design is a Hono middleware on POST /login only, backed by the Workers Rate Limiting binding. It runs before body parsing, the D1 lookup and scrypt, so a limited request costs almost nothing and gets a 429 with `Retry-After: 60`.\n\n- **`ARCHITECTURE_ROADMAP.md`**: new §3.1 with the full spec, wrangler config and six acceptance criteria, plus small updates to the stack table, the /login row, the phase gate and the latency note. I bumped the version to 0.4.\n- **`SOURCE_OF_TRUTH.md`**: invariant #3 and three decision entries.\n- **`TODO_WORKFLOW.md`**: task #3, marked as shipping before password reset.\n\nI made four calls that you should confirm:\n\n- **Binding over alternatives**: the check has no network hop, so it stays inside the 150ms p95 login budget. I rejected a D1 counter, a Durable Object per IP and a WAF rule; reasons are in the decision entry.\n- **Approximate limit**: the binding counts per Cloudflare location and is eventually consistent, so a burst can slightly overshoot 100. If product needs an exact count, that means a Durable Object instead.\n- **Fail open**: if the limiter errors, logins proceed and the error is logged, so a limiter outage doesn't become a login outage.\n- **IPv6 keyed by /64**: this deviates from a literal \"per IP\", because one subscriber can rotate through a whole /64. Strike it if product wants per-address.\n\nTwo things are unverified:\n\n- **Wrangler syntax**: the `[[ratelimits]]` block is from memory, because the sandbox blocked the Cloudflare docs. Check it against the current docs and your wrangler version before implementing.\n- **429 body**: there is no code in this repo, so `{\"error\":\"rate_limited\"}` is a placeholder for your existing error envelope.\n\nThe middleware is specified to take the binding and key function as arguments so the reset routes can mount their own limiter. Their limits are left to the password reset spec."
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "targeted-addition",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "The spec is written into your three existing docs, uncommitted on `master`. One thing to raise with product: 100/min per IP is abuse and load protection, not brute-force protection. It still allows about 144,000 password guesses a day from one IP, so protecting individual accounts would need a per-email limit, which I left out.\n\nThe design is a Hono middleware on POST /login only, backed by the Workers Rate Limiting binding. It runs before body parsing, the D1 lookup and scrypt, so a limited request costs almost nothing and gets a 429 with `Retry-After: 60`.\n\n- **`ARCHITECTURE_ROADMAP.md`**: new §3.1 with the full spec, wrangler config and six acceptance criteria, plus small updates to the stack table, the /login row, the phase gate and the latency note. I bumped the version to 0.4.\n- **`SOURCE_OF_TRUTH.md`**: invariant #3 and three decision entries.\n- **`TODO_WORKFLOW.md`**: task #3, marked as shipping before password reset.\n\nI made four calls that you should confirm:\n\n- **Binding over alternatives**: the check has no network hop, so it stays inside the 150ms p95 login budget. I rejected a D1 counter, a Durable Object per IP and a WAF rule; reasons are in the decision entry.\n- **Approximate limit**: the binding counts per Cloudflare location and is eventually consistent, so a burst can slightly overshoot 100. If product needs an exact count, that means a Durable Object instead.\n- **Fail open**: if the limiter errors, logins proceed and the error is logged, so a limiter outage doesn't become a login outage.\n- **IPv6 keyed by /64**: this deviates from a literal \"per IP\", because one subscriber can rotate through a whole /64. Strike it if product wants per-address.\n\nTwo things are unverified:\n\n- **Wrangler syntax**: the `[[ratelimits]]` block is from memory, because the sandbox blocked the Cloudflare docs. Check it against the current docs and your wrangler version before implementing.\n- **429 body**: there is no code in this repo, so `{\"error\":\"rate_limited\"}` is a placeholder for your existing error envelope.\n\nThe middleware is specified to take the binding and key function as arguments so the reset routes can mount their own limiter. Their limits are left to the password reset spec."
+              },
+              {
+                "name": "two-boundary-enforcement",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "# Source of Truth — Auth Service\n\n## Scope\nCloudflare Workers auth service (Hono + D1). Issues and validates session\ntokens for POST /login, POST /logout, GET /session.\n\n## Domain model\n- `users` (D1): id, email, password_hash, created_at\n- `sessions` (D1): id, user_id, token, expires_at\n\n## Invariants\n| # | Invariant | Enforced at |\n|---|---|---|\n| 1 | Password hashes use scrypt, never stored plaintext | app layer (hash on write) + DB column has no plaintext default |\n| 2 | A session token is single-use per refresh | app layer (rotate on use) + DB unique index on token |\n| 3 | POST /login serves at most 100 requests per minute per client IP; the rest get 429 before any credential check | Hono middleware on the Workers Rate Limiting binding. Approximate (per Cloudflare location); no DB layer |\n\n## Decisions\n- **Decision:** D1 over KV for sessions. **Why:** need a relational lookup by user_id for \"log out everywhere\". **Alternative rejected:** KV (no secondary index).\n- **Decision:** Workers Rate Limiting binding for the login limit. **Why:** the check is local to the Worker's location, so it adds no network hop to the 150ms p95 login budget, and it needs no new storage. **Alternative rejected:** D1 counter (a write per attempt on the hot path); Durable Object per IP (exact, but an extra hop and cost for precision nobody asked for); WAF rate limiting rule (plan-dependent, lives outside the repo, not covered by `npm test`).\n- **Decision:** The login limiter fails open. **Why:** a limiter outage should not become a login outage. **Alternative rejected:** fail closed (blocks every login while the binding is unavailable).\n- **Decision:** IPv6 clients are keyed by /64 prefix. **Why:** one subscriber usually holds a whole /64, so per-address keys are bypassed by rotating addresses. **Alternative rejected:** full IPv6 address.\n"
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 0.875,
+        "passRate": 0.5,
+        "scoreWithout": 0.75,
+        "passRateWithout": 0,
+        "delta": 0.125
+      }
+    }
+  ],
+  "aggregates": {
+    "casesTotal": 1,
+    "casesPassed": 1,
+    "overallScore": 0.875,
+    "overallPassRate": 0.5,
+    "meanDelta": 0.125
+  }
+}
