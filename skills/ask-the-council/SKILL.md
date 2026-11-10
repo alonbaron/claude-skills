@@ -14,7 +14,7 @@ when_to_use: >-
   instead), not for calls with one obvious answer, and not for anything
   reversible in an afternoon: decide, ship, and revisit if it bites.
 argument-hint: "[the decision or question] [+ 'deep' for the full panel]"
-effort: max
+effort: high
 ---
 
 # Ask the Council
@@ -38,8 +38,8 @@ subagents; spend that only where being wrong is expensive to undo.
 Restate the decision, the real options, and the binding constraints. If one
 missing fact would flip the answer, ask it (max 1–2 questions) — otherwise
 proceed on stated assumptions. Then spawn the advisors with the Agent tool,
-all in one message, so they run in parallel. Each returns: **position · core
-reasoning · biggest risk they see · confidence (low/med/high)**. On `deep`,
+all in one message, so they run in parallel. Each returns: **position · the
+argument for the position · biggest risk they see · confidence (low/med/high)**. On `deep`,
 once all seats report, show each advisor the others' positions
 (unattributed) and have them name the single strongest opposing point.
 

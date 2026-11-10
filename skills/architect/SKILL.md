@@ -17,7 +17,7 @@ when_to_use: >-
   current docs — just do it. Not for pure implementation of an
   already-designed phase — code, don't re-spec.
 argument-hint: "[what you're building]   ·   add 'audit' to check existing docs for drift"
-effort: max
+effort: high
 ---
 
 !`ls -1 SOURCE_OF_TRUTH.md ARCHITECTURE_ROADMAP.md TODO_WORKFLOW.md CLAUDE.md docs/architecture 2>/dev/null || true`

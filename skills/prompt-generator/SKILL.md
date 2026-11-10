@@ -63,16 +63,20 @@ cut anything that doesn't change the model's behavior.
   asserted.
 
 **Efficiency (no tokenmaxing):**
-- Lead with the answer. No preamble, no restating the question, no "great
-  question", no summary of what you're about to do.
-- Set an output budget (e.g. "≤200 words", "code + ≤3 lines"). Match length to
-  the task, not to fill space.
+- In the final answer, lead with the answer: no preamble, no restating the
+  question, no "great question", no summary of what you're about to do. This
+  governs the final answer only; brief progress notes during long tool work
+  are fine.
+- Fit the length to the task and the reader — say who reads the output and
+  what they need from it, instead of a numeric word cap. Don't fill space.
 - No hedging filler. One clear recommendation beats five caveated options.
 
 **Agent discipline (when the prompt drives a coding/tool agent):**
 - Read before you edit; verify a path or symbol exists before referencing it.
 - Make small, reversible changes. Don't refactor unasked.
-- When blocked or ambiguous, ask — don't guess and barrel ahead.
+- Work through ordinary obstacles yourself (a failing command, a missing
+  file you can find). Ask only when the choice is the user's to make or the
+  ambiguity would change the result — don't guess and barrel ahead.
 - Report honestly: if a step failed or was skipped, say so.
 - Commits are the user's alone — author = the user; never add an AI co-author
   or `Co-Authored-By`/credit line, and don't mention AI in commit messages.
