@@ -7,16 +7,18 @@ description: >-
   asked), full (ladder enforced, default), ultra (YAGNI extremist, challenge
   the requirement itself).
 when_to_use: >-
-  Fires when a solution is outgrowing the minimum: an abstraction with one
-  caller, a new dependency for a few lines, scaffolding "for later," a
-  question whether the stdlib or platform already covers it, or a complaint
-  about over-engineering or bloat — invoke without asking, announce
-  in one line, proceed. Also on "ponytail", "be lazy", "yagni", "simplest
-  solution", "do less". Never to weaken a trust boundary (validation, auth,
-  error handling that prevents data loss, a11y), not once the user has heard the
-  lazier option and reaffirmed the full one, and not for tidying a diff
-  that already exists and works — that's built-in /simplify. Ponytail
-  governs what gets built, before and while it's written; simplify cleans up after.
+  Invoke before writing code, in three situations. (1) The request asks for
+  more than today needs: a pluggable interface or swappable strategy with one
+  implementation, "X now, Y later", a new dependency for a few lines. Being
+  asked for the abstraction is the trigger, not an exemption. (2) A complaint that code
+  is over-engineered or bloated, or a question whether the stdlib or platform
+  already covers it. That includes trust-boundary code (validation, auth,
+  data-loss handling, a11y): the skill fires and keeps the boundary. (3) A
+  bug fix in a function other callers share: the lazy fix is the root cause.
+  Also on "ponytail", "be lazy", "yagni", "simplest solution", "do less". Not
+  once the user has heard the lazier option and reaffirmed the full one, and
+  not for tidying a diff that already exists and works — that's built-in
+  /simplify. Ponytail governs what gets built; simplify cleans up after.
 argument-hint: "[lite|full|ultra]"
 license: MIT
 ---
