@@ -1,0 +1,185 @@
+{
+  "schemaVersion": 1,
+  "claudeVersion": "2.1.303",
+  "startedAt": "2026-11-10T14:46:30.078Z",
+  "durationSeconds": 53,
+  "costUsd": 0.1258289,
+  "partial": false,
+  "suite": {
+    "root": "/home/runner/work/claude-skills/claude-skills",
+    "ablation": "none",
+    "modelOverride": "claude-fable-5-2",
+    "judgeModel": "sonnet",
+    "threshold": 0.7,
+    "concurrency": 2,
+    "plugins": [
+      {
+        "name": "alon-skills",
+        "version": "3.2.2",
+        "path": "/home/runner/work/claude-skills/claude-skills"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "pushback-on-abstraction",
+      "dir": "evals-ci/ponytail/pushback-on-abstraction",
+      "source": "prose",
+      "promptMarkdown": "I'm adding response caching to our Node/Express API for the /products endpoint since it's getting hammered. Can you build a Cache class with a pluggable backend interface (in-memory now, Redis later) and a CacheStrategy interface so we can swap eviction policies down the line?",
+      "runsPerCase": 3,
+      "timeoutSeconds": 600,
+      "maxTurns": 15,
+      "graders": [
+        {
+          "name": "avoids-padded-interfaces",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Write",
+            "input_match": "(class|interface)\\s+\\w*(Strategy|Backend)\\b",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "names-simplification-tradeoff",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final message explicitly frames what was actually delivered as a\ndeliberate simplification of the requested pluggable-backend interface\nand/or the CacheStrategy interface — for example by saying it skipped the\nseparate backend/strategy interfaces, by explaining that a swappable\neviction-policy abstraction isn't justified when there is one caller and no\nsecond backend today, or by declining one of the two interfaces and stating\nwhy. A brief \"here's a lazier alternative\" aside is not enough on its own if\nit isn't what was actually built.\n\nFAIL if the final message presents the delivered code as implementing the\npluggable-backend interface and the CacheStrategy interface as originally\nrequested, with no such reasoning, or if a simpler alternative is only\nmentioned in passing while the interfaces were still built as asked.",
+          "config": {
+            "criteria": "PASS if the final message explicitly frames what was actually delivered as a\ndeliberate simplification of the requested pluggable-backend interface\nand/or the CacheStrategy interface — for example by saying it skipped the\nseparate backend/strategy interfaces, by explaining that a swappable\neviction-policy abstraction isn't justified when there is one caller and no\nsecond backend today, or by declining one of the two interfaces and stating\nwhy. A brief \"here's a lazier alternative\" aside is not enough on its own if\nit isn't what was actually built.\n\nFAIL if the final message presents the delivered code as implementing the\npluggable-backend interface and the CacheStrategy interface as originally\nrequested, with no such reasoning, or if a simpler alternative is only\nmentioned in passing while the interfaces were still built as asked.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "names-upgrade-trigger",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final message names a concrete, specific condition under which\nthe delivered solution should be replaced or upgraded — for example: move to\nRedis if the cache needs to survive a restart, or once the app scales past\none process/instance. A generic \"you can always extend this later\" with no\nconcrete trigger does not count.\n\nFAIL if no such concrete upgrade condition is stated anywhere in the final\nmessage.",
+          "config": {
+            "criteria": "PASS if the final message names a concrete, specific condition under which\nthe delivered solution should be replaced or upgraded — for example: move to\nRedis if the cache needs to survive a restart, or once the app scales past\none process/instance. A generic \"you can always extend this later\" with no\nconcrete trigger does not count.\n\nFAIL if no such concrete upgrade condition is stated anywhere in the final\nmessage.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "no-subagents-spawned",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "ships-working-code",
+          "type": "file_exists",
+          "weight": 1,
+          "config": {
+            "path": "**/*.js",
+            "exists": true
+          }
+        },
+        {
+          "name": "skill-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?ponytail\""
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 7,
+            "costUsd": 0.1258289,
+            "judgeCostUsd": 0.012233999999999998,
+            "durationSeconds": 53,
+            "startedAt": "2026-11-10T14:46:30.099Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-VVZMAe/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "avoids-padded-interfaces",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Write called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "names-simplification-tradeoff",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I built a smaller thing than you asked for: one Express middleware in `cache.js` (about 30 lines), with no `Cache` class, backend interface or `CacheStrategy` interface. The self-check in `cache.test.js` passes (`node cache.test.js`).\n\nThe repo is empty, so this has not been run against your real `/products` handler. It is plain CommonJS and assumes the handler responds with `res.json`.\n\n```js\nconst { cacheResponses } = require('./cache');\n\napp.get('/products', cacheResponses({ ttlMs: 30_000 }), productsHandler);\n```\n\nWhat it does:\n- **Caches** 200 JSON responses to GET requests, keyed by full URL including the query string, for `ttlMs` (default 30s).\n- **Bounds memory** at `maxEntries` (default 500), evicting the oldest entry first, so random query strings can't grow it without limit.\n- **Skips** non-GET requests and non-200 responses, and marks cache hits with `X-Cache: HIT`.\n\nTwo things to know before mounting it:\n- **Per-user responses:** the key is the URL only, so if `/products` varies by user (pricing, auth), this would serve one user's response to another.\n- **Simultaneous misses:** concurrent requests for an uncached URL all reach the handler; nothing coalesces them.\n\nWhat I skipped and when to add it:\n- **Backend interface:** the `Map` inside `cacheResponses` is the only place storage is touched. Add Redis there when you run multiple instances or need shared invalidation; it is async, so the middleware changes shape at that point anyway.\n- **`CacheStrategy` interface:** Redis handles expiry and eviction itself (`EX`, `maxmemory-policy`), so once it arrives the eviction policy is a Redis config setting.\n- **CDN or reverse proxy:** if one sits in front of the API, `res.set('Cache-Control', 'public, max-age=30')` on the route may do the job without any of this code.\n\nIf you want the full `Cache` class with both interfaces now, say so and I'll build it."
+              },
+              {
+                "name": "names-upgrade-trigger",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I built a smaller thing than you asked for: one Express middleware in `cache.js` (about 30 lines), with no `Cache` class, backend interface or `CacheStrategy` interface. The self-check in `cache.test.js` passes (`node cache.test.js`).\n\nThe repo is empty, so this has not been run against your real `/products` handler. It is plain CommonJS and assumes the handler responds with `res.json`.\n\n```js\nconst { cacheResponses } = require('./cache');\n\napp.get('/products', cacheResponses({ ttlMs: 30_000 }), productsHandler);\n```\n\nWhat it does:\n- **Caches** 200 JSON responses to GET requests, keyed by full URL including the query string, for `ttlMs` (default 30s).\n- **Bounds memory** at `maxEntries` (default 500), evicting the oldest entry first, so random query strings can't grow it without limit.\n- **Skips** non-GET requests and non-200 responses, and marks cache hits with `X-Cache: HIT`.\n\nTwo things to know before mounting it:\n- **Per-user responses:** the key is the URL only, so if `/products` varies by user (pricing, auth), this would serve one user's response to another.\n- **Simultaneous misses:** concurrent requests for an uncached URL all reach the handler; nothing coalesces them.\n\nWhat I skipped and when to add it:\n- **Backend interface:** the `Map` inside `cacheResponses` is the only place storage is touched. Add Redis there when you run multiple instances or need shared invalidation; it is async, so the middleware changes shape at that point anyway.\n- **`CacheStrategy` interface:** Redis handles expiry and eviction itself (`EX`, `maxmemory-policy`), so once it arrives the eviction policy is a Redis config setting.\n- **CDN or reverse proxy:** if one sits in front of the API, `res.set('Cache-Control', 'public, max-age=30')` on the route may do the job without any of this code.\n\nIf you want the full `Cache` class with both interfaces now, say so and I'll build it."
+              },
+              {
+                "name": "no-subagents-spawned",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "ships-working-code",
+                "passed": true,
+                "weight": 1,
+                "explanation": "**/*.js exists as expected",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 1x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 1,
+        "passRate": 1
+      }
+    }
+  ],
+  "aggregates": {
+    "casesTotal": 1,
+    "casesPassed": 1,
+    "overallScore": 1,
+    "overallPassRate": 1
+  }
+}
