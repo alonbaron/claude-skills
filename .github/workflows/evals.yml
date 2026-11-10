@@ -37,8 +37,8 @@ on:
         default: "with-without"
         required: false
       listing_budget:
-        description: "Skill-listing character budget for the agent under test (blank = the CLI default, 1% of the context window)"
-        default: ""
+        description: "Skill-listing character budget for the agent under test (the CLI default is 1% of the context window)"
+        default: "40000"
         required: false
   push:
     branches: ["claude/**"]
@@ -75,12 +75,13 @@ jobs:
           MODEL: ${{ github.event.inputs.model || 'claude-fable-5-2' }}
           CASES: "${{ github.event.inputs.cases || (contains(github.event.head_commit.message, '[run-evals: all]') && 'all') || (contains(github.event.head_commit.message, '[run-evals: in-container]') && 'in-container') || 'sandboxed' }}"
           ONLY: ${{ github.event.inputs.only }}
-          LISTING_BUDGET: ${{ github.event.inputs.listing_budget }}
+          LISTING_BUDGET: ${{ github.event.inputs.listing_budget || '40000' }}
         run: |
           mkdir evals-ci
           # The runner's model has a 200k context, and the default listing budget (1% of it) drops skill
-          # descriptions once 24 skills are listed, so the agent can see a skill by name only.
-          if [ -n "$LISTING_BUDGET" ]; then export SLASH_COMMAND_TOOL_CHAR_BUDGET="$LISTING_BUDGET"; fi
+          # descriptions once 24 skills are listed, so the agent can see a skill by name only. With 40000,
+          # pushback-on-abstraction went from ponytail never loading (0 of 7 runs) to 1.00 (run 42837413273).
+          export SLASH_COMMAND_TOOL_CHAR_BUDGET="$LISTING_BUDGET"
           if [ -n "$ONLY" ]; then
             # Named cases only, e.g. the ones a summary listed for a re-run; a name that is not evals/<skill>/<case>,
             # or an `only` of nothing but blanks, stops the job. A name given twice is copied once.
