@@ -59,7 +59,8 @@ everywhere else.
    SoT. Header block (`Version · Status · Owner`), then §-numbered: `0` Executive
    context · `1` Tech stack (Layer · Tech · Role table) · `2` Data schema
    (low-level: columns, types, constraints, indexes, JSONB shapes, decision
-   call-outs) · `3` Backend (structure · services · API-contract table) · `4`
+   call-outs) · `3` Backend (structure · services · API-contract table ·
+   failure paths: per component, what fails and what happens next) · `4`
    Frontend · `5` Execution phases · `6` Non-functional requirements.
 3. **`docs/architecture/00-index.md` + `01-…NN`** (larger projects only) —
    agent-friendly modular extracts of the roadmap sections. The index carries a
