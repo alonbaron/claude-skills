@@ -18,7 +18,7 @@ on:
     inputs:
       model:
         description: "Model the agent under test runs on"
-        default: "claude-fable-5-1"
+        default: "claude-fable-5-2"
         required: false
       cases:
         description: "sandboxed, in-container, or all"
@@ -58,8 +58,8 @@ jobs:
         env:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           SKIP_CASES: ""
-          # The agent under test. A push runs Fable 5.1 (the model the skills are written for); workflow_dispatch can pick another.
-          MODEL: ${{ github.event.inputs.model || 'claude-fable-5-1' }}
+          # The agent under test. A push runs Fable 5.2 (the model the skills are written for); workflow_dispatch can pick another.
+          MODEL: ${{ github.event.inputs.model || 'claude-fable-5-2' }}
           CASES: "${{ github.event.inputs.cases || (contains(github.event.head_commit.message, '[run-evals: all]') && 'all') || (contains(github.event.head_commit.message, '[run-evals: in-container]') && 'in-container') || 'sandboxed' }}"
           ONLY: ${{ github.event.inputs.only }}
         run: |
@@ -113,7 +113,7 @@ jobs:
         if: always()
         env:
           CASES: "${{ github.event.inputs.cases || (contains(github.event.head_commit.message, '[run-evals: all]') && 'all') || (contains(github.event.head_commit.message, '[run-evals: in-container]') && 'in-container') || 'sandboxed' }}"
-          MODEL: ${{ github.event.inputs.model || 'claude-fable-5-1' }}
+          MODEL: ${{ github.event.inputs.model || 'claude-fable-5-2' }}
           ONLY: ${{ github.event.inputs.only }}
         run: |
           # The branch is CI's own record, written by the Actions bot, never merged: main stays the owner's.
