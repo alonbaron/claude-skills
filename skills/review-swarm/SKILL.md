@@ -79,7 +79,7 @@ Dedup overlaps, then rank: **Blockers → Should-fix → Nits**, each with file:
 
 - A trivial diff (docs, rename, one-liner) — a single-pass read or plain `/code-review` covers it; a swarm is overkill. Invoked by name on one anyway: say so in one line, do the single-pass read yourself, and spawn no specialists.
 - The ask is "fix it", not "review it" — implement, then swarm the result.
-- Security is the whole ask → `/security-review`. Loaded on one anyway (the user said "swarm"): spawn no specialists, open the answer by naming `/security-review`, then run it or recommend it.
+- Security is the whole ask → `/security-review`. Loaded on one anyway (the user said "swarm"): spawn no specialists, open the answer by naming `/security-review`, then run it or recommend it. If it can't run (no remote to diff against, say), keep that opening line, say why, and only then give a pass of your own.
 - `/code-review` is named explicitly.
 
 ## Hand-offs
