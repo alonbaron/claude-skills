@@ -1,0 +1,17 @@
+run: 42832380381 https://github.com/alonbaron/claude-skills/actions/runs/42832380381
+event: workflow_dispatch  commit: cbba643a920fd4c3ba00ed50e4101feb9bec075a  ref: fix/fable-5-2-evals
+model: claude-fable-5-2  cases: sandboxed  job status at publish: success
+only: up-to-date/fresh-branch-no-upstream
+cli: 2.1.303 (Claude Code)
+started: 2026-11-10T14:17:43Z
+
+valid 1 of 1
+re-run: none
+cost $0.14  runner aggregates over the 1 cases in the results: {"casesTotal": 1, "casesPassed": 1, "overallScore": 1, "overallPassRate": 1}
+
+== fresh-branch-no-upstream  with 1.00  without -
+   falls-back-to-default-branch       with P    without 
+   no-in-sync-claim                   with P    without 
+   no-subagents                       with P    without 
+   says-no-upstream                   with P    without 
+   skill-fired                        with P    without 

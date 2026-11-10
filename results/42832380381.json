@@ -1,0 +1,172 @@
+{
+  "schemaVersion": 1,
+  "claudeVersion": "2.1.303",
+  "startedAt": "2026-11-10T14:16:42.234Z",
+  "durationSeconds": 59,
+  "costUsd": 0.1361776,
+  "partial": false,
+  "suite": {
+    "root": "/home/runner/work/claude-skills/claude-skills",
+    "ablation": "none",
+    "modelOverride": "claude-fable-5-2",
+    "judgeModel": "sonnet",
+    "threshold": 0.7,
+    "concurrency": 2,
+    "plugins": [
+      {
+        "name": "alon-skills",
+        "version": "3.2.2",
+        "path": "/home/runner/work/claude-skills/claude-skills"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "fresh-branch-no-upstream",
+      "dir": "evals-ci/up-to-date/fresh-branch-no-upstream",
+      "source": "mixed",
+      "promptMarkdown": "Let's keep going on the ShiftManager payment work -- I branched off\nyesterday for the retry-backoff logic on flaky card charges but haven't\npushed it up yet. Pick up where I left off.",
+      "runsPerCase": 3,
+      "timeoutSeconds": 300,
+      "maxTurns": 15,
+      "graders": [
+        {
+          "name": "falls-back-to-default-branch",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final message compares the branch against origin's default branch (origin/main) and says that is what it compared against.\n\nFAIL if it gives no comparison at all, or gives ahead/behind numbers without saying what they are relative to.",
+          "config": {
+            "criteria": "PASS if the final message compares the branch against origin's default branch (origin/main) and says that is what it compared against.\n\nFAIL if it gives no comparison at all, or gives ahead/behind numbers without saying what they are relative to.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "no-in-sync-claim",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final message never calls the branch in sync or up to date.\n\nFAIL if it calls the branch in sync, up to date, or current with its remote.",
+          "config": {
+            "criteria": "PASS if the final message never calls the branch in sync or up to date.\n\nFAIL if it calls the branch in sync, up to date, or current with its remote.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "no-subagents",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "says-no-upstream",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final message notes that the branch has no upstream, has no tracking branch, or is unpushed / local-only (any of those phrasings counts).\n\nFAIL if it does not mention that the branch is unpushed / has no upstream, or implies the branch has its own upstream tracking branch that it was compared against.",
+          "config": {
+            "criteria": "PASS if the final message notes that the branch has no upstream, has no tracking branch, or is unpushed / local-only (any of those phrasings counts).\n\nFAIL if it does not mention that the branch is unpushed / has no upstream, or implies the branch has its own upstream tracking branch that it was compared against.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "skill-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?up-to-date\""
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 9,
+            "costUsd": 0.1361776,
+            "judgeCostUsd": 0.019590000000000003,
+            "durationSeconds": 59,
+            "startedAt": "2026-11-10T14:16:42.256Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-Pd58bS/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "falls-back-to-default-branch",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "**Branch state:** `feature/payment-retry` has no upstream (never pushed) and has diverged from `origin/main`: 1 commit ahead (`0bba427 start retry-backoff logic`) and 1 behind (`7f5a85b add refund handling`).\n\n- **What landed on main:** `7f5a85b` adds a `refund()` function to `src/payments.py`. Your branch only touches `src/retry.py`, so there is no overlap.\n- **Open PRs/issues:** not checked, because `gh` isn't authenticated here.\n- **Untracked files:** the repo root has untracked dotfiles (`.bashrc`, `.gitconfig`, `.gitmodules`, `.idea`, `.vscode`, `.mcp.json` and others). I left them alone; take care with `git add -A`.\n\n## What I did\n\n`retry_with_backoff` in `src/retry.py` was a stub that called `fn()` once. It now retries with capped exponential backoff and random jitter:\n\n- **Attempts:** up to 4 by default, re-raising the last error once they run out.\n- **Delay:** a random wait between 0 and `min(max_delay, base_delay * 2**attempt)`, with defaults of 0.5s base and 8s cap.\n- **What gets retried:** only `ConnectionError` and `TimeoutError` by default (the `retry_on` argument). Anything else, such as a card decline, propagates immediately without a retry.\n- **Testing hook:** `sleep` is injectable so tests don't actually wait.\n\nI ran ad-hoc checks covering success after transient failures, exhaustion, the delay cap, and non-retryable errors passing straight through; all passed. The repo has no test suite, so I didn't add a test file. The change is uncommitted in your working tree.\n\n## Not done yet\n\n- **`charge()` is not wired to the retry helper.** I held off because editing `src/payments.py` before picking up main's `refund()` change invites a conflict.\n- **The retryable error types are my guess.** `charge()` is a stub that returns `True`, so I couldn't tell how a flaky charge actually fails. If your gateway client raises its own exception types, pass them as `retry_on`.\n- **Retrying a charge can double-bill.** If a charge times out after the gateway has processed it, a retry charges the card again unless the call carries an idempotency key.\n\n## Your call on syncing\n\nI recommend committing this change and then running `git rebase origin/main`. That is safe because the branch is unpushed, and there are no overlapping files. After that I'd wire `charge()` through the retry helper and push with `-u`. Do you want me to go ahead with that?"
+              },
+              {
+                "name": "no-in-sync-claim",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "**Branch state:** `feature/payment-retry` has no upstream (never pushed) and has diverged from `origin/main`: 1 commit ahead (`0bba427 start retry-backoff logic`) and 1 behind (`7f5a85b add refund handling`).\n\n- **What landed on main:** `7f5a85b` adds a `refund()` function to `src/payments.py`. Your branch only touches `src/retry.py`, so there is no overlap.\n- **Open PRs/issues:** not checked, because `gh` isn't authenticated here.\n- **Untracked files:** the repo root has untracked dotfiles (`.bashrc`, `.gitconfig`, `.gitmodules`, `.idea`, `.vscode`, `.mcp.json` and others). I left them alone; take care with `git add -A`.\n\n## What I did\n\n`retry_with_backoff` in `src/retry.py` was a stub that called `fn()` once. It now retries with capped exponential backoff and random jitter:\n\n- **Attempts:** up to 4 by default, re-raising the last error once they run out.\n- **Delay:** a random wait between 0 and `min(max_delay, base_delay * 2**attempt)`, with defaults of 0.5s base and 8s cap.\n- **What gets retried:** only `ConnectionError` and `TimeoutError` by default (the `retry_on` argument). Anything else, such as a card decline, propagates immediately without a retry.\n- **Testing hook:** `sleep` is injectable so tests don't actually wait.\n\nI ran ad-hoc checks covering success after transient failures, exhaustion, the delay cap, and non-retryable errors passing straight through; all passed. The repo has no test suite, so I didn't add a test file. The change is uncommitted in your working tree.\n\n## Not done yet\n\n- **`charge()` is not wired to the retry helper.** I held off because editing `src/payments.py` before picking up main's `refund()` change invites a conflict.\n- **The retryable error types are my guess.** `charge()` is a stub that returns `True`, so I couldn't tell how a flaky charge actually fails. If your gateway client raises its own exception types, pass them as `retry_on`.\n- **Retrying a charge can double-bill.** If a charge times out after the gateway has processed it, a retry charges the card again unless the call carries an idempotency key.\n\n## Your call on syncing\n\nI recommend committing this change and then running `git rebase origin/main`. That is safe because the branch is unpushed, and there are no overlapping files. After that I'd wire `charge()` through the retry helper and push with `-u`. Do you want me to go ahead with that?"
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "says-no-upstream",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "**Branch state:** `feature/payment-retry` has no upstream (never pushed) and has diverged from `origin/main`: 1 commit ahead (`0bba427 start retry-backoff logic`) and 1 behind (`7f5a85b add refund handling`).\n\n- **What landed on main:** `7f5a85b` adds a `refund()` function to `src/payments.py`. Your branch only touches `src/retry.py`, so there is no overlap.\n- **Open PRs/issues:** not checked, because `gh` isn't authenticated here.\n- **Untracked files:** the repo root has untracked dotfiles (`.bashrc`, `.gitconfig`, `.gitmodules`, `.idea`, `.vscode`, `.mcp.json` and others). I left them alone; take care with `git add -A`.\n\n## What I did\n\n`retry_with_backoff` in `src/retry.py` was a stub that called `fn()` once. It now retries with capped exponential backoff and random jitter:\n\n- **Attempts:** up to 4 by default, re-raising the last error once they run out.\n- **Delay:** a random wait between 0 and `min(max_delay, base_delay * 2**attempt)`, with defaults of 0.5s base and 8s cap.\n- **What gets retried:** only `ConnectionError` and `TimeoutError` by default (the `retry_on` argument). Anything else, such as a card decline, propagates immediately without a retry.\n- **Testing hook:** `sleep` is injectable so tests don't actually wait.\n\nI ran ad-hoc checks covering success after transient failures, exhaustion, the delay cap, and non-retryable errors passing straight through; all passed. The repo has no test suite, so I didn't add a test file. The change is uncommitted in your working tree.\n\n## Not done yet\n\n- **`charge()` is not wired to the retry helper.** I held off because editing `src/payments.py` before picking up main's `refund()` change invites a conflict.\n- **The retryable error types are my guess.** `charge()` is a stub that returns `True`, so I couldn't tell how a flaky charge actually fails. If your gateway client raises its own exception types, pass them as `retry_on`.\n- **Retrying a charge can double-bill.** If a charge times out after the gateway has processed it, a retry charges the card again unless the call carries an idempotency key.\n\n## Your call on syncing\n\nI recommend committing this change and then running `git rebase origin/main`. That is safe because the branch is unpushed, and there are no overlapping files. After that I'd wire `charge()` through the retry helper and push with `-u`. Do you want me to go ahead with that?"
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 1x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 1,
+        "passRate": 1
+      }
+    }
+  ],
+  "aggregates": {
+    "casesTotal": 1,
+    "casesPassed": 1,
+    "overallScore": 1,
+    "overallPassRate": 1
+  }
+}
