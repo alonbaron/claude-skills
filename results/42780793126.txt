@@ -1,0 +1,72 @@
+run: 42780793126 https://github.com/alonbaron/claude-skills/actions/runs/42780793126
+event: workflow_dispatch  commit: 1b33449712c31bf2f25973ca9a4d30a68a61d1e6  ref: main
+model: claude-fable-5-2  cases: sandboxed  job status at publish: failure
+cli: 2.1.322 (Claude Code)
+started: 2026-11-10T08:22:16Z
+
+valid 9 of 9
+re-run: none
+cost $22.37  runner aggregates over the 9 cases in the results: {"casesTotal": 9, "casesPassed": 8, "overallScore": 0.9268518518518518, "overallPassRate": 0.8333333333333334, "meanDelta": 0.22407407407407406}
+
+== audit-drift-citation  with 0.67  without 1.00
+   citation-discipline                with .P   without PP
+   no-edit                            with .P   without PP
+   no-write                           with PP   without PP
+   skill-fired                        with PP   without 
+   FAIL with#0 citation-discipline: judge votes: FAIL FAIL FAIL
+      evidence: You were right: `POST /webhooks/stripe` was in the code but not in the roadmap's API contract table. I added it there and to the scope line in `SOURCE_OF_TRUTH.md`; both edits are uncommitted. The audit also turned up drift in the other direction, which I left alone because it needs your call. | | The architect skill itself failed to load (its preflight command hit a read-only filesystem error in the sandbox), so I ran this audit by hand against the same doc set. | | ## Fixed (docs behind code) | | | # | Docs said | Code says | Fix | | |---|---|---|---| | | 1 | `ARCHITECTURE_ROADMAP.md:9-12` listed only `/checkout` and `/orders/:id` | `src/routes/webhooks.js:7` defines `app.post('/webhooks/s
+   FAIL with#0 no-edit: Edit called 2x (expected 0..0)
+
+== right-sized-new-feature  with 1.00  without 0.67
+   no-modular-set                     with PP   without PP
+   no-subagents                       with PP   without PP
+   right-sized-process                with PP   without ..
+   skill-fired                        with PP   without 
+
+== small-fix-boundary  with 0.88  without 0.62
+   no-invention                       with P.   without ..
+   no-subagents                       with PP   without PP
+   skill-fired                        with PP   without 
+   targeted-addition                  with PP   without PP
+   two-boundary-enforcement           with PP   without P.
+   FAIL with#1 no-invention: judge votes: FAIL FAIL FAIL
+      evidence: The rate limit is specced into the three existing docs, uncommitted. The repo has no code yet, so nothing was tested, and the Cloudflare binding details are from my knowledge, not checked against current docs. | | ## The spec | | - **Rule:** 100 requests per 60 seconds per client IP on POST /login, counting every request whether or not the login succeeds. | - **Mechanism:** Cloudflare's Workers Rate Limiting binding, called from a Hono middleware on that route only. It runs before body parsing, so a limited request does no D1 query and no scrypt work. | - **Client key:** the `CF-Connecting-IP` header, full address for IPv4 and the /64 prefix for IPv6. It never uses `X-Forwarded-For`. | - **O
+
+== real-diff-ranked-report  with 0.80  without 0.40
+   no-edit-calls                      with PP   without PP
+   no-write-calls                     with PP   without PP
+   ranked-report-shape                with PP   without ..
+   reviewers-sonnet                   with .P   without ..
+   skill-fired                        with PP   without 
+   verifiers-opus                     with .P   without ..
+   FAIL with#0 reviewers-sonnet: Agent called 0x (expected 4..∞)
+   FAIL with#0 verifiers-opus: Agent called 0x (expected 1..∞)
+
+== security-alone-hands-off  with 1.00  without 0.33
+   hands-off-to-security-review       with PP   without ..
+   no-swarm-spawn                     with PP   without ..
+   skill-not-fired                    with PP   without PP
+
+== trivial-diff-declines  with 1.00  without 1.00
+   agent-spawn-limit                  with PP   without PP
+   declines-with-alternative          with PP   without PP
+
+== dirty-and-behind  with 1.00  without 0.80
+   leaves-decision-to-user            with PP   without PP
+   no-pull-run                        with PP   without ..
+   no-subagents                       with PP   without PP
+   reports-behind                     with PP   without PP
+   reports-dirty                      with PP   without PP
+   skill-fired                        with PP   without 
+
+== fresh-branch-no-upstream  with 1.00  without 0.50
+   falls-back-to-default-branch       with PP   without ..
+   no-in-sync-claim                   with PP   without PP
+   no-subagents                       with PP   without PP
+   says-no-upstream                   with PP   without ..
+   skill-fired                        with PP   without 
+
+== no-remote-boundary  with 1.00  without 1.00
+   no-subagents                       with PP   without PP
+   result                             with PP   without PP
+   skill-fired                        with PP   without 
