@@ -1,0 +1,25 @@
+run: 42835656274 https://github.com/alonbaron/claude-skills/actions/runs/42835656274
+event: workflow_dispatch  commit: b048245e1123d0ec002cf4177d3663613b94e596  ref: fix/fable-5-2-evals
+model: claude-fable-5-2  cases: sandboxed  job status at publish: failure
+only: ponytail/pushback-on-abstraction
+cli: 2.1.303 (Claude Code)
+started: 2026-11-10T14:37:42Z
+
+valid 1 of 1
+re-run: none
+cost $0.19  runner aggregates over the 1 cases in the results: {"casesTotal": 1, "casesPassed": 0, "overallScore": 0.16666666666666666, "overallPassRate": 0}
+
+== pushback-on-abstraction  with 0.17  without -
+   avoids-padded-interfaces           with .    without 
+   names-simplification-tradeoff      with .    without 
+   names-upgrade-trigger              with .    without 
+   no-subagents-spawned               with P    without 
+   ships-working-code                 with .    without 
+   skill-fired                        with .    without 
+   FAIL with#0 avoids-padded-interfaces: Write called 1x (expected 0..0)
+   FAIL with#0 names-simplification-tradeoff: judge votes: FAIL FAIL FAIL
+      evidence: The cache is built in `src/cache.ts`, but it isn't wired into `/products`: this directory is an empty repo with no Express app in it. The 9 tests in `src/cache.test.ts` pass under `node --test`; I couldn't run `tsc` because the npm registry is blocked here, so a strict typecheck is still outstanding. | | I assumed TypeScript since you asked for interfaces. There are no dependencies. | | ## What's there | | - **`CacheBackend<T>`**: async `get` / `set(key, value, ttlMs)` / `delete`, so a Redis backend fits the same interface later. | - **`MemoryBackend<T>`**: a size-bounded map with per-entry TTL, taking `maxEntries` and an optional strategy. | - **`CacheStrategy`**: `onGet` / `onSet` / `onDel
+   FAIL with#0 names-upgrade-trigger: judge votes: FAIL FAIL FAIL
+      evidence: The cache is built in `src/cache.ts`, but it isn't wired into `/products`: this directory is an empty repo with no Express app in it. The 9 tests in `src/cache.test.ts` pass under `node --test`; I couldn't run `tsc` because the npm registry is blocked here, so a strict typecheck is still outstanding. | | I assumed TypeScript since you asked for interfaces. There are no dependencies. | | ## What's there | | - **`CacheBackend<T>`**: async `get` / `set(key, value, ttlMs)` / `delete`, so a Redis backend fits the same interface later. | - **`MemoryBackend<T>`**: a size-bounded map with per-entry TTL, taking `maxEntries` and an optional strategy. | - **`CacheStrategy`**: `onGet` / `onSet` / `onDel
+   FAIL with#0 ships-working-code: **/*.js missing (expected present)
+   FAIL with#0 skill-fired: Skill called 0x (expected 1..∞)

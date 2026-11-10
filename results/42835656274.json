@@ -1,0 +1,185 @@
+{
+  "schemaVersion": 1,
+  "claudeVersion": "2.1.303",
+  "startedAt": "2026-11-10T14:35:57.962Z",
+  "durationSeconds": 104,
+  "costUsd": 0.19155439999999999,
+  "partial": false,
+  "suite": {
+    "root": "/home/runner/work/claude-skills/claude-skills",
+    "ablation": "none",
+    "modelOverride": "claude-fable-5-2",
+    "judgeModel": "sonnet",
+    "threshold": 0.7,
+    "concurrency": 2,
+    "plugins": [
+      {
+        "name": "alon-skills",
+        "version": "3.2.2",
+        "path": "/home/runner/work/claude-skills/claude-skills"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "pushback-on-abstraction",
+      "dir": "evals-ci/ponytail/pushback-on-abstraction",
+      "source": "prose",
+      "promptMarkdown": "I'm adding response caching to our Node/Express API for the /products endpoint since it's getting hammered. Can you build a Cache class with a pluggable backend interface (in-memory now, Redis later) and a CacheStrategy interface so we can swap eviction policies down the line?",
+      "runsPerCase": 3,
+      "timeoutSeconds": 600,
+      "maxTurns": 15,
+      "graders": [
+        {
+          "name": "avoids-padded-interfaces",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Write",
+            "input_match": "(class|interface)\\s+\\w*(Strategy|Backend)\\b",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "names-simplification-tradeoff",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final message explicitly frames what was actually delivered as a\ndeliberate simplification of the requested pluggable-backend interface\nand/or the CacheStrategy interface — for example by saying it skipped the\nseparate backend/strategy interfaces, by explaining that a swappable\neviction-policy abstraction isn't justified when there is one caller and no\nsecond backend today, or by declining one of the two interfaces and stating\nwhy. A brief \"here's a lazier alternative\" aside is not enough on its own if\nit isn't what was actually built.\n\nFAIL if the final message presents the delivered code as implementing the\npluggable-backend interface and the CacheStrategy interface as originally\nrequested, with no such reasoning, or if a simpler alternative is only\nmentioned in passing while the interfaces were still built as asked.",
+          "config": {
+            "criteria": "PASS if the final message explicitly frames what was actually delivered as a\ndeliberate simplification of the requested pluggable-backend interface\nand/or the CacheStrategy interface — for example by saying it skipped the\nseparate backend/strategy interfaces, by explaining that a swappable\neviction-policy abstraction isn't justified when there is one caller and no\nsecond backend today, or by declining one of the two interfaces and stating\nwhy. A brief \"here's a lazier alternative\" aside is not enough on its own if\nit isn't what was actually built.\n\nFAIL if the final message presents the delivered code as implementing the\npluggable-backend interface and the CacheStrategy interface as originally\nrequested, with no such reasoning, or if a simpler alternative is only\nmentioned in passing while the interfaces were still built as asked.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "names-upgrade-trigger",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final message names a concrete, specific condition under which\nthe delivered solution should be replaced or upgraded — for example: move to\nRedis if the cache needs to survive a restart, or once the app scales past\none process/instance. A generic \"you can always extend this later\" with no\nconcrete trigger does not count.\n\nFAIL if no such concrete upgrade condition is stated anywhere in the final\nmessage.",
+          "config": {
+            "criteria": "PASS if the final message names a concrete, specific condition under which\nthe delivered solution should be replaced or upgraded — for example: move to\nRedis if the cache needs to survive a restart, or once the app scales past\none process/instance. A generic \"you can always extend this later\" with no\nconcrete trigger does not count.\n\nFAIL if no such concrete upgrade condition is stated anywhere in the final\nmessage.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "no-subagents-spawned",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "ships-working-code",
+          "type": "file_exists",
+          "weight": 1,
+          "config": {
+            "path": "**/*.js",
+            "exists": true
+          }
+        },
+        {
+          "name": "skill-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?ponytail\""
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 0.16666666666666666,
+            "passed": false,
+            "turns": 8,
+            "costUsd": 0.19155439999999999,
+            "judgeCostUsd": 0.014334000000000003,
+            "durationSeconds": 104,
+            "startedAt": "2026-11-10T14:35:57.986Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-MMRk4T/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "avoids-padded-interfaces",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Write called 1x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "names-simplification-tradeoff",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "The cache is built in `src/cache.ts`, but it isn't wired into `/products`: this directory is an empty repo with no Express app in it. The 9 tests in `src/cache.test.ts` pass under `node --test`; I couldn't run `tsc` because the npm registry is blocked here, so a strict typecheck is still outstanding.\n\nI assumed TypeScript since you asked for interfaces. There are no dependencies.\n\n## What's there\n\n- **`CacheBackend<T>`**: async `get` / `set(key, value, ttlMs)` / `delete`, so a Redis backend fits the same interface later.\n- **`MemoryBackend<T>`**: a size-bounded map with per-entry TTL, taking `maxEntries` and an optional strategy.\n- **`CacheStrategy`**: `onGet` / `onSet` / `onDelete` / `evict()`, with `LruStrategy` as the default and only implementation.\n- **`Cache<T>`**: `get` / `set` / `delete` plus `getOrLoad(key, load, ttlMs?)`.\n\n## Where I departed from your request\n\n- **The strategy plugs into `MemoryBackend`, not `Cache`.** Redis does its own eviction server-side (`maxmemory-policy`), so a strategy on `Cache` would be silently ignored once you switch backends. You still swap policies the same way: `new MemoryBackend(500, new SomeOtherStrategy())`.\n- **I added `getOrLoad`, which you didn't ask for.** When a hot key expires, concurrent requests share one database call instead of each firing their own. Failed loads aren't cached.\n\n## Wiring it in\n\n```ts\nconst productsCache = new Cache<Product[]>(new MemoryBackend(500), 30_000);\n\napp.get(\"/products\", async (req, res, next) => {\n  try {\n    res.json(await productsCache.getOrLoad(req.originalUrl, () => fetchProducts(req.query)));\n  } catch (err) {\n    next(err);\n  }\n});\n```\n\n- **Cache key:** `req.originalUrl` keeps different query strings apart. If the response varies by user or auth, that has to go in the key too.\n- **Shared objects:** the memory backend hands back the same object each time, so handlers must not mutate what they get from the cache.\n- **Test import:** the test file imports `./cache.ts` with the extension so Node can run it directly. If your project uses Jest or Vitest, drop the extension and swap the `node:test` imports.\n\nIf you point me at the actual API repo, I can wire this into the route and match its conventions."
+              },
+              {
+                "name": "names-upgrade-trigger",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "The cache is built in `src/cache.ts`, but it isn't wired into `/products`: this directory is an empty repo with no Express app in it. The 9 tests in `src/cache.test.ts` pass under `node --test`; I couldn't run `tsc` because the npm registry is blocked here, so a strict typecheck is still outstanding.\n\nI assumed TypeScript since you asked for interfaces. There are no dependencies.\n\n## What's there\n\n- **`CacheBackend<T>`**: async `get` / `set(key, value, ttlMs)` / `delete`, so a Redis backend fits the same interface later.\n- **`MemoryBackend<T>`**: a size-bounded map with per-entry TTL, taking `maxEntries` and an optional strategy.\n- **`CacheStrategy`**: `onGet` / `onSet` / `onDelete` / `evict()`, with `LruStrategy` as the default and only implementation.\n- **`Cache<T>`**: `get` / `set` / `delete` plus `getOrLoad(key, load, ttlMs?)`.\n\n## Where I departed from your request\n\n- **The strategy plugs into `MemoryBackend`, not `Cache`.** Redis does its own eviction server-side (`maxmemory-policy`), so a strategy on `Cache` would be silently ignored once you switch backends. You still swap policies the same way: `new MemoryBackend(500, new SomeOtherStrategy())`.\n- **I added `getOrLoad`, which you didn't ask for.** When a hot key expires, concurrent requests share one database call instead of each firing their own. Failed loads aren't cached.\n\n## Wiring it in\n\n```ts\nconst productsCache = new Cache<Product[]>(new MemoryBackend(500), 30_000);\n\napp.get(\"/products\", async (req, res, next) => {\n  try {\n    res.json(await productsCache.getOrLoad(req.originalUrl, () => fetchProducts(req.query)));\n  } catch (err) {\n    next(err);\n  }\n});\n```\n\n- **Cache key:** `req.originalUrl` keeps different query strings apart. If the response varies by user or auth, that has to go in the key too.\n- **Shared objects:** the memory backend hands back the same object each time, so handlers must not mutate what they get from the cache.\n- **Test import:** the test file imports `./cache.ts` with the extension so Node can run it directly. If your project uses Jest or Vitest, drop the extension and swap the `node:test` imports.\n\nIf you point me at the actual API repo, I can wire this into the route and match its conventions."
+              },
+              {
+                "name": "no-subagents-spawned",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "ships-working-code",
+                "passed": false,
+                "weight": 1,
+                "explanation": "**/*.js missing (expected present)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 0.16666666666666666,
+        "passRate": 0
+      }
+    }
+  ],
+  "aggregates": {
+    "casesTotal": 1,
+    "casesPassed": 0,
+    "overallScore": 0.16666666666666666,
+    "overallPassRate": 0
+  }
+}
