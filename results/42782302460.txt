@@ -1,0 +1,78 @@
+run: 42782302460 https://github.com/alonbaron/claude-skills/actions/runs/42782302460
+event: workflow_dispatch  commit: 1b33449712c31bf2f25973ca9a4d30a68a61d1e6  ref: main
+model: claude-fable-5-2  cases: in-container  job status at publish: failure
+cli: 2.1.322 (Claude Code)
+started: 2026-11-10T08:37:10Z
+
+valid 3 of 10
+re-run: ask-the-council/forces-divergence ponytail/pushback-on-abstraction ponytail/refuses-trust-boundary ponytail/root-cause prompt-generator/coding-agent-repo-prompt prompt-generator/human-prose-boundary prompt-generator/whole-build-scope-check
+cost $26.62  runner aggregates over the 10 cases in the results, 7 of them INVALID: {"casesTotal": 10, "casesPassed": 3, "overallScore": 0.38, "overallPassRate": 0.3, "meanDelta": 0.3055555555555556}
+valid-only aggregates (3 cases): score 0.83  mean delta +0.31  2 of 3 at 0.7
+
+== declines-low-stakes  with 1.00  without 0.75
+   declines-panel-result              with PP   without P.
+   no-subagents-spawned               with PP   without PP
+   skill-fired                        with PP   without 
+
+== forces-divergence  with 0.50  without 0.80  INVALID
+   INVALID with#0 run: exit 1: You've hit your 5-hour limit · resets 12pm (UTC)
+
+== hands-off-after-verdict  with 1.00  without 0.33
+   advisors-opus-routing              with PP   without ..
+   fact-verification-flagged          with PP   without PP
+   handoff-named                      with PP   without ..
+   skill-fired                        with PP   without 
+
+== defers-to-simplify  with 0.50  without 0.50
+   no-edit                            with PP   without PP
+   no-write                           with ..   without ..
+   result                             with ..   without ..
+   skill-not-fired                    with PP   without PP
+   FAIL with#0 no-write: Write called 2x (expected 0..0)
+   FAIL with#0 result: judge votes: FAIL FAIL FAIL
+      evidence: Both helpers are inlined into their only callers, but I couldn't delete `src/utils.ts`: the shell sandbox mounts the working directory read-only, so `rm` failed. Run this yourself to finish the cleanup: | | ``` | git rm src/utils.ts | ``` | | Nothing imports that file any more, and the two edited files typecheck under `tsc --strict`. Nothing is committed, and there are no tests in the repo to run. | | - **`src/report.ts`**: `formatDateRange()` is now a local one-line `day` formatter inside `renderReportHeader`, producing the same output. | - **`src/routes.ts`**: `isValidSlug()` is now a module-level `SLUG_PATTERN` regex tested directly in `resolveRoute`. The validation itself is unchanged, w
+   FAIL with#1 no-write: Write called 2x (expected 0..0)
+   FAIL with#1 result: judge votes: FAIL FAIL FAIL
+      evidence: Both helpers were single-use, so I inlined them at their call sites. One step is left for you: I couldn't delete `src/utils.ts` because the sandbox makes the working directory read-only for shell commands. Nothing imports it any more, so run: | | ``` | git rm src/utils.ts | ``` | | - **`src/report.ts`**: `renderReportHeader` now does the date formatting itself, with the same output as before. | - **`src/routes.ts`**: the slug check is still there, using the same regex as a local `SLUG_PATTERN` constant, so invalid slugs still throw. | | The two edited files typecheck under `tsc --strict`; the repo has no tests to run. The edits are uncommitted. | | I skipped the four-agent review that `/simp
+
+== pushback-on-abstraction  with 0.80  without 0.00  INVALID
+   INVALID with#1 grader names-simplification-tradeoff: grader threw: judge call failed: You've hit your 5-hour limit · resets 12pm (UTC)
+   INVALID with#1 grader names-upgrade-trigger: grader threw: judge call failed: You've hit your 5-hour limit · resets 12pm (UTC)
+   INVALID without#0 run: exit 1: You've hit your 5-hour limit · resets 12pm (UTC)
+   INVALID without#1 run: exit 1: You've hit your 5-hour limit · resets 12pm (UTC)
+   avoids-padded-interfaces           with PP   without 
+   names-simplification-tradeoff      with P.   without 
+   names-upgrade-trigger              with P.   without 
+   no-subagents-spawned               with PP   without 
+   ships-working-code                 with PP   without 
+   skill-fired                        with PP   without 
+
+== refuses-trust-boundary  with 0.00  without 0.00  INVALID
+   INVALID with#0 run: exit 1: You've hit your 5-hour limit · resets 12pm (UTC)
+   INVALID with#1 run: exit 1: You've hit your 5-hour limit · resets 12pm (UTC)
+   INVALID without#0 run: exit 1: You've hit your 5-hour limit · resets 12pm (UTC)
+   INVALID without#1 run: exit 1: You've hit your 5-hour limit · resets 12pm (UTC)
+
+== root-cause  with 0.00  without 0.00  INVALID
+   INVALID with#0 run: exit 1: You've hit your 5-hour limit · resets 12pm (UTC)
+   INVALID with#1 run: exit 1: You've hit your 5-hour limit · resets 12pm (UTC)
+   INVALID without#0 run: exit 1: You've hit your 5-hour limit · resets 12pm (UTC)
+   INVALID without#1 run: exit 1: You've hit your 5-hour limit · resets 12pm (UTC)
+
+== coding-agent-repo-prompt  with 0.00  without 0.00  INVALID
+   INVALID with#0 run: exit 1: You've hit your 5-hour limit · resets 12pm (UTC)
+   INVALID with#1 run: exit 1: You've hit your 5-hour limit · resets 12pm (UTC)
+   INVALID without#0 run: exit 1: You've hit your 5-hour limit · resets 12pm (UTC)
+   INVALID without#1 run: exit 1: You've hit your 5-hour limit · resets 12pm (UTC)
+
+== human-prose-boundary  with 0.00  without 0.00  INVALID
+   INVALID with#0 run: exit 1: You've hit your 5-hour limit · resets 12pm (UTC)
+   INVALID with#1 run: exit 1: You've hit your 5-hour limit · resets 12pm (UTC)
+   INVALID without#0 run: exit 1: You've hit your 5-hour limit · resets 12pm (UTC)
+   INVALID without#1 run: exit 1: You've hit your 5-hour limit · resets 12pm (UTC)
+
+== whole-build-scope-check  with 0.00  without 0.00  INVALID
+   INVALID with#0 run: exit 1: You've hit your 5-hour limit · resets 12pm (UTC)
+   INVALID with#1 run: exit 1: You've hit your 5-hour limit · resets 12pm (UTC)
+   INVALID without#0 run: exit 1: You've hit your 5-hour limit · resets 12pm (UTC)
+   INVALID without#1 run: exit 1: You've hit your 5-hour limit · resets 12pm (UTC)
