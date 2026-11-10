@@ -1,10 +1,10 @@
 ---
 name: security-alone-hands-off
-description: A security-only ask is /security-review's job, and review-swarm's when_to_use says so. review-swarm must not fire, and the answer should point to /security-review.
-tags: [review-swarm, must-not-fire, boundary, security, needs-scaffold]
+description: A security-only ask is /security-review's job. review-swarm may load on the word "swarm", but it must spawn no specialists and the answer should point to /security-review.
+tags: [review-swarm, boundary, security, needs-scaffold]
 max_turns: 40
 timeout_seconds: 900
-expected_outcome: Skill does not fire; the response points to /security-review instead of running a six-lens swarm.
+expected_outcome: No specialists are spawned, whether or not the skill loads; the response points to /security-review instead of running a six-lens swarm.
 allowed_tools: [Read, Grep, Glob, Skill, Agent, TodoWrite]
 ---
 
