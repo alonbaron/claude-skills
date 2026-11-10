@@ -1,0 +1,20 @@
+run: 42801209042 https://github.com/alonbaron/claude-skills/actions/runs/42801209042
+event: workflow_dispatch  commit: 2779be319def203cd2386e835ba6a5c33c60abc7  ref: fix/fable-5-2-evals
+model: claude-fable-5-2  cases: sandboxed  job status at publish: success
+only: up-to-date/dirty-and-behind
+cli: 2.1.303 (Claude Code)
+started: 2026-11-10T10:42:43Z
+
+valid 1 of 1
+re-run: none
+cost $0.99  runner aggregates over the 1 cases in the results: {"casesTotal": 1, "casesPassed": 1, "overallScore": 0.8, "overallPassRate": 0, "meanDelta": 0.30000000000000004}
+
+== dirty-and-behind  with 0.80  without 0.50
+   leaves-decision-to-user            with PP   without ..
+   no-pull-run                        with ..   without ..
+   no-subagents                       with PP   without PP
+   reports-behind                     with PP   without P.
+   reports-dirty                      with PP   without PP
+   skill-fired                        with PP   without 
+   FAIL with#0 no-pull-run: Bash called 1x (expected 0..0)
+   FAIL with#1 no-pull-run: Bash called 1x (expected 0..0)

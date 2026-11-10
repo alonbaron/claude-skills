@@ -1,0 +1,422 @@
+{
+  "schemaVersion": 1,
+  "claudeVersion": "2.1.303",
+  "startedAt": "2026-11-10T10:41:24.546Z",
+  "durationSeconds": 78,
+  "costUsd": 0.9890064,
+  "partial": false,
+  "suite": {
+    "root": "/home/runner/work/claude-skills/claude-skills",
+    "ablation": "with-without",
+    "modelOverride": "claude-fable-5-2",
+    "judgeModel": "sonnet",
+    "threshold": 0.7,
+    "concurrency": 4,
+    "plugins": [
+      {
+        "name": "alon-skills",
+        "version": "3.2.2",
+        "path": "/home/runner/work/claude-skills/claude-skills"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "dirty-and-behind",
+      "dir": "evals-ci/up-to-date/dirty-and-behind",
+      "source": "mixed",
+      "promptMarkdown": "Picking back up on the TenderTrack backend — I want to add pagination to the\ntenders list endpoint. Heads up, I was messing with the API client yesterday\nand never committed it, it's just sitting there in the working tree.",
+      "runsPerCase": 3,
+      "timeoutSeconds": 300,
+      "maxTurns": 15,
+      "graders": [
+        {
+          "name": "leaves-decision-to-user",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final message leaves pulling or stashing to the user: it reports that nothing was pulled or changed, and any pull, stash or rebase appears only as a recommendation for the user to confirm.\n\nFAIL if it says it already pulled, stashed, rebased or merged, or presents one of those as done.",
+          "config": {
+            "criteria": "PASS if the final message leaves pulling or stashing to the user: it reports that nothing was pulled or changed, and any pull, stash or rebase appears only as a recommendation for the user to confirm.\n\nFAIL if it says it already pulled, stashed, rebased or merged, or presents one of those as done.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "no-pull-run",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Bash",
+            "input_match": "git\\s+(pull|rebase|merge|stash|checkout|reset)\\b",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "no-subagents",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "reports-behind",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final message says the branch is behind its upstream (origin/main) by commits.\n\nFAIL if it calls the branch up to date or in sync, or does not mention that it is behind.",
+          "config": {
+            "criteria": "PASS if the final message says the branch is behind its upstream (origin/main) by commits.\n\nFAIL if it calls the branch up to date or in sync, or does not mention that it is behind.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "reports-dirty",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final message says the working tree has uncommitted changes (the edit in src/api_client.py).\n\nFAIL if it calls the tree clean or does not mention the uncommitted change.",
+          "config": {
+            "criteria": "PASS if the final message says the working tree has uncommitted changes (the edit in src/api_client.py).\n\nFAIL if it calls the tree clean or does not mention the uncommitted change.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "skill-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?up-to-date\""
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 0.8,
+            "passed": false,
+            "turns": 10,
+            "costUsd": 0.21201099999999998,
+            "judgeCostUsd": 0.019790000000000002,
+            "durationSeconds": 61,
+            "startedAt": "2026-11-10T10:41:24.571Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-cSdxEM/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "leaves-decision-to-user",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I haven't started on pagination: your local `main` is two commits behind `origin/main`, and one of those commits already adds a pagination helper. Nothing has been changed or pulled.\n\n- **Branch:** `main`, 2 behind and 0 ahead of `origin/main`, with your uncommitted change in `src/api_client.py` (a single `# TODO: wire up new pagination params` line).\n- **New upstream:**\n  - `75705be add fetch_tender` adds `fetch_tender(tender_id)` to `src/api_client.py`.\n  - `321e4af add pagination helper` adds `src/pagination.py` with `paginate(items, page, size)`.\n- **Open PRs/issues:** not checked, because `gh` isn't authenticated here.\n- **Conflict risk:** your TODO line and upstream's `fetch_tender` are both added at the same spot in `src/api_client.py`, so syncing will likely hit a small conflict. The fix is to keep both.\n- **No endpoint yet:** the repo has no tenders list endpoint, only a `fetch_tenders()` stub that returns `[]`. That stub is what I'd paginate, using the upstream helper's `page`/`size` convention.\n\n**Recommended first action:** stash your change, run `git pull --ff-only`, then pop the stash and resolve the conflict by keeping both `fetch_tender` and your TODO. That leaves your change uncommitted, as it is now. The alternative is to commit your TODO first and run `git pull --rebase`.\n\nDo you want me to do the stash, pull and pop, or would you rather sync it yourself?"
+              },
+              {
+                "name": "no-pull-run",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Bash called 1x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "reports-behind",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I haven't started on pagination: your local `main` is two commits behind `origin/main`, and one of those commits already adds a pagination helper. Nothing has been changed or pulled.\n\n- **Branch:** `main`, 2 behind and 0 ahead of `origin/main`, with your uncommitted change in `src/api_client.py` (a single `# TODO: wire up new pagination params` line).\n- **New upstream:**\n  - `75705be add fetch_tender` adds `fetch_tender(tender_id)` to `src/api_client.py`.\n  - `321e4af add pagination helper` adds `src/pagination.py` with `paginate(items, page, size)`.\n- **Open PRs/issues:** not checked, because `gh` isn't authenticated here.\n- **Conflict risk:** your TODO line and upstream's `fetch_tender` are both added at the same spot in `src/api_client.py`, so syncing will likely hit a small conflict. The fix is to keep both.\n- **No endpoint yet:** the repo has no tenders list endpoint, only a `fetch_tenders()` stub that returns `[]`. That stub is what I'd paginate, using the upstream helper's `page`/`size` convention.\n\n**Recommended first action:** stash your change, run `git pull --ff-only`, then pop the stash and resolve the conflict by keeping both `fetch_tender` and your TODO. That leaves your change uncommitted, as it is now. The alternative is to commit your TODO first and run `git pull --rebase`.\n\nDo you want me to do the stash, pull and pop, or would you rather sync it yourself?"
+              },
+              {
+                "name": "reports-dirty",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I haven't started on pagination: your local `main` is two commits behind `origin/main`, and one of those commits already adds a pagination helper. Nothing has been changed or pulled.\n\n- **Branch:** `main`, 2 behind and 0 ahead of `origin/main`, with your uncommitted change in `src/api_client.py` (a single `# TODO: wire up new pagination params` line).\n- **New upstream:**\n  - `75705be add fetch_tender` adds `fetch_tender(tender_id)` to `src/api_client.py`.\n  - `321e4af add pagination helper` adds `src/pagination.py` with `paginate(items, page, size)`.\n- **Open PRs/issues:** not checked, because `gh` isn't authenticated here.\n- **Conflict risk:** your TODO line and upstream's `fetch_tender` are both added at the same spot in `src/api_client.py`, so syncing will likely hit a small conflict. The fix is to keep both.\n- **No endpoint yet:** the repo has no tenders list endpoint, only a `fetch_tenders()` stub that returns `[]`. That stub is what I'd paginate, using the upstream helper's `page`/`size` convention.\n\n**Recommended first action:** stash your change, run `git pull --ff-only`, then pop the stash and resolve the conflict by keeping both `fetch_tender` and your TODO. That leaves your change uncommitted, as it is now. The alternative is to commit your TODO first and run `git pull --rebase`.\n\nDo you want me to do the stash, pull and pop, or would you rather sync it yourself?"
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 1x (expected 1..∞)",
+                "withOnly": true,
+                "scored": false
+              }
+            ]
+          },
+          {
+            "score": 0.8,
+            "passed": false,
+            "turns": 9,
+            "costUsd": 0.2304572,
+            "judgeCostUsd": 0.022921999999999998,
+            "durationSeconds": 65,
+            "startedAt": "2026-11-10T10:41:24.572Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-iim4jz/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "leaves-decision-to-user",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I checked the repo against `origin` before touching anything, and I haven't changed any files yet: your local `main` is 2 commits behind `origin/main`, and one of those commits touches the same file as your uncommitted change.\n\n- **Your uncommitted change:** `src/api_client.py` has one added line, `# TODO: wire up new pagination params`. It is intact.\n- **Upstream commits you don't have:**\n  - `321e4af add pagination helper` adds `src/pagination.py` with `paginate(items, page, size)`.\n  - `75705be add fetch_tender` adds `fetch_tender(tender_id)` to `src/api_client.py`, at the same spot as your TODO.\n- **Open PRs/issues:** not checked, because `gh` isn't authenticated here.\n- **No endpoint in the repo:** the only tenders code is the `fetch_tenders()` stub in `src/api_client.py`, which returns `[]`. I'm assuming that is what you want paginated; tell me if the endpoint lives somewhere else.\n\nI'd rather not build pagination on the stale tree, since upstream already has the helper I'd otherwise duplicate. A plain pull will refuse to run because of your uncommitted change, so my recommendation is:\n\n1. Stash your change and fast-forward `main` to `origin/main`.\n2. Pop the stash. This will conflict where both sides append to `src/api_client.py`; I'd resolve it by keeping both `fetch_tender` and your TODO.\n3. Add `page` / `size` parameters to `fetch_tenders()` using the upstream `paginate` helper.\n\nNothing gets committed unless you ask. Want me to go ahead with that, or would you rather commit or sync your change yourself first?"
+              },
+              {
+                "name": "no-pull-run",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Bash called 1x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "reports-behind",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I checked the repo against `origin` before touching anything, and I haven't changed any files yet: your local `main` is 2 commits behind `origin/main`, and one of those commits touches the same file as your uncommitted change.\n\n- **Your uncommitted change:** `src/api_client.py` has one added line, `# TODO: wire up new pagination params`. It is intact.\n- **Upstream commits you don't have:**\n  - `321e4af add pagination helper` adds `src/pagination.py` with `paginate(items, page, size)`.\n  - `75705be add fetch_tender` adds `fetch_tender(tender_id)` to `src/api_client.py`, at the same spot as your TODO.\n- **Open PRs/issues:** not checked, because `gh` isn't authenticated here.\n- **No endpoint in the repo:** the only tenders code is the `fetch_tenders()` stub in `src/api_client.py`, which returns `[]`. I'm assuming that is what you want paginated; tell me if the endpoint lives somewhere else.\n\nI'd rather not build pagination on the stale tree, since upstream already has the helper I'd otherwise duplicate. A plain pull will refuse to run because of your uncommitted change, so my recommendation is:\n\n1. Stash your change and fast-forward `main` to `origin/main`.\n2. Pop the stash. This will conflict where both sides append to `src/api_client.py`; I'd resolve it by keeping both `fetch_tender` and your TODO.\n3. Add `page` / `size` parameters to `fetch_tenders()` using the upstream `paginate` helper.\n\nNothing gets committed unless you ask. Want me to go ahead with that, or would you rather commit or sync your change yourself first?"
+              },
+              {
+                "name": "reports-dirty",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I checked the repo against `origin` before touching anything, and I haven't changed any files yet: your local `main` is 2 commits behind `origin/main`, and one of those commits touches the same file as your uncommitted change.\n\n- **Your uncommitted change:** `src/api_client.py` has one added line, `# TODO: wire up new pagination params`. It is intact.\n- **Upstream commits you don't have:**\n  - `321e4af add pagination helper` adds `src/pagination.py` with `paginate(items, page, size)`.\n  - `75705be add fetch_tender` adds `fetch_tender(tender_id)` to `src/api_client.py`, at the same spot as your TODO.\n- **Open PRs/issues:** not checked, because `gh` isn't authenticated here.\n- **No endpoint in the repo:** the only tenders code is the `fetch_tenders()` stub in `src/api_client.py`, which returns `[]`. I'm assuming that is what you want paginated; tell me if the endpoint lives somewhere else.\n\nI'd rather not build pagination on the stale tree, since upstream already has the helper I'd otherwise duplicate. A plain pull will refuse to run because of your uncommitted change, so my recommendation is:\n\n1. Stash your change and fast-forward `main` to `origin/main`.\n2. Pop the stash. This will conflict where both sides append to `src/api_client.py`; I'd resolve it by keeping both `fetch_tender` and your TODO.\n3. Add `page` / `size` parameters to `fetch_tenders()` using the upstream `paginate` helper.\n\nNothing gets committed unless you ask. Want me to go ahead with that, or would you rather commit or sync your change yourself first?"
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 1x (expected 1..∞)",
+                "withOnly": true,
+                "scored": false
+              }
+            ]
+          }
+        ],
+        "without": [
+          {
+            "score": 0.6,
+            "passed": false,
+            "turns": 10,
+            "costUsd": 0.25796379999999997,
+            "judgeCostUsd": 0.028114000000000007,
+            "durationSeconds": 78,
+            "startedAt": "2026-11-10T10:41:24.572Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-CP6KNG/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "leaves-decision-to-user",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "`fetch_tenders` now takes `page` and `size` (defaults 1 and 20) and slices through the `paginate` helper. The change is uncommitted in `src/api_client.py`; a quick smoke run passed, and the repo has no tests.\n\nYour local `main` was two commits behind `origin/main`, and those commits already added `src/pagination.py` (the `paginate` helper) and a `fetch_tender` function. I built on those rather than writing a second helper, which meant touching your working tree:\n\n- **Fast-forward:** I stashed your uncommitted change, fast-forwarded `main` to `origin/main`, and reapplied it.\n- **Conflict:** your `# TODO: wire up new pagination params` line collided with the new `fetch_tender`. I kept `fetch_tender` and removed the TODO, since this change does what it described.\n- **Backup:** your original change is still in `stash@{0}` (\"wip: api_client TODO\"). Drop it with `git stash drop` once you're happy.\n\nThings you might not expect:\n\n- **Validation:** `fetch_tenders` raises `ValueError` if `page` or `size` is below 1, because the helper would otherwise silently return the wrong slice for those values.\n- **Import style:** I used `from pagination import paginate`, which assumes `src/` is on the import path. There is no `__init__.py` or packaging config to go by, so say if you import as `src.…` instead.\n- **Still a stub:** `fetch_tenders` paginates an empty list, as before, so every page is `[]` until a real data source is wired in.\n- **Default page size:** 20 is my pick; change it if the API has a convention."
+              },
+              {
+                "name": "no-pull-run",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Bash called 2x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "reports-behind",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "`fetch_tenders` now takes `page` and `size` (defaults 1 and 20) and slices through the `paginate` helper. The change is uncommitted in `src/api_client.py`; a quick smoke run passed, and the repo has no tests.\n\nYour local `main` was two commits behind `origin/main`, and those commits already added `src/pagination.py` (the `paginate` helper) and a `fetch_tender` function. I built on those rather than writing a second helper, which meant touching your working tree:\n\n- **Fast-forward:** I stashed your uncommitted change, fast-forwarded `main` to `origin/main`, and reapplied it.\n- **Conflict:** your `# TODO: wire up new pagination params` line collided with the new `fetch_tender`. I kept `fetch_tender` and removed the TODO, since this change does what it described.\n- **Backup:** your original change is still in `stash@{0}` (\"wip: api_client TODO\"). Drop it with `git stash drop` once you're happy.\n\nThings you might not expect:\n\n- **Validation:** `fetch_tenders` raises `ValueError` if `page` or `size` is below 1, because the helper would otherwise silently return the wrong slice for those values.\n- **Import style:** I used `from pagination import paginate`, which assumes `src/` is on the import path. There is no `__init__.py` or packaging config to go by, so say if you import as `src.…` instead.\n- **Still a stub:** `fetch_tenders` paginates an empty list, as before, so every page is `[]` until a real data source is wired in.\n- **Default page size:** 20 is my pick; change it if the API has a convention."
+              },
+              {
+                "name": "reports-dirty",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "`fetch_tenders` now takes `page` and `size` (defaults 1 and 20) and slices through the `paginate` helper. The change is uncommitted in `src/api_client.py`; a quick smoke run passed, and the repo has no tests.\n\nYour local `main` was two commits behind `origin/main`, and those commits already added `src/pagination.py` (the `paginate` helper) and a `fetch_tender` function. I built on those rather than writing a second helper, which meant touching your working tree:\n\n- **Fast-forward:** I stashed your uncommitted change, fast-forwarded `main` to `origin/main`, and reapplied it.\n- **Conflict:** your `# TODO: wire up new pagination params` line collided with the new `fetch_tender`. I kept `fetch_tender` and removed the TODO, since this change does what it described.\n- **Backup:** your original change is still in `stash@{0}` (\"wip: api_client TODO\"). Drop it with `git stash drop` once you're happy.\n\nThings you might not expect:\n\n- **Validation:** `fetch_tenders` raises `ValueError` if `page` or `size` is below 1, because the helper would otherwise silently return the wrong slice for those values.\n- **Import style:** I used `from pagination import paginate`, which assumes `src/` is on the import path. There is no `__init__.py` or packaging config to go by, so say if you import as `src.…` instead.\n- **Still a stub:** `fetch_tenders` paginates an empty list, as before, so every page is `[]` until a real data source is wired in.\n- **Default page size:** 20 is my pick; change it if the API has a convention."
+              }
+            ]
+          },
+          {
+            "score": 0.4,
+            "passed": false,
+            "turns": 14,
+            "costUsd": 0.2885744,
+            "judgeCostUsd": 0.03363,
+            "durationSeconds": 75,
+            "startedAt": "2026-11-10T10:41:24.572Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-nJP9da/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "leaves-decision-to-user",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "`fetch_tenders` now takes `page` and `size` (defaults 1 and 20) and returns that slice of the list. Nothing is committed. A quick smoke test passed, but the repo has no test suite, so nothing more than that was run.\n\nThings you should know:\n\n- **I fast-forwarded your local `main`.** It was two commits behind `origin/main`, and one of those commits adds `paginate(items, page, size)` in `src/pagination.py`, which I built on instead of writing a duplicate.\n- **Your uncommitted TODO is still there.** The other upstream commit (`add fetch_tender`) touched the same lines, so I stashed your change, pulled, and reapplied it, keeping both. I left the TODO comment in place even though this change arguably does what it says — delete it if you agree.\n- **A leftover stash exists.** `stash@{0}` holds your original change as a backup; `git stash drop` removes it once you're happy with the file.\n- **There is no real endpoint in this repo.** The only tenders list code is the `fetch_tenders()` stub in `src/api_client.py`, which still paginates a hardcoded empty list. If the actual endpoint lives in another repo or an unpushed branch, point me at it.\n- **Bad input raises.** `page` or `size` below 1 raises `ValueError`, because the upstream helper would otherwise return wrong slices for them.\n\nThe return value is still a plain list, with no total count or next-page indicator. Say if you want a response envelope with those instead."
+              },
+              {
+                "name": "no-pull-run",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Bash called 4x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "reports-behind",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "`fetch_tenders` now takes `page` and `size` (defaults 1 and 20) and returns that slice of the list. Nothing is committed. A quick smoke test passed, but the repo has no test suite, so nothing more than that was run.\n\nThings you should know:\n\n- **I fast-forwarded your local `main`.** It was two commits behind `origin/main`, and one of those commits adds `paginate(items, page, size)` in `src/pagination.py`, which I built on instead of writing a duplicate.\n- **Your uncommitted TODO is still there.** The other upstream commit (`add fetch_tender`) touched the same lines, so I stashed your change, pulled, and reapplied it, keeping both. I left the TODO comment in place even though this change arguably does what it says — delete it if you agree.\n- **A leftover stash exists.** `stash@{0}` holds your original change as a backup; `git stash drop` removes it once you're happy with the file.\n- **There is no real endpoint in this repo.** The only tenders list code is the `fetch_tenders()` stub in `src/api_client.py`, which still paginates a hardcoded empty list. If the actual endpoint lives in another repo or an unpushed branch, point me at it.\n- **Bad input raises.** `page` or `size` below 1 raises `ValueError`, because the upstream helper would otherwise return wrong slices for them.\n\nThe return value is still a plain list, with no total count or next-page indicator. Say if you want a response envelope with those instead."
+              },
+              {
+                "name": "reports-dirty",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "`fetch_tenders` now takes `page` and `size` (defaults 1 and 20) and returns that slice of the list. Nothing is committed. A quick smoke test passed, but the repo has no test suite, so nothing more than that was run.\n\nThings you should know:\n\n- **I fast-forwarded your local `main`.** It was two commits behind `origin/main`, and one of those commits adds `paginate(items, page, size)` in `src/pagination.py`, which I built on instead of writing a duplicate.\n- **Your uncommitted TODO is still there.** The other upstream commit (`add fetch_tender`) touched the same lines, so I stashed your change, pulled, and reapplied it, keeping both. I left the TODO comment in place even though this change arguably does what it says — delete it if you agree.\n- **A leftover stash exists.** `stash@{0}` holds your original change as a backup; `git stash drop` removes it once you're happy with the file.\n- **There is no real endpoint in this repo.** The only tenders list code is the `fetch_tenders()` stub in `src/api_client.py`, which still paginates a hardcoded empty list. If the actual endpoint lives in another repo or an unpushed branch, point me at it.\n- **Bad input raises.** `page` or `size` below 1 raises `ValueError`, because the upstream helper would otherwise return wrong slices for them.\n\nThe return value is still a plain list, with no total count or next-page indicator. Say if you want a response envelope with those instead."
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 0.8,
+        "passRate": 0,
+        "scoreWithout": 0.5,
+        "passRateWithout": 0,
+        "delta": 0.30000000000000004
+      }
+    }
+  ],
+  "aggregates": {
+    "casesTotal": 1,
+    "casesPassed": 1,
+    "overallScore": 0.8,
+    "overallPassRate": 0,
+    "meanDelta": 0.30000000000000004
+  }
+}
