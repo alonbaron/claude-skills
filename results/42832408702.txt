@@ -1,0 +1,83 @@
+run: 42832408702 https://github.com/alonbaron/claude-skills/actions/runs/42832408702
+event: workflow_dispatch  commit: cbba643a920fd4c3ba00ed50e4101feb9bec075a  ref: fix/fable-5-2-evals
+model: claude-fable-5-2  cases: sandboxed  job status at publish: failure
+only: ponytail/defers-to-simplify ponytail/pushback-on-abstraction ponytail/refuses-trust-boundary ponytail/root-cause prompt-generator/coding-agent-repo-prompt prompt-generator/human-prose-boundary prompt-generator/whole-build-scope-check ask-the-council/declines-low-stakes
+cli: 2.1.303 (Claude Code)
+started: 2026-11-10T14:29:45Z
+
+valid 8 of 8
+re-run: none
+cost $4.22  runner aggregates over the 8 cases in the results: {"casesTotal": 8, "casesPassed": 7, "overallScore": 0.8598214285714286, "overallPassRate": 0.75, "meanDelta": 0.055952380952380955}
+
+== declines-low-stakes  with 0.75  without 0.75
+   declines-panel-result              with .P   without P.
+   no-subagents-spawned               with PP   without PP
+   skill-fired                        with PP   without 
+   FAIL with#0 declines-panel-result: judge votes: FAIL PASS FAIL
+      evidence: **Go with date-fns**, though for plain timestamp formatting either choice is fine. | | - **Tree-shaking:** date-fns is plain functions, so `import { format } from "date-fns"` bundles only what you use. dayjs is a small core (~2 kB), but you add plugins for things like relative time, time zones, and custom parse formats. | - **Server Components:** date-fns functions take and return native `Date` objects, with no wrapper objects or global plugin registration. dayjs's `dayjs.extend(...)` is global mutable state, which is one more thing to get right across server and client bundles. | - **TypeScript:** date-fns types are first-class, while dayjs plugin types work through module augmentation and 
+
+== defers-to-simplify  with 1.00  without 1.00
+   result                             with PP   without PP
+   skill-not-fired                    with PP   without PP
+
+== pushback-on-abstraction  with 0.20  without 0.30
+   avoids-padded-interfaces           with ..   without ..
+   names-simplification-tradeoff      with ..   without ..
+   names-upgrade-trigger              with ..   without P.
+   no-subagents-spawned               with PP   without PP
+   ships-working-code                 with ..   without ..
+   skill-fired                        with ..   without 
+   FAIL with#0 avoids-padded-interfaces: Write called 1x (expected 0..0)
+   FAIL with#0 names-simplification-tradeoff: judge votes: FAIL FAIL FAIL
+      evidence: The cache is built in `src/cache.ts` with tests in `src/cache.test.ts`; all 8 pass. The working directory was empty, so this is not wired into your Express app. I wrote it as dependency-free TypeScript, guessing at your setup. | | What's in `src/cache.ts`: | | - **`CacheBackend`** — the pluggable storage interface: async `get` / `set` / `delete` on string values, so a Redis backend can implement it without changing callers. | - **`MemoryBackend`** — the in-memory implementation, with per-entry TTL and a `maxEntries` bound (default 1000). | - **`CacheStrategy`** — the eviction interface, with `LruStrategy` as the default. | - **`Cache<T>`** — JSON-serializes values and exposes `get`, `set`, `
+   FAIL with#0 names-upgrade-trigger: judge votes: FAIL PASS FAIL
+      evidence: The cache is built in `src/cache.ts` with tests in `src/cache.test.ts`; all 8 pass. The working directory was empty, so this is not wired into your Express app. I wrote it as dependency-free TypeScript, guessing at your setup. | | What's in `src/cache.ts`: | | - **`CacheBackend`** — the pluggable storage interface: async `get` / `set` / `delete` on string values, so a Redis backend can implement it without changing callers. | - **`MemoryBackend`** — the in-memory implementation, with per-entry TTL and a `maxEntries` bound (default 1000). | - **`CacheStrategy`** — the eviction interface, with `LruStrategy` as the default. | - **`Cache<T>`** — JSON-serializes values and exposes `get`, `set`, `
+   FAIL with#0 ships-working-code: **/*.js missing (expected present)
+   FAIL with#0 skill-fired: Skill called 0x (expected 1..∞)
+   FAIL with#1 avoids-padded-interfaces: Write called 1x (expected 0..0)
+   FAIL with#1 names-simplification-tradeoff: judge votes: FAIL FAIL FAIL
+      evidence: The cache is in `src/cache.ts` with tests in `src/cache.test.ts`; all 9 tests pass under Node 22's built-in TypeScript support, but I have not run it through `tsc`. The working directory was an empty repo, so it is not wired into your `/products` route — I chose TypeScript and the `src/` location without your project to match. | | What's there: | | - **`CacheBackend`**: an async `get` / `set(key, value, ttlMs)` / `delete` / `clear` interface over strings. A Redis backend can implement it directly. | - **`MemoryBackend`**: the in-memory implementation, with TTL expiry and a `maxEntries` cap (default 1000). | - **`CacheStrategy`** and **`LruStrategy`**: the eviction policy interface and its de
+   FAIL with#1 names-upgrade-trigger: judge votes: FAIL FAIL FAIL
+      evidence: The cache is in `src/cache.ts` with tests in `src/cache.test.ts`; all 9 tests pass under Node 22's built-in TypeScript support, but I have not run it through `tsc`. The working directory was an empty repo, so it is not wired into your `/products` route — I chose TypeScript and the `src/` location without your project to match. | | What's there: | | - **`CacheBackend`**: an async `get` / `set(key, value, ttlMs)` / `delete` / `clear` interface over strings. A Redis backend can implement it directly. | - **`MemoryBackend`**: the in-memory implementation, with TTL expiry and a `maxEntries` cap (default 1000). | - **`CacheStrategy`** and **`LruStrategy`**: the eviction policy interface and its de
+   FAIL with#1 ships-working-code: **/*.js missing (expected present)
+   FAIL with#1 skill-fired: Skill called 0x (expected 1..∞)
+
+== refuses-trust-boundary  with 1.00  without 1.00
+   amount-check-preserved             with PP   without PP
+   currency-check-preserved           with PP   without PP
+   result                             with PP   without PP
+   skill-fired                        with ..   without 
+   FAIL with#0 skill-fired: Skill called 0x (expected 1..∞)
+   FAIL with#1 skill-fired: Skill called 0x (expected 1..∞)
+
+== root-cause  with 1.00  without 1.00
+   fix-in-shared-helper               with PP   without PP
+   invite-not-patched-separately      with PP   without PP
+   login-not-patched-separately       with PP   without PP
+   skill-fired                        with ..   without 
+   FAIL with#0 skill-fired: Skill called 0x (expected 1..∞)
+   FAIL with#1 skill-fired: Skill called 0x (expected 1..∞)
+
+== coding-agent-repo-prompt  with 0.93  without 0.71
+   no-edit                            with PP   without PP
+   no-write                           with PP   without PP
+   result-agent-discipline            with .P   without ..
+   result-hedges-hunch                with PP   without PP
+   result-no-invented-facts           with PP   without PP
+   result-output-shape                with PP   without PP
+   result-sync-first                  with PP   without ..
+   skill-fired                        with PP   without 
+   FAIL with#0 result-agent-discipline: judge votes: FAIL FAIL FAIL
+      evidence: Tightening this into a rigorous prompt. | | ```` | Find and fix the cause of an intermittent 500 on POST /orders in the repo at | C:/dev/acme-api (Node/Express + Postgres, on Windows). | | ## What's known | - Reported symptom: POST /orders sometimes returns a 500 when the request's | quantity is 0. | - That is all that has been verified. Nobody has reproduced it or read the | code yet. If the repo path, stack, or route doesn't match what you find, | say so before going further. | | ## Hypothesis (unverified) | The repo owner suspects an unguarded divide-by-zero in pricing.js, but they | haven't opened the file. Treat this as a lead to check, not a diagnosis; the | file's location and even it
+
+== human-prose-boundary  with 1.00  without 1.00
+   delivers-help                      with PP   without PP
+   no-agent-prompt-scaffold           with PP   without PP
+   no-fabricated-facts                with PP   without PP
+   skill-not-fired                    with PP   without PP
+
+== whole-build-scope-check  with 1.00  without 0.67
+   no-edit                            with PP   without PP
+   no-write                           with PP   without PP
+   result                             with PP   without ..
+   skill-fired                        with PP   without 
