@@ -5,9 +5,9 @@
 #   [run-evals: in-container]   the 10 others (ponytail, ask-the-council, prompt-generator)
 #   [run-evals: all]            all 19 in one job (about an hour; more than one five-hour
 #                               plan window held on 2026-10-04, so prefer two runs)
-# Needs the repository secret CLAUDE_CODE_OAUTH_TOKEN (from `claude setup-token`),
-# so the runs count against the owner's Claude plan (the same five-hour window as
-# interactive sessions), not an API key.
+# Needs the repository secret ANTHROPIC_API_KEY, so the runs are billed per token
+# to that API key, not counted against the owner's Claude plan. Only the key is
+# passed to the run step, so there is no doubt which one is billed.
 name: evals
 on:
   # No schedule: on 2026-10-04 a one-off cron fired 4 h 49 min late, inside a closed plan window,
@@ -55,7 +55,7 @@ jobs:
         run: npm install -g @anthropic-ai/claude-code && claude --version
       - name: Run the cases
         env:
-          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           SKIP_CASES: ""
           # The agent under test. A push runs Fable 5.1 (the model the skills are written for); workflow_dispatch can pick another.
           MODEL: ${{ github.event.inputs.model || 'claude-fable-5-1' }}
