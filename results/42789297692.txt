@@ -1,0 +1,37 @@
+run: 42789297692 https://github.com/alonbaron/claude-skills/actions/runs/42789297692
+event: workflow_dispatch  commit: 0b4c924f4730e1c3ec65d5a8f918426f06777c80  ref: evals-api-key
+model: claude-fable-5-2  cases: sandboxed  job status at publish: failure
+only: architect/small-fix-boundary
+cli: 2.1.303 (Claude Code)
+started: 2026-11-10T09:16:38Z
+
+PARTIAL: the runner stopped early (authentication failed); cases it never started are not in the results
+valid 0 of 1
+re-run: architect/small-fix-boundary
+cost $0.00  runner aggregates over the 1 cases in the results, 1 of them INVALID: {"casesTotal": 1, "casesPassed": 0, "overallScore": 0.25, "overallPassRate": 0, "meanDelta": 0}
+valid-only aggregates: none, every case is INVALID
+
+== small-fix-boundary  with 0.25  without 0.25  INVALID
+   INVALID with#0 run: exit 1: Not logged in · Please run /login · stderr: [claude-code:unrecognized_model] {"model":"claude-fable-5-2","query_source":"sdk"}
+   INVALID with#0 grader no-invention: grader threw: judge call failed: Not logged in · Please run /login
+   INVALID with#0 grader targeted-addition: grader threw: judge call failed: Not logged in · Please run /login
+   INVALID with#0 grader two-boundary-enforcement: grader threw: judge call failed: Not logged in · Please run /login
+   INVALID with#1 run: exit 1: Not logged in · Please run /login · stderr: [claude-code:unrecognized_model] {"model":"claude-fable-5-2","query_source":"sdk"}
+   INVALID with#1 grader no-invention: grader threw: judge call failed: Not logged in · Please run /login
+   INVALID with#1 grader targeted-addition: grader threw: judge call failed: Not logged in · Please run /login
+   INVALID with#1 grader two-boundary-enforcement: grader threw: judge call failed: Not logged in · Please run /login
+   INVALID without#0 run: exit 1: Not logged in · Please run /login · stderr: [claude-code:unrecognized_model] {"model":"claude-fable-5-2","query_source":"sdk"}
+   INVALID without#0 grader no-invention: grader threw: judge call failed: Not logged in · Please run /login
+   INVALID without#0 grader targeted-addition: grader threw: judge call failed: Not logged in · Please run /login
+   INVALID without#0 grader two-boundary-enforcement: grader threw: judge call failed: Not logged in · Please run /login
+   INVALID without#1 run: exit 1: Not logged in · Please run /login · stderr: [claude-code:unrecognized_model] {"model":"claude-fable-5-2","query_source":"sdk"}
+   INVALID without#1 grader no-invention: grader threw: judge call failed: Not logged in · Please run /login
+   INVALID without#1 grader targeted-addition: grader threw: judge call failed: Not logged in · Please run /login
+   INVALID without#1 grader two-boundary-enforcement: grader threw: judge call failed: Not logged in · Please run /login
+   no-invention                       with ..   without ..
+   no-subagents                       with PP   without PP
+   skill-fired                        with ..   without 
+   targeted-addition                  with ..   without ..
+   two-boundary-enforcement           with ..   without ..
+   FAIL with#0 skill-fired: Skill called 0x (expected 1..∞)
+   FAIL with#1 skill-fired: Skill called 0x (expected 1..∞)

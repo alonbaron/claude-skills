@@ -1,0 +1,310 @@
+{
+  "schemaVersion": 1,
+  "claudeVersion": "2.1.303",
+  "startedAt": "2026-11-10T09:16:35.754Z",
+  "durationSeconds": 1,
+  "costUsd": 0,
+  "partial": true,
+  "partialReason": "auth_failed",
+  "suite": {
+    "root": "/home/runner/work/claude-skills/claude-skills",
+    "ablation": "with-without",
+    "modelOverride": "claude-fable-5-2",
+    "judgeModel": "sonnet",
+    "threshold": 0.7,
+    "concurrency": 4,
+    "plugins": [
+      {
+        "name": "alon-skills",
+        "version": "3.2.2",
+        "path": "/home/runner/work/claude-skills/claude-skills"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "small-fix-boundary",
+      "dir": "evals-ci/architect/small-fix-boundary",
+      "source": "mixed",
+      "promptMarkdown": "We already have SOURCE_OF_TRUTH.md and ARCHITECTURE_ROADMAP.md for our Cloudflare Workers auth service (Hono + D1). Product wants a rate limit of 100 requests/minute per IP on POST /login before we ship password reset next sprint. Can you spec that out?",
+      "runsPerCase": 3,
+      "timeoutSeconds": 900,
+      "maxTurns": 40,
+      "graders": [
+        {
+          "name": "no-invention",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the response does not state invented specifics — a specific\nrate-limiting library, a counter schema, an exact HTTP status/header\nconvention — as settled fact when they were not given and are not already in\nthe docs. Naming a concrete option while flagging it as an assumption or open\nquestion is fine.\n\nFAIL if it presents invented implementation details as decided fact with no\nflag that they are an assumption.",
+          "config": {
+            "criteria": "PASS if the response does not state invented specifics — a specific\nrate-limiting library, a counter schema, an exact HTTP status/header\nconvention — as settled fact when they were not given and are not already in\nthe docs. Naming a concrete option while flagging it as an assumption or open\nquestion is fine.\n\nFAIL if it presents invented implementation details as decided fact with no\nflag that they are an assumption.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "no-subagents",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "skill-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?architect\""
+          }
+        },
+        {
+          "name": "targeted-addition",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the response treats this as a targeted addition to the auth service's\nexisting design docs: it adds the new rate-limiting invariant (100\nrequests/minute per IP on POST /login), says where it lives (e.g. wired into\nSOURCE_OF_TRUTH.md's invariants table and ARCHITECTURE_ROADMAP.md), and does\nthis without re-authoring or regenerating the whole SOURCE_OF_TRUTH.md /\nARCHITECTURE_ROADMAP.md / TODO_WORKFLOW.md / CLAUDE.md set from scratch. It\nshould build on the existing login/logout/session model and D1 schema rather\nthan re-deriving unrelated sections.\n\nFAIL if it re-authors the whole doc set for a one-endpoint change, ignores the\ndocs that already exist, or jumps straight to implementation code instead of\na design addition.",
+          "config": {
+            "criteria": "PASS if the response treats this as a targeted addition to the auth service's\nexisting design docs: it adds the new rate-limiting invariant (100\nrequests/minute per IP on POST /login), says where it lives (e.g. wired into\nSOURCE_OF_TRUTH.md's invariants table and ARCHITECTURE_ROADMAP.md), and does\nthis without re-authoring or regenerating the whole SOURCE_OF_TRUTH.md /\nARCHITECTURE_ROADMAP.md / TODO_WORKFLOW.md / CLAUDE.md set from scratch. It\nshould build on the existing login/logout/session model and D1 schema rather\nthan re-deriving unrelated sections.\n\nFAIL if it re-authors the whole doc set for a one-endpoint change, ignores the\ndocs that already exist, or jumps straight to implementation code instead of\na design addition.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "two-boundary-enforcement",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if SOURCE_OF_TRUTH.md states the new login rate-limit invariant and names\ntwo places it is enforced, e.g. a Hono middleware check AND a platform or\nstorage layer behind it (a Workers Rate Limiting binding, D1, KV, a Durable\nObject). Both must be named, not just \"rate limiting is applied\".\n\nFAIL if the invariant is missing, or only one enforcement point is named.",
+          "config": {
+            "criteria": "PASS if SOURCE_OF_TRUTH.md states the new login rate-limit invariant and names\ntwo places it is enforced, e.g. a Hono middleware check AND a platform or\nstorage layer behind it (a Workers Rate Limiting binding, D1, KV, a Durable\nObject). Both must be named, not just \"rate limiting is applied\".\n\nFAIL if the invariant is missing, or only one enforcement point is named.",
+            "focus": {
+              "source": "file",
+              "path": "SOURCE_OF_TRUTH.md"
+            }
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 0.25,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 1,
+            "startedAt": "2026-11-10T09:16:35.770Z",
+            "error": "exit 1: Not logged in · Please run /login · stderr: [claude-code:unrecognized_model] {\"model\":\"claude-fable-5-2\",\"query_source\":\"sdk\"} ",
+            "tracePath": "/tmp/claude-eval-97YQWC/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-invention",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: Not logged in · Please run /login",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 1..∞)",
+                "withOnly": true,
+                "scored": false
+              },
+              {
+                "name": "targeted-addition",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: Not logged in · Please run /login",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "two-boundary-enforcement",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: Not logged in · Please run /login",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.25,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 1,
+            "startedAt": "2026-11-10T09:16:35.770Z",
+            "error": "exit 1: Not logged in · Please run /login · stderr: [claude-code:unrecognized_model] {\"model\":\"claude-fable-5-2\",\"query_source\":\"sdk\"} ",
+            "tracePath": "/tmp/claude-eval-jvE9KE/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-invention",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: Not logged in · Please run /login",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 1..∞)",
+                "withOnly": true,
+                "scored": false
+              },
+              {
+                "name": "targeted-addition",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: Not logged in · Please run /login",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "two-boundary-enforcement",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: Not logged in · Please run /login",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ],
+        "without": [
+          {
+            "score": 0.25,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 1,
+            "startedAt": "2026-11-10T09:16:35.770Z",
+            "error": "exit 1: Not logged in · Please run /login · stderr: [claude-code:unrecognized_model] {\"model\":\"claude-fable-5-2\",\"query_source\":\"sdk\"} ",
+            "tracePath": "/tmp/claude-eval-mL3XjH/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-invention",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: Not logged in · Please run /login",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "targeted-addition",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: Not logged in · Please run /login",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "two-boundary-enforcement",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: Not logged in · Please run /login",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.25,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 1,
+            "startedAt": "2026-11-10T09:16:35.770Z",
+            "error": "exit 1: Not logged in · Please run /login · stderr: [claude-code:unrecognized_model] {\"model\":\"claude-fable-5-2\",\"query_source\":\"sdk\"} ",
+            "tracePath": "/tmp/claude-eval-ktIex0/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-invention",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: Not logged in · Please run /login",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "targeted-addition",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: Not logged in · Please run /login",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "two-boundary-enforcement",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: Not logged in · Please run /login",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 0.25,
+        "passRate": 0,
+        "scoreWithout": 0.25,
+        "passRateWithout": 0,
+        "delta": 0
+      }
+    }
+  ],
+  "aggregates": {
+    "casesTotal": 1,
+    "casesPassed": 0,
+    "overallScore": 0.25,
+    "overallPassRate": 0,
+    "meanDelta": 0
+  }
+}
