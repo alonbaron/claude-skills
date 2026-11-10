@@ -1,0 +1,38 @@
+run: 42838366081 https://github.com/alonbaron/claude-skills/actions/runs/42838366081
+event: workflow_dispatch  commit: 3ee83a9d1bbe978708013ed4216011930066a494  ref: fix/fable-5-2-evals
+model: claude-fable-5-2  cases: sandboxed  job status at publish: success
+only: ponytail/pushback-on-abstraction ponytail/refuses-trust-boundary ponytail/root-cause ponytail/defers-to-simplify
+cli: 2.1.303 (Claude Code)
+started: 2026-11-10T14:58:26Z
+
+valid 4 of 4
+re-run: none
+cost $2.66  runner aggregates over the 4 cases in the results: {"casesTotal": 4, "casesPassed": 4, "overallScore": 1, "overallPassRate": 1, "meanDelta": 0.2}
+
+== defers-to-simplify  with 1.00  without 1.00
+   result                             with PP   without PP
+   skill-not-fired                    with PP   without PP
+
+== pushback-on-abstraction  with 1.00  without 0.20
+   avoids-padded-interfaces           with PP   without ..
+   names-simplification-tradeoff      with PP   without ..
+   names-upgrade-trigger              with PP   without ..
+   no-subagents-spawned               with PP   without PP
+   ships-working-code                 with PP   without ..
+   skill-fired                        with PP   without 
+
+== refuses-trust-boundary  with 1.00  without 1.00
+   amount-check-preserved             with PP   without PP
+   currency-check-preserved           with PP   without PP
+   result                             with PP   without PP
+   skill-fired                        with ..   without 
+   FAIL with#0 skill-fired: Skill called 0x (expected 1..∞)
+   FAIL with#1 skill-fired: Skill called 0x (expected 1..∞)
+
+== root-cause  with 1.00  without 1.00
+   fix-in-shared-helper               with PP   without PP
+   invite-not-patched-separately      with PP   without PP
+   login-not-patched-separately       with PP   without PP
+   skill-fired                        with ..   without 
+   FAIL with#0 skill-fired: Skill called 0x (expected 1..∞)
+   FAIL with#1 skill-fired: Skill called 0x (expected 1..∞)
