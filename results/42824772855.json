@@ -1,0 +1,576 @@
+{
+  "schemaVersion": 1,
+  "claudeVersion": "2.1.303",
+  "startedAt": "2026-11-10T13:28:22.848Z",
+  "durationSeconds": 389,
+  "costUsd": 2.8943689,
+  "partial": false,
+  "suite": {
+    "root": "/home/runner/work/claude-skills/claude-skills",
+    "ablation": "with-without",
+    "modelOverride": "claude-fable-5-2",
+    "judgeModel": "sonnet",
+    "threshold": 0.7,
+    "concurrency": 4,
+    "plugins": [
+      {
+        "name": "alon-skills",
+        "version": "3.2.2",
+        "path": "/home/runner/work/claude-skills/claude-skills"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "right-sized-new-feature",
+      "dir": "evals-ci/architect/right-sized-new-feature",
+      "source": "prose",
+      "promptMarkdown": "Starting a new feature on our Next.js + Postgres trip-planning app: users\nshould be able to export their itinerary as a PDF and email it to\nthemselves. This is a brand new repo, nothing's written yet, no design docs\nat all yet.",
+      "runsPerCase": 3,
+      "timeoutSeconds": 900,
+      "maxTurns": 40,
+      "graders": [
+        {
+          "name": "blocking-questions",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final message reports the design docs as already written (it did\nnot ask permission to start, and it does not stop at a questionnaire), asks at\nmost 3 blocking questions (e.g. PDF generation approach, email delivery\nprovider, itinerary size limits), and presents its other choices as stated\nassumptions or proposals to confirm.\n\nFAIL if it asks more than 3 blocking questions, asks its questions before\nwriting any docs, or leaves the rest of its unknowns as further questions with\nno assumption attached.",
+          "config": {
+            "criteria": "PASS if the final message reports the design docs as already written (it did\nnot ask permission to start, and it does not stop at a questionnaire), asks at\nmost 3 blocking questions (e.g. PDF generation approach, email delivery\nprovider, itinerary size limits), and presents its other choices as stated\nassumptions or proposals to confirm.\n\nFAIL if it asks more than 3 blocking questions, asks its questions before\nwriting any docs, or leaves the rest of its unknowns as further questions with\nno assumption attached.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "failure-paths-designed",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if ARCHITECTURE_ROADMAP.md designs the failure paths of the export and\nemail flow, not just the happy path: failures such as PDF generation failing,\nthe email send failing or bouncing, and an oversized itinerary each get a\ndefined failure mode (what the system does, and what the user sees or can do\nnext).\n\nFAIL if the file only describes the happy path, or names failures without\nsaying what happens when they occur.",
+          "config": {
+            "criteria": "PASS if ARCHITECTURE_ROADMAP.md designs the failure paths of the export and\nemail flow, not just the happy path: failures such as PDF generation failing,\nthe email send failing or bouncing, and an oversized itinerary each get a\ndefined failure mode (what the system does, and what the user sees or can do\nnext).\n\nFAIL if the file only describes the happy path, or names failures without\nsaying what happens when they occur.",
+            "focus": {
+              "source": "file",
+              "path": "ARCHITECTURE_ROADMAP.md"
+            }
+          }
+        },
+        {
+          "name": "four-docs-created",
+          "type": "regex",
+          "weight": 1,
+          "config": {
+            "target": "files",
+            "pattern": "^(?=[\\s\\S]*SOURCE_OF_TRUTH\\.md)(?=[\\s\\S]*ARCHITECTURE_ROADMAP\\.md)(?=[\\s\\S]*TODO_WORKFLOW\\.md)(?=[\\s\\S]*CLAUDE\\.md)",
+            "flags": "",
+            "match": "contains"
+          }
+        },
+        {
+          "name": "no-modular-set",
+          "type": "file_exists",
+          "weight": 1,
+          "config": {
+            "path": "docs/architecture/**",
+            "exists": false
+          }
+        },
+        {
+          "name": "no-subagents",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "skill-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?architect\""
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 10,
+            "costUsd": 0.5759934,
+            "judgeCostUsd": 0.054174,
+            "durationSeconds": 348,
+            "startedAt": "2026-11-10T13:28:22.867Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-CgW9zD/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "blocking-questions",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "The design docs for the PDF export + email feature are written — no code yet, and nothing is committed. All 76 cross-links between them resolve.\n\n| File | What it holds |\n|---|---|\n| `SOURCE_OF_TRUTH.md` | Scope and non-goals, domain model, six invariants, eight decisions, open questions |\n| `ARCHITECTURE_ROADMAP.md` | Stack, schema, request sequence, API contract, failure paths, UI, six phases, non-functional requirements |\n| `TODO_WORKFLOW.md` | 24 tasks across phases 0–5, each linked to the section it implements |\n| `CLAUDE.md` | Repo rules and the docs-before-code sync rule |\n| `docs/handoff.md` | Log stub with today's entry |\n\nI skipped the modular `docs/architecture/` set; one feature doesn't need it.\n\n## The design in brief\n\n- **One new table**, `itinerary_exports`, is the only state: it handles idempotency, double-click locking, rate limiting and audit.\n- **One endpoint**, `POST /api/trips/{tripId}/exports`, does everything inline: insert the row, render the PDF, send the email, record the outcome. There is no queue or worker.\n- **The PDF is never stored.** It is attached to the email and discarded.\n- **The recipient is never client-supplied.** A database trigger writes it from the account's verified email, so an app bug can't turn this into a mail relay.\n- **Delivery is at-least-once.** If the process dies after the provider accepts the email, a retry can send a duplicate to the user's own inbox.\n\n## Blocking questions\n\n1. **Is this repo the whole app, or does it sit on an existing database and auth system?** I assumed it is the whole app, so Phase 0 creates minimal `users`, `trips` and `itinerary_items` tables; their shapes are my guesses.\n2. **Is hosting serverless (e.g. Vercel) or a long-running Node server?** I assumed neither, which is why the design uses a pure-JS PDF library and inline processing.\n3. **Is export email-only, or should users also be able to download the PDF in the browser?** I assumed email-only; adding download later is one route.\n\n## Decisions to confirm\n\nThese are my choices, marked `(proposed)` in the docs:\n\n- **Libraries:** `@react-pdf/renderer`, Resend, Drizzle, zod, Vitest, pnpm. Whether the PDF library works with your Next/React versions is unverified; task 0.3 is a spike for that.\n- **Inline processing instead of a job queue.** Switching later means adding a `queued` status and a worker; the schema stays the same.\n- **Limits:** 5 exports per user per hour (failed attempts don't count), 5 MB PDF cap, 10 s each for render and send, 5 min before a stuck row is marked failed. The provider's real attachment limit is unchecked (task 0.4).\n- **Database enforcement:** a composite foreign key for ownership and a guard trigger for recipient, rate cap and immutability of finished rows. The foreign key assumes a single owner per trip and would need redesign if trips become shared.\n- **API behaviour:** the status and error codes, 404 for both \"no such trip\" and \"not yours\", an empty itinerary rejected with 422, and no automatic retry when the provider is down.\n- **Unverified users cannot export.** This assumes your auth has a verified-email state.\n- **PDF content:** text-only and English: title, dates, then day-by-day items rendered in the trip's time zone.\n- **Git rules in `CLAUDE.md`:** these come from the architect template, including no AI co-author trailers and never committing to `main`. Edit them if that's not your policy.\n\nOnce you answer the three questions I'll update the docs; Phase 0 (scaffold plus the two spikes) is the first thing to build."
+              },
+              {
+                "name": "failure-paths-designed",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS — note: long file (17341 chars); llm judges are noisy on long inputs, prefer a regex grader for large artifacts",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "# Itinerary PDF Export & Email — Architecture Roadmap\n\n**Version:** 0.1 · **Status:** Draft, pre-implementation · **Owner:** repo owner (TBD) · **Date:** 2026-11-10\n**Authority:** derived from [SOURCE_OF_TRUTH.md](SOURCE_OF_TRUTH.md) (wins on conflict) · tasks in [TODO_WORKFLOW.md](TODO_WORKFLOW.md) · rules in [CLAUDE.md](CLAUDE.md) · log in [docs/handoff.md](docs/handoff.md)\n\n`(proposed)` = design choice not yet confirmed by the owner. Scope, invariants (INV-n), decisions (D-n) and open questions (Q-n) are defined in the SoT and only referenced here.\n\n## 0. Executive context\n\nUsers of the trip-planning app want their itinerary in their inbox as a PDF. The repo is empty, so this document covers the feature plus the minimum it stands on.\n\nThe design is deliberately small: one new table, one endpoint, one pure render function, one email adapter. The request is handled inline ([D1](SOURCE_OF_TRUTH.md#4-decisions)) and the PDF is never stored ([D3](SOURCE_OF_TRUTH.md#4-decisions)). The one thing treated as high-stakes is that the feature sends email on our behalf: the recipient and the send rate are locked down in the database, not only in app code ([INV-2, INV-5](SOURCE_OF_TRUTH.md#3-invariants)).\n\n## 1. Tech stack\n\n| Layer | Tech | Role |\n|---|---|---|\n| Web framework | Next.js, App Router (given) | UI, route handler for the export endpoint. Pin the version at scaffold. |\n| Runtime | Node.js runtime for the export route (not Edge) `(proposed)` | PDF rendering needs Node APIs — confirm in task 0.3 |\n| Database | Postgres (given) | System of record; enforces INV-1…6 |\n| DB access / migrations | Drizzle ORM + drizzle-kit `(proposed, Q11)` | Typed queries; SQL migrations. Trigger and partial index are hand-written SQL in the migration. |\n| PDF | `@react-pdf/renderer` `(proposed, D2)` | Pure function: trip snapshot → PDF bytes |\n| Email | Resend behind an `EmailSender` port `(proposed, D5)` | Sends one message with one attachment |\n| Validation | zod `(proposed)` | Strict request schema (INV-2 app boundary) |\n| Auth | Unknown (Q1, Q5) | Must provide: session → `userId`. Nothing else is assumed. |\n| Tests | Vitest + a real Postgres for DB-level tests `(proposed)` | Invariants are tested against the database, not mocks |\n| Package manager | pnpm `(proposed, Q11)` | — |\n\nLibrary APIs are not specified here on purpose. Verify each against the version actually pinned before coding against it.\n\n## 2. Data schema\n\n### 2.1 Prerequisite tables (assumed shapes)\n\nOnly the columns this feature reads or constrains. `(proposed)` in full, pending [Q1](SOURCE_OF_TRUTH.md#5-open-questions). If these tables already exist elsewhere, map to them and delete this subsection.\n\n| Table | Column | Type | Notes |\n|---|---|---|---|\n| `users` | `id` | `uuid` PK | |\n| | `email` | `text` NOT NULL, unique | Account email |\n| | `email_verified_at` | `timestamptz` NULL | NULL = unverified (Q5) |\n| `trips` | `id` | `uuid` PK | |\n| | `owner_id` | `uuid` NOT NULL → `users(id)` ON DELETE CASCADE | Single owner (Q6) |\n| | `title` | `text` NOT NULL | |\n| | `start_date`, `end_date` | `date` NOT NULL | `CHECK (end_date >= start_date)` |\n| | `timezone` | `text` NOT NULL | IANA name (Q8) |\n| | — | `UNIQUE (id, owner_id)` | **Required by INV-1's composite FK** — redundant with the PK but needed as an FK target |\n| `itinerary_items` | `id` | `uuid` PK | |\n| | `trip_id` | `uuid` NOT NULL → `trips(id)` ON DELETE CASCADE | |\n| | `starts_at` | `timestamptz` NOT NULL | Rendered in `trips.timezone` |\n| | `ends_at` | `timestamptz` NULL | |\n| | `title` | `text` NOT NULL | |\n| | `location`, `notes` | `text` NULL | |\n| | `position` | `integer` NOT NULL | Tie-break order within the same start time |\n\n### 2.2 `itinerary_exports` (new)\n\n| Column | Type | Constraints | Purpose |\n|---|---|---|---|\n| `id` | `uuid` | PK, default `gen_random_uuid()` | |\n| `trip_id` | `uuid` | NOT NULL | |\n| `user_id` | `uuid` | NOT NULL | Requester |\n| `idempotency_key` | `uuid` | NOT NULL | Client-generated per user attempt |\n| `status` | `text` | NOT NULL, default `'processing'`, `CHECK (status IN ('processing','sent','failed'))` | INV-6 |\n| `recipient_email` | `text` | NOT NULL — **written by trigger, not the app** | INV-2 snapshot of where it went |\n| `failure_code` | `text` | NULL, `CHECK` against the codes in [§3.4](#34-failure-paths) | |\n| `provider_message_id` | `text` | NULL | Reconciliation with the provider |\n| `pdf_bytes` | `integer` | NULL | Size of the rendered PDF (observability) |\n| `created_at` | `timestamptz` | NOT NULL, default `now()` | Rate-limit window |\n| `completed_at` | `timestamptz` | NULL | |\n\n**Table constraints**\n\n| Constraint | Definition | Invariant |\n|---|---|---|\n| Ownership FK | `FOREIGN KEY (trip_id, user_id) REFERENCES trips (id, owner_id) ON DELETE CASCADE` | INV-1 |\n| Idempotency | `UNIQUE (user_id, idempotency_key)` | INV-4 |\n| In-flight lock | `UNIQUE INDEX … ON (user_id, trip_id) WHERE status = 'processing'` | INV-3 |\n| Completion coherence | `CHECK ((status = 'processing') = (completed_at IS NULL))` | INV-6 |\n| Failure coherence | `CHECK ((status = 'failed') = (failure_code IS NOT NULL))` | INV-6 |\n| Rate-limit lookup | `INDEX (user_id, created_at DESC)` | supports INV-5 |\n\n**Guard trigger `itinerary_exports_guard`** `(proposed)` — behaviour, not code:\n\n| Event | Behaviour | Invariant |\n|---|---|---|\n| `BEFORE INSERT` | Set `NEW.recipient_email` from `users.email` for `NEW.user_id`, ignoring any supplied value. Raise if `email_verified_at IS NULL`. | INV-2 |\n| `BEFORE INSERT` | Take a per-user advisory transaction lock; count that user's rows with `status IN ('processing','sent')` in the last hour; raise a dedicated SQLSTATE if the count is already at the limit. | INV-5 |\n| `BEFORE UPDATE` | Raise if `OLD.status <> 'processing'` (terminal rows are immutable) or if `recipient_email`, `trip_id`, `user_id`, or `idempotency_key` would change. | INV-2, INV-6 |\n\n**Decision call-outs**\n\n- `status` is `text` + `CHECK`, not a Postgres enum: adding `queued` later (D1 reversal) is a one-line constraint change instead of an enum migration.\n- No PDF column and no object-storage key ([D3](SOURCE_OF_TRUTH.md#4-decisions)).\n- Both FKs cascade on delete: removing a trip or user removes its export rows, which is the only retention mechanism in v1 (Q10).\n- The rate-limit number exists in two places in code (service check, trigger). Its one home in the docs is [INV-5](SOURCE_OF_TRUTH.md#3-invariants); a test asserts the two agree.\n- The trigger maps to two distinct, documented SQLSTATEs (unverified email, rate limit) so the service can translate them without string-matching messages.\n\n## 3. Backend\n\n### 3.1 Structure `(proposed)`\n\n```\nsrc/\n  app/api/trips/[tripId]/exports/route.ts   thin adapter: auth, parse, call service, map result → HTTP\n  server/exports/service.ts                 orchestration; the app-side boundary for INV-1…6\n  server/exports/repository.ts              all SQL touching itinerary_exports; transition() lives here\n  server/exports/errors.ts                  typed errors ↔ failure/error codes\n  server/pdf/render-itinerary.tsx           pure: TripSnapshot → Uint8Array. No DB, no network, no clock.\n  server/email/sender.ts                    EmailSender port + provider adapter + in-memory fake\n  db/schema.ts, db/migrations/              schema and SQL migrations\n```\n\n### 3.2 Services\n\n| Component | Responsibility | Does not |\n|---|---|---|\n| Route handler | Resolve session; validate path/header/body with a strict schema; call the service; map typed results to the contract in §3.3 | Contain business rules or SQL |\n| Export service | The sequence below; owns every app-side invariant check | Know about HTTP or the email provider's API |\n| Repository | Queries + `transition(id, from, to, fields)` as compare-and-swap; translates constraint/trigger violations into typed errors | Decide policy |\n| PDF renderer | Lay out a `TripSnapshot` (trip + ordered items, times already resolved to the trip time zone) | Fetch data, read env, or throw on missing optional fields |\n| Email sender | Send one message (fixed template, one attachment) to the address it is handed; classify provider errors as rejected vs unavailable | Choose the recipient |\n\n**Request sequence** (pseudocode, not implementation):\n\n```\n1. session → userId                                   else 401\n2. replay: export by (userId, idempotencyKey)?        → return it (INV-4)\n3. reap: mark this user's stale `processing` rows failed/timeout\n4. trip = load by (tripId, owner = userId)            else 404 (INV-1)\n5. items = load trip's items, ordered                 none → 422 EMPTY_ITINERARY\n6. app checks: in-flight row? (INV-3) · rate window (INV-5)\n7. INSERT export (status processing)                  DB re-enforces INV-1…5; conflicts → typed errors\n8. pdf = render(snapshot) within time budget          fail → transition failed/render_failed\n9. size check                                         over cap → transition failed/pdf_too_large\n10. sender.send(row.recipient_email, pdf)             fail → transition failed/email_*\n11. transition processing → sent (+ provider id)\n12. respond\n```\n\nSteps 4–5 read the trip and its items in a single query/transaction so the PDF reflects one consistent snapshot. No DB transaction is held open across steps 8–10.\n\n### 3.3 API contract\n\nOne endpoint. Status codes and error codes are `(proposed)`.\n\n`POST /api/trips/{tripId}/exports`\n\n| Part | Contract |\n|---|---|\n| Auth | Session cookie; no API keys |\n| Header | `Idempotency-Key: <uuid>` — required. New key per user-initiated attempt; same key on automatic retry of that attempt. |\n| Body | Empty object. Strict: any unknown field (including `to`, `email`, `recipient`) → 400. |\n| Success body | `{ id, tripId, status, recipientEmail, createdAt, completedAt }` |\n| Error body | `{ error: { code, message, exportId?, retryable, retryAfterSeconds? } }` |\n\n| Status | Code | When | Row written? |\n|---|---|---|---|\n| 201 | — | Email accepted by provider; `status: \"sent\"` | yes, `sent` |\n| 200 | — | Idempotent replay of an earlier request with this key (any status) | no (existing) |\n| 400 | `INVALID_REQUEST` | Bad UUIDs, missing key, unknown body field | no |\n| 401 | `UNAUTHENTICATED` | No session | no |\n| 404 | `TRIP_NOT_FOUND` | No such trip **or** not the owner (indistinguishable by design) | no |\n| 409 | `EXPORT_IN_PROGRESS` | INV-3; body includes the in-flight `exportId` | no |\n| 422 | `EMAIL_UNVERIFIED` | INV-2 | no |\n| 422 | `EMPTY_ITINERARY` | Trip has no items | no |\n| 422 | `PDF_TOO_LARGE` | Rendered PDF exceeds cap (§6) | yes, `failed` |\n| 429 | `RATE_LIMITED` | INV-5; sets `Retry-After` | no |\n| 500 | `RENDER_FAILED` | Renderer threw or exceeded budget | yes, `failed` |\n| 502 | `EMAIL_REJECTED` | Provider refused the message (`retryable: false`) | yes, `failed` |\n| 502 | `EMAIL_UNAVAILABLE` | Provider 5xx / timeout / network (`retryable: true`) | yes, `failed` |\n\nThere is deliberately no `GET` for an export and no list endpoint in v1: inline processing means the `POST` response is the final state. Add them with the D1 reversal.\n\n### 3.4 Failure paths\n\n`failure_code` values: `render_failed` · `pdf_too_large` · `email_rejected` · `email_unavailable` · `timeout`.\n\n| Component | What fails | What happens next |\n|---|---|---|\n| Session | Missing/expired | 401. Nothing written. |\n| Trip lookup | Not found / not owner | 404. Nothing written. If app check were bypassed, the composite FK rejects the insert. |\n| Guard trigger | Email unverified | Insert raises → 422 `EMAIL_UNVERIFIED`. UI links to verification. |\n| Guard trigger / app count | Over rate limit | 429 with `Retry-After` computed from the oldest counted row in the window. |\n| Insert | Idempotency-key conflict (two identical requests racing) | Loser re-reads the winner's row and replays it (200). One email. |\n| Insert | In-flight conflict (double-click with different keys) | 409 with the existing export id. One email. |\n| PDF renderer | Throws, or exceeds render budget (§6) | `failed/render_failed`, 500. Logged with export id and error class — never itinerary content. Does not count toward INV-5. |\n| Size check | PDF over cap | `failed/pdf_too_large`, 422. No email attempted. Signal to revisit D3 if it ever happens. |\n| Email provider | Rejects (4xx-class) | `failed/email_rejected`, 502, not retryable. Logged at error level: this is a config/content bug on our side. |\n| Email provider | Unavailable (5xx/timeout/network) | `failed/email_unavailable`, 502, retryable. **No automatic retry in v1** `(proposed)`; the user clicks again (new key, new row). |\n| Process | Dies between insert and final transition | Row stays `processing`. INV-3 blocks re-export of that trip until the row is stale (§6), then step 3 of the next request marks it `failed/timeout`. |\n| DB | Final `→ sent` update fails after provider accepted | Same as above: row is reaped as `timeout` although the email went out ([D8](SOURCE_OF_TRUTH.md#4-decisions)). Logged at error level with the provider message id. UI copy for `timeout` says to check the inbox before retrying. |\n| Client | Disconnects mid-request | Server finishes regardless. Client retry with the same key gets the stored result (200), no second email. |\n| `transition()` | Zero rows updated (row already terminal, e.g. reaped) | Abort, log; never overwrite a terminal state. Trigger enforces the same. |\n\n## 4. Frontend\n\n| Element | Behaviour |\n|---|---|\n| Entry point | \"Email me this itinerary (PDF)\" button on the trip page, visible to the owner only (cosmetic — INV-1 is enforced server-side) |\n| Confirm dialog | \"We'll send a PDF of *{trip title}* to **{account email}**.\" Address is display-only; there is no input field. |\n| Unverified email | Button disabled with a link to verify. Cosmetic; INV-2 is the enforcement. |\n| Submit | Generate an idempotency key on confirm; disable the button until the response arrives; reuse the key if the client retries after a network error |\n| Success | Toast: sent to {email}; mention checking spam |\n| Errors | One message per error code from §3.3. `RATE_LIMITED` shows when the user can retry; `EXPORT_IN_PROGRESS` shows \"already sending\"; retryable errors offer \"Try again\" (new key). |\n| Accessibility | Dialog is keyboard-operable with focus trap; status changes announced via a live region |\n\nNo client-side PDF generation, no client-side rate limiting logic.\n\n## 5. Execution phases\n\nEach phase merges on its own and leaves `main` shippable. Nothing is user-visible until Phase 4. Tasks are in [TODO_WORKFLOW.md](TODO_WORKFLOW.md).\n\n| Phase | Outcome | Exit criteria |\n|---|---|---|\n| **0 — Foundations & spikes** | App scaffolded; DB + migrations wired; prerequisite tables and session contract in place (or mapped to existing ones, Q1); the two risky dependencies proven | A PDF renders on the target runtime with the pinned versions; a sandbox email with an attachment arrives; blocking questions answered or defaults accepted |\n| **1 — Data layer** | `itinerary_exports` migration with all constraints and the guard trigger | A DB-level test per invariant passes against real Postgres, each bypassing the app check to prove the DB boundary holds on its own |\n| **2 — PDF renderer** | `render-itinerary` pure function | Renders fixtures (1 item, multi-day, long notes, non-Latin text, zone-crossing times); size and time within §6 budgets |\n| **3 — Service + API** | Export service, repository, email adapter, route handler | Integration tests with the fake sender cover every row of §3.3 and §3.4 |\n| **4 — UI** | Button, dialog, states | End-to-end test: click → `sent` row → fake inbox has the PDF |\n| **5 — Ship** | Sending domain, env/secrets, logging, rollout | Real email received in production from the verified domain; dashboards/log queries for sent vs failed by code exist |\n\n## 6. Non-functional requirements\n\nAll numeric values are `(proposed)` starting points, to be adjusted after the Phase 0 spikes.\n\n| Area | Requirement |\n|---|---|\n| Latency | Request completes within the hosting platform's function limit (Q2). Budgets: render ≤ 10 s, email call ≤ 10 s. |\n| Stale threshold | A `processing` row older than 5 min is reaped. Must stay greater than the route's maximum duration. |\n| PDF size cap | 5 MB. Must stay below the provider's attachment limit — confirm the real limit in task 0.4. |\n| Abuse | INV-2 and INV-5 are the controls. No address input exists anywhere. |\n| Untrusted content | Itinerary text is user-authored: rendered as text only (no HTML interpretation). Email subject and attachment filename are built from a sanitised trip title (control characters stripped, length-capped). Email body is a fixed template. |\n| Privacy | PDF never written to disk or storage. Logs carry export id, user id, status, failure code, sizes, timings — never itinerary content; email addresses masked. |\n| Secrets | Provider API key and DB URL via environment only; never in the client bundle. |\n| Observability | One structured log line per state transition; counts of `sent` / `failed` by `failure_code` queryable from the table itself. |\n| Testing | Invariants tested at both boundaries. Renderer tested as a pure function. Provider never called in tests (fake sender). |\n| Deliverability | Sending domain with SPF/DKIM before production traffic (task 5.2). |\n"
+              },
+              {
+                "name": "four-docs-created",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched ^(?=[\\s\\S]*SOURCE_OF_TRUTH\\.md)(?=[\\s\\S]*ARCHITECTURE_ROADMAP\\.md)(?=[\\s\\S]*TODO_WORKFLOW\\.md)(?=[\\s\\S]*CLAUDE\\.md)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-modular-set",
+                "passed": true,
+                "weight": 1,
+                "explanation": "docs/architecture/** absent as expected",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 1x (expected 1..∞)",
+                "withOnly": true,
+                "scored": false
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 12,
+            "costUsd": 0.485862,
+            "judgeCostUsd": 0.04576800000000002,
+            "durationSeconds": 280,
+            "startedAt": "2026-11-10T13:28:22.867Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-0uNlUz/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "blocking-questions",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I wrote the design docs for the feature — no code yet, and nothing is committed. Everything I chose that you didn't specify is marked `(proposed)` in the docs.\n\n## The design in brief\n\n- **Flow:** the user clicks \"Email me this itinerary\", the server records an export and answers immediately, then renders the PDF and emails it as an attachment.\n- **Recipient:** always the user's own verified account email. There is no \"send to\" field, so the app can't be used as a spam relay.\n- **Retries:** the export row in Postgres doubles as the job, with no separate queue. A scheduled sweep retries transient email failures and recovers stuck rows.\n- **PDF:** rendered in-process and never stored.\n- **Safeguards:** each rule (owner-only, verified email, one active export per trip, rate cap, no duplicate emails) is enforced in app code and again in the database or at the email provider.\n- **Build order:** foundations and schema, then the PDF renderer, the export pipeline, reliability, and finally UI and observability. Each phase merges on its own.\n\n## Blocking questions\n\n1. **Hosting:** does this run serverless (e.g. Vercel) or on a long-running Node server? I designed it to work on either, but serverless needs a cron that fires about once a minute.\n2. **Base app:** do users/auth (with email verification), trips, and itinerary items exist or get designed elsewhere? And are trips single-owner or shared? I assumed a minimal single-owner model; shared trips would change the ownership rule.\n3. **Email:** is there already an email provider and a verified sending domain? I assumed Resend, set up in the first phase.\n\nThree tasks in the first phase are blocked on these answers.\n\n## Decisions to confirm\n\n- **Libraries:** `@react-pdf/renderer` for the PDF, Drizzle for the database layer, zod for validation, Vitest for tests, TypeScript.\n- **Scope:** email only, with no direct download button; text-only PDF with no maps or photos.\n- **\"Sent\" meaning:** the provider accepted the message; bounces are not tracked.\n- **Limits:** 3 send attempts, 10 exports per user per hour, 5 MB PDF cap, retry after 1 minute then 5 minutes.\n- **API responses:** the status codes and error names, including returning 404 for both \"missing\" and \"not yours\".\n- **Database trigger:** a trigger backs up the verified-email and rate-cap checks.\n- **Git rules in `CLAUDE.md`:** these come from the architect template, including \"no AI co-author trailer\" and \"never commit to `main`\". Edit them if they aren't your conventions.\n\nThe git root is the parent directory (`home/`), not `cwd/` where I put the files — say if the docs should live elsewhere.\n\nFiles are in `/tmp/claude-eval-0uNlUz/home/cwd`:\n- `SOURCE_OF_TRUTH.md`\n- `ARCHITECTURE_ROADMAP.md`\n- `TODO_WORKFLOW.md`\n- `CLAUDE.md`\n- `docs/handoff.md`"
+              },
+              {
+                "name": "failure-paths-designed",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS — note: long file (14359 chars); llm judges are noisy on long inputs, prefer a regex grader for large artifacts",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "# Itinerary PDF Export by Email — Architecture Roadmap\n\n**Version:** 0.1 (draft) · **Status:** Proposed · **Owner:** TBD · **Date:** 2026-11-10\n\nDerived from [SOURCE_OF_TRUTH.md](SOURCE_OF_TRUTH.md) (SoT), which wins on any conflict. Tasks: [TODO_WORKFLOW.md](TODO_WORKFLOW.md) · Rules: [CLAUDE.md](CLAUDE.md) · Log: [docs/handoff.md](docs/handoff.md)\n\nInvariants (`INV-n`), decisions (`Dn`), questions (`Qn`), and named limits are defined in the SoT and only referenced here.\n\n## 0. Executive context\n\nA signed-in user clicks \"Email me this itinerary\" on a trip they own. The server records an Export, answers immediately, then renders the itinerary as a PDF and emails it to the user's verified account email. If the email provider is briefly down the Export is retried; if it cannot be sent the user sees why and can try again.\n\nThis is a single feature in an empty repo, so the doc set is deliberately light: SoT, this file, the TODO, and `CLAUDE.md`. There is no modular `docs/architecture/` set; add one if the app's design grows beyond this feature.\n\n## 1. Tech stack\n\n| Layer | Tech | Role |\n|---|---|---|\n| Web framework | Next.js, App Router (given; version pinned at scaffold) | UI, route handlers, post-response work |\n| Language | TypeScript (proposed) | — |\n| Database | Postgres (given) | Domain data, and the Export job queue (D3) |\n| DB access / migrations | Drizzle ORM + SQL migrations (proposed, Q6) | Schema, constraints, trigger |\n| Validation | zod (proposed) | Strict request schemas (INV-2) |\n| PDF | `@react-pdf/renderer` (proposed, D1) | `renderItineraryPdf` |\n| Email | Resend behind `EmailSender` (proposed, D5, Q3) | Send with attachment and idempotency key |\n| Scheduler | Host cron calling the sweep route (proposed, Q1) | Retries, stale-row recovery |\n| Tests | Vitest (proposed) | Unit and DB-integration tests |\n\n## 2. Data schema\n\n### 2.1 Assumed upstream tables\n\nMinimum this feature reads (SoT §2.1). If these already exist elsewhere, map names and drop the Phase 0 tasks that create them.\n\n| Table | Columns this feature needs |\n|---|---|\n| `users` | `id uuid PK` · `email citext NOT NULL UNIQUE` · `email_verified_at timestamptz NULL` |\n| `trips` | `id uuid PK` · `owner_id uuid NOT NULL → users(id)` · `title text NOT NULL` · `start_date date` · `end_date date` · `timezone text NOT NULL` (IANA) · **`UNIQUE (id, owner_id)`** (required by INV-1's FK) |\n| `itinerary_items` | `id uuid PK` · `trip_id uuid NOT NULL → trips(id) ON DELETE CASCADE` · `starts_at timestamptz NOT NULL` · `ends_at timestamptz NULL` · `title text NOT NULL` · `location text NULL` · `notes text NULL` |\n\n### 2.2 Export table\n\n`itinerary_exports` — owned by this feature.\n\n| Column | Type | Constraints | Notes |\n|---|---|---|---|\n| `id` | `uuid` | PK, default `gen_random_uuid()` | Also the provider idempotency key (INV-6) |\n| `user_id` | `uuid` | NOT NULL | |\n| `trip_id` | `uuid` | NOT NULL | |\n| `status` | `text` | NOT NULL, default `'pending'`, `CHECK IN ('pending','processing','sent','failed')` | INV-7 |\n| `attempts` | `smallint` | NOT NULL, default 0, `CHECK (attempts BETWEEN 0 AND MAX_ATTEMPTS)` | INV-8 |\n| `next_attempt_at` | `timestamptz` | NOT NULL, default `now()` | Backoff gate |\n| `locked_at` | `timestamptz` | NULL | Set on claim; stale detection |\n| `failure_code` | `text` | NULL, `CHECK` in the SoT §2.2 code list | |\n| `provider_message_id` | `text` | NULL | For support lookups |\n| `created_at` / `updated_at` | `timestamptz` | NOT NULL, default `now()` | |\n| `sent_at` | `timestamptz` | NULL | |\n\n| Constraint / index | Definition | Serves |\n|---|---|---|\n| Ownership FK | `FOREIGN KEY (trip_id, user_id) REFERENCES trips (id, owner_id) ON DELETE CASCADE` | INV-1 |\n| Coherence checks | `CHECK ((status = 'sent') = (sent_at IS NOT NULL))` · `CHECK ((status = 'failed') = (failure_code IS NOT NULL))` · `CHECK (status <> 'processing' OR locked_at IS NOT NULL)` | INV-7 |\n| One active | `UNIQUE (user_id, trip_id) WHERE status IN ('pending','processing')` | INV-4 |\n| Due work | `INDEX (next_attempt_at) WHERE status IN ('pending','processing')` | Sweeper |\n| Per-user recent | `INDEX (user_id, created_at DESC)` | INV-5 count |\n\n> There is deliberately no recipient or email column (INV-2), and no PDF or blob column (D2). Do not add either without changing the SoT first.\n\n### 2.3 Guard trigger\n\n`itinerary_exports_guard` — `BEFORE INSERT ON itinerary_exports FOR EACH ROW` (proposed). Raises a distinct SQLSTATE/message for each case so the service can map it:\n\n| Check | Raises when | Serves |\n|---|---|---|\n| Verified email | `users.email_verified_at IS NULL` for `NEW.user_id` | INV-3 |\n| Rate cap | the user already has `EXPORTS_PER_USER_PER_HOUR` rows with `created_at > now() - interval '1 hour'` | INV-5 |\n\nThe app checks both first and returns the friendly error; the trigger is the backstop for races and for any other writer.\n\n## 3. Backend\n\n### 3.1 Structure\n\nPaths are proposed; nothing exists yet.\n\n| Path | Responsibility |\n|---|---|\n| `src/db/schema.ts`, `migrations/` | Tables, constraints, trigger from §2 |\n| `src/features/itinerary-export/exportService.ts` | `requestExport`, `processExport`, `sweep`, `transition` — the only writer of `itinerary_exports` |\n| `src/features/itinerary-export/renderItineraryPdf.tsx` | Pure: trip + items → PDF bytes |\n| `src/features/itinerary-export/emailSender.ts` | `EmailSender` interface + provider adapter + test fake |\n| `src/app/api/trips/[tripId]/exports/route.ts` | `POST` |\n| `src/app/api/trips/[tripId]/exports/[exportId]/route.ts` | `GET` |\n| `src/app/api/internal/exports/sweep/route.ts` | `POST`, scheduler only |\n\n### 3.2 Services\n\n| Function | Does | Fails by |\n|---|---|---|\n| `requestExport(sessionUser, tripId)` | Owner-scoped trip load (INV-1) → verified check (INV-3) → non-empty check → return active Export if any (INV-4) → rate check (INV-5) → insert `pending` | Typed errors mapped to the §3.3 statuses; unique violation → re-read and return the active row; trigger errors → 409 / 429 |\n| `processExport(exportId)` | §3.4 | Never throws to the caller; every outcome is a status transition |\n| `sweep()` | Re-queues stale `processing` rows, then processes due `pending` rows, in small batches | Per-row isolation: one bad row does not stop the batch |\n| `renderItineraryPdf(trip)` | §3.6 | Throws; the processor maps it to `render_error` |\n| `EmailSender.send({ to, subject, text, attachment, idempotencyKey })` | One provider call | Returns `ok(messageId)` · `transient` (timeout, 5xx, 429) · `permanent` (address or content rejected) |\n\n### 3.3 API contract\n\nAll statuses and error codes are (proposed). Errors are `{ \"error\": \"<code>\" }`.\n\n| Method · Path | Auth | Request | Success | Errors |\n|---|---|---|---|---|\n| `POST /api/trips/{tripId}/exports` | Session | Empty body; any key → 400 (INV-2) | `202 { exportId, status }` — also returned, unchanged, when an active Export already exists (INV-4) | `400 invalid_request` · `401 unauthenticated` · `404 not_found` (missing **or** not owned — same response) · `409 email_unverified` · `422 empty_itinerary` · `429 rate_limited` + `Retry-After` |\n| `GET /api/trips/{tripId}/exports/{exportId}` | Session, owner-scoped | — | `200 { exportId, status, failureCode?, sentAt? }` | `401` · `404 not_found` |\n| `POST /api/internal/exports/sweep` | `Authorization: Bearer $CRON_SECRET`, constant-time compare | — | `200 { requeued, sent, failed }` | `401` |\n\nAfter `POST` responds, the handler schedules `processExport(exportId)` as post-response work (Next.js `after()`; verify against the pinned Next.js version). The sweeper covers the case where that work never runs.\n\n### 3.4 Processing algorithm\n\nPseudocode, not implementation.\n\n```\nprocessExport(id):\n  row = UPDATE itinerary_exports\n          SET status='processing', locked_at=now(), attempts=attempts+1\n        WHERE id=:id AND status='pending' AND next_attempt_at<=now()\n        RETURNING *                                  -- atomic claim (INV-6)\n  if no row: return                                  -- already claimed, done, or not due\n\n  data = load user + trip + items, scoped by row.user_id as owner\n  if user email unverified:        fail('email_unverified')\n  if no items:                     fail('empty_itinerary')\n\n  pdf = renderItineraryPdf(data)   -- throws        → fail('render_error')\n  if size(pdf) > MAX_PDF_BYTES:    fail('pdf_too_large')\n\n  result = emailSender.send(to=user.email, attachment=pdf, idempotencyKey=row.id)\n  ok        → transition to 'sent', set sent_at, provider_message_id\n  permanent → fail('email_rejected')\n  transient → if attempts < MAX_ATTEMPTS: back to 'pending',\n                 next_attempt_at = now() + RETRY_BACKOFF[attempts]\n              else fail('email_provider_error')\n\nsweep():\n  for rows with status='processing' AND locked_at < now() - STALE_PROCESSING_AFTER:\n      attempts < MAX_ATTEMPTS → back to 'pending' (due now)\n      else                    → fail('processing_timeout')\n  for rows with status='pending' AND next_attempt_at <= now()  (FOR UPDATE SKIP LOCKED, small batch):\n      processExport(row.id)\n```\n\n### 3.5 Failure paths\n\n| Component | What fails | What happens next |\n|---|---|---|\n| `POST` handler | DB unavailable | 503; nothing was created; user retries |\n| `POST` handler | Double click / two tabs | Second call gets the same Export back (INV-4); one email |\n| Post-response kick-off | Never runs (process killed, platform limit) | Row stays `pending`; the next sweep picks it up |\n| Processor | Crashes after claim, before send | Row stale in `processing`; sweep re-queues it; bounded by INV-8 |\n| Processor | Crashes after the provider accepted, before marking `sent` | Sweep re-queues; the retry carries the same idempotency key, so the provider does not send twice (INV-6); row then becomes `sent` |\n| Renderer | Throws on some content | `failed / render_error`, no retry (deterministic); logged with Export id for a fixture |\n| Renderer | Output over `MAX_PDF_BYTES` | `failed / pdf_too_large`; trigger to revisit D2 |\n| Email provider | Timeout, 5xx, or provider rate limit | Retry with backoff up to `MAX_ATTEMPTS`, then `failed / email_provider_error` |\n| Email provider | Rejects the address or message | `failed / email_rejected`, no retry |\n| Data | Trip deleted while `pending` | Row is removed by the FK cascade; processor finds nothing; `GET` returns 404 and the UI stops polling |\n| Data | Email becomes unverified or itinerary emptied while `pending` | `failed / email_unverified` or `failed / empty_itinerary` |\n| Scheduler | Stops firing | First-attempt sends still work via the kick-off; retries stall. Alert on the age of the oldest `pending` row (§6) |\n| Sweep route | Called without the secret | 401. A forged call could at worst process rows that were already due |\n\n### 3.6 PDF document spec\n\n| Aspect | Rule |\n|---|---|\n| Content | Trip title · date range · items grouped by local day, in time order · per item: time, title, location, notes |\n| Time | Every instant is shown in the trip's timezone, never the server's; the timezone is named once in the header |\n| Text | User text is drawn as plain text; no markup is interpreted (D1) |\n| Fonts | One embedded broad-coverage family (Q8) |\n| Layout | A4 (proposed) · page numbers · \"Generated <date>\" footer · long notes wrap and paginate, never truncate |\n| Excluded | Images, maps, links to private app pages |\n| Email | Subject \"Your itinerary: <trip title>\" (proposed) · short plain-text body · attachment `<trip-title-slug>-itinerary.pdf` |\n\n## 4. Frontend\n\nOne control on the trip page: **Email me this itinerary**. The UI reflects server state; it enforces nothing.\n\n| State | Trigger | Shows |\n|---|---|---|\n| Idle | — | Button; disabled with a hint when the itinerary is empty |\n| Requesting | Click | Button busy |\n| Sending | `202` | \"Sending to <masked account email>…\"; polls `GET` every 2 s for up to 60 s (proposed) |\n| Still sending | Poll window elapsed, status not terminal | \"This is taking longer than usual — it will arrive by email. You can leave this page.\" |\n| Sent | `status = sent` | \"Sent to <masked email>. Check your inbox.\" |\n| Failed | `status = failed` | Message per failure code + **Try again** (creates a new Export) |\n| Unverified | `409` | Prompt to verify the email address, linking to the upstream verification flow |\n| Rate limited | `429` | \"Too many exports — try again in <Retry-After>\" |\n\n## 5. Execution phases\n\nEach phase merges on its own and leaves `main` working.\n\n| Phase | Delivers | Done when |\n|---|---|---|\n| 0 — Foundations | Scaffold; upstream contract present (existing or minimal); `itinerary_exports` with every constraint and the guard trigger; provider account and sending domain | Migration applies; DB tests show each constraint and trigger case rejecting bad rows |\n| 1 — PDF renderer | `renderItineraryPdf` with fixtures (empty day, long notes, timezone edge, non-ASCII) | Fixture tests pass; a sample PDF has been reviewed by a human |\n| 2 — Export pipeline | `requestExport`, `processExport`, `EmailSender` adapter + fake, `POST` and `GET` routes, post-response kick-off | With a real provider key, one request produces one email; every §3.3 error is covered by a test |\n| 3 — Reliability | `sweep`, the sweep route, scheduler config, retry/backoff, stale recovery | Tests cover each §3.5 row using the fake sender |\n| 4 — UI and observability | Trip-page control with all §4 states; logs and metrics from §6 | Manual pass through every state; alert wired |\n\n## 6. Non-functional requirements\n\nTargets are (proposed).\n\n| Area | Requirement |\n|---|---|\n| Latency | `POST` p95 < 300 ms · render p95 < 2 s for a 200-item trip · request to provider hand-off p95 < 30 s |\n| Privacy | PDFs exist only in memory during processing · logs carry Export id and failure code, never email addresses or itinerary content |\n| Security | Owner-scoped reads everywhere (INV-1) · no caller-supplied recipient (INV-2) · `CRON_SECRET` and the provider key live in server-only env |\n| Observability | One structured log line per status transition · counters by `status` and `failure_code` · alert when the oldest `pending` row is older than 10 min |\n| Deliverability | Sending domain has SPF and DKIM configured before Phase 2 ships |\n| Testability | The renderer is pure; the processor takes `EmailSender` and a clock as dependencies |\n"
+              },
+              {
+                "name": "four-docs-created",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched ^(?=[\\s\\S]*SOURCE_OF_TRUTH\\.md)(?=[\\s\\S]*ARCHITECTURE_ROADMAP\\.md)(?=[\\s\\S]*TODO_WORKFLOW\\.md)(?=[\\s\\S]*CLAUDE\\.md)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-modular-set",
+                "passed": true,
+                "weight": 1,
+                "explanation": "docs/architecture/** absent as expected",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 1x (expected 1..∞)",
+                "withOnly": true,
+                "scored": false
+              }
+            ]
+          }
+        ],
+        "without": [
+          {
+            "score": 0.4,
+            "passed": false,
+            "turns": 3,
+            "costUsd": 0.08109,
+            "judgeCostUsd": 0.014628,
+            "durationSeconds": 37,
+            "startedAt": "2026-11-10T13:28:22.867Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-kSy9za/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "blocking-questions",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "The repo is empty, so this feature also needs the foundations it sits on: the Next.js app, a trips/itinerary schema, and auth (which supplies the user's email). Here is the design I'd start with, kept small on purpose.\n\n## Proposed design\n\n1. **Trigger:** an \"Email me this itinerary\" button on the trip page calls `POST /api/trips/[id]/export`.\n2. **Authorise:** the route checks the session and that the user owns the trip.\n3. **Render:** it loads the trip and its items from Postgres and renders the PDF in-process with `@react-pdf/renderer`.\n4. **Send:** it emails the PDF as an attachment through a transactional provider (I'd use Resend) and returns success or failure to the UI.\n\nA `GET /api/trips/[id]/itinerary.pdf` route can reuse the same renderer for direct download at almost no extra cost.\n\n## Choices behind it\n\n- **PDF library:** `@react-pdf/renderer` rather than headless Chrome (Puppeteer/Playwright). It is pure JS and runs on serverless without a Chromium binary. The catch is that the PDF layout is written separately instead of reusing your HTML/CSS.\n- **Synchronous, no queue:** a text itinerary renders in well under a second, so the request can render and send inline. A job queue is only worth adding if renders get slow or you need retries.\n- **No file storage:** the PDF is generated on demand and never persisted, so there is no S3 bucket or cleanup to manage.\n- **Recipient is the account email only:** the address comes from the session, never from the request body, so the endpoint can't be used to send mail to arbitrary addresses.\n- **Rate limit in Postgres:** a small `itinerary_exports` log table (user, trip, timestamp, status) supports a per-user limit such as 5 per hour and gives you a debugging trail without adding Redis.\n\n## Questions that would change it\n\n1. **Hosting:** are you on Vercel/serverless or a long-running Node server? Serverless rules out headless Chrome in practice and sets the timeout limits.\n2. **PDF content:** is it text only (days, times, places, notes), or do you need maps and photos? Maps and photos make the layout harder and may push towards headless Chrome.\n3. **Stack:** do you have preferences for ORM, auth and email provider? My defaults would be Drizzle, Auth.js and Resend.\n\nIf the defaults are fine (serverless, text only, that stack), say so and I'll scaffold the app, the minimal schema (`users`, `trips`, `itinerary_items`, `itinerary_exports`) and the export route. I can also write this up as `docs/itinerary-export.md` first if you want a design doc in the repo."
+              },
+              {
+                "name": "failure-paths-designed",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: case \"right-sized-new-feature\" grader focus file \"ARCHITECTURE_ROADMAP.md\": path \"ARCHITECTURE_ROADMAP.md\" does not exist",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "four-docs-created",
+                "passed": false,
+                "weight": 1,
+                "explanation": "pattern not found in files",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-modular-set",
+                "passed": true,
+                "weight": 1,
+                "explanation": "docs/architecture/** absent as expected",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.4,
+            "passed": false,
+            "turns": 2,
+            "costUsd": 0.0710456,
+            "judgeCostUsd": 0.009764,
+            "durationSeconds": 34,
+            "startedAt": "2026-11-10T13:28:22.867Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-CFJZvK/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "blocking-questions",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "The repo is empty, so here is a proposed design for you to react to before I scaffold anything. This feature is small enough that it doesn't need more of a design doc than this.\n\n## Proposed design\n\n**Flow:** an \"Email me this itinerary\" button calls `POST /api/trips/[id]/export`. The route checks the session and trip ownership, loads the itinerary from Postgres, renders the PDF in memory, emails it as an attachment and returns success or an error.\n\n- **PDF:** use `@react-pdf/renderer`. It is pure JS, runs in a normal Node route handler including serverless, and lets us write the layout as React components. Puppeteer is the alternative, but headless Chrome is heavy to deploy and only worth it if the PDF must mirror the web page exactly.\n- **Email:** use Resend, unless you already have a provider, with the PDF attached directly.\n- **Recipient:** send only to the signed-in user's account email, with no free-form address field. That matches \"email it to themselves\" and stops the endpoint being used as a spam relay.\n- **Execution:** do it synchronously in the request. An itinerary PDF renders in well under a second or two, so if the send fails the user sees an error and clicks again.\n- **Rate limit:** a simple per-user cap (say 10 an hour), because the endpoint sends email.\n\n**Deliberately left out for now:**\n- **Job queue:** not needed while the render stays fast.\n- **S3 storage of generated PDFs:** the PDF is regenerated on demand.\n- **`exports` table:** nothing needs to be tracked yet.\n- **Retry machinery:** the user retrying is enough.\n\n**Structure:** two modules, `renderItineraryPdf(trip) → Buffer` and `sendItineraryEmail(user, pdf)`, with the route as glue. Tests would be a fixture trip through the renderer and a mocked email client for the route.\n\n## Questions that would change the design\n\n1. **Is the rest of the app in scope?** The feature needs auth and a trips/itinerary schema. Do those exist elsewhere for me to match, or am I building a minimal version here?\n2. **Where is it hosted?** On Vercel or other serverless the plan stands as is. On a long-running Node server Puppeteer becomes practical, if you want it.\n3. **Do you already have an email provider?** If you use SES, Postmark or SendGrid, I'll use that instead of Resend.\n4. **What goes in the PDF?** Text and tables (days, times, places, notes) are easy. Embedded maps or photos add real work, so I'd want to know up front.\n\nOnce you've answered these, I can scaffold the Next.js app and build the feature. I can also save this as a one-page `docs/itinerary-export.md` if you want it written down first."
+              },
+              {
+                "name": "failure-paths-designed",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: case \"right-sized-new-feature\" grader focus file \"ARCHITECTURE_ROADMAP.md\": path \"ARCHITECTURE_ROADMAP.md\" does not exist",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "four-docs-created",
+                "passed": false,
+                "weight": 1,
+                "explanation": "pattern not found in files",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-modular-set",
+                "passed": true,
+                "weight": 1,
+                "explanation": "docs/architecture/** absent as expected",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 1,
+        "passRate": 1,
+        "scoreWithout": 0.4,
+        "passRateWithout": 0,
+        "delta": 0.6
+      }
+    },
+    {
+      "name": "security-alone-hands-off",
+      "dir": "evals-ci/review-swarm/security-alone-hands-off",
+      "source": "mixed",
+      "promptMarkdown": "We just added JWT validation middleware in `src/middleware/auth.js` on our Express API — checks the Authorization header, verifies the signature, attaches `req.user` — but haven't committed it yet. Can you swarm review it for security holes? That's literally the only thing I care about right now, not style or perf.",
+      "runsPerCase": 3,
+      "timeoutSeconds": 900,
+      "maxTurns": 40,
+      "graders": [
+        {
+          "name": "hands-off-to-security-review",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the response treats this as a security-only ask and points to `/security-review` as the right tool (recommending it, or saying it tried it), instead of running a generic six-specialist review swarm.\n\nFAIL if it runs or offers the six-lens swarm as the answer, never mentions `/security-review`, or makes a claim that `src/middleware/auth.js` contradicts. The file calls `jwt.verify(token, process.env.JWT_SECRET)` with no `algorithms` option and no try/catch, so saying the algorithm is not pinned, or that a bad token throws, is accurate, not invented.",
+          "config": {
+            "criteria": "PASS if the response treats this as a security-only ask and points to `/security-review` as the right tool (recommending it, or saying it tried it), instead of running a generic six-specialist review swarm.\n\nFAIL if it runs or offers the six-lens swarm as the answer, never mentions `/security-review`, or makes a claim that `src/middleware/auth.js` contradicts. The file calls `jwt.verify(token, process.env.JWT_SECRET)` with no `algorithms` option and no try/catch, so saying the algorithm is not pinned, or that a bad token throws, is accurate, not invented.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "no-swarm-spawn",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 12,
+            "costUsd": 0.13871070000000002,
+            "judgeCostUsd": 0.012998,
+            "durationSeconds": 55,
+            "startedAt": "2026-11-10T13:28:56.869Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-3uwFkP/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "hands-off-to-security-review",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I didn't spawn the swarm: for a security-only ask the skill hands off to `/security-review`, and that couldn't run because the repo has no `origin` remote to diff against. What follows is my own single-pass read of `src/middleware/auth.js` (11 lines) and `src/app.js`. Nothing was executed — there is no `package.json` or `node_modules`, and the sandbox blocked the npm registry — so library behaviour is from my knowledge of `jsonwebtoken`, not a test.\n\n## Blocker\n\n**1. Unset secret plus unpinned algorithm can become a full auth bypass — `src/middleware/auth.js:6`**\n\n`jwt.verify(token, process.env.JWT_SECRET)` passes no `algorithms` option and never checks that the secret exists.\n\n- **On `jsonwebtoken` below 9.0.0:** if `JWT_SECRET` is unset or empty, an unsigned `alg: none` token is accepted (CVE-2022-23540). Anyone can forge any `req.user`.\n- **On 9.x:** the same misconfiguration fails closed, but only because of library defaults.\n- **Which applies here:** unknown. No `package.json` exists, so nothing pins the version.\n\nFix: fail at startup if `JWT_SECRET` is missing, pass `{ algorithms: ['HS256'] }`, and pin `jsonwebtoken@^9` in a manifest.\n\n## Should-fix\n\n**2. Any token signed with the secret is accepted as an access token, possibly forever — `src/middleware/auth.js:6-7`**\n\n- **No expiry requirement:** `verify` only enforces `exp` if the claim is present, so a token minted without one never expires.\n- **No `iss` or `aud` check:** if the same secret ever signs password-reset, email-verification or refresh tokens, those work as access tokens here.\n- **I can't tell how exposed you are:** no token-issuing code is in this repo.\n\nFix: pass `issuer`, `audience` and `maxAge` to `verify`, and reject payloads that are not objects with the subject claim you expect.\n\n**3. Missing or invalid tokens throw instead of returning 401 — `src/middleware/auth.js:6`**\n\nThere is no `try/catch`, so a bad, expired or absent token throws into Express's default error handler. This fails closed (`next()` is never reached), so it is not a bypass. The problems are:\n\n- **Stack-trace leak:** the response is a 500, and it includes the stack trace and file paths whenever `NODE_ENV` is not `production`.\n- **Noisy monitoring:** an unauthenticated client can generate 500s at will, which buries real errors.\n\nFix: wrap in `try/catch` and return a generic `401` without echoing the error message.\n\n## Nit\n\n**4. Loose header parsing — `src/middleware/auth.js:5`**\n\n`header.replace('Bearer ', '')` does not enforce the scheme: a bare token with no `Bearer` prefix, or the string appearing mid-header, both pass through. It is not exploitable on its own, since the token must still verify. Fix: match `^Bearer (.+)$` and return 401 otherwise.\n\n## Outside the file\n\n- **Nothing is protected yet:** `src/app.js` never mounts `requireAuth` and has no routes. When you wire it in, register it before the routes it guards.\n- **Secret strength:** HS256 secrets can be brute-forced offline from any captured token. Use at least 32 random bytes; I couldn't see the value to check.\n- **No revocation:** a stolen token is valid until it expires, which makes the missing expiry check in finding 2 matter more.\n\n## What's solid\n\nIt uses `jwt.verify` rather than `jwt.decode`, so signatures are checked. The secret comes from the environment rather than being hardcoded. Every failure path throws before `next()`, so the middleware fails closed.\n\nI haven't changed anything. The four fixes amount to roughly a 15-line rewrite of the middleware — say if you want me to apply them."
+              },
+              {
+                "name": "no-swarm-spawn",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 10,
+            "costUsd": 0.11082539999999999,
+            "judgeCostUsd": 0.008808000000000002,
+            "durationSeconds": 48,
+            "startedAt": "2026-11-10T13:28:59.805Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-PhUT7s/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "hands-off-to-security-review",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "**`/security-review` is the right tool for a security-only ask, but it couldn't run**: it diffs against `origin/HEAD` and this repo has no remote. I spawned no swarm and reviewed `src/middleware/auth.js` myself instead, by reading only: `jsonwebtoken` isn't installed and there is no `package.json`, so nothing was executed.\n\nThere is no unconditional auth bypass, but there is one conditional bypass to close before you commit.\n\n## Blocker\n\n**`src/middleware/auth.js:6` — a missing `JWT_SECRET` can turn into a full auth bypass.**\n- Nothing checks that `process.env.JWT_SECRET` is set, and `verify` is called without an `algorithms` option.\n- On `jsonwebtoken` ≤ 8.5.1, a falsy secret plus no `algorithms` makes the library accept unsigned `alg: none` tokens (CVE-2022-23540). Anyone could then forge any `req.user`.\n- On v9 the same misconfiguration fails closed.\n- With no `package.json`, nothing pins which version you get.\n- Fix: throw at module load if `JWT_SECRET` is missing or short (under 32 random bytes), pass `{ algorithms: ['HS256'] }`, and declare `jsonwebtoken@^9`.\n\n## Should-fix\n\n- **`auth.js:6` — a bad token produces a 500, not a 401.** `jwt.verify` throws on missing, malformed or expired tokens and nothing catches it. This fails closed, but Express's default error handler returns the stack trace (with server file paths) whenever `NODE_ENV` isn't `production`. It also makes credential probing look like server errors in your logs. Fix: wrap in `try/catch` and return a generic `401`.\n- **`auth.js:6` — tokens with no `exp` claim are valid forever.** `verify` only enforces `exp` if the claim is present. The issuing code isn't in this repo, so I can't tell whether it sets one. Fix: pass `maxAge` to `verify`, or reject payloads without `exp`.\n- **`auth.js:6` — no `issuer` or `audience` check.** Any token signed with the same secret is accepted as an access token, including password-reset or email-verify tokens, or tokens from another service. This only matters if the secret is reused that way. Fix: pass `issuer` and `audience` to `verify`.\n\n## Lower priority\n\n- **`auth.js:7` — claims are trusted for the token's lifetime.** There is no revocation or check that the user still exists, so a deleted or demoted user keeps access until `exp`. This is the normal stateless-JWT trade-off, acceptable with short-lived tokens.\n- **`src/app.js` — `requireAuth` isn't mounted anywhere yet.** There are no routes today, so nothing is exposed, but nothing is protected until it is wired in.\n\n## What's solid\n\n- The signature really is verified (`jwt.verify`, not `jwt.decode`).\n- A missing header fails closed, because the empty string fails verification.\n- The loose `header.replace('Bearer ', '')` at `auth.js:5` is not exploitable: whatever comes out still has to pass signature verification.\n- The secret comes from the environment, not hardcoded.\n\nI haven't changed anything. The blocker and the first should-fix are about ten lines together; say the word and I'll apply them."
+              },
+              {
+                "name": "no-swarm-spawn",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ],
+        "without": [
+          {
+            "score": 0,
+            "passed": false,
+            "turns": 8,
+            "costUsd": 0.7832232999999997,
+            "judgeCostUsd": 0.012959999999999972,
+            "durationSeconds": 304,
+            "startedAt": "2026-11-10T13:29:47.679Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-QE5nmA/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "hands-off-to-security-review",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "The middleware fails closed when mounted normally, but it has one conditional full auth bypass and several gaps to fix before commit. None of this was run against the real libraries: `jsonwebtoken` and `express` aren't installed and the npm registry is blocked here, so the library behaviour below is from the reviewers' and my knowledge of their source.\n\n## Findings, worst first\n\n1. **Auth bypass if `JWT_SECRET` is unset or empty on jsonwebtoken ≤ 8.5.1 (critical when both hold).**\n   - With a falsy secret and no `algorithms` option, those versions accept an unsigned `alg: none` token (CVE-2022-23540), so anyone can send a self-made payload and become any user.\n   - On 9.x the same misconfiguration rejects every token instead, which is an outage rather than a bypass.\n   - There is no `package.json` or lockfile in the repo, so nothing currently pins which version you get.\n   - Fix: pin `jsonwebtoken@^9`, pass `algorithms: ['HS256']`, and refuse to start if `JWT_SECRET` is missing or shorter than 32 bytes.\n\n2. **`jwt.verify` throws with no try/catch (medium).**\n   - Every auth failure (no header, bad signature, expired) becomes a 500 from Express's default error handler, not a 401.\n   - When `NODE_ENV` isn't `production` (including unset), the response body includes the stack trace with absolute paths and the specific jsonwebtoken error message.\n   - Rejection relies entirely on the error pipeline: a later error handler that logs and calls `next()` would let the request through unauthenticated.\n   - If `requireAuth` is ever called outside Express's own try/catch (an async wrapper on Express 4, a websocket upgrade hook), one tokenless request crashes the process.\n   - Fix: catch the error and send a generic 401 from the middleware itself.\n\n3. **Tokens without `exp` are valid forever (medium).** `verify` only checks `exp` if it is present, and `jwt.sign` doesn't add one by default. A leaked token is then a permanent credential until you rotate the secret. Fix: pass `maxAge` or reject payloads with no numeric `exp`.\n\n4. **No issuer, audience or purpose check (medium, high if the secret is shared).** Any token signed with the same secret works as an access token: a password-reset or email-verification token, or one from staging or a sibling service. Fix: set and verify `issuer` and `audience`, or use a separate secret per token type.\n\n5. **Raw payload becomes `req.user` (low to medium).** There's no check that it is an object with the claims handlers expect. A token missing `sub` or `role` (most likely via finding 4) gives `undefined` fields, which fail open in deny-style checks like `role !== 'guest'`. Fix: validate, then build `req.user` from named claims.\n\n6. **Lax header parsing (low, not exploitable on its own).** `replace('Bearer ', '')` accepts a bare token with no scheme, or `Bearer ` spliced mid-token. It only matters if a gateway or WAF in front applies its token checks to `^Bearer ` headers alone. Fix: match `/^Bearer (\\S+)$/i` and reject otherwise.\n\nThings that are not holes in this file but are worth knowing:\n- **Not mounted:** `requireAuth` isn't used anywhere yet (`src/app.js` has no routes), so it protects nothing today. When you wire it in, anything registered before it is unauthenticated.\n- **No revocation:** a banned or demoted user's token keeps working until it expires; that needs a user lookup or token-version store.\n- **Secret strength:** a weak HS256 secret can be cracked offline from one captured token.\n- **Secrets in the repo:** none found, but there's no `.gitignore`, so a future `.env` would be picked up by `git add .`.\n\n## What the fix looks like\n\n```js\nconst jwt = require('jsonwebtoken');\n\nconst SECRET = process.env.JWT_SECRET;\nif (!SECRET || Buffer.byteLength(SECRET) < 32) {\n  throw new Error('JWT_SECRET must be set and at least 32 bytes');\n}\n\nfunction requireAuth(req, res, next) {\n  const match = /^Bearer (\\S+)$/i.exec(req.headers['authorization'] || '');\n  if (!match) return unauthorized(res);\n\n  let payload;\n  try {\n    payload = jwt.verify(match[1], SECRET, {\n      algorithms: ['HS256'],\n      issuer: 'your-issuer',\n      audience: 'your-api',\n      maxAge: '15m',\n    });\n  } catch (err) {\n    return unauthorized(res);\n  }\n\n  if (!payload || typeof payload !== 'object' || typeof payload.sub !== 'string') {\n    return unauthorized(res);\n  }\n  req.user = { id: payload.sub, role: payload.role };\n  next();\n}\n\nfunction unauthorized(res) {\n  return res.status(401).set('WWW-Authenticate', 'Bearer').json({ error: 'unauthorized' });\n}\n\nmodule.exports = { requireAuth };\n```\n\nThe `issuer`, `audience`, `maxAge` and claim names are placeholders that must match whatever signs your tokens. I haven't changed any files; say the word and I'll apply this and add a `package.json` pinning `jsonwebtoken@^9`."
+              },
+              {
+                "name": "no-swarm-spawn",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Agent called 3x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0,
+            "passed": false,
+            "turns": 8,
+            "costUsd": 0.6476185000000001,
+            "judgeCostUsd": 0.013542000000000012,
+            "durationSeconds": 225,
+            "startedAt": "2026-11-10T13:29:51.773Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-E9mO7S/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "hands-off-to-security-review",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "The middleware has one conditional full auth bypass and several weaker holes. None of this was confirmed by running it: the sandbox blocked `registry.npmjs.org`, so the library behaviour below comes from the reviewers' knowledge of the jsonwebtoken and Express source.\n\nThe `security-review` skill failed because the repo has no `origin` remote, so I ran the swarm manually as three parallel reviewers: JWT verification, Express request handling, and a PoC runner. The PoC runner is the one that was blocked.\n\n## Exploitable\n\n1. **Auth bypass when `JWT_SECRET` is unset or empty (critical, conditional)** — `auth.js:6`\n   - On jsonwebtoken 8.5.1 or older (CVE-2022-23540), a falsy secret with no `algorithms` option makes the library accept unsigned `alg: none` tokens.\n   - An attacker sends `Bearer <b64url({\"alg\":\"none\"})>.<b64url({\"sub\":\"admin\"})>.` and `req.user` is whatever they chose.\n   - On 9.x the same misconfiguration fails closed, but every request returns 500 and nothing fails at boot.\n   - Nothing pins the version, because the repo has no `package.json` or lockfile.\n\n2. **Weak secrets are accepted (high if the secret is weak)** — `auth.js:6`\n   - There is no check on the secret's length or content, so `\"secret\"` or the literal string `\"undefined\"` works as a key.\n   - Anyone holding one valid token can crack a low-entropy HS256 secret offline and then mint arbitrary tokens.\n\n3. **Any token signed with this secret passes as an access token (medium)** — `auth.js:6`\n   - There is no `issuer`, `audience` or token-type check.\n   - If the same secret ever signs reset links, refresh tokens or staging tokens, those authenticate here too.\n   - There is no issuer code in the repo yet, so this is a risk once one exists.\n\n4. **Tokens without `exp` never expire (medium)** — `auth.js:6`\n   - The library only checks `exp` if it is present, and `jwt.sign` omits it by default.\n   - There is no `maxAge` and no revocation, so a leaked token works until you rotate the global secret.\n\n5. **Every auth failure is an uncaught throw, giving a 500 instead of a 401 (medium)** — `auth.js:6`\n   - The request fails closed on Express 4 and 5, so this is not a bypass.\n   - When `NODE_ENV` is not `production`, the default error handler returns the stack trace, with file paths and the exact jsonwebtoken error. That error text tells an attacker whether the secret is missing (finding 1).\n   - Unauthenticated clients can generate 5xx at will, which hides real faults and can trip 5xx-based alerting or backend ejection.\n   - If someone later makes `requireAuth` async on Express 4, one tokenless request becomes an unhandled rejection that kills the process.\n\n## Lower severity\n\n- **Loose header parsing** — `auth.js:5`: `replace('Bearer ', '')` strips the first occurrence anywhere and does not require the scheme, so a bare token is accepted and lowercase `bearer` gets a 500. This is not a forgery vector, since the result must still verify, but it could sidestep an upstream gateway that inspects `Bearer` tokens.\n- **`req.user` may not be an object** — `auth.js:7`: a validly signed non-JSON payload makes it a string, so downstream checks like `if (!req.user.banned)` would fail open.\n- **Not mounted** — `src/app.js` never uses `requireAuth`, so nothing is protected today, and per-route opt-in means a forgotten route is silently public.\n\nChecked and not a problem: RS/HS algorithm confusion with a string secret, `alg: none` when a secret is set, prototype pollution through the payload, signature timing, duplicate or oversized headers.\n\n## Fix\n\nThis closes findings 1 and 5 and the two parsing/payload items; the commented lines cover 3 and 4 once you choose values:\n\n```js\nconst jwt = require('jsonwebtoken');\n\nconst SECRET = process.env.JWT_SECRET;\nif (!SECRET || Buffer.byteLength(SECRET) < 32) {\n  throw new Error('JWT_SECRET must be set to at least 32 random bytes');\n}\n\nfunction deny(res) {\n  res.set('WWW-Authenticate', 'Bearer').status(401).json({ error: 'unauthorized' });\n}\n\nfunction requireAuth(req, res, next) {\n  const m = /^Bearer +([\\w-]+\\.[\\w-]+\\.[\\w-]+)$/i.exec(req.headers['authorization'] || '');\n  if (!m) return deny(res);\n  let payload;\n  try {\n    payload = jwt.verify(m[1], SECRET, {\n      algorithms: ['HS256'],\n      // issuer: '...', audience: '...', maxAge: '15m',\n    });\n  } catch {\n    return deny(res);\n  }\n  if (!payload || typeof payload !== 'object' || !payload.sub) return deny(res);\n  req.user = payload;\n  next();\n}\n\nmodule.exports = { requireAuth };\n```\n\nThe length check only partly covers finding 2; generate the secret with `crypto.randomBytes(32)`. Separately, add a `package.json` and lockfile pinning `jsonwebtoken@^9`, and mount the middleware deny-by-default before your routers.\n\nI have not changed any files. If you want the fix applied, say so; if you allow `registry.npmjs.org` in the sandbox, I can run the PoC matrix against 8.5.1 and 9.x to confirm finding 1."
+              },
+              {
+                "name": "no-swarm-spawn",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Agent called 3x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 1,
+        "passRate": 1,
+        "scoreWithout": 0,
+        "passRateWithout": 0,
+        "delta": 1
+      }
+    }
+  ],
+  "aggregates": {
+    "casesTotal": 2,
+    "casesPassed": 2,
+    "overallScore": 1,
+    "overallPassRate": 1,
+    "meanDelta": 0.8
+  }
+}

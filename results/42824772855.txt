@@ -1,0 +1,25 @@
+run: 42824772855 https://github.com/alonbaron/claude-skills/actions/runs/42824772855
+event: workflow_dispatch  commit: 2b0fd6630701fb4aae6a645a8c4336f56715b109  ref: fix/fable-5-2-evals
+model: claude-fable-5-2  cases: sandboxed  job status at publish: success
+only: architect/right-sized-new-feature review-swarm/security-alone-hands-off
+cli: 2.1.303 (Claude Code)
+started: 2026-11-10T13:34:53Z
+
+valid 1 of 2
+re-run: architect/right-sized-new-feature
+cost $2.89  runner aggregates over the 2 cases in the results, 1 of them INVALID: {"casesTotal": 2, "casesPassed": 2, "overallScore": 1, "overallPassRate": 1, "meanDelta": 0.8}
+valid-only aggregates (1 cases): score 1.00  mean delta +1.00  1 of 1 at 0.7
+
+== right-sized-new-feature  with 1.00  without 0.40  INVALID
+   INVALID without#0 grader failure-paths-designed: grader threw: case "right-sized-new-feature" grader focus file "ARCHITECTURE_ROADMAP.md": path "ARCHITECTURE_ROADMAP.md" does not exist
+   INVALID without#1 grader failure-paths-designed: grader threw: case "right-sized-new-feature" grader focus file "ARCHITECTURE_ROADMAP.md": path "ARCHITECTURE_ROADMAP.md" does not exist
+   blocking-questions                 with PP   without ..
+   failure-paths-designed             with PP   without ..
+   four-docs-created                  with PP   without ..
+   no-modular-set                     with PP   without PP
+   no-subagents                       with PP   without PP
+   skill-fired                        with PP   without 
+
+== security-alone-hands-off  with 1.00  without 0.00
+   hands-off-to-security-review       with PP   without ..
+   no-swarm-spawn                     with PP   without ..
