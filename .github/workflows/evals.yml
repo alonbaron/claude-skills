@@ -28,6 +28,14 @@ on:
         description: "Space-separated <skill>/<case> (e.g. the summary's re-run line); when set, only those cases run"
         default: ""
         required: false
+      runs:
+        description: "Runs per arm (1 for quick checks, 2 for suite measurement)"
+        default: "2"
+        required: false
+      ablation:
+        description: "with-without (both arms) or none (with-plugin arm only)"
+        default: "with-without"
+        required: false
   push:
     branches: ["claude/**"]
 jobs:
@@ -39,7 +47,8 @@ jobs:
       contents: write
     env:
       # Runs per arm, for the eval and for the summary, which flags an arm that got fewer.
-      RUNS: "2"
+      RUNS: ${{ github.event.inputs.runs || '2' }}
+      ABLATION: ${{ github.event.inputs.ablation || 'with-without' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -86,7 +95,7 @@ jobs:
           echo "cases: ${ONLY:-$CASES} ($(ls -d evals-ci/*/* | wc -l))"
           # Cases that already have a clean result on this commit's skills; space-separated <skill>/<case>.
           for c in $SKIP_CASES; do rm -rf "evals-ci/$c"; done
-          claude plugin eval . --eval-dir evals-ci --runs "$RUNS" -j 4 --scaffold \
+          claude plugin eval . --eval-dir evals-ci --runs "$RUNS" -j 2 --ablation "$ABLATION" --scaffold \
             --allow-tools Write Edit Bash --model "$MODEL" --judge-model sonnet \
             --no-publish --trust-plugin --threshold 0.7 --keep-temp --json evals-ci/result.json
       - name: Collect the traces

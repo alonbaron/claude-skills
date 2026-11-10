@@ -1,6 +1,6 @@
 ---
 name: defers-to-simplify
-description: Tidying a finished, working diff is built-in /simplify's job, and ponytail's when_to_use says so. Ponytail must not fire, and the helpers must not be re-litigated as if they were new code.
+description: Tidying a finished, working diff is built-in /simplify's job, and ponytail's when_to_use says so. Ponytail must not fire; the task should go to /simplify or be reviewed as an existing diff.
 tags: [ponytail, must-not-fire, boundary, needs-scaffold]
 max_turns: 15
 timeout_seconds: 300

@@ -3,6 +3,6 @@ type: llm
 focus: last_message
 ---
 
-PASS if the final message says the branch has no upstream (never pushed, no tracking branch).
+PASS if the final message notes that the branch has no upstream, has no tracking branch, or is unpushed / local-only (any of those phrasings counts).
 
-FAIL if it does not mention that, or implies the branch has an upstream it was compared against.
+FAIL if it does not mention that the branch is unpushed / has no upstream, or implies the branch has its own upstream tracking branch that it was compared against.
