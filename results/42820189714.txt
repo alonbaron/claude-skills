@@ -1,0 +1,31 @@
+run: 42820189714 https://github.com/alonbaron/claude-skills/actions/runs/42820189714
+event: workflow_dispatch  commit: 0c839d0fc7faadeb37413d3bca25eee20639e6e0  ref: fix/fable-5-2-evals
+model: claude-fable-5-2  cases: sandboxed  job status at publish: failure
+only: architect/right-sized-new-feature review-swarm/security-alone-hands-off
+cli: 2.1.303 (Claude Code)
+started: 2026-11-10T13:07:13Z
+
+valid 1 of 2
+re-run: review-swarm/security-alone-hands-off
+cost $4.08  runner aggregates over the 2 cases in the results, 1 of them INVALID: {"casesTotal": 2, "casesPassed": 0, "overallScore": 0.5833333333333333, "overallPassRate": 0, "meanDelta": 0.08333333333333334}
+valid-only aggregates (1 cases): score 0.67  mean delta +0.00  0 of 1 at 0.7
+
+== right-sized-new-feature  with 0.67  without 0.67
+   no-modular-set                     with PP   without PP
+   no-subagents                       with PP   without PP
+   right-sized-process                with ..   without ..
+   skill-fired                        with PP   without 
+   FAIL with#0 right-sized-process: judge votes: FAIL FAIL FAIL
+      evidence: {"type":"system","subtype":"init","cwd":"/tmp/claude-eval-3N3SbX/home/cwd","session_id":"ff35f167-eb6d-478a-b117-582e0b6f8f13","tools":["Task","Bash","Edit","NotebookEdit","Read","Skill","TaskStop","ToolSearch","Write"],"mcp_servers":[],"model":"claude-fable-5-2","permissionMode":"dontAsk","slash_commands":["deep-research","alon-skills:build-loop","alon-skills:architect","alon-skills:ask-the-council","alon-skills:ponytail","alon-skills:prompt-generator","alon-skills:review-swarm","alon-skills:up-to-date","dataviz","update-config","verify","debug","code-review","simplify","batch","fewer-permission-prompts","doctor","loop","schedule","claude-api","workflow-authoring","run","run-skill-generator
+   FAIL with#1 right-sized-process: judge votes: FAIL FAIL PASS
+      evidence: {"type":"system","subtype":"init","cwd":"/tmp/claude-eval-ir76Zn/home/cwd","session_id":"6c202c2e-9512-400a-8aa9-e99be6425349","tools":["Task","Bash","Edit","NotebookEdit","Read","Skill","TaskStop","ToolSearch","Write"],"mcp_servers":[],"model":"claude-fable-5-2","permissionMode":"dontAsk","slash_commands":["deep-research","alon-skills:build-loop","alon-skills:architect","alon-skills:ask-the-council","alon-skills:ponytail","alon-skills:prompt-generator","alon-skills:review-swarm","alon-skills:up-to-date","dataviz","update-config","verify","debug","code-review","simplify","batch","fewer-permission-prompts","doctor","loop","schedule","claude-api","workflow-authoring","run","run-skill-generator
+
+== security-alone-hands-off  with 0.50  without 0.33  INVALID
+   INVALID without#1 grader hands-off-to-security-review: grader threw: judge call failed: You've hit your session limit · resets 5pm (UTC)
+   hands-off-to-security-review       with .P   without ..
+   no-swarm-spawn                     with PP   without ..
+   skill-not-fired                    with ..   without PP
+   FAIL with#0 hands-off-to-security-review: judge votes: FAIL FAIL FAIL
+      evidence: I reviewed `src/middleware/auth.js` by reading it, with no swarm and no executed tests. The middleware has one potential full auth bypass, depending on your `jsonwebtoken` version, plus three smaller holes. | | The library behaviour below is from my knowledge of `jsonwebtoken` and Express. I couldn't confirm it by running anything, because the repo has no `package.json` or `node_modules` and the sandbox blocked npm. | | ## Blocker | | **Unset `JWT_SECRET` plus an unsigned token can bypass auth entirely** (`src/middleware/auth.js:6`) | - **Hole:** on `jsonwebtoken` ≤ 8.5.1, if the secret is falsy and the token has no signature, `verify` defaults to `algorithms: ['none']` and accepts it (CVE-2
+   FAIL with#0 skill-not-fired: Skill called 1x (expected 0..0)
+   FAIL with#1 skill-not-fired: Skill called 1x (expected 0..0)
