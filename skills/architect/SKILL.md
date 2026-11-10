@@ -157,7 +157,10 @@ right doc and cross-linked; it does not get re-authored from scratch.
   implementation is not.
 - Every component has a defined responsibility *and* a failure mode.
 - Flag unknowns as open questions — never invent a constraint, a number, or an
-  API you haven't confirmed.
+  API you haven't confirmed. At most three are blocking, and those are the ones
+  the reply asks. Every other open question records the default you proceeded
+  on (a `Default if unanswered` column), so the list reads as assumptions to
+  confirm, not a questionnaire.
 - A choice you made that the user didn't give (a status code, a limit, fail-open
   vs fail-closed, a library) is a proposal, not a fact: mark it `(proposed)` in
   the doc and list it under "Decisions to confirm" in your reply.
