@@ -1,0 +1,69 @@
+run: 42826444704 https://github.com/alonbaron/claude-skills/actions/runs/42826444704
+event: workflow_dispatch  commit: 1fee1de5bce9f51612f8de07878a50f9e5ffbac8  ref: fix/fable-5-2-evals
+model: claude-fable-5-2  cases: sandboxed  job status at publish: failure
+cli: 2.1.303 (Claude Code)
+started: 2026-11-10T13:49:42Z
+
+valid 4 of 9
+re-run: review-swarm/security-alone-hands-off review-swarm/trivial-diff-declines up-to-date/dirty-and-behind up-to-date/fresh-branch-no-upstream up-to-date/no-remote-boundary
+cost $7.31  runner aggregates over the 9 cases in the results, 5 of them INVALID: {"casesTotal": 9, "casesPassed": 6, "overallScore": 0.6666666666666666, "overallPassRate": 0.6666666666666666, "meanDelta": 0.33125}
+valid-only aggregates (4 cases): score 1.00  mean delta +0.33  4 of 4 at 0.7
+
+== audit-drift-citation  with 1.00  without 1.00
+   citation-discipline                with PP   without PP
+   no-edit                            with PP   without PP
+   no-write                           with PP   without PP
+   skill-fired                        with PP   without 
+
+== right-sized-new-feature  with 1.00  without 0.40
+   blocking-questions                 with PP   without ..
+   failure-paths-designed             with PP   without ..
+   four-docs-created                  with PP   without ..
+   no-modular-set                     with PP   without PP
+   no-subagents                       with PP   without PP
+   skill-fired                        with PP   without 
+
+== small-fix-boundary  with 1.00  without 0.88
+   no-invention                       with PP   without .P
+   no-subagents                       with PP   without PP
+   skill-fired                        with PP   without 
+   targeted-addition                  with PP   without PP
+   two-boundary-enforcement           with PP   without PP
+
+== real-diff-ranked-report  with 1.00  without 0.40
+   no-edit-calls                      with PP   without PP
+   no-write-calls                     with PP   without PP
+   ranked-report-shape                with PP   without ..
+   reviewers-sonnet                   with PP   without ..
+   skill-fired                        with PP   without 
+   verifiers-opus                     with PP   without ..
+
+== security-alone-hands-off  with 1.00  without 0.00  INVALID
+   INVALID without#0 run: exit 1: You've hit your session limit · resets 6:10pm (UTC) · stderr: [claude-code:unrecognized_model] {"model":"claude-fable-5-2","query_source":"sdk"}
+   INVALID without#1 run: exit 1: You've hit your session limit · resets 6:10pm (UTC) · stderr: [claude-code:unrecognized_model] {"model":"claude-fable-5-2","query_source":"sdk"}
+   hands-off-to-security-review       with PP   without 
+   no-swarm-spawn                     with PP   without 
+
+== trivial-diff-declines  with 1.00  without 0.25  INVALID
+   INVALID without#0 grader declines-with-alternative: grader threw: judge call failed: You've hit your session limit · resets 6:10pm (UTC)
+   INVALID without#1 run: exit 1: You've hit your session limit · resets 6:10pm (UTC) · stderr: [claude-code:unrecognized_model] {"model":"claude-fable-5-2","query_source":"sdk"}
+   agent-spawn-limit                  with PP   without P
+   declines-with-alternative          with PP   without .
+
+== dirty-and-behind  with 0.00  without 0.00  INVALID
+   INVALID with#0 run: exit 1: You've hit your session limit · resets 6:10pm (UTC) · stderr: [claude-code:unrecognized_model] {"model":"claude-fable-5-2","query_source":"sdk"}
+   INVALID with#1 run: exit 1: You've hit your session limit · resets 6:10pm (UTC) · stderr: [claude-code:unrecognized_model] {"model":"claude-fable-5-2","query_source":"sdk"}
+   INVALID without#0 run: exit 1: You've hit your session limit · resets 6:10pm (UTC) · stderr: [claude-code:unrecognized_model] {"model":"claude-fable-5-2","query_source":"sdk"}
+   INVALID without#1 run: exit 1: You've hit your session limit · resets 6:10pm (UTC) · stderr: [claude-code:unrecognized_model] {"model":"claude-fable-5-2","query_source":"sdk"}
+
+== fresh-branch-no-upstream  with 0.00  without 0.00  INVALID
+   INVALID with#0 run: exit 1: You've hit your session limit · resets 6:10pm (UTC) · stderr: [claude-code:unrecognized_model] {"model":"claude-fable-5-2","query_source":"sdk"}
+   INVALID with#1 run: exit 1: You've hit your session limit · resets 6:10pm (UTC) · stderr: [claude-code:unrecognized_model] {"model":"claude-fable-5-2","query_source":"sdk"}
+   INVALID without#0 run: exit 1: You've hit your session limit · resets 6:10pm (UTC) · stderr: [claude-code:unrecognized_model] {"model":"claude-fable-5-2","query_source":"sdk"}
+   INVALID without#1 run: exit 1: You've hit your session limit · resets 6:10pm (UTC) · stderr: [claude-code:unrecognized_model] {"model":"claude-fable-5-2","query_source":"sdk"}
+
+== no-remote-boundary  with 0.00  without 0.00  INVALID
+   INVALID with#0 run: exit 1: You've hit your session limit · resets 6:10pm (UTC) · stderr: [claude-code:unrecognized_model] {"model":"claude-fable-5-2","query_source":"sdk"}
+   INVALID with#1 run: exit 1: You've hit your session limit · resets 6:10pm (UTC) · stderr: [claude-code:unrecognized_model] {"model":"claude-fable-5-2","query_source":"sdk"}
+   INVALID without#0 run: exit 1: You've hit your session limit · resets 6:10pm (UTC) · stderr: [claude-code:unrecognized_model] {"model":"claude-fable-5-2","query_source":"sdk"}
+   INVALID without#1 run: exit 1: You've hit your session limit · resets 6:10pm (UTC) · stderr: [claude-code:unrecognized_model] {"model":"claude-fable-5-2","query_source":"sdk"}

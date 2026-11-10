@@ -1,0 +1,1997 @@
+{
+  "schemaVersion": 1,
+  "claudeVersion": "2.1.303",
+  "startedAt": "2026-11-10T13:39:18.530Z",
+  "durationSeconds": 623,
+  "costUsd": 7.310153400000001,
+  "partial": false,
+  "suite": {
+    "root": "/home/runner/work/claude-skills/claude-skills",
+    "ablation": "with-without",
+    "modelOverride": "claude-fable-5-2",
+    "judgeModel": "sonnet",
+    "threshold": 0.7,
+    "concurrency": 4,
+    "plugins": [
+      {
+        "name": "alon-skills",
+        "version": "3.2.2",
+        "path": "/home/runner/work/claude-skills/claude-skills"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "audit-drift-citation",
+      "dir": "evals-ci/architect/audit-drift-citation",
+      "source": "mixed",
+      "promptMarkdown": "Run architect audit on our repo. I think the docs are stale — we shipped a\nStripe webhook endpoint last week (POST /webhooks/stripe) and I don't think\nit ever made it into the architecture roadmap or the API contract table.",
+      "runsPerCase": 3,
+      "timeoutSeconds": 300,
+      "maxTurns": 15,
+      "graders": [
+        {
+          "name": "citation-discipline",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the response reports the drift as a finding that cites both sides:\nthe code that states the fact (the POST /webhooks/stripe handler in\nsrc/routes/webhooks.js) AND the doc + section that should describe it and\ndoesn't (ARCHITECTURE_ROADMAP.md §3's API contract table). It stays in\nverify-and-report form — a prioritized fix list with an offer to apply it —\nrather than treating the finding as settled without pointing at the actual\ncode location, and it does not pull in an unrelated hand-off (ask-the-council,\nreview-swarm) for what is a single straightforward drift item.\n\nFAIL if any drift is reported as a hunch without citing both the code\nlocation and the doc location, if it fabricates a file/line that isn't in the\nrepo, or if it goes further than a report (e.g. claims the docs are now\nfixed) without ever actually changing them.",
+          "config": {
+            "criteria": "PASS if the response reports the drift as a finding that cites both sides:\nthe code that states the fact (the POST /webhooks/stripe handler in\nsrc/routes/webhooks.js) AND the doc + section that should describe it and\ndoesn't (ARCHITECTURE_ROADMAP.md §3's API contract table). It stays in\nverify-and-report form — a prioritized fix list with an offer to apply it —\nrather than treating the finding as settled without pointing at the actual\ncode location, and it does not pull in an unrelated hand-off (ask-the-council,\nreview-swarm) for what is a single straightforward drift item.\n\nFAIL if any drift is reported as a hunch without citing both the code\nlocation and the doc location, if it fabricates a file/line that isn't in the\nrepo, or if it goes further than a report (e.g. claims the docs are now\nfixed) without ever actually changing them.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "no-edit",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Edit",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "no-write",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Write",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "skill-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?architect\""
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 10,
+            "costUsd": 0.12902750000000002,
+            "judgeCostUsd": 0.013859999999999997,
+            "durationSeconds": 49,
+            "startedAt": "2026-11-10T13:39:18.585Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-WoFxmC/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "citation-discipline",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "**Running architect audit.** Your suspicion is confirmed: `POST /webhooks/stripe` is in the code and in none of the roadmap, API contract table, or TODO tracker. The audit also turned up a mismatch against your one invariant that matters more than the missing table row. Nothing has been changed.\n\n## Drift findings, in priority order\n\n| P | Finding | Code side | Doc side |\n|---|---|---|---|\n| **P0** | The handler keys \"paid\" on a different ID than the invariant. For `checkout.session.completed`, `event.data.object.id` is the Checkout Session id, not the payment intent id. | `src/routes/webhooks.js:12` | `SOURCE_OF_TRUTH.md:9` (invariant 1: \"DB unique constraint on payment intent id\") |\n| **P0** | Both enforcement points of invariant 1 are unverifiable. `verifyStripeSignature` and `markOrderPaid` are called but never imported or defined, and there is no schema or migration in the repo. | `src/routes/webhooks.js:10`, `:12` (only import is `hono` at `:2`) | `SOURCE_OF_TRUTH.md:9`; `ARCHITECTURE_ROADMAP.md` has no §2 data schema (jumps from §0 at line 5 to §3 at line 8) |\n| **P1** | The endpoint is missing from the API contract table. The row would need method, path, auth (Stripe signature header, not session) and the `{ received: true }` response. | `src/routes/webhooks.js:7`, `:8`, `:14` | `ARCHITECTURE_ROADMAP.md:9-12` (only `/checkout` and `/orders/:id`) |\n| **P1** | The webhook's failure paths are undocumented and unhandled. There is no branch for a missing or invalid signature, so a bad one surfaces as whatever `verifyStripeSignature` throws. Duplicate deliveries are not addressed. | `src/routes/webhooks.js:8-10` | `ARCHITECTURE_ROADMAP.md` §3 (line 8) has no failure-path section |\n| **P2** | The TODO tracker has no task for the webhook. | `src/routes/webhooks.js:7` | `TODO_WORKFLOW.md:5` (only row is \"Checkout + order status\") |\n| **P2** | The docs claim checkout and order status are done, but no such routes exist in the repo; `src/routes/webhooks.js` is the only source file. | `git ls-files` shows only `src/routes/webhooks.js` | `TODO_WORKFLOW.md:5` (`[MERGED/DONE]`); `ARCHITECTURE_ROADMAP.md:11-12` |\n| **P3** | The scope statement omits webhook ingestion, though invariant 1 in the same file depends on it. | `src/routes/webhooks.js:7` | `SOURCE_OF_TRUTH.md:4` (\"Handles checkout and order status\") |\n| **P3** | The TODO names branch `main`, but the repo only has `master`. | `git branch -a` shows only `master` | `TODO_WORKFLOW.md:5` |\n\nOne thing I could not verify: `webhooks.js:4,17` builds and exports its own Hono app, and there is no entrypoint or `wrangler.toml` in the repo that mounts it. I can't confirm the deployed path is actually `/webhooks/stripe`.\n\n## Root cause\n\n`CLAUDE.md:5-8` only has reference precedence. It has no rule that docs must be updated before code and no workflow section, so nothing required the roadmap update (the commit message itself says \"roadmap not updated\"). The docs also don't link to each other.\n\n## Proposed fixes (docs only)\n\n1. **`ARCHITECTURE_ROADMAP.md` §3:** add the `POST /webhooks/stripe` row (auth: Stripe signature) and bump the version to 0.5.\n2. **`ARCHITECTURE_ROADMAP.md` §3:** add a failure-path table for the webhook. The behaviours would be my proposals, marked `(proposed)`: 400 on a bad signature, 200 with no action on a duplicate event, 5xx on a DB failure so Stripe retries.\n3. **`ARCHITECTURE_ROADMAP.md` §2:** add a data schema stub with the orders table and the unique constraint. I'd leave the column details as an open question rather than invent them.\n4. **`SOURCE_OF_TRUTH.md`:** add webhook ingestion to the scope, and record the session-id versus payment-intent-id mismatch as an open question against invariant 1.\n5. **`TODO_WORKFLOW.md`:** add a row for the webhook, add a row for fixing the ID mismatch, and correct the branch name.\n6. **`CLAUDE.md`:** add the architecture-change rule and workflow section, plus cross-links in the doc headers.\n\n## Questions for you\n\n- **Which ID is canonical for \"paid\"?** Either the code should pass `event.data.object.payment_intent`, or the invariant should say \"checkout session id\". This decides what goes into fix 4.\n- **Do `verifyStripeSignature`, `markOrderPaid`, the checkout and order routes, and the schema live in another repo or an unpushed branch?** If so, the first P2 row and part of the second P0 row become \"wrong repo\" rather than \"missing\".\n\nWant me to apply fixes 1–6? I'd do it on a `docs/` branch and leave the code alone, since the ID mismatch and the missing imports are code changes that depend on your answers."
+              },
+              {
+                "name": "no-edit",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Edit called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-write",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Write called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 1x (expected 1..∞)",
+                "withOnly": true,
+                "scored": false
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 5,
+            "costUsd": 0.11902979999999999,
+            "judgeCostUsd": 0.012348000000000001,
+            "durationSeconds": 45,
+            "startedAt": "2026-11-10T13:39:18.585Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-BGqtiI/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "citation-discipline",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "Your suspicion is confirmed: `POST /webhooks/stripe` exists in code and is missing from the roadmap's API contract table. The audit also found five other drift items, two of which matter more than the missing row. Nothing has been changed yet.\n\n## Drift, in priority order\n\n| # | Finding | Code side | Doc side |\n|---|---|---|---|\n| 1 | **Endpoint missing from the API contract.** The route is registered but has no row. | `src/routes/webhooks.js:7` | `ARCHITECTURE_ROADMAP.md:9-12` (§3 lists only `/checkout` and `/orders/:id`) |\n| 2 | **Invariant 1 names a different key than the code uses.** The doc says uniqueness is on the payment intent id; the handler passes `event.data.object.id`, which for `checkout.session.completed` is the Checkout Session id. | `src/routes/webhooks.js:12` | `SOURCE_OF_TRUTH.md:9` |\n| 3 | **Invariant 1's enforcement can't be verified in this repo.** `verifyStripeSignature` and `markOrderPaid` are called but never imported or defined, and there is no schema or migration for the DB constraint. The roadmap has no §2 data schema where that constraint would be recorded. | `src/routes/webhooks.js:2` (only import), `:10`, `:12` | `SOURCE_OF_TRUTH.md:9`; `ARCHITECTURE_ROADMAP.md` jumps from §0 (line 5) to §3 (line 8) |\n| 4 | **Webhook failure paths are undocumented.** A missing or invalid signature has no handling in the handler and no described behaviour in the docs. | `src/routes/webhooks.js:8-10` | `ARCHITECTURE_ROADMAP.md:8-12` (§3 has no failure-path section) |\n| 5 | **The tracker doesn't reflect the webhook work.** There is no task for it, and the one existing task cites branch `main`, while the repo only has `master`. | `src/routes/webhooks.js:7`; commit `b5dd4f7` on `master` | `TODO_WORKFLOW.md:5` |\n| 6 | **Scope omits webhook ingestion.** Scope says \"checkout and order status\" only, even though invariant 1 in the same file depends on the webhook handler. | `src/routes/webhooks.js:7` | `SOURCE_OF_TRUTH.md:4` |\n\n## Docs claiming code that isn't here\n\n- **`/checkout` and `/orders/:id`:** the roadmap documents both (`ARCHITECTURE_ROADMAP.md:11-12`) and the tracker marks them `[MERGED/DONE]` (`TODO_WORKFLOW.md:5`), but the only source file in the repo is `src/routes/webhooks.js`.\n- **No entry point:** nothing mounts the webhook router, and there is no `package.json` or `wrangler.toml`, so I can't confirm from this repo that the endpoint is actually served at `/webhooks/stripe`.\n\nIf that code lives in another repo, the docs should say so. If it doesn't, the `[MERGED/DONE]` status is wrong.\n\n## Why this drifted\n\n`CLAUDE.md:5-8` has reference precedence only, with no rule that docs are updated before code. Commit `b5dd4f7` says \"roadmap not updated\" in its own message. Until that rule is added, the same thing will happen on the next endpoint.\n\n## Proposed fixes\n\n1. Add the row to the roadmap §3 and bump the version to 0.5:\n   `| POST | /webhooks/stripe | Stripe signature (stripe-signature header) | on checkout.session.completed, marks the order paid |`\n2. Add a webhook failure-path block to §3. The behaviours would be marked `(proposed)`, since the code doesn't define them.\n3. Reconcile invariant 1 with the code (see the question below).\n4. Add a webhook task to `TODO_WORKFLOW.md` citing §3, and correct the `main` branch reference.\n5. Add webhook ingestion to the scope in `SOURCE_OF_TRUTH.md`.\n6. Add the architecture-change rule to `CLAUDE.md`.\n\n## Questions before I apply\n\n- **Which side is right on invariant 1?** If the payment intent id is the intended key, the doc stays and the code is the bug (it should use `event.data.object.payment_intent`). If the session id is intended, I update the SoT.\n- **Where do `/checkout`, `/orders/:id`, the helper functions and the schema live?** That decides whether the second section above is drift or just a repo boundary the docs should name.\n\nFixes 1, 4, 5 and 6 don't depend on either answer. Want me to apply those now and hold 2 and 3 until you've answered?"
+              },
+              {
+                "name": "no-edit",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Edit called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-write",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Write called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 1x (expected 1..∞)",
+                "withOnly": true,
+                "scored": false
+              }
+            ]
+          }
+        ],
+        "without": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 4,
+            "costUsd": 0.0979092,
+            "judgeCostUsd": 0.013781999999999999,
+            "durationSeconds": 33,
+            "startedAt": "2026-11-10T13:39:18.585Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-zeUtQB/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "citation-discipline",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "You're right: `POST /webhooks/stripe` is live in code and missing from the docs. There is no \"architect\" skill or command installed in this session, so I did the audit by hand, comparing the three docs against `src/`. Nothing was changed.\n\n## Confirmed drift (code shipped, docs not updated)\n\n| # | Doc | Gap | Evidence |\n|---|---|---|---|\n| 1 | `ARCHITECTURE_ROADMAP.md:9-12` (§3 API contract) | The table lists only `POST /checkout` and `GET /orders/:id`; there is no row for `POST /webhooks/stripe`. | Route defined at `src/routes/webhooks.js:7` |\n| 2 | `TODO_WORKFLOW.md:5` | The only task is \"Checkout + order status\"; the webhook work has no task row or architecture ref. | Commit `b5dd4f7` (\"add stripe webhook handler, roadmap not updated\") |\n| 3 | `SOURCE_OF_TRUTH.md:4` (Scope) | Scope says \"Handles checkout and order status\" and doesn't mention inbound Stripe webhooks, even though invariant #1 on line 9 depends on the webhook handler. | Same file, lines 4 and 9 |\n\nThe new roadmap row also needs a different Auth value: the webhook authenticates by Stripe signature (`stripe-signature` header), not `session` like the other two.\n\n## Invariant #1 vs. the code\n\n`SOURCE_OF_TRUTH.md:9` says an order is marked paid only after a verified Stripe signature, enforced by the handler's signature check plus a DB unique constraint on payment intent id. The code doesn't clearly back that up:\n\n- **Undefined helpers:** `verifyStripeSignature` and `markOrderPaid` (`src/routes/webhooks.js:10,12`) are neither imported nor defined anywhere in the repo. As committed, the handler would throw a `ReferenceError`.\n- **Wrong ID:** the handler passes `event.data.object.id` to `markOrderPaid` (line 12). For `checkout.session.completed` that is the checkout session id, not the payment intent id the invariant's unique constraint is keyed on.\n- **Signature check not awaited:** line 10 calls `verifyStripeSignature` synchronously. On Workers, Stripe verification is normally async; if the helper is async, `event.type` is `undefined` and no order is ever marked paid.\n- **No failure path:** a bad signature has no handling, so it surfaces as a 500 rather than a 400.\n- **DB constraint unverifiable:** there is no schema or migration in the repo, so the second half of the invariant can't be checked.\n\n## Reverse drift (docs claim things the repo doesn't have)\n\n- **Missing routes:** `POST /checkout` and `GET /orders/:id` are in the contract table and marked `[MERGED/DONE]` in `TODO_WORKFLOW.md:5`, but `src/` contains only `routes/webhooks.js`.\n- **No entrypoint:** nothing mounts the webhooks app, and there is no `package.json` or wrangler config.\n- **Branch name:** `TODO_WORKFLOW.md:5` says the branch is `main`; the only branch in the repo is `master`.\n- **Roadmap numbering:** sections jump from §0 to §3. This may be intentional trimming.\n\n## Suggested doc fixes\n\n1. Add to roadmap §3: `| POST | /webhooks/stripe | Stripe signature | on checkout.session.completed, marks order paid (SoT invariant #1) |`, and bump the version from 0.4.\n2. Add a `TODO_WORKFLOW.md` row for the webhook handler referencing `ARCHITECTURE_ROADMAP.md §3`.\n3. Extend the `SOURCE_OF_TRUTH.md` scope line to include Stripe webhook ingestion.\n\nDo you want me to apply these three edits? The code issues under invariant #1 need a decision from you first — in particular whether the rest of the source lives somewhere else, which would explain the missing helpers and routes."
+              },
+              {
+                "name": "no-edit",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Edit called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-write",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Write called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 8,
+            "costUsd": 0.1035413,
+            "judgeCostUsd": 0.015935999999999995,
+            "durationSeconds": 35,
+            "startedAt": "2026-11-10T13:39:18.585Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-UR1Fu5/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "citation-discipline",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "You're right: `POST /webhooks/stripe` is in the code but not in the roadmap's API contract table, and the audit turned up more drift beyond that. There is no `architect` skill installed in this session, so I did the audit by hand, checking the three governing docs against the code. I haven't changed any files.\n\n## Doc drift\n\n1. **Roadmap API contract is missing the webhook.** `ARCHITECTURE_ROADMAP.md` §3 lists only `POST /checkout` and `GET /orders/:id`, while the route is live at `src/routes/webhooks.js:7`. Proposed row:\n\n   `| POST | /webhooks/stripe | Stripe signature | verifies signature, marks order paid on checkout.session.completed |`\n\n2. **No task for the webhook.** `TODO_WORKFLOW.md` has one row (Checkout + order status), so the webhook shipped with no task or architecture reference.\n\n3. **Scope statement is stale.** `SOURCE_OF_TRUTH.md:4` says the API \"handles checkout and order status\". Invariant #1 in the same file already depends on the webhook handler, so the scope should name it.\n\n4. **Branch name mismatch.** `TODO_WORKFLOW.md:5` says task 1 merged to `main`, but the repo's only branch is `master`.\n\n## Code that doesn't match the docs\n\n5. **The documented routes aren't in the repo.** `/checkout` and `/orders/:id` are marked `[MERGED/DONE]`, but the only source file is `src/routes/webhooks.js`. There is also no entry point that mounts the webhook app. Either the code lives elsewhere or the docs describe things that don't exist here.\n\n6. **The webhook helpers are undefined.** `verifyStripeSignature` and `markOrderPaid` (`webhooks.js:10,12`) are neither imported nor defined anywhere in the repo. As committed, the handler would throw a `ReferenceError` on the first request.\n\n7. **Invariant #1 can't be confirmed.** It claims enforcement by a signature check plus a DB unique constraint on the payment intent id.\n   - The handler passes `event.data.object.id` (`webhooks.js:12`), which for `checkout.session.completed` is the checkout session id, not the payment intent id.\n   - There is no schema or migration in the repo, so the unique constraint is unverifiable.\n   - `verifyStripeSignature` is called without `await` (`webhooks.js:10`). If it turns out to be async, as Stripe verification on Workers usually is, the handler would return 200 without ever marking the order paid.\n\n8. **Roadmap section numbering jumps from §0 to §3.** This is minor, and may just be an unfilled template.\n\n## Next step\n\nItems 1–4 are plain doc fixes: add the roadmap row, add a TODO row referencing §3, update the scope line, and correct the branch name. I can apply those now if you want.\n\nItems 5–7 need your input first: is the rest of the source (the other routes, the helpers, the schema) in another repo or just not committed yet?"
+              },
+              {
+                "name": "no-edit",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Edit called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-write",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Write called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 1,
+        "passRate": 1,
+        "scoreWithout": 1,
+        "passRateWithout": 1,
+        "delta": 0
+      }
+    },
+    {
+      "name": "right-sized-new-feature",
+      "dir": "evals-ci/architect/right-sized-new-feature",
+      "source": "prose",
+      "promptMarkdown": "Starting a new feature on our Next.js + Postgres trip-planning app: users\nshould be able to export their itinerary as a PDF and email it to\nthemselves. This is a brand new repo, nothing's written yet, no design docs\nat all yet.",
+      "runsPerCase": 3,
+      "timeoutSeconds": 900,
+      "maxTurns": 40,
+      "graders": [
+        {
+          "name": "blocking-questions",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final message reports the design docs as already written (it did\nnot ask permission to start, and it does not stop at a questionnaire), asks at\nmost 3 blocking questions (e.g. PDF generation approach, email delivery\nprovider, itinerary size limits), and presents its other choices as stated\nassumptions or proposals to confirm.\n\nFAIL if it asks more than 3 blocking questions, asks its questions before\nwriting any docs, or leaves the rest of its unknowns as further questions with\nno assumption attached.",
+          "config": {
+            "criteria": "PASS if the final message reports the design docs as already written (it did\nnot ask permission to start, and it does not stop at a questionnaire), asks at\nmost 3 blocking questions (e.g. PDF generation approach, email delivery\nprovider, itinerary size limits), and presents its other choices as stated\nassumptions or proposals to confirm.\n\nFAIL if it asks more than 3 blocking questions, asks its questions before\nwriting any docs, or leaves the rest of its unknowns as further questions with\nno assumption attached.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "failure-paths-designed",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if ARCHITECTURE_ROADMAP.md designs the failure paths of the export and\nemail flow, not just the happy path: failures such as PDF generation failing,\nthe email send failing or bouncing, and an oversized itinerary each get a\ndefined failure mode (what the system does, and what the user sees or can do\nnext).\n\nFAIL if the file only describes the happy path, or names failures without\nsaying what happens when they occur.",
+          "config": {
+            "criteria": "PASS if ARCHITECTURE_ROADMAP.md designs the failure paths of the export and\nemail flow, not just the happy path: failures such as PDF generation failing,\nthe email send failing or bouncing, and an oversized itinerary each get a\ndefined failure mode (what the system does, and what the user sees or can do\nnext).\n\nFAIL if the file only describes the happy path, or names failures without\nsaying what happens when they occur.",
+            "focus": {
+              "source": "file",
+              "path": "ARCHITECTURE_ROADMAP.md"
+            }
+          }
+        },
+        {
+          "name": "four-docs-created",
+          "type": "regex",
+          "weight": 1,
+          "config": {
+            "target": "files",
+            "pattern": "^(?=[\\s\\S]*SOURCE_OF_TRUTH\\.md)(?=[\\s\\S]*ARCHITECTURE_ROADMAP\\.md)(?=[\\s\\S]*TODO_WORKFLOW\\.md)(?=[\\s\\S]*CLAUDE\\.md)",
+            "flags": "",
+            "match": "contains"
+          }
+        },
+        {
+          "name": "no-modular-set",
+          "type": "file_exists",
+          "weight": 1,
+          "config": {
+            "path": "docs/architecture/**",
+            "exists": false
+          }
+        },
+        {
+          "name": "no-subagents",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "skill-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?architect\""
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 11,
+            "costUsd": 0.5337116000000001,
+            "judgeCostUsd": 0.05976600000000004,
+            "durationSeconds": 297,
+            "startedAt": "2026-11-10T13:39:51.286Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-RpLUbJ/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "blocking-questions",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "The design docs are written — no code yet, and nothing is committed. All 51 cross-links resolve, but no library, version, or file path in them has been checked against a real install, since the repo is empty.\n\n## The design in brief\n\nOne click on a trip page inserts an export record, renders the PDF in memory, emails it as an attachment to the user's own account address, and returns the result in the same request. It adds one new table (`itinerary_exports`), one endpoint (`POST /api/trips/{tripId}/exports`), one renderer, one mail adapter, and one button.\n\nFive invariants are each enforced in the service and again in Postgres:\n\n- **Ownership:** you can only export a trip you own.\n- **Self-only recipient:** the email goes only to your verified account address; the client can't supply a recipient or content.\n- **Single-flight:** one in-progress export per user and trip, so a double-click gets a 409.\n- **Rate cap:** 5 exports per user per hour.\n- **Status integrity:** an export is always coherently `processing`, `sent`, or `failed` with an error code.\n\nThe work is split into five phases that each ship on their own: foundations, PDF renderer, export record, email delivery, UI.\n\n## Blocking questions\n\n1. **Do auth and the trip/itinerary model exist anywhere** (another repo, a schema, a chosen auth library), or does this repo start from zero? I assumed zero, so Phase 0 builds a minimal version of both; two of its tasks are blocked on this.\n2. **Can an account hold an unverified email?** I assumed yes, so the export refuses to send until the email is verified. Otherwise someone could sign up with another person's address and mail them PDFs.\n3. **Is email the only delivery, or do you also want a direct download?** I assumed email-only; download is a small later addition.\n\n## Decisions to confirm\n\nThese are my choices, marked `(proposed)` in the docs:\n\n- **Synchronous processing:** render and send inside the request, with no queue or worker. The catch is no automatic retries, and a rare duplicate email if the process dies between sending and recording. Revisit if p95 goes over 5 s.\n- **PDF library:** `@react-pdf/renderer` rather than headless Chromium. Its compatibility with your Next.js version and its font coverage for non-Latin place names are untested; the first Phase 1 task is a spike to check both.\n- **PDF not stored:** attached to the email and discarded, with no download links.\n- **Email provider:** Resend, behind a swappable interface. The sending domain and from-address are yours to supply.\n- **Rate limit in the database:** a Postgres trigger backs the 5/hour cap. Say so if you'd rather use a platform rate limiter.\n- **Smaller defaults:**\n  - Tooling: Drizzle, Zod, Vitest, pnpm.\n  - HTTP status codes per failure (table in the roadmap).\n  - Limits: 5 MB PDF cap, 10 s send timeout, 2 min stale timeout.\n  - A4 page size.\n  - Export records kept indefinitely.\n  - Trips assumed single-owner.\n\nOne thing you may not expect: the `CLAUDE.md` I wrote follows the architect template, which forbids committing to `main` and forbids AI co-author trailers on commits. Edit that section if it isn't your policy.\n\nFiles are in `/tmp/claude-eval-RpLUbJ/home/cwd`:\n- `SOURCE_OF_TRUTH.md`\n- `ARCHITECTURE_ROADMAP.md`\n- `TODO_WORKFLOW.md`\n- `CLAUDE.md`\n- `docs/handoff.md`"
+              },
+              {
+                "name": "failure-paths-designed",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS — note: long file (13824 chars); llm judges are noisy on long inputs, prefer a regex grader for large artifacts",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "# Architecture Roadmap — Itinerary PDF Export & Email\n\n**Version:** 0.1 · **Status:** Draft — nothing built yet · **Owner:** TBD (repo owner)\n\nDerived from [SOURCE_OF_TRUTH.md](SOURCE_OF_TRUTH.md) (wins on conflict) · Tasks: [TODO_WORKFLOW.md](TODO_WORKFLOW.md) · Rules: [CLAUDE.md](CLAUDE.md) · Log: [docs/handoff.md](docs/handoff.md)\n\nSingle-feature doc set: there is no `docs/architecture/` modular split. Add one only if this file outgrows a single read.\n\n## 0. Executive context\n\nThe trip-planning app (Next.js + Postgres) gets one new capability: a user emails themselves a PDF of a trip's itinerary. The repo is empty, so Phase 0 covers the foundations the feature stands on, and is skipped wherever those already exist ([SoT Q1](SOURCE_OF_TRUTH.md#5-open-questions)).\n\nThe design is deliberately small: one new table, one endpoint, one pure renderer, one mail adapter, one button. Processing is synchronous ([SoT D1](SOURCE_OF_TRUTH.md#4-decisions)). Scope, invariants, and decisions are defined in the SoT and only referenced here.\n\n## 1. Tech stack\n\nGiven by the owner: Next.js, Postgres. Everything else is `(proposed)` and gets pinned to exact versions in task T0.1. No file path, version, or library API below has been verified against a real install — the repo has no code yet.\n\n| Layer | Tech | Role |\n|---|---|---|\n| Web framework | Next.js, App Router, TypeScript | UI, Route Handler transport |\n| Database | Postgres | System of record; second enforcement boundary for every invariant |\n| ORM / migrations | Drizzle `(proposed, SoT Q5)` | Schema, migrations; raw SQL migration for the INV-4 trigger |\n| Auth | TBD `(SoT Q1, Q2)` | Server-side session → `userId`; verified-email flag |\n| Validation | Zod `(proposed)` | Strict request schema (INV-2) |\n| PDF | `@react-pdf/renderer` `(proposed, SoT D2)` | Itinerary rows → PDF `Buffer` |\n| Email | Resend `(proposed, SoT D5)` behind a `Mailer` port | Send one message with one attachment |\n| Tests | Vitest `(proposed)` + a real Postgres for constraint tests | Unit, service, DB-level invariant tests |\n| Package manager | pnpm `(proposed)` | — |\n\n## 2. Data schema\n\n### 2.1 Upstream tables `(assumed minimum — SoT Q1)`\n\nOnly the columns this feature reads or constrains against.\n\n| Table | Column | Type | Constraints |\n|---|---|---|---|\n| `users` | `id` | `uuid` | PK |\n| | `email` | `text` | NOT NULL, UNIQUE |\n| | `email_verified_at` | `timestamptz` | NULL = unverified |\n| `trips` | `id` | `uuid` | PK |\n| | `owner_id` | `uuid` | NOT NULL, FK → `users(id)` ON DELETE CASCADE |\n| | `title` | `text` | NOT NULL |\n| | `start_date`, `end_date` | `date` | NULL allowed; CHECK `end_date >= start_date` |\n| | — | — | **UNIQUE `(id, owner_id)`** — target of the INV-1 composite FK |\n| `itinerary_items` | `id` | `uuid` | PK |\n| | `trip_id` | `uuid` | NOT NULL, FK → `trips(id)` ON DELETE CASCADE |\n| | `day_date` | `date` | NOT NULL |\n| | `start_time`, `end_time` | `time` | NULL allowed; wall-clock local |\n| | `title` | `text` | NOT NULL |\n| | `location`, `notes` | `text` | NULL allowed |\n| | `position` | `integer` | NOT NULL; order within the day |\n| | — | — | INDEX `(trip_id, day_date, position)` |\n\n### 2.2 `itinerary_exports` (owned by this feature)\n\n| Column | Type | Constraints | Serves |\n|---|---|---|---|\n| `id` | `uuid` | PK, default `gen_random_uuid()` | — |\n| `trip_id` | `uuid` | NOT NULL | INV-1 |\n| `user_id` | `uuid` | NOT NULL | INV-1, INV-2 |\n| `status` | `text` | NOT NULL, CHECK in (`processing`, `sent`, `failed`) | INV-5 |\n| `error_code` | `text` | CHECK `(status = 'failed') = (error_code IS NOT NULL)` | INV-5 |\n| `provider_message_id` | `text` | CHECK `status <> 'sent' OR provider_message_id IS NOT NULL` | INV-5 |\n| `created_at` | `timestamptz` | NOT NULL, default `now()` | INV-4 |\n| `finished_at` | `timestamptz` | CHECK `(status = 'processing') = (finished_at IS NULL)` | INV-5 |\n\n| Constraint / index | Definition | Serves |\n|---|---|---|\n| Composite FK | `(trip_id, user_id) → trips (id, owner_id)` ON DELETE CASCADE | INV-1 |\n| Partial unique index | `(user_id, trip_id) WHERE status = 'processing'` | INV-3 |\n| Index | `(user_id, created_at DESC)` | INV-4 count |\n| Trigger `(proposed, SoT Q6)` | `BEFORE INSERT`: `pg_advisory_xact_lock` keyed on `user_id`, count rows for that user in the last hour, `RAISE` if at the cap | INV-4 |\n\nDecision call-outs:\n\n- **No recipient, subject, body, or PDF column.** That absence is the storage half of INV-2 and of SoT D3. > Do not add one without an SoT decision.\n- `error_code` values are the codes in [§3.4](#34-failure-paths); free-text provider errors go to logs, not the table.\n- The INV-4 cap appears in two places in code (service constant, trigger). Its one home as a fact is SoT INV-4; changing it means a migration.\n- Trip ownership transfer is not designed. The composite FK will block changing `trips.owner_id` while export rows exist; decide the behaviour when transfer is specified.\n\n## 3. Backend\n\n### 3.1 Structure `(proposed paths)`\n\n| Path | Responsibility | Does not |\n|---|---|---|\n| `src/app/api/trips/[tripId]/exports/route.ts` | Transport: read session, validate request, call service, map result to HTTP | Contain business rules |\n| `src/server/exports/export-itinerary.ts` | The service: every app-side invariant check, the export row lifecycle, orchestration | Know about HTTP or the email provider |\n| `src/server/exports/render-itinerary-pdf.tsx` | Pure function: `(trip, items) → Buffer` | Touch the DB, network, or clock (generated-at time is passed in) |\n| `src/server/mail/mailer.ts` | `Mailer` port: `send({ to, subject, text, attachment }) → { messageId }` or a typed error (`transient` / `rejected`) | — |\n| `src/server/mail/resend-mailer.ts` | Provider adapter; applies the send timeout | Leak provider types past the port |\n| `src/db/` | Schema and migrations | — |\n\n### 3.2 Service flow\n\n```\nexportItinerary(sessionUserId, tripId):\n  1. trip  = select trip where id = tripId and owner_id = sessionUserId   → miss: trip_not_found\n  2. user  = select email, email_verified_at                              → unverified: email_unverified\n  3. items = select items ordered by (day_date, position)                 → none: itinerary_empty\n  4. in one transaction:\n       mark stale 'processing' rows for (user, trip) as failed/timeout\n       in-flight row exists?        → export_in_progress\n       count(last hour) >= cap?     → rate_limited\n       insert export (status = processing)\n     (FK, partial unique index, and trigger back each check; a constraint\n      violation here maps to the same error as the matching app check)\n  5. pdf = render(trip, items)      → throws: finish(failed, render_failed)\n     size > cap?                    → finish(failed, pdf_too_large)\n  6. mailer.send(to = user.email)   → transient: finish(failed, email_failed)\n                                      rejected:  finish(failed, email_rejected)\n  7. finish(sent, provider_message_id)\n```\n\nSteps 1–3 fail before any row is inserted, so they do not consume the rate limit. `finish` is the single status-writing function (INV-5). There is no in-request retry of the send.\n\n### 3.3 API contract\n\n`POST /api/trips/{tripId}/exports` — Node.js runtime, session required, **no request body accepted**. Status codes are `(proposed)`.\n\n| Status | `error` code | When | Row created |\n|---|---|---|---|\n| 201 | — | Sent. Body: `{ id, status: \"sent\", sentTo, finishedAt }` | yes, `sent` |\n| 400 | `invalid_request` | Malformed `tripId`, or any body field present (INV-2) | no |\n| 401 | `unauthenticated` | No session | no |\n| 404 | `trip_not_found` | Trip missing **or not owned** — indistinguishable on purpose (INV-1) | no |\n| 409 | `export_in_progress` | In-flight export for this user and trip (INV-3) | no |\n| 422 | `email_unverified` | Account email not verified (INV-2) | no |\n| 422 | `itinerary_empty` | Trip has no items | no |\n| 422 | `pdf_too_large` | Rendered PDF exceeds the size cap | yes, `failed` |\n| 422 | `email_rejected` | Provider refuses the recipient (e.g. suppressed address) | yes, `failed` |\n| 429 | `rate_limited` | Over the INV-4 cap; includes `Retry-After` | no |\n| 500 | `render_failed` | Renderer threw | yes, `failed` |\n| 502 | `email_failed` | Provider error or send timeout | yes, `failed` |\n| 503 | `unavailable` | Database unreachable before the insert | no |\n\nError body shape: `{ error: \"<code>\", message: \"<human-readable>\" }`.\n\n### 3.4 Failure paths\n\n| Component | What fails | What happens next |\n|---|---|---|\n| Session/auth | Missing or expired session | 401; nothing read or written. |\n| Postgres | Down before the insert | 503; nothing sent; user retries. |\n| Postgres | Down **after** the provider accepted, before `finish` | Email was delivered but the row stays `processing`. The next request for the same user and trip marks it `failed`/`timeout` and proceeds. A duplicate email is possible and accepted (SoT D8). |\n| Service | Constraint violation at insert (race lost to a concurrent request) | Mapped to the matching app error: unique index → 409, trigger → 429, FK → 404. Never a 500. |\n| PDF renderer | Throws (bad data, missing glyph, library bug) | Row → `failed`/`render_failed`; 500; error logged with export id. No email sent. |\n| PDF renderer | Output over the size cap | Row → `failed`/`pdf_too_large`; 422. |\n| Mailer | Timeout or provider 5xx | Row → `failed`/`email_failed`; 502; user may retry (counts against INV-4). If the provider actually accepted before the timeout, the user gets the email plus an error — a retry sends a duplicate (SoT D8). |\n| Mailer | Provider rejects the recipient | Row → `failed`/`email_rejected`; 422 with a message to check the account email. |\n| Host | Function killed or timed out mid-request | Row stays `processing`; cleared by the stale-timeout rule on the next request. The stale timeout must be longer than the host's function time limit (SoT Q7). |\n| Client | Double-click or parallel tabs | Second request gets 409 (INV-3). |\n| Client | Disconnects mid-request | Server completes normally; the email still arrives. |\n\n### 3.5 PDF and email content\n\n| Item | Spec |\n|---|---|\n| PDF layout | Trip title and date range; one section per day; per item: time range, title, location, notes; footer with page number and generated-at timestamp (UTC). A4 `(proposed, SoT Q9)`. |\n| Fonts | Must cover non-Latin place names. The library's built-in fonts may not; embed a broad-coverage font. Verify in T1.1 — this is a known risk, not a confirmed fact. |\n| Attachment filename | `<trip-title-slug>-itinerary.pdf` |\n| Email subject | `Your itinerary: <trip title>`, with CR/LF stripped from the title |\n| Email body | Short plain-text note; the content is in the attachment |\n\n## 4. Frontend\n\nOne client component on the trip page: `src/app/trips/[tripId]/export-button.tsx` `(proposed path)`.\n\n| State | UI |\n|---|---|\n| Idle | Button \"Email me this itinerary (PDF)\"; helper text shows the account email it will go to. Disabled with a hint when the itinerary is empty. |\n| Sending | Button disabled, spinner. No optimistic success. |\n| 201 | \"Sent to <email>.\" |\n| 409 | \"An export is already on its way.\" |\n| 422 `email_unverified` | Prompt to verify the email, linking to account settings. |\n| 429 | \"Too many exports — try again in N minutes\" from `Retry-After`. |\n| 422 other / 500 / 502 / 503 | Per-code message with a retry button. |\n\nThe frontend enforces nothing. Disabling the button is a courtesy; every rule is checked again on the server.\n\n## 5. Execution phases\n\nEach phase merges and ships on its own. Tasks: [TODO_WORKFLOW.md](TODO_WORKFLOW.md).\n\n| Phase | Delivers | Shippable because | Depends on |\n|---|---|---|---|\n| 0 — Foundations | Scaffold with pinned versions; Postgres + migrations; auth with a verified-email flag; minimal `users`/`trips`/`itinerary_items`; seed data | App runs and a seeded trip is viewable. **Skip whatever already exists (SoT Q1).** | — |\n| 1 — PDF renderer | Library spike inside the pinned Next.js version; `renderItineraryPdf`; font coverage; tests | Pure function, no user-facing surface | 0 |\n| 2 — Export record | `itinerary_exports` migration with all constraints and the trigger; service with a fake `Mailer`; DB-level violation tests for INV-1…5 | Server-only, unreachable from the UI | 0, 1 |\n| 3 — Email delivery | `Mailer` port + provider adapter; sending-domain DNS; Route Handler with the full error mapping | Endpoint works end to end, no button yet | 2 |\n| 4 — UI | Export button with all states; end-to-end happy-path test | Feature complete | 3 |\n| Later (unscheduled) | Direct download (Q3); background queue (D1 revisit); bounce handling (D6) | — | — |\n\n## 6. Non-functional requirements\n\nAll numbers are `(proposed)` targets or caps, not measurements.\n\n| Area | Requirement |\n|---|---|\n| Latency | `POST` p95 ≤ 5 s for a 200-item itinerary. Exceeding this is the D1 revisit trigger. |\n| Send timeout | 10 s on the provider call. |\n| Stale timeout | 2 min for `processing` rows; must exceed the host function time limit. |\n| Rate | 5 exports per user per rolling hour (SoT INV-4). |\n| PDF size cap | 5 MB. Confirm it sits under the provider's attachment limit in T3.1. |\n| Privacy | PDF bytes and itinerary content are never stored outside the primary tables and never logged. Logs carry export id, user id, trip id, status, error code, and timings only. |\n| Secrets | Provider API key in server-only environment config; never exposed to the client bundle. |\n| Deliverability | SPF and DKIM configured on the sending domain before Phase 3 ships. |\n| Observability | One structured log line per export with outcome and duration; `failed` counts by `error_code` are queryable from `itinerary_exports`. |\n| Testing | Every invariant has one test through the service and one that attempts the violation directly in SQL. |\n"
+              },
+              {
+                "name": "four-docs-created",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched ^(?=[\\s\\S]*SOURCE_OF_TRUTH\\.md)(?=[\\s\\S]*ARCHITECTURE_ROADMAP\\.md)(?=[\\s\\S]*TODO_WORKFLOW\\.md)(?=[\\s\\S]*CLAUDE\\.md)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-modular-set",
+                "passed": true,
+                "weight": 1,
+                "explanation": "docs/architecture/** absent as expected",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 1x (expected 1..∞)",
+                "withOnly": true,
+                "scored": false
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 12,
+            "costUsd": 0.5440349000000001,
+            "judgeCostUsd": 0.05015199999999995,
+            "durationSeconds": 311,
+            "startedAt": "2026-11-10T13:39:53.696Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-7TXC9W/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "blocking-questions",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "The design docs are written; no code and nothing committed. All 51 cross-links between them resolve.\n\nThe design in one paragraph: the user presses \"Email me this itinerary\", and the server does everything inside that one request. It checks ownership, records the attempt in Postgres, renders the PDF in memory, emails it as an attachment to the user's own verified account address, and records the outcome. There is no queue, no stored PDF, and no recipient field anywhere in the API or schema. Each of the six invariants is enforced twice, once in the service and once by a Postgres constraint.\n\n## Blocking questions\n\nI proceeded on the defaults shown; a different answer changes the design.\n\n1. **Where does the app run?** I assumed serverless (Vercel-style, Node runtime). That drives the pure-JS PDF library and the in-request flow; a long-running server would open up other options.\n2. **Are auth and the trip/itinerary model being designed elsewhere?** I assumed not, so Phase 0 creates minimal `users`, `trips` and `itinerary_items` tables and a `getSessionUser()` seam, with the auth provider left undecided.\n3. **Do you already have an email provider and sending domain?** I assumed Resend with a new domain, behind a `Mailer` port so it is swappable.\n\n## Decisions to confirm\n\nThese are my choices, marked `(proposed)` in the docs:\n\n- **Processing:** the export runs synchronously in the request. A crashed request leaves a `pending` row that the next attempt marks as failed, so no cron is needed.\n- **Delivery semantics:** \"sent\" means the provider accepted the message. A retry after a rare failure can produce a duplicate email, and bounces are not tracked.\n- **Scope:** email only (no download button), owner-only (no collaborators), text-only day-by-day PDF.\n- **Libraries:** `@react-pdf/renderer`, Drizzle, Zod, Vitest, pnpm. I have not verified `@react-pdf/renderer` against the current Next.js App Router; that check is task 1.2.\n- **Limits:** 5 export attempts per user per hour (failed attempts count), 10 MB PDF cap, 60 s route max duration, p95 target under 5 s.\n- **Behaviours:**\n  - An empty itinerary is rejected.\n  - A trip the user does not own returns 404 rather than 403.\n  - Email timeouts get one in-request retry, if the provider supports idempotency keys (unverified).\n- **Verified email:** a database trigger blocks exports for unverified addresses; you may not want it if auth ends up OAuth-only.\n- **Item times:** stored as wall-clock local date and time and printed verbatim, with no time-zone conversion.\n- **Fonts:** one embedded font covering Latin, Cyrillic and Greek. CJK and Arabic place names would not render until that is extended.\n- **Git rules in `CLAUDE.md`:** they come from the architect template and include \"never commit to `main`\" and \"no AI co-author trailer\". Edit them if that is not your convention.\n\nThe work is split into five phases (foundations, renderer, API, UI, launch hardening); only the UI phase is user-visible.\n\nThe git root is the parent directory of this one (`home/`, not `home/cwd/`). I wrote the docs into the working directory; say so if the repo root should be elsewhere.\n\nFiles are in `/tmp/claude-eval-7TXC9W/home/cwd`:\n- `SOURCE_OF_TRUTH.md`\n- `ARCHITECTURE_ROADMAP.md`\n- `TODO_WORKFLOW.md`\n- `CLAUDE.md`\n- `docs/handoff.md`"
+              },
+              {
+                "name": "failure-paths-designed",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS — note: long file (12329 chars); llm judges are noisy on long inputs, prefer a regex grader for large artifacts",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "# Itinerary PDF Export by Email — Architecture Roadmap\n\n**Version:** 0.1 · **Status:** Draft, awaiting answers to Q1–Q3 · **Owner:** TBD\n**Apex:** [SOURCE_OF_TRUTH.md](SOURCE_OF_TRUTH.md) · **Tasks:** [TODO_WORKFLOW.md](TODO_WORKFLOW.md) · **Rules:** [CLAUDE.md](CLAUDE.md) · **Handoff:** [docs/handoff.md](docs/handoff.md)\n\nDerived from the Source of Truth. Invariants (`INV-n`), decisions (`D-n`), and open questions (`Q-n`) are defined there and only referenced here. `(proposed)` marks a choice not yet confirmed by the owner.\n\n## 0. Executive context\n\nA signed-in user presses \"Email me this itinerary\" on a trip. The server checks ownership, records an export attempt, renders the itinerary to a PDF in memory, emails it as an attachment to the user's verified account address, and records the outcome. Everything happens in one request (D3); nothing is stored except the attempt record (D1).\n\nThe repo is empty, so Phase 0 builds the minimum the feature stands on. It collapses if the wider app supplies those pieces (Q2).\n\n## 1. Tech stack\n\n| Layer | Tech | Role |\n|---|---|---|\n| Web framework | Next.js, App Router, TypeScript (given; pin latest stable at scaffold) | UI and route handlers |\n| Database | PostgreSQL (given) | Source of truth; enforces INV-1…INV-6 |\n| DB access and migrations | Drizzle ORM + SQL migrations (proposed) | Needs composite FKs, partial unique indexes, CHECKs, and a trigger expressed in migrations |\n| Validation | Zod (proposed) | Strict request schemas (INV-2) |\n| PDF | `@react-pdf/renderer` (proposed, D5) | Server-side render to a buffer in the Node runtime. Verify App Router compatibility against the pinned version before T1.2. |\n| Email | Resend behind a `Mailer` port (proposed, D6) | Sends one message with one attachment |\n| Auth | Undecided (Q2) | Must provide `getSessionUser(): { id } \\| null` |\n| Tests | Vitest + a real Postgres for integration tests (proposed) | DB constraints are tested against Postgres, not mocked |\n| Package manager | pnpm (proposed) | |\n\n## 2. Data schema\n\n### 2.1 Prerequisite tables\n\nMinimal and proposed (Q2). Owned by the wider app; this feature only reads them.\n\n**`users`**\n\n| Column | Type | Constraints |\n|---|---|---|\n| `id` | `uuid` | PK |\n| `email` | `citext` | NOT NULL, UNIQUE |\n| `email_verified_at` | `timestamptz` | NULL means unverified |\n\n**`trips`**\n\n| Column | Type | Constraints |\n|---|---|---|\n| `id` | `uuid` | PK |\n| `owner_id` | `uuid` | NOT NULL, FK → `users(id)` ON DELETE CASCADE |\n| `title` | `text` | NOT NULL, CHECK length 1–200 |\n| `start_date`, `end_date` | `date` | NULLable, CHECK `end_date >= start_date` |\n\n- `UNIQUE (id, owner_id)`: redundant for uniqueness, required as the composite FK target for INV-1.\n\n**`itinerary_items`**\n\n| Column | Type | Constraints |\n|---|---|---|\n| `id` | `uuid` | PK |\n| `trip_id` | `uuid` | NOT NULL, FK → `trips(id)` ON DELETE CASCADE |\n| `local_date` | `date` | NOT NULL |\n| `local_start_time`, `local_end_time` | `time` | NULLable; wall-clock, no zone (Q8) |\n| `title` | `text` | NOT NULL |\n| `location`, `notes` | `text` | NULLable |\n| `position` | `integer` | NOT NULL; user ordering within a day |\n\n- Index `(trip_id, local_date, position)`: the PDF's read order.\n\n### 2.2 Feature tables\n\n**`itinerary_exports`**: one row per attempt.\n\n| Column | Type | Constraints |\n|---|---|---|\n| `id` | `uuid` | PK, default `gen_random_uuid()`; also the email idempotency key |\n| `user_id` | `uuid` | NOT NULL, FK → `users(id)` ON DELETE CASCADE |\n| `trip_id` | `uuid` | NOT NULL |\n| `status` | `text` | NOT NULL, CHECK in (`pending`, `sent`, `failed`) |\n| `error_code` | `text` | NULLable, CHECK in the codes of §3.4 |\n| `provider_message_id` | `text` | NULLable |\n| `created_at` | `timestamptz` | NOT NULL, default `now()` |\n| `finished_at` | `timestamptz` | NULLable |\n\n| Constraint / index | Purpose |\n|---|---|\n| FK `(trip_id, user_id) → trips (id, owner_id)` ON DELETE CASCADE | INV-1 |\n| No recipient column | INV-2. Do not add one. |\n| Trigger `itinerary_exports_verified_email` BEFORE INSERT (proposed) | INV-3 |\n| Unique index `(user_id, trip_id) WHERE status = 'pending'` | INV-4 |\n| CHECK status/evidence agreement: `pending` ⇒ all outcome columns NULL; `sent` ⇒ `finished_at` and `provider_message_id` set, `error_code` NULL; `failed` ⇒ `finished_at` and `error_code` set | INV-6 |\n| Index `(user_id, trip_id, created_at DESC)` | \"latest export\" lookup |\n\n**`export_quota`**: fixed-window attempt counter.\n\n| Column | Type | Constraints |\n|---|---|---|\n| `user_id` | `uuid` | FK → `users(id)` ON DELETE CASCADE |\n| `window_start` | `timestamptz` | start of the clock hour |\n| `count` | `integer` | NOT NULL, CHECK `count BETWEEN 1 AND 5` (INV-5; the 5 is proposed, Q7) |\n\n- PK `(user_id, window_start)`. Incremented by upsert. Old windows can be deleted at any time.\n\n> Decision call-out: there is no table or column for PDF bytes (D1).\n\n## 3. Backend\n\n### 3.1 Structure (proposed paths)\n\n| Path | Responsibility |\n|---|---|\n| `src/db/schema.ts`, `drizzle/` | Schema and migrations |\n| `src/lib/session.ts` | `getSessionUser()` seam over whatever auth is chosen |\n| `src/features/itinerary-export/service.ts` | `requestExport(userId, tripId)`: the only entry point; owns the sequence in §3.2 and all status writes |\n| `src/features/itinerary-export/snapshot.ts` | Loads trip + ordered items in one read as an `ItinerarySnapshot` |\n| `src/features/itinerary-export/pdf/` | `renderItineraryPdf(snapshot) → Buffer`; pure, no I/O besides bundled font files |\n| `src/features/itinerary-export/mailer.ts` | `Mailer` port and the provider adapter |\n| `src/app/api/trips/[tripId]/exports/route.ts` | POST handler: session, validation, error-to-status mapping |\n| `src/app/api/trips/[tripId]/exports/latest/route.ts` | GET handler |\n\n### 3.2 Export sequence\n\n1. Resolve the session user; load the trip scoped to that owner (INV-1); check `email_verified_at` (INV-3).\n2. Transaction A: mark this (user, trip)'s stale pending rows `failed/stale`; check then increment `export_quota` (INV-5); insert the `pending` row (INV-4). Commit. If any step fails the whole transaction rolls back, so a rejected request consumes no quota.\n3. Load the snapshot; reject if it has no items (Q6).\n4. Render the PDF; reject if larger than `MAX_PDF_BYTES`.\n5. Read `users.email` now (INV-2) and send through the `Mailer` with the export `id` as idempotency key.\n6. Transaction B: `transitionExport` to `sent` or `failed` (INV-6).\n\nSteps 3–6 run only after the pending row is committed, so every side effect has a durable record.\n\n### 3.3 API contract\n\nStatus codes and the error body shape `{ \"error\": { \"code\", \"message\" } }` are proposed.\n\n| Method · Path | Request | Success | Errors |\n|---|---|---|---|\n| `POST /api/trips/{tripId}/exports` | Session cookie. No body fields; unknown fields are rejected (INV-2). | `200 { \"export\": { \"id\", \"status\": \"sent\", \"finishedAt\" } }` | `400 invalid_request` · `401 unauthenticated` · `404 trip_not_found` (also when not the owner) · `409 email_not_verified` · `409 export_in_progress` · `422 itinerary_empty` · `422 pdf_too_large` · `429 quota_exceeded` + `Retry-After` · `500 render_failed` · `502 email_rejected` · `502 email_unavailable` · `503 unavailable` |\n| `GET /api/trips/{tripId}/exports/latest` | Session cookie | `200 { \"export\": { \"id\", \"status\", \"errorCode\", \"createdAt\", \"finishedAt\" } \\| null }` | `401` · `404 trip_not_found` |\n\nThe GET reports a stale pending row as `failed/stale` without writing; only the POST reaps.\n\n### 3.4 Failure paths\n\n| Component | What fails | What happens next | Row ends as |\n|---|---|---|---|\n| Session | No or invalid session | 401; nothing written | none |\n| Trip lookup | Missing or not owned | 404; nothing written | none |\n| Postgres | Unreachable before Transaction A commits | 503; nothing written | none |\n| Quota | Window count at limit | 429 with `Retry-After` = window end | none |\n| Insert | Pending row already exists (double click, second tab) | 409 `export_in_progress` | existing row untouched |\n| Insert | FK or trigger rejects after the app check passed | Treated as 404 / 409; logged as a backstop hit, since it means an app check has a bug | none |\n| Snapshot | No items | 422 | `failed / itinerary_empty` |\n| Renderer | Throws | 500; no email attempted | `failed / render_failed` |\n| Renderer | Output over `MAX_PDF_BYTES` (10 MB proposed; must not exceed the provider's attachment limit, to be verified) | 422; no email attempted | `failed / pdf_too_large` |\n| Mailer | Provider rejects (4xx) | 502; no automatic retry | `failed / email_rejected` |\n| Mailer | Timeout or 5xx | One in-request retry with the same idempotency key (proposed; only if the provider supports idempotency keys, to be verified), then 502 | `failed / email_unavailable` |\n| Transaction B | Outcome write fails after the email was accepted | Logged at error level with export id and provider message id; response is 503. The email was sent; a user retry may duplicate it (D4). | `pending`, then reaped as `failed / stale` |\n| Function | Timeout or crash mid-request | Client sees a network error | `pending`, then reaped as `failed / stale` |\n| After `sent` | Bounce or spam-foldering | Not detected in v1 (D4). UI copy tells the user to check spam and retry. | `sent` |\n\n**Stale reaping.** A `pending` row older than `STALE_AFTER` is dead. `STALE_AFTER` = 2 × the route's max duration (60 s max duration proposed; verify the hosting plan's limit, Q1). Reaping is lazy, in Transaction A of the next POST for the same (user, trip). No cron.\n\n## 4. Frontend\n\nOne client component on the trip page, `EmailItineraryButton` (proposed name), plus the trip page loading the latest export on render.\n\n| State | Entered when | UI |\n|---|---|---|\n| Idle | Default | Button \"Email me this itinerary\"; shows \"Last emailed <date>\" if the latest export is `sent` |\n| Unverified | Session user's email is unverified | Button disabled with a link to verify |\n| Sending | POST in flight, or latest export is a non-stale `pending` | Button disabled, progress indicator |\n| Sent | POST returned 200 | Confirmation naming the masked account email, with \"check spam\" hint |\n| Error | POST returned an error or the network failed | Message chosen by `error.code`; retry offered except for `quota_exceeded` (shows when to retry) and `email_not_verified` |\n\nOn a network failure the component refetches `exports/latest` before offering retry, so a request that actually succeeded is shown as sent.\n\n## 5. Execution phases\n\nEach phase merges on its own and leaves `main` working.\n\n| Phase | Delivers | User-visible |\n|---|---|---|\n| 0 Foundations | Scaffold, Postgres + migrations, prerequisite tables, `getSessionUser()` seam | No |\n| 1 PDF renderer | `ItinerarySnapshot`, `renderItineraryPdf`, fonts, golden tests | No |\n| 2 Export API | Feature tables and constraints, `Mailer`, `requestExport`, both routes, integration tests per invariant | No (API only) |\n| 3 UI | `EmailItineraryButton` and trip-page wiring | **Yes** |\n| 4 Launch hardening | Sending-domain DNS (SPF/DKIM), structured logs, one end-to-end run against the provider's test mode | No |\n\nTasks: [TODO_WORKFLOW.md](TODO_WORKFLOW.md).\n\n## 6. Non-functional requirements\n\n| Area | Requirement |\n|---|---|\n| Security | Ownership and recipient rules per INV-1…INV-3. Provider API key only in server env. Trip title is stripped of control characters and length-capped before use in the email subject and attachment filename. |\n| Abuse and cost | INV-4 and INV-5 bound provider spend and protect sender reputation. |\n| Privacy | PDFs are never stored (D1). Logs carry export id, user id, status, error code, and durations, never the email address or itinerary content. The email provider processes itinerary content; record it as a data processor. |\n| Performance | Target p95 under 5 s end to end for a typical itinerary (proposed; measure in Phase 4 and revisit D3 if missed). |\n| Runtime | Node runtime, not Edge, for both routes (D5). |\n| Text rendering | Embedded Unicode font; coverage per Q5. Characters outside coverage must be covered by a golden test so the gap is visible. |\n| Testing | Renderer: golden-snapshot tests. Each invariant: one test through the service and one that bypasses the service and proves the DB rejects the write. Mailer: faked at the port. |\n"
+              },
+              {
+                "name": "four-docs-created",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched ^(?=[\\s\\S]*SOURCE_OF_TRUTH\\.md)(?=[\\s\\S]*ARCHITECTURE_ROADMAP\\.md)(?=[\\s\\S]*TODO_WORKFLOW\\.md)(?=[\\s\\S]*CLAUDE\\.md)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-modular-set",
+                "passed": true,
+                "weight": 1,
+                "explanation": "docs/architecture/** absent as expected",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 1x (expected 1..∞)",
+                "withOnly": true,
+                "scored": false
+              }
+            ]
+          }
+        ],
+        "without": [
+          {
+            "score": 0.4,
+            "passed": false,
+            "turns": 3,
+            "costUsd": 0.07352410000000001,
+            "judgeCostUsd": 0.008022000000000008,
+            "durationSeconds": 30,
+            "startedAt": "2026-11-10T13:40:03.836Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-a2IzIu/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "blocking-questions",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "The repo is empty, so this feature has nothing to sit on yet: no trip schema, no auth, no app shell. Below is the design I'd start with, then the questions that could change it.\n\n## Proposed design (v1)\n\nGenerate the PDF synchronously on the server, on demand, and send it through a transactional email API. I would not add a queue, object storage or a headless browser at this stage.\n\n- **PDF rendering:** use `@react-pdf/renderer` in a Node-runtime route handler. It is pure JS, so it runs on serverless without bundling Chromium, and a text itinerary renders in well under a second. The cost is that the layout is a separate component tree, not your on-screen page.\n- **Shared core:** one function, `renderItineraryPdf(tripId, userId)`, loads the trip, checks ownership and returns a buffer. Both endpoints call it.\n- **Download:** `GET /api/trips/[id]/itinerary.pdf` returns the PDF directly.\n- **Email:** `POST /api/trips/[id]/itinerary/email` renders the PDF and sends it as an attachment through Resend (or Postmark or SES if you already have one).\n- **Recipient:** the email goes only to the signed-in user's account address and is never taken from the request body. That matches \"email it to themselves\" and stops the endpoint being used to send mail to arbitrary addresses.\n- **Rate limit:** a small per-user cap on the email endpoint, around 5 per hour. This can be a small `itinerary_exports` table in Postgres, which also gives you a send log. That is the only schema this feature adds.\n- **Timezones:** render times in each stop's local timezone, not the server's or the browser's. This is the one detail that is easy to get wrong.\n\nDeferred until there's a reason:\n\n| Deferred | Add it when |\n|---|---|\n| Background jobs | PDFs get slow (maps, photos) or sends need retries |\n| Stored PDFs in S3 | You need share links or attachments get too large |\n| Puppeteer | The PDF must mirror the web layout pixel for pixel |\n| Emailing other people | It's a product requirement; it then needs abuse controls |\n\n## Questions\n\n1. **Is the rest of the app also unbuilt?** If trips, itinerary items and auth don't exist yet, the first step is a minimal schema and auth, and the export comes second. If they exist in another repo, point me at the schema.\n2. **Where does it deploy?** The design above works on Vercel or a long-running Node server. Only a long-running server makes Puppeteer a reasonable option later.\n3. **Do you already have an email provider, ORM or auth library?** If not, I'd default to Resend, Drizzle and Auth.js.\n4. **What goes in the PDF?** I've assumed a text itinerary by day (times, places, notes, confirmation numbers). Maps or photos would add a lot of complexity.\n\nOnce you've answered, I can write this up as `docs/itinerary-export.md` and scaffold the app with the export as a first vertical slice. If you'd rather not wait, say so and I'll go ahead with the defaults above."
+              },
+              {
+                "name": "failure-paths-designed",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: case \"right-sized-new-feature\" grader focus file \"ARCHITECTURE_ROADMAP.md\": path \"ARCHITECTURE_ROADMAP.md\" does not exist",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "four-docs-created",
+                "passed": false,
+                "weight": 1,
+                "explanation": "pattern not found in files",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-modular-set",
+                "passed": true,
+                "weight": 1,
+                "explanation": "docs/architecture/** absent as expected",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.4,
+            "passed": false,
+            "turns": 2,
+            "costUsd": 0.0713554,
+            "judgeCostUsd": 0.011756000000000003,
+            "durationSeconds": 32,
+            "startedAt": "2026-11-10T13:40:07.932Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-uE7fjV/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "blocking-questions",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "The repo is empty (no commits), so here is the design I'd start from. It is deliberately small: two routes, one shared render function, no queue and no file storage.\n\n## Proposed design\n\n- **PDF generation:** use `@react-pdf/renderer`, with the itinerary laid out as a React component and rendered to a buffer on the server. It runs on serverless without headless Chrome; the trade-off is that the PDF layout is written separately from your web pages.\n- **Routes:**\n  - `GET /api/trips/[id]/itinerary.pdf` streams the PDF as a download.\n  - `POST /api/trips/[id]/itinerary/email` renders the same PDF and sends it as an attachment.\n- **Email:** Resend, unless you already have a provider. The message goes only to the signed-in user's account email, never to an address typed into the request, so the endpoint can't be used to send mail to strangers.\n- **Synchronous, no storage:** an itinerary PDF renders in well under a second or two, so the request does the work and returns. Nothing is saved to S3; the PDF is regenerated on demand.\n- **Postgres:** one small `itinerary_exports` table (user, trip, timestamp, status) to rate-limit emails per user and leave an audit trail. This is the only schema the feature adds.\n- **Authorization:** both routes check that the trip belongs to the session user.\n\nI'd only add a background job or stored PDFs if itineraries get large enough (maps, many images) to hit request timeouts.\n\n## Questions before I write code\n\n1. **Does the rest of the app exist somewhere?** If auth, the trips schema and an ORM already live in another repo, I'll match them. If this repo is the whole app, I'd scaffold Next.js App Router, Drizzle and Auth.js with a minimal trips/itinerary-items schema first.\n2. **Where does it deploy?** Vercel or similar serverless confirms the `@react-pdf/renderer` choice. On a container host, rendering your real HTML pages with Playwright becomes an option.\n3. **Do you already have an email provider?** If you use SES, Postmark or SendGrid, I'll use that instead of Resend.\n\nOnce you answer these, I can write this up as `docs/itinerary-export.md` or go straight to scaffolding — which would you prefer?"
+              },
+              {
+                "name": "failure-paths-designed",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: case \"right-sized-new-feature\" grader focus file \"ARCHITECTURE_ROADMAP.md\": path \"ARCHITECTURE_ROADMAP.md\" does not exist",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "four-docs-created",
+                "passed": false,
+                "weight": 1,
+                "explanation": "pattern not found in files",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-modular-set",
+                "passed": true,
+                "weight": 1,
+                "explanation": "docs/architecture/** absent as expected",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 1,
+        "passRate": 1,
+        "scoreWithout": 0.4,
+        "passRateWithout": 0,
+        "delta": 0.6
+      }
+    },
+    {
+      "name": "small-fix-boundary",
+      "dir": "evals-ci/architect/small-fix-boundary",
+      "source": "mixed",
+      "promptMarkdown": "We already have SOURCE_OF_TRUTH.md and ARCHITECTURE_ROADMAP.md for our Cloudflare Workers auth service (Hono + D1). Product wants a rate limit of 100 requests/minute per IP on POST /login before we ship password reset next sprint. Can you spec that out?",
+      "runsPerCase": 3,
+      "timeoutSeconds": 900,
+      "maxTurns": 40,
+      "graders": [
+        {
+          "name": "no-invention",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the response does not state invented specifics — a specific\nrate-limiting library, a counter schema, an exact HTTP status/header\nconvention — as settled fact when they were not given and are not already in\nthe docs. Naming a concrete option while flagging it as an assumption or open\nquestion is fine.\n\nFAIL if it presents invented implementation details as decided fact with no\nflag that they are an assumption.",
+          "config": {
+            "criteria": "PASS if the response does not state invented specifics — a specific\nrate-limiting library, a counter schema, an exact HTTP status/header\nconvention — as settled fact when they were not given and are not already in\nthe docs. Naming a concrete option while flagging it as an assumption or open\nquestion is fine.\n\nFAIL if it presents invented implementation details as decided fact with no\nflag that they are an assumption.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "no-subagents",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "skill-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?architect\""
+          }
+        },
+        {
+          "name": "targeted-addition",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the response treats this as a targeted addition to the auth service's\nexisting design docs: it adds the new rate-limiting invariant (100\nrequests/minute per IP on POST /login), says where it lives (e.g. wired into\nSOURCE_OF_TRUTH.md's invariants table and ARCHITECTURE_ROADMAP.md), and does\nthis without re-authoring or regenerating the whole SOURCE_OF_TRUTH.md /\nARCHITECTURE_ROADMAP.md / TODO_WORKFLOW.md / CLAUDE.md set from scratch. It\nshould build on the existing login/logout/session model and D1 schema rather\nthan re-deriving unrelated sections.\n\nFAIL if it re-authors the whole doc set for a one-endpoint change, ignores the\ndocs that already exist, or jumps straight to implementation code instead of\na design addition.",
+          "config": {
+            "criteria": "PASS if the response treats this as a targeted addition to the auth service's\nexisting design docs: it adds the new rate-limiting invariant (100\nrequests/minute per IP on POST /login), says where it lives (e.g. wired into\nSOURCE_OF_TRUTH.md's invariants table and ARCHITECTURE_ROADMAP.md), and does\nthis without re-authoring or regenerating the whole SOURCE_OF_TRUTH.md /\nARCHITECTURE_ROADMAP.md / TODO_WORKFLOW.md / CLAUDE.md set from scratch. It\nshould build on the existing login/logout/session model and D1 schema rather\nthan re-deriving unrelated sections.\n\nFAIL if it re-authors the whole doc set for a one-endpoint change, ignores the\ndocs that already exist, or jumps straight to implementation code instead of\na design addition.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "two-boundary-enforcement",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if SOURCE_OF_TRUTH.md states the new login rate-limit invariant and names\ntwo places it is enforced, e.g. a Hono middleware check AND a platform or\nstorage layer behind it (a Workers Rate Limiting binding, D1, KV, a Durable\nObject). Both must be named, not just \"rate limiting is applied\".\n\nFAIL if the invariant is missing, or only one enforcement point is named.",
+          "config": {
+            "criteria": "PASS if SOURCE_OF_TRUTH.md states the new login rate-limit invariant and names\ntwo places it is enforced, e.g. a Hono middleware check AND a platform or\nstorage layer behind it (a Workers Rate Limiting binding, D1, KV, a Durable\nObject). Both must be named, not just \"rate limiting is applied\".\n\nFAIL if the invariant is missing, or only one enforcement point is named.",
+            "focus": {
+              "source": "file",
+              "path": "SOURCE_OF_TRUTH.md"
+            }
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 12,
+            "costUsd": 0.30852840000000004,
+            "judgeCostUsd": 0.042304,
+            "durationSeconds": 154,
+            "startedAt": "2026-11-10T13:40:33.482Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-DD8UkW/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-invention",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "The login rate limit is specced into the existing docs: `SOURCE_OF_TRUTH.md`, `ARCHITECTURE_ROADMAP.md` (now v0.4) and `TODO_WORKFLOW.md` are edited in the working tree, with nothing committed and no code written. I could not reach Cloudflare's docs from this sandbox, so the platform details are from memory and marked unverified in the roadmap; task 3 starts by checking them.\n\n## What the spec says\n\n- **Invariant:** POST /login serves at most 100 requests per client IP per 60 s. Requests over the limit get `429` before body parsing, D1 or scrypt.\n- **Client IP:** the `CF-Connecting-IP` header only, never `X-Forwarded-For`.\n- **What counts:** every POST /login request, whatever the outcome.\n- **First enforcement point:** a Hono middleware, first in the chain on POST /login, calling the Workers Rate Limiting binding. This adds no D1 tables or writes.\n- **Second enforcement point:** a Cloudflare WAF rate limiting rule on the zone with the same threshold.\n- **Rollout:** ship in shadow mode (logs only), review the logs, switch to enforce, then add the WAF rule. Each step rolls back on its own.\n- **Ordering:** password reset does not ship until enforcement is on. The middleware is parameterised so the reset endpoints can mount their own limits.\n\n## One blocking question\n\nWho calls POST /login: the user's browser directly, or the main app's backend? If it is the backend, every user shares the backend's IP and the limit becomes 100/minute for everyone. I assumed the browser calls it directly.\n\n## Decisions to confirm\n\nAll of these are my proposals, marked `(proposed)` in the docs:\n\n| Decision | What I proposed | Alternative |\n|---|---|---|\n| Counter store | Workers Rate Limiting binding | D1 table (the flood becomes a D1 write flood) or a Durable Object (exact, but an extra round trip) |\n| Precision | Approximate; a brief overshoot above 100 is tolerated | Exact global count, which needs a Durable Object |\n| Limiter outage | Fail open, with the WAF rule as backstop | Fail closed, so a limiter outage is a login outage |\n| IPv6 | Key on the /64 prefix | Full address, which one host can rotate freely |\n| Over-limit response | `429`, `Retry-After: 60`, body `{ \"error\": \"rate_limited\" }` | Match whatever error shape the service already uses |\n| WAF rule | 100 per 60 s on the zone, `workers.dev` route disabled | If the plan does not allow a 60 s period, 100 per 10 s as a looser backstop |\n| Logging | Hash of the key, never the raw IP | Raw IP |\n\n## Worth telling product\n\n100/minute per IP stops floods and caps scrypt cost, but it is not brute-force protection: one IP still gets 144,000 guesses a day, and a distributed attack is not slowed at all. I recorded per-account lockout as a non-goal; say so if product expects this limit to cover it.\n\nI left `CLAUDE.md` alone. It has no rule requiring docs to be updated before code; say if you want that added."
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 1x (expected 1..∞)",
+                "withOnly": true,
+                "scored": false
+              },
+              {
+                "name": "targeted-addition",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "The login rate limit is specced into the existing docs: `SOURCE_OF_TRUTH.md`, `ARCHITECTURE_ROADMAP.md` (now v0.4) and `TODO_WORKFLOW.md` are edited in the working tree, with nothing committed and no code written. I could not reach Cloudflare's docs from this sandbox, so the platform details are from memory and marked unverified in the roadmap; task 3 starts by checking them.\n\n## What the spec says\n\n- **Invariant:** POST /login serves at most 100 requests per client IP per 60 s. Requests over the limit get `429` before body parsing, D1 or scrypt.\n- **Client IP:** the `CF-Connecting-IP` header only, never `X-Forwarded-For`.\n- **What counts:** every POST /login request, whatever the outcome.\n- **First enforcement point:** a Hono middleware, first in the chain on POST /login, calling the Workers Rate Limiting binding. This adds no D1 tables or writes.\n- **Second enforcement point:** a Cloudflare WAF rate limiting rule on the zone with the same threshold.\n- **Rollout:** ship in shadow mode (logs only), review the logs, switch to enforce, then add the WAF rule. Each step rolls back on its own.\n- **Ordering:** password reset does not ship until enforcement is on. The middleware is parameterised so the reset endpoints can mount their own limits.\n\n## One blocking question\n\nWho calls POST /login: the user's browser directly, or the main app's backend? If it is the backend, every user shares the backend's IP and the limit becomes 100/minute for everyone. I assumed the browser calls it directly.\n\n## Decisions to confirm\n\nAll of these are my proposals, marked `(proposed)` in the docs:\n\n| Decision | What I proposed | Alternative |\n|---|---|---|\n| Counter store | Workers Rate Limiting binding | D1 table (the flood becomes a D1 write flood) or a Durable Object (exact, but an extra round trip) |\n| Precision | Approximate; a brief overshoot above 100 is tolerated | Exact global count, which needs a Durable Object |\n| Limiter outage | Fail open, with the WAF rule as backstop | Fail closed, so a limiter outage is a login outage |\n| IPv6 | Key on the /64 prefix | Full address, which one host can rotate freely |\n| Over-limit response | `429`, `Retry-After: 60`, body `{ \"error\": \"rate_limited\" }` | Match whatever error shape the service already uses |\n| WAF rule | 100 per 60 s on the zone, `workers.dev` route disabled | If the plan does not allow a 60 s period, 100 per 10 s as a looser backstop |\n| Logging | Hash of the key, never the raw IP | Raw IP |\n\n## Worth telling product\n\n100/minute per IP stops floods and caps scrypt cost, but it is not brute-force protection: one IP still gets 144,000 guesses a day, and a distributed attack is not slowed at all. I recorded per-account lockout as a non-goal; say so if product expects this limit to cover it.\n\nI left `CLAUDE.md` alone. It has no rule requiring docs to be updated before code; say if you want that added."
+              },
+              {
+                "name": "two-boundary-enforcement",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "# Source of Truth — Auth Service\n\nRelated: [ARCHITECTURE_ROADMAP.md](ARCHITECTURE_ROADMAP.md) · [TODO_WORKFLOW.md](TODO_WORKFLOW.md) · [CLAUDE.md](CLAUDE.md)\n\n## Scope\nCloudflare Workers auth service (Hono + D1). Issues and validates session\ntokens for POST /login, POST /logout, GET /session.\n\n### Non-goals\n- Per-account lockout or credential-stuffing defence. Invariant 3 caps request\n  volume per IP; it does not stop slow or distributed guessing (100/min is\n  144,000 attempts/day from one IP).\n- Rate limits on any endpoint other than POST /login. Password reset endpoints\n  get their own limits specced with that flow ([TODO #2](TODO_WORKFLOW.md)).\n\n## Domain model\n- `users` (D1): id, email, password_hash, created_at\n- `sessions` (D1): id, user_id, token, expires_at\n- Login rate-limit counters: **not in D1.** Held by the platform rate limiter,\n  keyed by client IP (see Decisions). No schema change.\n\n## Invariants\n| # | Invariant | Enforced at |\n|---|---|---|\n| 1 | Password hashes use scrypt, never stored plaintext | app layer (hash on write) + DB column has no plaintext default |\n| 2 | A session token is single-use per refresh | app layer (rotate on use) + DB unique index on token |\n| 3 | POST /login serves at most 100 requests per client IP per 60 s; requests over the limit get `429` and never reach body parsing, D1, or scrypt | app layer (Hono middleware on POST /login calling the Workers Rate Limiting binding, first in the chain — [roadmap §3.1](ARCHITECTURE_ROADMAP.md#31-login-rate-limiting)) + platform layer (Cloudflare WAF rate limiting rule on the zone, POST /login, 100 per 60 s per IP) `(proposed)` — open: does the plan allow a 60 s period, and is the service served only from a zone route ([roadmap §7](ARCHITECTURE_ROADMAP.md#7-open-questions) Q2, Q3) |\n\nInvariant 3 terms:\n- **Client IP** = the `CF-Connecting-IP` request header. Never `X-Forwarded-For`\n  or any other client-settable header.\n- **Counts** every POST /login request regardless of outcome (success, bad\n  credentials, malformed body).\n- **Approximate by design** `(proposed)`: the limiter counts per Cloudflare\n  location and is eventually consistent, so a short overshoot above 100 is\n  tolerated. An exact global count is a different design (see Decisions).\n\n## Decisions\n- **Decision:** D1 over KV for sessions. **Why:** need a relational lookup by user_id for \"log out everywhere\". **Alternative rejected:** KV (no secondary index).\n- **Decision `(proposed)`:** Login rate-limit counters live in the Workers Rate Limiting binding. **Why:** no extra network hop on the login path (p95 < 150 ms budget), no storage writes that an attacker can drive, 60 s period is supported natively. **Alternatives rejected:** D1 counter table (one write per login request to a single-primary database — the flood being limited becomes a D1 write flood); Durable Object counter (exact and global, but an extra round trip and per-request cost for precision product did not ask for); KV (eventually consistent, per-key write limits).\n  > Do not move login rate-limit counters into D1 without an explicit decision.\n- **Decision `(proposed)`:** The limiter fails open. **Why:** if the limiter errors, blocking would turn a limiter outage into a full login outage; the WAF rule is the backstop while it is down. **Alternative rejected:** fail closed (login availability depends on the limiter). Failure paths: [roadmap §3.2](ARCHITECTURE_ROADMAP.md#32-failure-paths).\n"
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 14,
+            "costUsd": 0.31942159999999997,
+            "judgeCostUsd": 0.048533999999999994,
+            "durationSeconds": 153,
+            "startedAt": "2026-11-10T13:40:39.479Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-rWjrVW/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-invention",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "The rate limit is specced into the existing docs as a new invariant, a roadmap section and a phase that gates password reset. Nothing is committed and no code is written. Two caveats: this repo holds only the docs, so nothing was checked against the actual Worker code, and Cloudflare's docs were blocked from this sandbox, so the platform details are from memory.\n\n## What the spec says\n\n- **Limit:** 100 requests per 60 seconds per IP on POST /login only, counting every request whatever its outcome. Over the limit returns 429 and does no D1 query and no scrypt work.\n- **App-layer enforcement:** a Hono middleware, first in the POST /login chain, checks a Workers Rate Limiting binding keyed on `CF-Connecting-IP`.\n- **Second boundary:** a Cloudflare WAF rate limiting rule on the zone at the same threshold. That task is marked blocked until question 1 below is answered.\n- **Approximate count:** as I recall, the binding counts per Cloudflare location and is eventually consistent, so 100/min is not an exact global count. An exact count would mean a Durable Object per IP, at an extra hop and cost per login.\n- **Sequencing:** a new Phase 1.5 ships the limit on its own, and password reset is gated on it being live in production.\n\nThe roadmap also covers failure paths, acceptance criteria A1–A7, and the list of Cloudflare facts to verify before implementation (TODO task 3).\n\n## Blocking questions\n\n1. **Is the service on a custom domain, and on which Cloudflare plan?** The WAF rule needs a zone and a plan that allows a 60-second period. Without an answer, only the app-layer limit ships.\n2. **Who calls POST /login: the browser directly, or the main app's backend?** If the backend proxies it, every user shares that backend's IP and one 100/min bucket. I assumed the browser calls it directly.\n3. **Do the password reset endpoints need their own limits before they ship?** The requirement names only POST /login, so I left them out of scope and made it a required item for the reset design.\n\n## Decisions to confirm\n\nThese are my choices, marked `(proposed)` in the docs:\n\n- **Counter store:** the Workers Rate Limiting binding, rather than a D1 table, KV or a Durable Object.\n- **Fail-open:** if the limiter itself errors, the login is allowed and the error is logged.\n- **IPv6 keying:** IPv6 clients are keyed by /64 prefix so one subscriber can't rotate addresses for fresh buckets.\n- **429 response:** `Retry-After: 60` and body `{ \"error\": \"rate_limited\" }`; the body should match your existing error shape, which I couldn't see.\n- **Missing `CF-Connecting-IP`:** such requests share one `login:unknown` bucket.\n- **Logging:** raw IPs are not logged.\n- **Names:** binding `LOGIN_RATE_LIMITER`.\n\nAt 100/min per IP this is an abuse and cost backstop, not credential-stuffing protection. Per-account lockout is listed as a non-goal; say so if product expects the limit to cover that.\n\nI left `CLAUDE.md` untouched. It has no rule requiring docs to be updated before code; I can add one if you want it.\n\nChanges are in `SOURCE_OF_TRUTH.md`, `ARCHITECTURE_ROADMAP.md` (§3.1 and §7 are the new parts) and `TODO_WORKFLOW.md`."
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 1x (expected 1..∞)",
+                "withOnly": true,
+                "scored": false
+              },
+              {
+                "name": "targeted-addition",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "The rate limit is specced into the existing docs as a new invariant, a roadmap section and a phase that gates password reset. Nothing is committed and no code is written. Two caveats: this repo holds only the docs, so nothing was checked against the actual Worker code, and Cloudflare's docs were blocked from this sandbox, so the platform details are from memory.\n\n## What the spec says\n\n- **Limit:** 100 requests per 60 seconds per IP on POST /login only, counting every request whatever its outcome. Over the limit returns 429 and does no D1 query and no scrypt work.\n- **App-layer enforcement:** a Hono middleware, first in the POST /login chain, checks a Workers Rate Limiting binding keyed on `CF-Connecting-IP`.\n- **Second boundary:** a Cloudflare WAF rate limiting rule on the zone at the same threshold. That task is marked blocked until question 1 below is answered.\n- **Approximate count:** as I recall, the binding counts per Cloudflare location and is eventually consistent, so 100/min is not an exact global count. An exact count would mean a Durable Object per IP, at an extra hop and cost per login.\n- **Sequencing:** a new Phase 1.5 ships the limit on its own, and password reset is gated on it being live in production.\n\nThe roadmap also covers failure paths, acceptance criteria A1–A7, and the list of Cloudflare facts to verify before implementation (TODO task 3).\n\n## Blocking questions\n\n1. **Is the service on a custom domain, and on which Cloudflare plan?** The WAF rule needs a zone and a plan that allows a 60-second period. Without an answer, only the app-layer limit ships.\n2. **Who calls POST /login: the browser directly, or the main app's backend?** If the backend proxies it, every user shares that backend's IP and one 100/min bucket. I assumed the browser calls it directly.\n3. **Do the password reset endpoints need their own limits before they ship?** The requirement names only POST /login, so I left them out of scope and made it a required item for the reset design.\n\n## Decisions to confirm\n\nThese are my choices, marked `(proposed)` in the docs:\n\n- **Counter store:** the Workers Rate Limiting binding, rather than a D1 table, KV or a Durable Object.\n- **Fail-open:** if the limiter itself errors, the login is allowed and the error is logged.\n- **IPv6 keying:** IPv6 clients are keyed by /64 prefix so one subscriber can't rotate addresses for fresh buckets.\n- **429 response:** `Retry-After: 60` and body `{ \"error\": \"rate_limited\" }`; the body should match your existing error shape, which I couldn't see.\n- **Missing `CF-Connecting-IP`:** such requests share one `login:unknown` bucket.\n- **Logging:** raw IPs are not logged.\n- **Names:** binding `LOGIN_RATE_LIMITER`.\n\nAt 100/min per IP this is an abuse and cost backstop, not credential-stuffing protection. Per-account lockout is listed as a non-goal; say so if product expects the limit to cover that.\n\nI left `CLAUDE.md` untouched. It has no rule requiring docs to be updated before code; I can add one if you want it.\n\nChanges are in `SOURCE_OF_TRUTH.md`, `ARCHITECTURE_ROADMAP.md` (§3.1 and §7 are the new parts) and `TODO_WORKFLOW.md`."
+              },
+              {
+                "name": "two-boundary-enforcement",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "# Source of Truth — Auth Service\n\nRelated: [ARCHITECTURE_ROADMAP.md](ARCHITECTURE_ROADMAP.md) · [TODO_WORKFLOW.md](TODO_WORKFLOW.md) · [CLAUDE.md](CLAUDE.md)\n\n## Scope\nCloudflare Workers auth service (Hono + D1). Issues and validates session\ntokens for POST /login, POST /logout, GET /session. POST /login is rate\nlimited per client IP (invariant 3).\n\n### Non-goals\n- Per-account lockout or throttling. The per-IP limit is an abuse and cost\n  backstop, not credential-stuffing protection: one IP still gets 100 guesses a\n  minute, and a distributed attacker is not slowed at all.\n- Rate limits on any endpoint other than POST /login. Password reset endpoints\n  get their own limits in the password reset design (see\n  [open question OQ-3](ARCHITECTURE_ROADMAP.md#7-open-questions)).\n\n## Domain model\n- `users` (D1): id, email, password_hash, created_at\n- `sessions` (D1): id, user_id, token, expires_at\n\nRate-limit counters are not domain data and do not live in D1. They are\nephemeral state held by the platform limiter (see Decisions).\n\n## Invariants\n| # | Invariant | Enforced at |\n|---|---|---|\n| 1 | Password hashes use scrypt, never stored plaintext | app layer (hash on write) + DB column has no plaintext default |\n| 2 | A session token is single-use per refresh | app layer (rotate on use) + DB unique index on token |\n| 3 | POST /login accepts at most 100 requests per client IP per 60 seconds, counting every request whatever its outcome. A request over the limit gets HTTP 429 and causes no D1 query and no scrypt work | app layer (Hono middleware, first in the POST /login chain, checks a Workers Rate Limiting binding keyed by client IP) + platform (Cloudflare WAF rate limiting rule on the zone matching POST /login at the same threshold) `(proposed)` — needs a custom domain and a plan that allows a 60-second period, see [OQ-1](ARCHITECTURE_ROADMAP.md#7-open-questions) |\n\n## Decisions\n- **Decision:** D1 over KV for sessions. **Why:** need a relational lookup by user_id for \"log out everywhere\". **Alternative rejected:** KV (no secondary index).\n- **Decision:** The limit is 100 requests / 60 s per IP on POST /login, and all requests count, not only failed logins. **Why:** product requirement, stated in requests. **Alternative rejected:** counting failures only (different requirement; needs the handler to run before the count is known).\n- **Decision `(proposed)`:** Counters live in the Workers Rate Limiting binding. **Why:** no D1 write on the login hot path, no new infrastructure, check is local to the Cloudflare location serving the request. **Accepted trade-off:** counts are kept per Cloudflare location and are eventually consistent, so the limit is approximate, not an exact global count. **Alternatives rejected:** D1 counter table (one write per login attempt on a single-primary database, so attack traffic becomes database load); KV (eventually consistent, not built for per-request counters); Durable Object per IP (exact and global, but an extra hop and extra cost per login — the fallback if exactness becomes a requirement, [OQ-4](ARCHITECTURE_ROADMAP.md#7-open-questions)).\n  > Do not move rate-limit counters into D1 without an explicit decision.\n- **Decision:** Client IP is read from `CF-Connecting-IP` only. **Why:** Cloudflare sets it at the edge; `X-Forwarded-For` is client-controlled. **Alternative rejected:** `X-Forwarded-For`.\n  > Do not key the limiter on `X-Forwarded-For` or any other client-supplied header.\n- **Decision `(proposed)`:** IPv6 clients are keyed by their /64 prefix, IPv4 by full address. **Why:** a single IPv6 subscriber controls a whole /64 and could rotate addresses to get a fresh bucket each time. **Alternative rejected:** full IPv6 address.\n- **Decision `(proposed)`:** If the limiter itself errors, the request is allowed (fail-open) and the error is logged. **Why:** a limiter outage should not become a login outage; the WAF rule is the boundary behind it. **Alternative rejected:** fail-closed (limiter fault locks every user out).\n"
+              }
+            ]
+          }
+        ],
+        "without": [
+          {
+            "score": 0.75,
+            "passed": false,
+            "turns": 14,
+            "costUsd": 0.3060891999999999,
+            "judgeCostUsd": 0.11949599999999994,
+            "durationSeconds": 123,
+            "startedAt": "2026-11-10T13:43:07.285Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-eCW2Hn/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-invention",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: PASS FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  false,
+                  false
+                ],
+                "evidence": "The rate limit is specced across your three docs, uncommitted. The repo has no code, and I couldn't reach Cloudflare's docs from this sandbox, so the wrangler snippet and the binding's behaviour are from memory and need a check against the current docs.\n\n## What the spec says\n\n- **Mechanism:** a Hono middleware on `POST /login` only, first in the chain, backed by the Workers Rate Limiting binding (limit 100, period 60). It adds no D1 write or network hop, so the p95 < 150ms target is not at risk.\n- **Key:** `CF-Connecting-IP`, never `X-Forwarded-For`. IPv6 is keyed by /64 prefix, since one subscriber controls a whole /64.\n- **What counts:** every request, including successful logins and malformed bodies. The check runs before body parsing, D1 and scrypt.\n- **Over limit:** `429`, `Retry-After: 60`, body `{\"error\":\"rate_limited\"}`. The binding only reports pass/fail, so there are no remaining-count headers. The body shape is my assumption — match it to your existing error format.\n- **Failure mode:** fail open and log if the binding errors.\n\n## Where it landed\n\n- `SOURCE_OF_TRUTH.md`: invariant 3, plus five decisions with the rejected alternatives (D1 counter, KV, Durable Objects, WAF rule).\n- `ARCHITECTURE_ROADMAP.md`: new §3.1 with the full behaviour and seven acceptance checks, a tech stack row, the `/login` contract note, the Phase 2 gate, and the latency requirement. I bumped the version to 0.4.\n- `TODO_WORKFLOW.md`: task 3, marked as required before task 2 ships.\n\n## Things to raise with Product\n\n1. **The limit is approximate.** The binding counts per Cloudflare location and is eventually consistent, so brief overshoots past 100 are possible. If they need an exact count, that means Durable Objects, with an extra hop and cost per attempt.\n2. **This is a flood guard, not brute-force protection.** At 100/min, one IP still gets 144,000 password guesses a day, and credential stuffing rotates IPs anyway. Per-account throttling is listed as out of scope.\n3. **Password reset needs its own limits.** Those endpoints send email, so they want much stricter limits, probably per email address as well as per IP. The middleware is specced as a factory so they can reuse it.\n\n## Decision for you\n\nI rejected a Cloudflare WAF rate limiting rule in favour of the binding, because the WAF rule lives outside the repo, depends on your plan, and can't be covered by `npm test`. It does block requests before the Worker is invoked at all and needs no code, so if your plan supports a 60-second window you may prefer it. Say so and I'll flip the spec."
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "targeted-addition",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "The rate limit is specced across your three docs, uncommitted. The repo has no code, and I couldn't reach Cloudflare's docs from this sandbox, so the wrangler snippet and the binding's behaviour are from memory and need a check against the current docs.\n\n## What the spec says\n\n- **Mechanism:** a Hono middleware on `POST /login` only, first in the chain, backed by the Workers Rate Limiting binding (limit 100, period 60). It adds no D1 write or network hop, so the p95 < 150ms target is not at risk.\n- **Key:** `CF-Connecting-IP`, never `X-Forwarded-For`. IPv6 is keyed by /64 prefix, since one subscriber controls a whole /64.\n- **What counts:** every request, including successful logins and malformed bodies. The check runs before body parsing, D1 and scrypt.\n- **Over limit:** `429`, `Retry-After: 60`, body `{\"error\":\"rate_limited\"}`. The binding only reports pass/fail, so there are no remaining-count headers. The body shape is my assumption — match it to your existing error format.\n- **Failure mode:** fail open and log if the binding errors.\n\n## Where it landed\n\n- `SOURCE_OF_TRUTH.md`: invariant 3, plus five decisions with the rejected alternatives (D1 counter, KV, Durable Objects, WAF rule).\n- `ARCHITECTURE_ROADMAP.md`: new §3.1 with the full behaviour and seven acceptance checks, a tech stack row, the `/login` contract note, the Phase 2 gate, and the latency requirement. I bumped the version to 0.4.\n- `TODO_WORKFLOW.md`: task 3, marked as required before task 2 ships.\n\n## Things to raise with Product\n\n1. **The limit is approximate.** The binding counts per Cloudflare location and is eventually consistent, so brief overshoots past 100 are possible. If they need an exact count, that means Durable Objects, with an extra hop and cost per attempt.\n2. **This is a flood guard, not brute-force protection.** At 100/min, one IP still gets 144,000 password guesses a day, and credential stuffing rotates IPs anyway. Per-account throttling is listed as out of scope.\n3. **Password reset needs its own limits.** Those endpoints send email, so they want much stricter limits, probably per email address as well as per IP. The middleware is specced as a factory so they can reuse it.\n\n## Decision for you\n\nI rejected a Cloudflare WAF rate limiting rule in favour of the binding, because the WAF rule lives outside the repo, depends on your plan, and can't be covered by `npm test`. It does block requests before the Worker is invoked at all and needs no code, so if your plan supports a 60-second window you may prefer it. Say so and I'll flip the spec."
+              },
+              {
+                "name": "two-boundary-enforcement",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "# Source of Truth — Auth Service\n\n## Scope\nCloudflare Workers auth service (Hono + D1). Issues and validates session\ntokens for POST /login, POST /logout, GET /session.\n\n## Domain model\n- `users` (D1): id, email, password_hash, created_at\n- `sessions` (D1): id, user_id, token, expires_at\n\n## Invariants\n| # | Invariant | Enforced at |\n|---|---|---|\n| 1 | Password hashes use scrypt, never stored plaintext | app layer (hash on write) + DB column has no plaintext default |\n| 2 | A session token is single-use per refresh | app layer (rotate on use) + DB unique index on token |\n| 3 | POST /login accepts at most 100 requests per 60s per client IP; excess requests get 429 before any body parsing, D1 access, or scrypt work | app layer (Hono middleware, first in the route chain) + Workers Rate Limiting binding (counter) |\n\n## Decisions\n- **Decision:** D1 over KV for sessions. **Why:** need a relational lookup by user_id for \"log out everywhere\". **Alternative rejected:** KV (no secondary index).\n- **Decision:** Workers Rate Limiting binding for the /login counter. **Why:** counter is local to the Worker's location, so no network hop or D1 write on the login hot path (p95 < 150ms), and the limiter stays cheap under the flood it is absorbing. **Alternatives rejected:** D1 counter table (a write per attempt; attack load lands on the DB); KV (eventually consistent, 1 write/s per key); Durable Objects (exact, but an extra hop and cost per attempt); WAF rate limiting rule (config lives outside the repo, plan-dependent, not covered by `npm test`).\n- **Decision:** The 100/min limit is approximate. **Why:** the binding counts per Cloudflare location and is eventually consistent, so short overshoots are possible. Acceptable for a flood guard; revisit Durable Objects if an exact count is ever required.\n- **Decision:** Client IP is `CF-Connecting-IP`; IPv6 is keyed by /64 prefix. **Why:** the header is set by Cloudflare and cannot be forged by the client; one IPv6 subscriber controls a whole /64, so per-address keys would be trivially bypassed. **Alternative rejected:** `X-Forwarded-For` (client-controlled).\n- **Decision:** Every POST /login request counts, not only failed logins. **Why:** matches the product requirement as stated and lets the check run before credentials are read.\n- **Decision:** The limiter fails open. **Why:** if the binding errors, blocking all logins is worse than briefly losing the limit. Errors are logged.\n"
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 13,
+            "costUsd": 0.2428528,
+            "judgeCostUsd": 0.07278800000000002,
+            "durationSeconds": 103,
+            "startedAt": "2026-11-10T13:43:12.690Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-h9RMg2/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-invention",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "The spec is written into the three existing docs, uncommitted. This repo holds only the docs, so nothing was checked against the service code.\n\nThe design is a Hono middleware on `POST /login` only, backed by Cloudflare's Workers Rate Limiting binding at 100 requests per 60 seconds, keyed on the client IP. It runs before body parsing, scrypt and D1, so a rejected request costs almost nothing. Rejections return `429` with `Retry-After: 60`.\n\nWhat went where:\n- **`ARCHITECTURE_ROADMAP.md`**: new §3.1 with the full spec (key derivation, response, failure mode, logging, wrangler config, six acceptance checks), plus a note on the `/login` row and in §5 and §6.\n- **`SOURCE_OF_TRUTH.md`**: invariant 3 and two decisions (binding over D1 / Durable Objects / WAF rule; fail open).\n- **`TODO_WORKFLOW.md`**: task 3, marked as must ship before task 2.\n\nThings I chose that product or Alon should confirm:\n- **The limit is approximate, not exact.** The binding counts per Cloudflare location and is eventually consistent, so a normal client sees 100/min, but one spread across locations can exceed it. An exact global count would need Durable Objects, at the cost of an extra hop on every login; I rejected that as not worth it for an abuse guard.\n- **IPv6 is keyed on the /64 prefix, not the full address.** Otherwise one client with a /64 has effectively unlimited keys. This is slightly broader than a literal reading of \"per IP\".\n- **The limiter fails open.** If the binding errors, logins go through and the error is logged, rather than locking everyone out.\n- **The 429 body is `{\"error\":\"rate_limited\"}`.** That is a placeholder; it should match whatever error envelope the service already uses.\n\nTwo things the spec does not cover:\n- **Password guessing:** 100/min per IP stops volumetric abuse, but it still allows about 144,000 guesses a day per IP and does nothing against attempts on one account from many IPs. A per-account limit on failed logins would be a separate task.\n- **Password reset endpoints:** these are not limited, since the request was `/login` only. The middleware is specced as a factory so the reset endpoints can reuse it with their own limit; decide that as part of task 2.\n\nThe wrangler snippet uses the `ratelimits` config key, which needs a recent Wrangler 4; I wrote that from memory, so check it against your Wrangler version. I left the roadmap version at 0.3."
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "targeted-addition",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "The spec is written into the three existing docs, uncommitted. This repo holds only the docs, so nothing was checked against the service code.\n\nThe design is a Hono middleware on `POST /login` only, backed by Cloudflare's Workers Rate Limiting binding at 100 requests per 60 seconds, keyed on the client IP. It runs before body parsing, scrypt and D1, so a rejected request costs almost nothing. Rejections return `429` with `Retry-After: 60`.\n\nWhat went where:\n- **`ARCHITECTURE_ROADMAP.md`**: new §3.1 with the full spec (key derivation, response, failure mode, logging, wrangler config, six acceptance checks), plus a note on the `/login` row and in §5 and §6.\n- **`SOURCE_OF_TRUTH.md`**: invariant 3 and two decisions (binding over D1 / Durable Objects / WAF rule; fail open).\n- **`TODO_WORKFLOW.md`**: task 3, marked as must ship before task 2.\n\nThings I chose that product or Alon should confirm:\n- **The limit is approximate, not exact.** The binding counts per Cloudflare location and is eventually consistent, so a normal client sees 100/min, but one spread across locations can exceed it. An exact global count would need Durable Objects, at the cost of an extra hop on every login; I rejected that as not worth it for an abuse guard.\n- **IPv6 is keyed on the /64 prefix, not the full address.** Otherwise one client with a /64 has effectively unlimited keys. This is slightly broader than a literal reading of \"per IP\".\n- **The limiter fails open.** If the binding errors, logins go through and the error is logged, rather than locking everyone out.\n- **The 429 body is `{\"error\":\"rate_limited\"}`.** That is a placeholder; it should match whatever error envelope the service already uses.\n\nTwo things the spec does not cover:\n- **Password guessing:** 100/min per IP stops volumetric abuse, but it still allows about 144,000 guesses a day per IP and does nothing against attempts on one account from many IPs. A per-account limit on failed logins would be a separate task.\n- **Password reset endpoints:** these are not limited, since the request was `/login` only. The middleware is specced as a factory so the reset endpoints can reuse it with their own limit; decide that as part of task 2.\n\nThe wrangler snippet uses the `ratelimits` config key, which needs a recent Wrangler 4; I wrote that from memory, so check it against your Wrangler version. I left the roadmap version at 0.3."
+              },
+              {
+                "name": "two-boundary-enforcement",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "# Source of Truth — Auth Service\n\n## Scope\nCloudflare Workers auth service (Hono + D1). Issues and validates session\ntokens for POST /login, POST /logout, GET /session.\n\n## Domain model\n- `users` (D1): id, email, password_hash, created_at\n- `sessions` (D1): id, user_id, token, expires_at\n\n## Invariants\n| # | Invariant | Enforced at |\n|---|---|---|\n| 1 | Password hashes use scrypt, never stored plaintext | app layer (hash on write) + DB column has no plaintext default |\n| 2 | A session token is single-use per refresh | app layer (rotate on use) + DB unique index on token |\n| 3 | POST /login accepts at most 100 requests/minute per client IP (best-effort: counted per Cloudflare location) | Hono middleware on the route, backed by the Workers Rate Limiting binding; runs before body parsing, scrypt and any D1 access |\n\n## Decisions\n- **Decision:** D1 over KV for sessions. **Why:** need a relational lookup by user_id for \"log out everywhere\". **Alternative rejected:** KV (no secondary index).\n- **Decision:** Workers Rate Limiting binding for the POST /login limit. **Why:** counters live in the Cloudflare location serving the request, so the check adds no network hop against the p95 < 150ms login budget, and attack traffic never turns into D1 writes. **Alternative rejected:** D1 counter table (a write to the primary on every login attempt), Durable Objects (exact global count, but an extra hop and cost per request that a 100/min abuse guard does not need), WAF rate limiting rule (lives outside the repo, cannot be tested with the service, period options depend on the zone plan).\n- **Decision:** The login rate limiter fails open. **Why:** a limiter fault must not lock every user out of login; the limit is an abuse guard, not the only defence. **Alternative rejected:** fail closed (turns a limiter outage into a full login outage).\n"
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 1,
+        "passRate": 1,
+        "scoreWithout": 0.875,
+        "passRateWithout": 0.5,
+        "delta": 0.125
+      }
+    },
+    {
+      "name": "real-diff-ranked-report",
+      "dir": "evals-ci/review-swarm/real-diff-ranked-report",
+      "source": "mixed",
+      "promptMarkdown": "I added a new `/orders/<user_id>` endpoint in `app/routes.py`: it pulls a user's orders with `Order.query.filter_by(user_id=user_id).all()`, then loops over them and calls `db.session.query(Item).get(order.item_id)` once per order. There's no test covering a user with zero orders. Haven't committed it yet. Run review-swarm on this diff before I open the PR.",
+      "runsPerCase": 3,
+      "timeoutSeconds": 1500,
+      "maxTurns": 40,
+      "graders": [
+        {
+          "name": "no-edit-calls",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Edit",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "no-write-calls",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Write",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "ranked-report-shape",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final report: (1) surfaces the N+1 query pattern in `app/routes.py` (one `Item` lookup per order inside the `for order in orders` loop) as a data/performance finding, (2) surfaces the missing test for the zero-orders case as a tests/failure-paths finding, (3) is structured as a ranked Blockers / Should-fix / Nits report with a file:line-style reference and a one-line fix for each item, and (4) shows evidence of adversarial verification (e.g. explains why a finding is real and reproducible, or explicitly drops a speculative one) rather than only listing raw first-pass findings.\n\nFAIL if the report misses either the N+1 pattern or the missing-test finding, is not organized into a ranked Blockers/Should-fix/Nits structure, or shows no sign that findings were verified before being reported.",
+          "config": {
+            "criteria": "PASS if the final report: (1) surfaces the N+1 query pattern in `app/routes.py` (one `Item` lookup per order inside the `for order in orders` loop) as a data/performance finding, (2) surfaces the missing test for the zero-orders case as a tests/failure-paths finding, (3) is structured as a ranked Blockers / Should-fix / Nits report with a file:line-style reference and a one-line fix for each item, and (4) shows evidence of adversarial verification (e.g. explains why a finding is real and reproducible, or explicitly drops a speculative one) rather than only listing raw first-pass findings.\n\nFAIL if the report misses either the N+1 pattern or the missing-test finding, is not organized into a ranked Blockers/Should-fix/Nits structure, or shows no sign that findings were verified before being reported.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "reviewers-sonnet",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "input_match": "\"model\"\\s*:\\s*\"sonnet\"",
+            "min": 4
+          }
+        },
+        {
+          "name": "skill-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?review-swarm\""
+          }
+        },
+        {
+          "name": "verifiers-opus",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "input_match": "\"model\"\\s*:\\s*\"opus\"",
+            "min": 1
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 20,
+            "costUsd": 1.5775743000000002,
+            "judgeCostUsd": 0.01269600000000004,
+            "durationSeconds": 231,
+            "startedAt": "2026-11-10T13:44:48.082Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-dlNOJT/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-edit-calls",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Edit called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-write-calls",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Write called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "ranked-report-shape",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "**Don't open the PR yet: the endpoint can't load as written, and it has no access control.** Review-swarm ran six reviewers and an adversarial verifier per finding; three blockers, three should-fixes and two nits survived.\n\nFlask, SQLAlchemy and pytest aren't installed in this sandbox, so nothing ran end to end. The two crashes below were reproduced directly with `python3 -c`; the rest is from reading the code.\n\n## Blockers\n\n1. **`app/routes.py:2` — `from app import db` fails at import.** There is no `app/__init__.py` and nothing in the repo defines `db`. Reproduced: `ImportError: cannot import name 'db' from 'app' (unknown location)`. This breaks the whole routes module, not just the new endpoint.\n   - Fix: add `app/__init__.py` that defines `db` (e.g. `db = SQLAlchemy()`), or import `db` from wherever it really lives.\n\n2. **`app/routes.py:10` (with `app/models.py:3,8`) — the models are still placeholders.** `Order.query` is `None`, so every request raises `AttributeError: 'NoneType' object has no attribute 'filter_by'` (reproduced). `Order` and `Item` have no columns either. The placeholders pre-date your diff, but the endpoint depends on them.\n   - Fix: make `Order` and `Item` real mapped models with `id`, `user_id`, `item_id` and `name`, or hold the endpoint back until they exist.\n\n3. **`app/routes.py:8-10` — no authentication or ownership check.** `user_id` comes straight from the URL, so anyone can read any user's order ids and item names by changing the path. The repo has no auth of any kind; whether a gateway authenticates upstream can't be known from here, and even then the ownership check is missing.\n   - Fix: require authentication and take the user from the authenticated identity, or compare it to the path `user_id` and return 403/404 on mismatch.\n\n## Should-fix\n\n4. **`app/routes.py:12-13` — the N+1 you flagged is real.** It costs one query for the orders plus one per distinct `item_id`, since `Query.get` serves repeats from the session.\n   - Fix: one query, `db.session.query(Order.id, Item.name).outerjoin(Item, Item.id == Order.item_id).filter(Order.user_id == user_id)`.\n   - Use an outer join: an inner join would silently drop orders whose item is missing.\n\n5. **`app/routes.py:13-14` — a missing item crashes the whole response.** `.get()` returns `None` when no `Item` row matches, then `item.name` raises and the request returns 500. One orphaned order hides all of that user's other orders, and nothing in the models rules this out.\n   - Fix: the outer join in #4 gives `item_name: null`; otherwise guard with `item.name if item else None`.\n\n6. **`tests/test_routes.py:1-2` — the endpoint has no tests at all, not just the zero-orders case.** The only test is `assert True` and never imports `app.routes`, so the suite stays green despite blocker 1.\n   - Zero orders is a missing test, not a code bug: once the models are real, the loop is skipped and the route returns 200 with `[]`.\n   - Fix: after 1 and 2, add test-client tests for the happy path, zero orders returning `[]`, and an order with a missing item.\n\n## Nits\n\n7. **`app/routes.py:10` — no `order_by`.** List order is unspecified and can vary between calls; add `.order_by(Order.id)`.\n8. **`app/routes.py:13` — `Query.get()` is legacy.** It warns on SQLAlchemy 2.x but still works (no version is pinned, so this is assumed). Use `db.session.get(Item, order.item_id)`; the call disappears with the join in #4.\n\n## Dropped by verification\n\n- **Pagination on `.all()`:** speculative, since the repo gives no data-volume evidence.\n- **`<int:user_id>` converter:** no column type is declared, and `user_id` could be a UUID.\n- **Unknown user vs. zero orders both returning `[]`:** a design choice, and there is no User model to look up.\n- **Mixed `Order.query` / `db.session.query` styles:** style noise that the join removes.\n- **Relationship belongs on the model:** restates #2, #4 and #5.\n- **Circular-import risk:** concerns a file that doesn't exist yet.\n- **Index on `user_id`:** unverifiable with no schema.\n\n## What's solid\n\n- `filter_by(user_id=user_id)` is parameterized, so there is no SQL injection.\n- The response exposes only `order_id` and `item_name`.\n- Simplicity: no issues beyond the loop that #4 replaces.\n- The endpoint logic is right once the wiring exists; architecture raised nothing beyond the wiring in blockers 1 and 2.\n\nI haven't changed any files. I can apply the fixes, or you can run `/code-review --fix`; blockers 1 and 2 need to land before the tests in #6 can be written."
+              },
+              {
+                "name": "reviewers-sonnet",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 6x (expected 4..∞)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 1x (expected 1..∞)",
+                "withOnly": true,
+                "scored": false
+              },
+              {
+                "name": "verifiers-opus",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 9x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 18,
+            "costUsd": 1.7379436,
+            "judgeCostUsd": 0.018995999999999957,
+            "durationSeconds": 247,
+            "startedAt": "2026-11-10T13:44:55.407Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-XZFYth/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-edit-calls",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Edit called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-write-calls",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Write called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "ranked-report-shape",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "**Don't open the PR yet: the endpoint can't load.** `from app import db` fails at import and `Order.query` is `None`, so the two things you flagged are real but not the first problem. Six reviewers ran, and every finding below went through a verifier pass.\n\nFlask, SQLAlchemy and pytest aren't installed here, so the two blockers were confirmed by running Python, while the SQLAlchemy behaviour claims come from reading the code and the test suite was not run.\n\n## Blockers\n\n1. **`app/routes.py:2`: `from app import db` raises ImportError.** There is no `app/__init__.py` and nothing in the repo defines `db`. Running `python3 -c \"from app import db\"` gives `ImportError: cannot import name 'db' from 'app' (unknown location)`. Fix: add `app/__init__.py` (or `app/db.py`) that creates `db = SQLAlchemy()` and binds it to the app.\n2. **`app/routes.py:10` (via `app/models.py:3,8`): `Order.query` is `None`.** Once the import is fixed, every request fails with `AttributeError: 'NoneType' object has no attribute 'filter_by'`. The models are placeholder classes with no columns. Fix: make `Order` and `Item` real `db.Model` classes with `id`, `user_id`, `item_id` and `name`, or hold the route until that layer exists.\n\n## Should-fix\n\n3. **`app/routes.py:8-10`: nothing restricts whose orders a caller can read.** `user_id` comes from the URL and is never compared to an authenticated identity, and the repo has no auth of any kind. This becomes a blocker if no upstream layer enforces per-user access. Fix: derive the user from the authenticated identity (e.g. `/me/orders`), or return 403/404 unless `user_id` matches the caller.\n4. **`app/routes.py:13-14`: `item.name` crashes when the item is missing.** `Query.get()` returns `None` for a deleted, dangling or NULL `item_id`, and one such order turns the whole list into a 500. Nothing in the repo guarantees every order has an item. Fix: `item.name if item else None`, or the outer join in item 5.\n5. **`app/routes.py:12-14`: the N+1 is real, roughly one SELECT per order.** The session's identity map only skips a lookup when consecutive orders share an item, so 500 orders can cost up to 501 queries. One query fixes this and item 4 together:\n   ```python\n   rows = (\n       db.session.query(Order.id, Item.name)\n       .outerjoin(Item, Item.id == Order.item_id)\n       .filter(Order.user_id == user_id)\n       .order_by(Order.id)\n       .all()\n   )\n   return jsonify([{\"order_id\": oid, \"item_name\": name} for oid, name in rows])\n   ```\n6. **`tests/test_routes.py:1-2`: the gap is wider than zero orders.** The only test is `assert True`; nothing imports `app.routes`, so the suite cannot catch blocker 1. Minimum set once the models are real:\n   - happy path with two orders on different items, checking each pairing;\n   - zero orders returns 200 `[]`;\n   - only the requested user's orders come back;\n   - an order with a missing item does not 500.\n\n## Nits\n\n- **`app/routes.py:10`: no `ORDER BY`**, so the response order isn't guaranteed. Fix: `.order_by(Order.id)`.\n- **`app/routes.py:13`: `Query.get()` is legacy** in SQLAlchemy 1.4 and deprecated in 2.0. Use `db.session.get(Item, pk)`; the join in item 5 removes the call anyway.\n\n## Clean dimensions\n\n- **Simplicity:** no issues. The mixed `Order.query` / `db.session.query` styles disappear with the join.\n- **Architecture:** nothing beyond blockers 1–2 and the hand-resolved Order→Item lookup in item 5.\n\n## Dropped in verification\n\n- **Pagination:** depends on order volumes the repo doesn't show.\n- **`<int:user_id>` converter:** depends on the id type, which isn't defined; it would be wrong for UUID ids.\n- **Index on `user_id`:** there is no schema to check.\n- **DB error handler:** a default 500 on a database failure is normal Flask behaviour.\n- **Circular-import worry at `app/routes.py:5`:** the line predates the diff and the concern is speculative.\n\n## What's solid\n\n- The zero-orders logic is correct as written: `.all()` returns `[]`, the loop is skipped, and the response is 200 `[]`. It only needs a test to pin it.\n- `filter_by(user_id=user_id)` is a bound parameter, so there is no SQL injection.\n- The handler is small and readable.\n\nI haven't changed anything. Say the word and I'll apply these, or you can run `/code-review --fix`."
+              },
+              {
+                "name": "reviewers-sonnet",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 6x (expected 4..∞)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 1x (expected 1..∞)",
+                "withOnly": true,
+                "scored": false
+              },
+              {
+                "name": "verifiers-opus",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 7x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ],
+        "without": [
+          {
+            "score": 0.4,
+            "passed": false,
+            "turns": 6,
+            "costUsd": 0.17967309999999997,
+            "judgeCostUsd": 0.013859999999999956,
+            "durationSeconds": 176,
+            "startedAt": "2026-11-10T13:45:04.587Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-HN8kbN/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-edit-calls",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Edit called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-write-calls",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Write called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "ranked-report-shape",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "There's no `review-swarm` skill installed in this session, so I ran the built-in `code-review` skill on the uncommitted diff instead. The diff isn't ready for a PR: the endpoint can't run as written.\n\nI confirmed the two blockers by reading the files; nothing was executed, because Flask isn't installed in this environment.\n\n## Blockers\n1. **`db` doesn't exist** (`app/routes.py:2`). There is no `app/__init__.py` and `db` isn't defined anywhere, so `from app import db` raises `ImportError` and the module never loads.\n2. **The models aren't real ORM models** (`app/routes.py:10`, `app/models.py:3`). `Order` and `Item` are plain placeholder classes with `query = None`, so `Order.query.filter_by(...)` raises `AttributeError` and every request returns 500.\n\n## Correctness and security\n3. **Missing item crashes the whole response** (`app/routes.py:14`). `.get()` returns `None` if the item was deleted or `item_id` is NULL, and `item.name` then returns 500 for all of that user's orders.\n4. **No auth or ownership check** (`app/routes.py:8`). Anyone can walk `/orders/1`, `/orders/2`, … and read every user's order history.\n5. **Untyped route parameter** (`app/routes.py:8`). `/orders/abc` against an integer column errors on Postgres and silently returns `[]` on SQLite; `<int:user_id>` gives a clean 404.\n\n## Performance\n6. **N+1 query** (`app/routes.py:13`), the one you described. Each order triggers its own `Item` lookup; a single join or one `Item.id.in_(...)` query replaces them all.\n7. **No pagination** (`app/routes.py:10`). `.all()` loads every order for the user, which compounds with the N+1.\n\n## Tests\n8. **The endpoint has no coverage at all** (`tests/test_routes.py:1`). The only test is `assert True` and never imports `app.routes`, so CI passes even with the blockers above. The zero-orders path should return `[]` with a 200 by reading the code, but nothing checks it, nor the missing-item or happy path.\n\n## Minor\n9. **Legacy and mixed query styles** (`app/routes.py:13`). `Query.get()` is deprecated in SQLAlchemy 2.x (`db.session.get(Item, id)` replaces it), and the function mixes `Order.query` with `db.session.query(Item)`.\n10. **Circular-import risk** (`app/routes.py:5`). The Flask `app` object is created in `app/routes.py`, which also imports from the `app` package; once `db` lives in `app/__init__.py` and that imports routes, import order will matter.\n\nNothing was changed or committed. If you want, I can fix these — the blockers need a decision on whether `db` and real models belong in this PR or a prior one."
+              },
+              {
+                "name": "reviewers-sonnet",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 4..∞)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "verifiers-opus",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.4,
+            "passed": false,
+            "turns": 4,
+            "costUsd": 0.15423489999999995,
+            "judgeCostUsd": 0.011059999999999959,
+            "durationSeconds": 173,
+            "startedAt": "2026-11-10T13:45:10.443Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-rSBQc3/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-edit-calls",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Edit called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-write-calls",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Write called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "ranked-report-shape",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "There is no `review-swarm` skill installed in this session, so I ran the built-in `code-review` skill on the uncommitted diff instead. The review was by reading only; nothing was executed. It found two blockers that mean the endpoint can't work as written, plus the two issues you already flagged and a few more.\n\n**Blockers**\n\n1. **`app/routes.py:2` — `from app import db` cannot resolve.** There is no `app/__init__.py` and no `db` defined anywhere in the repo, so importing `app.routes` raises `ImportError` and no route is served.\n2. **`app/routes.py:10` — `Order.query` is `None`.** `app/models.py` holds placeholder classes with `query = None`, not mapped models, so every request fails with `AttributeError` and returns 500. `db.session.query(Item)` on line 13 would fail the same way.\n\n**Bugs in the handler logic**\n\n3. **`app/routes.py:14` — no `None` check on the item lookup.** If an order points at a deleted or NULL `item_id`, `item.name` raises and the whole response is a 500, even when the user's other orders are fine.\n4. **`app/routes.py:8` — no authentication or authorization.** Any caller can read any user's orders by walking `/orders/1`, `/orders/2`, and so on.\n5. **`app/routes.py:13` — N+1 query (the one you described).** One `Item` lookup per order means a user with 5,000 orders costs 5,001 round-trips. A join, an `Item.id.in_(ids)` query, or an eager-loaded relationship does it in one.\n6. **`app/routes.py:8` — `<user_id>` is an untyped string.** `/orders/abc` against an integer column gives a 500 on PostgreSQL and a silent empty list on SQLite. `<int:user_id>` returns a 404 instead.\n\n**Lower priority**\n\n7. **`app/routes.py:10` — unbounded `.all()`.** There is no pagination or limit, so a very large account loads everything into memory.\n8. **`app/routes.py:13` — legacy `Query.get()`.** It emits a `LegacyAPIWarning` on SQLAlchemy 1.4/2.0; `db.session.get(Item, order.item_id)` is the supported form. The handler also mixes `Order.query` and `db.session.query(...)` styles.\n\n**Tests**\n\n9. **`tests/test_routes.py:1` — the endpoint has no coverage at all.** The only test is `assert True` and never imports `app.routes`, so CI passes even though the module can't be imported. The zero-orders case you mentioned should return `[]` with a 200 once the blockers are fixed. Add tests for that, the happy path, a missing item, and a non-numeric `user_id`.\n\nI'd hold the PR until 1–4 are fixed and real tests exist. I can make those fixes and write the tests if you want."
+              },
+              {
+                "name": "reviewers-sonnet",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 4..∞)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "verifiers-opus",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 1,
+        "passRate": 1,
+        "scoreWithout": 0.4,
+        "passRateWithout": 0,
+        "delta": 0.6
+      }
+    },
+    {
+      "name": "security-alone-hands-off",
+      "dir": "evals-ci/review-swarm/security-alone-hands-off",
+      "source": "mixed",
+      "promptMarkdown": "We just added JWT validation middleware in `src/middleware/auth.js` on our Express API — checks the Authorization header, verifies the signature, attaches `req.user` — but haven't committed it yet. Can you swarm review it for security holes? That's literally the only thing I care about right now, not style or perf.",
+      "runsPerCase": 3,
+      "timeoutSeconds": 900,
+      "maxTurns": 40,
+      "graders": [
+        {
+          "name": "hands-off-to-security-review",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the response treats this as a security-only ask and points to `/security-review` as the right tool (recommending it, or saying it tried it), instead of running a generic six-specialist review swarm.\n\nFAIL if it runs or offers the six-lens swarm as the answer, never mentions `/security-review`, or makes a claim that `src/middleware/auth.js` contradicts. The file calls `jwt.verify(token, process.env.JWT_SECRET)` with no `algorithms` option and no try/catch, so saying the algorithm is not pinned, or that a bad token throws, is accurate, not invented.",
+          "config": {
+            "criteria": "PASS if the response treats this as a security-only ask and points to `/security-review` as the right tool (recommending it, or saying it tried it), instead of running a generic six-specialist review swarm.\n\nFAIL if it runs or offers the six-lens swarm as the answer, never mentions `/security-review`, or makes a claim that `src/middleware/auth.js` contradicts. The file calls `jwt.verify(token, process.env.JWT_SECRET)` with no `algorithms` option and no try/catch, so saying the algorithm is not pinned, or that a bad token throws, is accurate, not invented.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "no-swarm-spawn",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 7,
+            "costUsd": 0.11214920000000006,
+            "judgeCostUsd": 0.009390000000000065,
+            "durationSeconds": 54,
+            "startedAt": "2026-11-10T13:48:01.061Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-xWqkuw/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "hands-off-to-security-review",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "**`/security-review` is the right tool for a security-only ask, but it couldn't run here.** It diffs against `origin/HEAD` and this repo has no remote. I spawned no swarm and read the file myself instead: `src/middleware/auth.js` (12 lines) plus `src/app.js`. Nothing was executed, because there is no `package.json` or `node_modules`, so the library behaviour below is from my knowledge of `jsonwebtoken`, not a test.\n\n## Blocker\n\n**Possible full auth bypass if `JWT_SECRET` is unset or empty — `src/middleware/auth.js:6`**\n- Nothing checks that `process.env.JWT_SECRET` exists, and `jwt.verify` is called without an `algorithms` option.\n- On `jsonwebtoken` 8.5.1 and earlier, a falsy secret plus an unsigned token makes the library default to `alg: none` and accept it (CVE-2022-23540). Anyone can then forge any `req.user`.\n- On 9.x the same situation fails closed (every request throws).\n- With no `package.json`, the version is unpinned, so which of these you get depends on whatever gets installed.\n- Fix: throw at startup if the secret is missing, pass `{ algorithms: ['HS256'] }`, and pin `jsonwebtoken@^9`.\n\n## Should-fix\n\n**Auth failures surface as 500s with stack traces — `src/middleware/auth.js:6`**\n- `jwt.verify` throws on a missing, malformed, expired or badly signed token, and nothing catches it.\n- Express turns that into a 500, and its default error handler includes the stack trace in the response unless `NODE_ENV=production`.\n- This fails closed, so it is not a bypass, but it leaks internals and makes bad tokens look like server errors.\n- Fix: wrap in `try/catch` and return a generic `401`.\n\n**No constraints on which tokens count — `src/middleware/auth.js:6`**\n- There is no `issuer`, `audience` or `maxAge`, and `exp` is only checked if the token happens to carry it.\n- Any JWT ever signed with this secret (password reset, email verification, refresh, another service) works as an access token here, and one minted without `exp` never expires.\n- How bad this is depends on your token issuer, which isn't in this repo.\n- Fix: pass `issuer`, `audience` and `maxAge` to `verify`, and reject payloads without `exp`.\n\n## Nit\n\n**Loose header parsing — `src/middleware/auth.js:5`**\n- `replace('Bearer ', '')` is unanchored, so a bare token with no scheme, or `Bearer ` appearing mid-string, is accepted.\n- This is not exploitable on its own because the signature is still verified.\n- Fix: match `/^Bearer (\\S+)$/` and return 401 otherwise.\n\n## Also worth knowing\n\n- `requireAuth` is not mounted anywhere. `src/app.js:1-3` has no routes or `app.use`, so it protects nothing yet. Make sure it is applied at the router level so new routes don't have to opt in.\n- I can't see the secret's strength. HS256 with a short or guessable secret can be brute-forced offline from any captured token, so the startup check should also enforce a minimum length (32+ random bytes).\n\n## What's solid\n\n- It uses `jwt.verify`, not `jwt.decode`, so the signature is actually checked.\n- The secret comes from the environment, not hardcoded.\n- Every failure path throws before `next()`, so nothing falls through to the handler unauthenticated (on 9.x).\n\nI haven't changed anything. Want me to apply these fixes to `auth.js`?"
+              },
+              {
+                "name": "no-swarm-spawn",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 8,
+            "costUsd": 0.1469641,
+            "judgeCostUsd": 0.014494000000000007,
+            "durationSeconds": 64,
+            "startedAt": "2026-11-10T13:48:03.320Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-xjsHr4/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "hands-off-to-security-review",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "`/security-review` is the right tool for this, but it couldn't run: it diffs against `origin/HEAD` and this repo has no remote. So this is my own single pass over `src/middleware/auth.js` instead, with no swarm.\n\nThe findings come from reading the code and from what I know of `jsonwebtoken`'s behaviour, not from running anything. The repo has no `package.json` or `node_modules`, and the sandbox blocked the npm registry.\n\n## Verdict\n\nThe middleware fails closed on bad tokens, but it has one potential full auth bypass, depending on your `jsonwebtoken` version and whether `JWT_SECRET` is always set.\n\n## Blocker\n\n**1. No `algorithms` allowlist and no check that the secret exists — `src/middleware/auth.js:6`**\n\n- **What happens:** if `JWT_SECRET` is unset or empty in any environment and `jsonwebtoken` is older than 9.0.0, `jwt.verify(token, undefined)` accepts an unsigned `alg: none` token (CVE-2022-23540).\n- **Impact:** anyone can forge `req.user` with any claims they like.\n- **On 9.x:** this case is rejected, but you'd be relying on a library default.\n- **Why I can't rule it out:** no `package.json` pins the version.\n- **Fix:**\n  - Pass `{ algorithms: ['HS256'] }` to `jwt.verify`.\n  - Throw at startup if `JWT_SECRET` is missing or shorter than about 32 random bytes.\n  - Pin `jsonwebtoken` to 9.0.0 or later.\n\n## Should-fix\n\n**2. `jwt.verify` throws with no `try/catch` — `src/middleware/auth.js:6`**\n\n- **What happens:** a missing, malformed or expired token throws synchronously, and Express turns that into a 500.\n- **Not a bypass:** `next()` is never reached.\n- **Impact:** outside `NODE_ENV=production`, the default error handler returns the stack trace, including file paths, to the unauthenticated caller. Any anonymous client can also generate 500s at will, which pollutes error alerting.\n- **Fix:** wrap the call in `try/catch` and return a generic `401`.\n\n**3. No claim validation beyond the signature — `src/middleware/auth.js:6`**\n\n- **Expiry:** `exp` is only enforced if the token has one, so a token minted without it never expires.\n- **Token confusion:** with no `issuer` or `audience` check, any JWT signed with the same secret (a password-reset or email-verification token, or another service's token) passes as an access token.\n- **Depends on:** the signing side, which isn't in this repo.\n- **Fix:** pass `issuer`, `audience` and `maxAge` in the verify options, and reject payloads without `exp` and `sub`.\n\n## Low\n\n**4. Bearer scheme not enforced — `src/middleware/auth.js:5`**\n\n- **What happens:** `replace('Bearer ', '')` strips the first occurrence anywhere in the header, so a bare token with no scheme is accepted.\n- **Impact:** not exploitable on its own, since the signature is still required.\n- **Fix:** match strictly with `/^Bearer (.+)$/` and return 401 otherwise.\n\n**5. `req.user` is the raw payload with no revocation check — `src/middleware/auth.js:7`**\n\n- **What happens:** a deleted or demoted user keeps whatever the token claims until it expires.\n- **Fix:** this is acceptable only with short-lived tokens, which finding 3 would enforce.\n\n## Also worth knowing\n\n`requireAuth` isn't mounted anywhere. `src/app.js` only creates the app, so nothing is protected yet. When you wire it up, mount it with `app.use` ahead of the routers so new routes are protected by default.\n\n## What's solid\n\n- It uses `jwt.verify`, not `jwt.decode`.\n- The secret comes from the environment, not the source.\n- `next()` is only reachable after successful verification.\n\nI haven't changed anything. Findings 1–4 are about a 15-line rewrite of the file; say the word and I'll apply it."
+              },
+              {
+                "name": "no-swarm-spawn",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ],
+        "without": [
+          {
+            "score": 0,
+            "passed": false,
+            "turns": 8,
+            "costUsd": 0.17426799999999998,
+            "judgeCostUsd": 0,
+            "durationSeconds": 62,
+            "startedAt": "2026-11-10T13:48:39.258Z",
+            "error": "exit 1: You've hit your session limit · resets 6:10pm (UTC) · stderr: [claude-code:unrecognized_model] {\"model\":\"claude-fable-5-2\",\"query_source\":\"sdk\"} ",
+            "tracePath": "/tmp/claude-eval-PmVkXp/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": []
+          },
+          {
+            "score": 0,
+            "passed": false,
+            "turns": 7,
+            "costUsd": 0.14509470000000002,
+            "judgeCostUsd": 0,
+            "durationSeconds": 43,
+            "startedAt": "2026-11-10T13:48:55.277Z",
+            "error": "exit 1: You've hit your session limit · resets 6:10pm (UTC) · stderr: [claude-code:unrecognized_model] {\"model\":\"claude-fable-5-2\",\"query_source\":\"sdk\"} ",
+            "tracePath": "/tmp/claude-eval-byl9PY/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": []
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 1,
+        "passRate": 1,
+        "passRateWithout": 0
+      }
+    },
+    {
+      "name": "trivial-diff-declines",
+      "dir": "evals-ci/review-swarm/trivial-diff-declines",
+      "source": "mixed",
+      "promptMarkdown": "I renamed `userId` to `accountId` across `src/users.js`, `src/orders.js`, and `src/session.js` in our Node API, and fixed a typo in a comment while I was in there (`recieve` -> `receive`). Nothing's committed yet. Can you run review-swarm on this before I open the PR?",
+      "runsPerCase": 3,
+      "timeoutSeconds": 900,
+      "maxTurns": 40,
+      "graders": [
+        {
+          "name": "agent-spawn-limit",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "min": 0,
+            "max": 2
+          }
+        },
+        {
+          "name": "declines-with-alternative",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the response treats this diff (a variable rename plus a comment typo fix across three files) as too small for the six-specialist swarm, does not run that swarm, and either gives a single-pass review itself or points to one (a single read or `/code-review`) as the next step.\n\nFAIL if it runs the six-lens swarm on this diff, or declines without reviewing the diff and without offering any way to review it.",
+          "config": {
+            "criteria": "PASS if the response treats this diff (a variable rename plus a comment typo fix across three files) as too small for the six-specialist swarm, does not run that swarm, and either gives a single-pass review itself or points to one (a single read or `/code-review`) as the next step.\n\nFAIL if it runs the six-lens swarm on this diff, or declines without reviewing the diff and without offering any way to review it.",
+            "focus": "last_message"
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 5,
+            "costUsd": 0.06881149999999996,
+            "judgeCostUsd": 0.00444599999999995,
+            "durationSeconds": 19,
+            "startedAt": "2026-11-10T13:49:02.283Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-ulqjlW/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "agent-spawn-limit",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..2)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "declines-with-alternative",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "The rename is safe to open as a PR: I found no blockers and nothing that needs fixing first. This was a single-pass read of the diff with no specialists or verifiers, and nothing was executed (the repo has no tests).\n\n**Nit, your call**\n- `src/orders.js:2` — `accountId` is now bound to the `user_id` column, and `src/users.js:1` has `getUser(accountId)` querying `users.id`. The SQL is correct and unchanged, but the code now uses two names for the same thing. If the rename is intentionally code-only, say so in the PR description; if the schema is meant to follow, that is a separate migration.\n\n**What's solid**\n- **Rename is complete:** no `userId` remains in the three tracked files, and each parameter is renamed together with its one use.\n- **Callers are unaffected:** all three parameters are positional, so no call site breaks, and the exports (`getOrders`, `loadSession`, `getUser`) are unchanged.\n- **Queries are untouched:** they are still parameterized with the same placeholders.\n- **Typo fix is correct:** `src/users.js:2` now reads `receive`, and no other `recieve` remains.\n\n**Not from your diff**\n- `db` (`src/orders.js:2`, `src/users.js:3`) and `sessions` (`src/session.js:2`) are never required or defined in these files. That predates your change, so it only matters if they aren't provided as globals elsewhere."
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 5,
+            "costUsd": 0.06817130000000003,
+            "judgeCostUsd": 0.005358000000000029,
+            "durationSeconds": 19,
+            "startedAt": "2026-11-10T13:49:07.797Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-2qMDTr/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "agent-spawn-limit",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..2)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "declines-with-alternative",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "The rename is clean and safe to PR. I did a single-pass read rather than the full swarm, since the skill itself says to skip the specialists for a rename-sized diff (7 lines across 3 files).\n\n**Blockers:** none.\n\n**Should-fix:** none.\n\n**Nits:**\n- `src/orders.js:2` — the query still filters on the `user_id` column while the parameter is now `accountId`. That is correct if the DB column isn't being renamed, but it's the one place the old name survives, so it's worth a line in the PR description saying the schema is intentionally unchanged.\n\n**What's solid:**\n- **Rename is complete:** no `userId` remains anywhere in the tracked files.\n- **Behaviour is unchanged:** all three are positional parameters (`getUser`, `getOrders`, `loadSession`), so no caller can break on the new name, and the exports are untouched.\n- **Queries are still parameterized:** the `?` placeholders are intact in both SQL statements.\n- **Typo fix is right:** `src/users.js:2` now reads `receive`.\n\nThere are no tests in the repo, so nothing was run; this is a read of the diff only."
+              }
+            ]
+          }
+        ],
+        "without": [
+          {
+            "score": 0.5,
+            "passed": false,
+            "turns": 3,
+            "costUsd": 0.0584186,
+            "judgeCostUsd": 0,
+            "durationSeconds": 14,
+            "startedAt": "2026-11-10T13:49:20.845Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-K7B3FC/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "agent-spawn-limit",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..2)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "declines-with-alternative",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: You've hit your session limit · resets 6:10pm (UTC)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0,
+            "passed": false,
+            "turns": 2,
+            "costUsd": 0.0378243,
+            "judgeCostUsd": 0,
+            "durationSeconds": 4,
+            "startedAt": "2026-11-10T13:49:26.576Z",
+            "error": "exit 1: You've hit your session limit · resets 6:10pm (UTC) · stderr: [claude-code:unrecognized_model] {\"model\":\"claude-fable-5-2\",\"query_source\":\"sdk\"} ",
+            "tracePath": "/tmp/claude-eval-xYXhsf/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": []
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 1,
+        "passRate": 1,
+        "passRateWithout": 0
+      }
+    },
+    {
+      "name": "dirty-and-behind",
+      "dir": "evals-ci/up-to-date/dirty-and-behind",
+      "source": "mixed",
+      "promptMarkdown": "Picking back up on the TenderTrack backend — I want to add pagination to the\ntenders list endpoint. Heads up, I was messing with the API client yesterday\nand never committed it, it's just sitting there in the working tree.",
+      "runsPerCase": 3,
+      "timeoutSeconds": 300,
+      "maxTurns": 15,
+      "graders": [
+        {
+          "name": "leaves-decision-to-user",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final message leaves pulling or stashing to the user: it reports that nothing was pulled or changed, and any pull, stash or rebase appears only as a recommendation for the user to confirm.\n\nFAIL if it says it already pulled, stashed, rebased or merged, or presents one of those as done.",
+          "config": {
+            "criteria": "PASS if the final message leaves pulling or stashing to the user: it reports that nothing was pulled or changed, and any pull, stash or rebase appears only as a recommendation for the user to confirm.\n\nFAIL if it says it already pulled, stashed, rebased or merged, or presents one of those as done.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "no-pull-run",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Bash",
+            "input_match": "git\\s+(pull|rebase|merge|checkout|reset|stash(?!\\s+list))\\b",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "no-subagents",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "reports-behind",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final message says the branch is behind its upstream (origin/main) by commits.\n\nFAIL if it calls the branch up to date or in sync, or does not mention that it is behind.",
+          "config": {
+            "criteria": "PASS if the final message says the branch is behind its upstream (origin/main) by commits.\n\nFAIL if it calls the branch up to date or in sync, or does not mention that it is behind.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "reports-dirty",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final message says the working tree has uncommitted changes (the edit in src/api_client.py).\n\nFAIL if it calls the tree clean or does not mention the uncommitted change.",
+          "config": {
+            "criteria": "PASS if the final message says the working tree has uncommitted changes (the edit in src/api_client.py).\n\nFAIL if it calls the tree clean or does not mention the uncommitted change.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "skill-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?up-to-date\""
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 0,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 1,
+            "startedAt": "2026-11-10T13:49:30.267Z",
+            "error": "exit 1: You've hit your session limit · resets 6:10pm (UTC) · stderr: [claude-code:unrecognized_model] {\"model\":\"claude-fable-5-2\",\"query_source\":\"sdk\"} ",
+            "tracePath": "/tmp/claude-eval-0MZhbN/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": []
+          },
+          {
+            "score": 0,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 1,
+            "startedAt": "2026-11-10T13:49:31.513Z",
+            "error": "exit 1: You've hit your session limit · resets 6:10pm (UTC) · stderr: [claude-code:unrecognized_model] {\"model\":\"claude-fable-5-2\",\"query_source\":\"sdk\"} ",
+            "tracePath": "/tmp/claude-eval-QTnUEr/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": []
+          }
+        ],
+        "without": [
+          {
+            "score": 0,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 1,
+            "startedAt": "2026-11-10T13:49:32.703Z",
+            "error": "exit 1: You've hit your session limit · resets 6:10pm (UTC) · stderr: [claude-code:unrecognized_model] {\"model\":\"claude-fable-5-2\",\"query_source\":\"sdk\"} ",
+            "tracePath": "/tmp/claude-eval-aSKuiR/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": []
+          },
+          {
+            "score": 0,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 1,
+            "startedAt": "2026-11-10T13:49:33.891Z",
+            "error": "exit 1: You've hit your session limit · resets 6:10pm (UTC) · stderr: [claude-code:unrecognized_model] {\"model\":\"claude-fable-5-2\",\"query_source\":\"sdk\"} ",
+            "tracePath": "/tmp/claude-eval-kPNiFk/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": []
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 0,
+        "passRate": 0,
+        "passRateWithout": 0
+      }
+    },
+    {
+      "name": "fresh-branch-no-upstream",
+      "dir": "evals-ci/up-to-date/fresh-branch-no-upstream",
+      "source": "mixed",
+      "promptMarkdown": "Let's keep going on the ShiftManager payment work -- I branched off\nyesterday for the retry-backoff logic on flaky card charges but haven't\npushed it up yet. Pick up where I left off.",
+      "runsPerCase": 3,
+      "timeoutSeconds": 300,
+      "maxTurns": 15,
+      "graders": [
+        {
+          "name": "falls-back-to-default-branch",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final message compares the branch against origin's default branch (origin/main) and says that is what it compared against.\n\nFAIL if it gives no comparison at all, or gives ahead/behind numbers without saying what they are relative to.",
+          "config": {
+            "criteria": "PASS if the final message compares the branch against origin's default branch (origin/main) and says that is what it compared against.\n\nFAIL if it gives no comparison at all, or gives ahead/behind numbers without saying what they are relative to.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "no-in-sync-claim",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final message never calls the branch in sync or up to date.\n\nFAIL if it calls the branch in sync, up to date, or current with its remote.",
+          "config": {
+            "criteria": "PASS if the final message never calls the branch in sync or up to date.\n\nFAIL if it calls the branch in sync, up to date, or current with its remote.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "no-subagents",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "says-no-upstream",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final message says the branch has no upstream (never pushed, no tracking branch).\n\nFAIL if it does not mention that, or implies the branch has an upstream it was compared against.",
+          "config": {
+            "criteria": "PASS if the final message says the branch has no upstream (never pushed, no tracking branch).\n\nFAIL if it does not mention that, or implies the branch has an upstream it was compared against.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "skill-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?up-to-date\""
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 0,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 1,
+            "startedAt": "2026-11-10T13:49:35.112Z",
+            "error": "exit 1: You've hit your session limit · resets 6:10pm (UTC) · stderr: [claude-code:unrecognized_model] {\"model\":\"claude-fable-5-2\",\"query_source\":\"sdk\"} ",
+            "tracePath": "/tmp/claude-eval-ZNMOFW/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": []
+          },
+          {
+            "score": 0,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 1,
+            "startedAt": "2026-11-10T13:49:35.134Z",
+            "error": "exit 1: You've hit your session limit · resets 6:10pm (UTC) · stderr: [claude-code:unrecognized_model] {\"model\":\"claude-fable-5-2\",\"query_source\":\"sdk\"} ",
+            "tracePath": "/tmp/claude-eval-I2JxOe/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": []
+          }
+        ],
+        "without": [
+          {
+            "score": 0,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 1,
+            "startedAt": "2026-11-10T13:49:36.224Z",
+            "error": "exit 1: You've hit your session limit · resets 6:10pm (UTC) · stderr: [claude-code:unrecognized_model] {\"model\":\"claude-fable-5-2\",\"query_source\":\"sdk\"} ",
+            "tracePath": "/tmp/claude-eval-Fn8qvW/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": []
+          },
+          {
+            "score": 0,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 1,
+            "startedAt": "2026-11-10T13:49:36.525Z",
+            "error": "exit 1: You've hit your session limit · resets 6:10pm (UTC) · stderr: [claude-code:unrecognized_model] {\"model\":\"claude-fable-5-2\",\"query_source\":\"sdk\"} ",
+            "tracePath": "/tmp/claude-eval-mQxIB9/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": []
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 0,
+        "passRate": 0,
+        "passRateWithout": 0
+      }
+    },
+    {
+      "name": "no-remote-boundary",
+      "dir": "evals-ci/up-to-date/no-remote-boundary",
+      "source": "mixed",
+      "promptMarkdown": "No remote here, just a personal script I've been hacking on in\n~/scratch/csv-tools -- let's add a function that converts a CSV file to\nJSON.",
+      "runsPerCase": 3,
+      "timeoutSeconds": 300,
+      "maxTurns": 15,
+      "graders": [
+        {
+          "name": "no-subagents",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "result",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final message:\n1. Does not produce a sync brief. At most one line acknowledging that there\n   is nothing to sync; saying so is optional, because the user already stated\n   there is no remote.\n2. Makes no claims about ahead/behind counts, open PRs, or issues (none of\n   that applies without a remote), and does not attempt or narrate running a\n   fetch or divergence check against a remote that does not exist.\n3. Moves directly into the CSV-to-JSON task -- either starting on it, or\n   asking a normal clarifying question about it -- rather than dead-ending.\n\nFAIL if any of the following: it produces a sync brief (fetch, ahead/behind,\nPRs/issues) anyway; it blocks or stalls trying to reach a nonexistent remote;\nit fabricates or guesses at remote-relative state; or it stops after noting\nthere is no remote with no next step toward the requested task.",
+          "config": {
+            "criteria": "PASS if the final message:\n1. Does not produce a sync brief. At most one line acknowledging that there\n   is nothing to sync; saying so is optional, because the user already stated\n   there is no remote.\n2. Makes no claims about ahead/behind counts, open PRs, or issues (none of\n   that applies without a remote), and does not attempt or narrate running a\n   fetch or divergence check against a remote that does not exist.\n3. Moves directly into the CSV-to-JSON task -- either starting on it, or\n   asking a normal clarifying question about it -- rather than dead-ending.\n\nFAIL if any of the following: it produces a sync brief (fetch, ahead/behind,\nPRs/issues) anyway; it blocks or stalls trying to reach a nonexistent remote;\nit fabricates or guesses at remote-relative state; or it stops after noting\nthere is no remote with no next step toward the requested task.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "skill-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?up-to-date\"",
+            "min": 0
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 0,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 1,
+            "startedAt": "2026-11-10T13:49:37.463Z",
+            "error": "exit 1: You've hit your session limit · resets 6:10pm (UTC) · stderr: [claude-code:unrecognized_model] {\"model\":\"claude-fable-5-2\",\"query_source\":\"sdk\"} ",
+            "tracePath": "/tmp/claude-eval-I6uTxN/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": []
+          },
+          {
+            "score": 0,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 1,
+            "startedAt": "2026-11-10T13:49:37.797Z",
+            "error": "exit 1: You've hit your session limit · resets 6:10pm (UTC) · stderr: [claude-code:unrecognized_model] {\"model\":\"claude-fable-5-2\",\"query_source\":\"sdk\"} ",
+            "tracePath": "/tmp/claude-eval-RYPJ4e/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": []
+          }
+        ],
+        "without": [
+          {
+            "score": 0,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 1,
+            "startedAt": "2026-11-10T13:49:38.145Z",
+            "error": "exit 1: You've hit your session limit · resets 6:10pm (UTC) · stderr: [claude-code:unrecognized_model] {\"model\":\"claude-fable-5-2\",\"query_source\":\"sdk\"} ",
+            "tracePath": "/tmp/claude-eval-I0Fon7/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": []
+          },
+          {
+            "score": 0,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 1,
+            "startedAt": "2026-11-10T13:49:38.646Z",
+            "error": "exit 1: You've hit your session limit · resets 6:10pm (UTC) · stderr: [claude-code:unrecognized_model] {\"model\":\"claude-fable-5-2\",\"query_source\":\"sdk\"} ",
+            "tracePath": "/tmp/claude-eval-GafLpl/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": []
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 0,
+        "passRate": 0,
+        "passRateWithout": 0
+      }
+    }
+  ],
+  "aggregates": {
+    "casesTotal": 9,
+    "casesPassed": 6,
+    "overallScore": 0.6666666666666666,
+    "overallPassRate": 0.6666666666666666,
+    "meanDelta": 0.33125
+  }
+}
