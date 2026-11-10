@@ -87,7 +87,19 @@ jobs:
           for c in $SKIP_CASES; do rm -rf "evals-ci/$c"; done
           claude plugin eval . --eval-dir evals-ci --runs "$RUNS" -j 4 --scaffold \
             --allow-tools Write Edit Bash --model "$MODEL" --judge-model sonnet \
-            --no-publish --trust-plugin --threshold 0.7 --json evals-ci/result.json
+            --no-publish --trust-plugin --threshold 0.7 --keep-temp --json evals-ci/result.json
+      - name: Collect the traces
+        if: always()
+        run: |
+          # result.json names each run by its tracePath (/tmp/claude-eval-<id>/out/trace.jsonl); the copy is <id>.jsonl.
+          # A trace that shows an API key is left out, since the artifact is readable by anyone who can read the repo.
+          mkdir -p evals-ci/traces
+          for t in /tmp/claude-eval-*/out/trace.jsonl; do
+            [ -f "$t" ] || continue
+            if grep -q "sk-ant-" "$t"; then echo "left out (shows a key): $t"; continue; fi
+            id=${t#/tmp/claude-eval-}; cp "$t" "evals-ci/traces/${id%%/*}.jsonl"
+          done
+          ls -l evals-ci/traces
       - name: Summary
         if: always()
         # `shell: bash` adds pipefail, so a crash of the script fails this step instead of hiding behind tee;
@@ -135,3 +147,4 @@ jobs:
           path: |
             evals-ci/result.json
             evals-ci/results/
+            evals-ci/traces/
