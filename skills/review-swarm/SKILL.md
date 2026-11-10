@@ -8,16 +8,16 @@ description: >-
   Blockers / Should-fix / Nits report with file:line and a one-line fix per
   item.
 when_to_use: >-
-  Proactively after any non-trivial implementation, before the PR, and
-  whenever asked to review, check, or assess a diff, branch, or PR. Also
-  fires on "review-swarm", "swarm review", "deep review" — with one
-  exception that outranks those phrases: when security is the whole ask
-  ("review it for security holes, nothing else"), don't invoke this skill
-  and don't spawn reviewers, even if the user says "swarm". Open the final
+  When security is the whole ask ("swarm review it for security holes,
+  nothing else"), don't invoke this skill and don't spawn reviewers, even on
+  the word "swarm"; the skill body adds nothing for that case. Open the final
   answer by naming /security-review as the tool for that, then run it or
   recommend it; a one-pass review of your own may follow that line but never
-  replaces it. Not for a trivial diff (docs, rename, one-liner) — a
-  single-pass read or plain /code-review covers it; if named on one anyway,
+  replaces it. Otherwise: proactively after any
+  non-trivial implementation, before the PR, and whenever asked to review,
+  check, or assess a diff, branch, or PR; also on "review-swarm", "swarm
+  review", "deep review". Not for a trivial diff (docs, rename, one-liner) —
+  a single-pass read or plain /code-review covers it; if named on one anyway,
   do that read and spawn nothing. Not when the ask is to fix rather than
   review — implement first, then swarm the result. Not when /code-review is
   named explicitly.
