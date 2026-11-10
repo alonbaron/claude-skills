@@ -44,6 +44,8 @@ Read it; don't re-run those commands as tool calls. Only run one again if the bl
 - **Warnings** — dirty tree, diverged history, stale deps.
 - **Recommended first action** — one line.
 
+The brief is something the user reads, not a check you run silently. If you carry on into the task in the same turn, the final message still opens with it — at minimum the branch line, naming what the ahead/behind counts are relative to (`origin/main`, say) — and the task result follows. Running the comparison without reporting it doesn't count.
+
 ## Sync decision
 
 - Clean + behind only → offer `git pull --ff-only`. Do it only on confirm.
