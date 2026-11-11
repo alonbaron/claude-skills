@@ -308,7 +308,8 @@ One catch worth knowing about humanizer: as of v2.9.1 the plugin puts `SKILL.md`
 - architect asks at most three blocking questions and records the default it proceeded on for every other open question. Every invariant row names two enforcement points, and failure paths have a place in the roadmap's backend section.
 - review-swarm: a security-only ask outranks the trigger phrases, even when the request says "swarm". The skill no longer calls itself free. It says the subagents spend your own tokens.
 - up-to-date: when it carries on into the task in the same turn, the final message still opens with the brief.
-- prompt-generator: generated prompts fit their length to the reader instead of a word cap, and tell the agent to work through ordinary obstacles before asking.
+- prompt-generator: generated prompts fit their length to the reader instead of a word cap, and tell the agent to work through ordinary obstacles before asking. A prompt for a coding or tool agent now carries Agent discipline as a required section with five slots (read first, scope, when blocked, report, commits), because one run dropped "read before you edit" when the rules were a prose list.
+- `evals/rejected-changes.md` records skill changes that were tried and dropped on eval evidence.
 - Five cases' graders changed, so their Fable 5.2 scores don't compare directly with the 5.1 ones. defers-to-simplify now checks only that ponytail stays out, so running `/simplify` passes. security-alone-hands-off passes whether or not review-swarm loads, as long as nothing is spawned. right-sized-new-feature's process grader is split into three. says-no-upstream accepts "unpushed" wording, and no-pull-run stops counting `git stash list`.
 
 ## ◢ What's new in v3.2.2
