@@ -5,10 +5,11 @@
 #   [run-evals: in-container]   the 10 others (ponytail, ask-the-council, prompt-generator)
 #   [run-evals: all]            all 19 in one job (about an hour; more than one five-hour
 #                               plan window held on 2026-10-04, so prefer two runs)
-# Needs the repository secret CLAUDE_CODE_OAUTH_TOKEN (from `claude setup-token`),
-# so the runs count against the owner's Claude plan (the same five-hour window as
-# interactive sessions), not an API key. Only the token is passed to the run step,
-# so there is no doubt which one is billed.
+# Billing is the `billing` input. plan (the default) needs the repository secret
+# CLAUDE_CODE_OAUTH_TOKEN (from `claude setup-token`), so the runs count against the
+# owner's Claude plan (the same five-hour window as interactive sessions). api needs the
+# secret ANTHROPIC_API_KEY and bills that key per token. The run step exports exactly one
+# of the two, so there is no doubt which one is billed.
 name: evals
 on:
   # No schedule: on 2026-10-04 a one-off cron fired 4 h 49 min late, inside a closed plan window,
@@ -40,6 +41,10 @@ on:
         description: "Skill-listing character budget for the agent under test (the CLI default is 1% of the context window)"
         default: "40000"
         required: false
+      billing:
+        description: "plan (CLAUDE_CODE_OAUTH_TOKEN, the owner's five-hour window) or api (ANTHROPIC_API_KEY, billed per token)"
+        default: "plan"
+        required: false
   push:
     branches: ["claude/**"]
 jobs:
@@ -69,7 +74,10 @@ jobs:
         run: npm install -g @anthropic-ai/claude-code@2.1.303 && claude --version
       - name: Run the cases
         env:
-          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # Both secrets arrive under neutral names; the script exports exactly one, so there is no doubt which is billed.
+          PLAN_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          BILLING: ${{ github.event.inputs.billing || 'plan' }}
           SKIP_CASES: ""
           # The agent under test. A push runs Fable 5.2 (the model the skills are written for); workflow_dispatch can pick another.
           MODEL: ${{ github.event.inputs.model || 'claude-fable-5-2' }}
@@ -78,6 +86,15 @@ jobs:
           LISTING_BUDGET: ${{ github.event.inputs.listing_budget || '40000' }}
         run: |
           mkdir evals-ci
+          case "$BILLING" in
+            api)  [ -n "$API_KEY" ] || { echo "billing=api but the ANTHROPIC_API_KEY secret is empty"; exit 1; }
+                  export ANTHROPIC_API_KEY="$API_KEY" ;;
+            plan) [ -n "$PLAN_TOKEN" ] || { echo "billing=plan but the CLAUDE_CODE_OAUTH_TOKEN secret is empty"; exit 1; }
+                  export CLAUDE_CODE_OAUTH_TOKEN="$PLAN_TOKEN" ;;
+            *)    echo "billing must be plan or api, got: $BILLING"; exit 1 ;;
+          esac
+          unset API_KEY PLAN_TOKEN
+          echo "billing: $BILLING"
           # The runner's model has a 200k context, and the default listing budget (1% of it) drops skill
           # descriptions once 24 skills are listed, so the agent can see a skill by name only. With 40000,
           # pushback-on-abstraction went from ponytail never loading (0 of 7 runs) to 1.00 (run 42837413273).
