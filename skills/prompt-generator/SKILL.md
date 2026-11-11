@@ -50,6 +50,9 @@ cut anything that doesn't change the model's behavior.
 - **Steps** — ordered, only if the task is genuinely multi-step.
 - **Output format** — exact shape; lead with the answer.
 - **When blocked** — what to do on ambiguity or missing data.
+- **Agent discipline** — required whenever the prompt drives a coding or tool
+  agent, as its own section; it is not one of the optional picks. Fill every
+  slot of the Agent discipline block below.
 - **Done when** — testable success criteria.
 
 ## Rules every generated prompt must carry
@@ -63,19 +66,31 @@ cut anything that doesn't change the model's behavior.
   asserted.
 
 **Efficiency (no tokenmaxing):**
-- Lead with the answer. No preamble, no restating the question, no "great
-  question", no summary of what you're about to do.
-- Set an output budget (e.g. "≤200 words", "code + ≤3 lines"). Match length to
-  the task, not to fill space.
+- In the final answer, lead with the answer: no preamble, no restating the
+  question, no "great question", no summary of what you're about to do. This
+  governs the final answer only; brief progress notes during long tool work
+  are fine.
+- Fit the length to the task and the reader — say who reads the output and
+  what they need from it, instead of a numeric word cap. Don't fill space.
 - No hedging filler. One clear recommendation beats five caveated options.
 
-**Agent discipline (when the prompt drives a coding/tool agent):**
-- Read before you edit; verify a path or symbol exists before referencing it.
-- Make small, reversible changes. Don't refactor unasked.
-- When blocked or ambiguous, ask — don't guess and barrel ahead.
-- Report honestly: if a step failed or was skipped, say so.
-- Commits are the user's alone — author = the user; never add an AI co-author
-  or `Co-Authored-By`/credit line, and don't mention AI in commit messages.
+**Agent discipline (required section when the prompt drives a coding/tool agent):**
+The generated prompt carries this block as its own section, one line per slot,
+each written for the task at hand. A missing slot is a defect, even when
+another section seems to cover it.
+- **Read first:** read a file before editing it; verify a path or symbol
+  exists before referencing it.
+- **Scope:** small, reversible changes; no refactor or cleanup that wasn't
+  asked for.
+- **When blocked:** work through ordinary obstacles yourself (a failing
+  command, a missing file you can find). When blocked, or when the problem
+  can't be reproduced, stop and report instead of guessing. Ask when the
+  choice is the user's to make or the ambiguity would change the result.
+- **Report:** what was verified and what was not; a step that failed or was
+  skipped is said plainly.
+- **Commits:** the user's alone — author = the user; never add an AI
+  co-author or `Co-Authored-By`/credit line, and don't mention AI in commit
+  messages. If the agent must not commit at all, this slot says so.
 
 ## When not to use
 
@@ -100,5 +115,6 @@ lecture on prompt engineering.
 ## Done when
 
 The prompt is self-contained, has a testable definition of done, carries the
-grounding + efficiency rules, and contains nothing that doesn't change the
-output. If your notes are longer than the prompt, cut the notes.
+grounding + efficiency rules (and, for a coding or tool agent, the Agent
+discipline section with every slot filled), and contains nothing that doesn't
+change the output. If your notes are longer than the prompt, cut the notes.

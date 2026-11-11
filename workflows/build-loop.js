@@ -71,8 +71,9 @@ if (opts.task && !(args && typeof args === "object" && "maxTasks" in args)) opts
 opts.scratch = String(opts.scratch).replace(/\/+$/, "");
 
 // Model tiers. Aliases, not pinned IDs, so each stage follows the newest model of its tier
-// (measured 2026-10-12 on CLI 2.1.296: fable = Fable 5.1, opus = Opus 5.5, sonnet = Sonnet 5.5, haiku = Haiku 5.5,
-// all four recording the effort they ran at; on 2026-09-29, CLI 2.1.284, haiku still resolved to Haiku 4.5, which takes none).
+// (measured 2026-11-11 on CLI 2.1.322: fable = Fable 5.2, opus = Opus 5.5, sonnet = Sonnet 5.5, haiku = Haiku 5.5,
+// all four recording the effort they ran at; on 2026-10-12, CLI 2.1.296, fable resolved to Fable 5.1, and on
+// 2026-09-29, CLI 2.1.284, haiku still resolved to Haiku 4.5, which takes no effort).
 //   fable  - the decisions everything downstream inherits: which row, what "done" means, who is right in a dispute
 //   opus   - deep review and repair: invariants, what the spec missed, fixing what the builder got wrong
 //   sonnet - volume work: building, broad review lenses, research, bookkeeping
@@ -276,7 +277,10 @@ const FIX_SCHEMA = {
 };
 const CLOSE_SCHEMA = {
   type: "object",
-  properties: { ok: { type: "boolean" }, commit: { type: ["string", "null"] } },
+  properties: {
+    ok: { type: "boolean" },
+    commit: { type: ["string", "null"], description: "short hash printed by git log -1 --format=%h after the commit returned; null when nothing was committed" },
+  },
   required: ["ok"],
 };
 
@@ -561,7 +565,8 @@ Read ${dir}/build.md and ${sp ? sp.specPath : dir + "/spec.md"} (sections 1 and 
 
 1. TODO_WORKFLOW.md, row ${p.taskId}: set Status to "${statusCell}" followed by a note in the same register as the finished rows above it: which docs changed (if any), the one-line result, then "Left for <next task id or 'later'>: ..." carrying every advisory finding, deviation and disputed finding worth keeping. Under 90 words. Do not touch other rows. ${outcome.status === STATUS.todo ? 'The status goes back to "[ ]" because nothing was built; the note says why the loop stopped.' : ""}
 2. docs/handoff.md: create it if missing with a two-line header saying it is the build loop's log, newest first. Insert one entry at the top: "## <date from git log -1 --format=%cs> — ${p.taskId} ${outcome.status} (${p.branch})" then 3-6 bullets: what shipped, refute rounds and what they caught, what stays open. Do not recommend which row to pick next; the planner decides from TODO_WORKFLOW.md.
-3. Commit both files: "docs: TODO ${p.taskId} ${subject}". If an uncommitted test file left by the adversarial review lens is still in the tree (it was never adopted by a fix), delete it; the note in step 1 records what it tested. Leave "git status" empty.`,
+3. Commit both files in one commit, made after both are written: "docs: TODO ${p.taskId} ${subject}". Never --amend; if that commit left something out, add a second commit with the same subject. If an uncommitted test file left by the adversarial review lens is still in the tree (it was never adopted by a fix), delete it; the note in step 1 records what it tested. Leave "git status" empty.
+4. After the commit command has returned, run "git status --short" and "git log -1 --format=%h" and read their output. Only then answer: commit = that hash; ok = true only when the status output is empty and the hash is the commit you just made.`,
     { label: `close:${p.taskId}`, phase: "Close", model: M.close, effort: "low", schema: CLOSE_SCHEMA },
   );
 }

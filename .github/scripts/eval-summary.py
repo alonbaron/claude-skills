@@ -57,7 +57,10 @@ def flags(c):
 
 
 def threw(g):
-    return (g.get("explanation") or "").strip().startswith("grader threw")
+    # A grader whose focus file the run never wrote fails on the case's own terms (the arm did not produce
+    # that file): a result, not a spoiled run.
+    e = (g.get("explanation") or "").strip()
+    return e.startswith("grader threw") and not re.search(r'grader focus file "[^"]+": path "[^"]+" does not exist', e)
 
 
 def where(path):

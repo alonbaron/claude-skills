@@ -6,7 +6,7 @@
 
 ```
 claude plugin eval . --tag portable --runs 2 -j 4 \
-  --allow-tools Write Edit --model claude-fable-5-1 --judge-model sonnet \
+  --allow-tools Write Edit --model claude-fable-5-2 --judge-model sonnet \
   --no-publish --trust-plugin --threshold 0.7 --json
 ```
 

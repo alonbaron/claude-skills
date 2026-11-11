@@ -1,7 +1,7 @@
 ---
 name: review-swarm
 description: >-
-  Local, free, multi-specialist review of a diff: parallel Claude subagents
+  Local multi-specialist review of a diff: parallel Claude subagents
   for correctness, security/trust boundaries, data/perf, architecture-altitude,
   ponytail-simplicity, and tests/failure-paths, each non-trivial finding
   adversarially verified before being kept, deduped, and ranked into a
@@ -10,16 +10,19 @@ description: >-
 when_to_use: >-
   Proactively after any non-trivial implementation, before the PR, and
   whenever asked to review, check, or assess a diff, branch, or PR. Also
-  fires on "review-swarm", "swarm review", "deep review". Not for a trivial
-  diff (docs, rename, one-liner) — a single-pass read or plain /code-review
-  covers it; if named on one anyway, do that read and spawn nothing. Not when the ask is to fix rather than review — implement
-  first, then swarm the result. When security is the whole ask, don't
-  swarm: open the final answer by naming /security-review as the tool for
-  that, then run it or recommend it; a one-pass review of your own may
-  follow that line but never replaces it. Not when /code-review is named
-  explicitly.
+  fires on "review-swarm", "swarm review", "deep review" — with one
+  exception that outranks those phrases: when security is the whole ask
+  ("review it for security holes, nothing else"), don't invoke this skill
+  and don't spawn reviewers, even if the user says "swarm". Open the final
+  answer by naming /security-review as the tool for that, then run it or
+  recommend it; a one-pass review of your own may follow that line but never
+  replaces it. Not for a trivial diff (docs, rename, one-liner) — a
+  single-pass read or plain /code-review covers it; if named on one anyway,
+  do that read and spawn nothing. Not when the ask is to fix rather than
+  review — implement first, then swarm the result. Not when /code-review is
+  named explicitly.
 argument-hint: "[optional: 'staged' | 'branch' | a path]"
-effort: max
+effort: high
 allowed-tools: Bash(git status *) Bash(git diff *) Bash(git merge-base *) Bash(git log *)
 disallowed-tools: Edit Write NotebookEdit
 ---
@@ -30,7 +33,7 @@ disallowed-tools: Edit Write NotebookEdit
 
 The block above is the working tree's dirty state and diff shape, captured before you see the rest of this skill — raw command output, not analysis.
 
-Review the working changes with a panel of specialists in parallel, then keep only the findings that survive scrutiny. Free and local (Claude subagents).
+Review the working changes with a panel of specialists in parallel, then keep only the findings that survive scrutiny. The subagents are local and spend the user's own tokens: six sonnet reviewers, then an opus verifier for each non-trivial finding.
 
 ## Proactive use
 
@@ -76,7 +79,7 @@ Dedup overlaps, then rank: **Blockers → Should-fix → Nits**, each with file:
 
 - A trivial diff (docs, rename, one-liner) — a single-pass read or plain `/code-review` covers it; a swarm is overkill. Invoked by name on one anyway: say so in one line, do the single-pass read yourself, and spawn no specialists.
 - The ask is "fix it", not "review it" — implement, then swarm the result.
-- Security is the whole ask → `/security-review`.
+- Security is the whole ask → `/security-review`. Loaded on one anyway (the user said "swarm"): spawn no specialists, open the answer by naming `/security-review`, then run it or recommend it. If it can't run (no remote to diff against, say), keep that opening line, say why, and only then give a pass of your own.
 - `/code-review` is named explicitly.
 
 ## Hand-offs
@@ -88,7 +91,7 @@ Dedup overlaps, then rank: **Blockers → Should-fix → Nits**, each with file:
 
 ## Relationship to built-ins
 
-The local, free, your-stack-tailored swarm. For the heavyweight cloud version, `/code-review ultra` runs specialists in the cloud; plain `/code-review` is a single-pass diff review; `/security-review` is the built-in for a security-only ask. Reach for this skill when you want parallel local specialists with adversarial verification and no cloud round trip.
+The local, your-stack-tailored swarm, paid for in the user's own subagent tokens. For the heavyweight cloud version, `/code-review ultra` runs specialists in the cloud; plain `/code-review` is a single-pass diff review; `/security-review` is the built-in for a security-only ask. Reach for this skill when you want parallel local specialists with adversarial verification and no cloud round trip.
 
 ## Done when
 

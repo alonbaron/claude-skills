@@ -5,9 +5,11 @@
 #   [run-evals: in-container]   the 10 others (ponytail, ask-the-council, prompt-generator)
 #   [run-evals: all]            all 19 in one job (about an hour; more than one five-hour
 #                               plan window held on 2026-10-04, so prefer two runs)
-# Needs the repository secret ANTHROPIC_API_KEY, so the runs are billed per token
-# to that API key, not counted against the owner's Claude plan. Only the key is
-# passed to the run step, so there is no doubt which one is billed.
+# Billing is the `billing` input. plan (the default) needs the repository secret
+# CLAUDE_CODE_OAUTH_TOKEN (from `claude setup-token`), so the runs count against the
+# owner's Claude plan (the same five-hour window as interactive sessions). api needs the
+# secret ANTHROPIC_API_KEY and bills that key per token. The run step exports exactly one
+# of the two, so there is no doubt which one is billed.
 name: evals
 on:
   # No schedule: on 2026-10-04 a one-off cron fired 4 h 49 min late, inside a closed plan window,
@@ -17,7 +19,7 @@ on:
     inputs:
       model:
         description: "Model the agent under test runs on"
-        default: "claude-fable-5-1"
+        default: "claude-fable-5-2"
         required: false
       cases:
         description: "sandboxed, in-container, or all"
@@ -26,6 +28,22 @@ on:
       only:
         description: "Space-separated <skill>/<case> (e.g. the summary's re-run line); when set, only those cases run"
         default: ""
+        required: false
+      runs:
+        description: "Runs per arm (1 for quick checks, 2 for suite measurement)"
+        default: "2"
+        required: false
+      ablation:
+        description: "with-without (both arms) or none (with-plugin arm only)"
+        default: "with-without"
+        required: false
+      listing_budget:
+        description: "Skill-listing character budget for the agent under test (the CLI default is 1% of the context window)"
+        default: "40000"
+        required: false
+      billing:
+        description: "plan (CLAUDE_CODE_OAUTH_TOKEN, the owner's five-hour window) or api (ANTHROPIC_API_KEY, billed per token)"
+        default: "plan"
         required: false
   push:
     branches: ["claude/**"]
@@ -38,7 +56,8 @@ jobs:
       contents: write
     env:
       # Runs per arm, for the eval and for the summary, which flags an arm that got fewer.
-      RUNS: "2"
+      RUNS: ${{ github.event.inputs.runs || '2' }}
+      ABLATION: ${{ github.event.inputs.ablation || 'with-without' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -55,14 +74,31 @@ jobs:
         run: npm install -g @anthropic-ai/claude-code@2.1.303 && claude --version
       - name: Run the cases
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Both secrets arrive under neutral names; the script exports exactly one, so there is no doubt which is billed.
+          PLAN_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          BILLING: ${{ github.event.inputs.billing || 'plan' }}
           SKIP_CASES: ""
-          # The agent under test. A push runs Fable 5.1 (the model the skills are written for); workflow_dispatch can pick another.
-          MODEL: ${{ github.event.inputs.model || 'claude-fable-5-1' }}
+          # The agent under test. A push runs Fable 5.2 (the model the skills are written for); workflow_dispatch can pick another.
+          MODEL: ${{ github.event.inputs.model || 'claude-fable-5-2' }}
           CASES: "${{ github.event.inputs.cases || (contains(github.event.head_commit.message, '[run-evals: all]') && 'all') || (contains(github.event.head_commit.message, '[run-evals: in-container]') && 'in-container') || 'sandboxed' }}"
           ONLY: ${{ github.event.inputs.only }}
+          LISTING_BUDGET: ${{ github.event.inputs.listing_budget || '40000' }}
         run: |
           mkdir evals-ci
+          case "$BILLING" in
+            api)  [ -n "$API_KEY" ] || { echo "billing=api but the ANTHROPIC_API_KEY secret is empty"; exit 1; }
+                  export ANTHROPIC_API_KEY="$API_KEY" ;;
+            plan) [ -n "$PLAN_TOKEN" ] || { echo "billing=plan but the CLAUDE_CODE_OAUTH_TOKEN secret is empty"; exit 1; }
+                  export CLAUDE_CODE_OAUTH_TOKEN="$PLAN_TOKEN" ;;
+            *)    echo "billing must be plan or api, got: $BILLING"; exit 1 ;;
+          esac
+          unset API_KEY PLAN_TOKEN
+          echo "billing: $BILLING"
+          # The runner's model has a 200k context, and the default listing budget (1% of it) drops skill
+          # descriptions once 24 skills are listed, so the agent can see a skill by name only. With 40000,
+          # pushback-on-abstraction went from ponytail never loading (0 of 7 runs) to 1.00 (run 42837413273).
+          export SLASH_COMMAND_TOOL_CHAR_BUDGET="$LISTING_BUDGET"
           if [ -n "$ONLY" ]; then
             # Named cases only, e.g. the ones a summary listed for a re-run; a name that is not evals/<skill>/<case>,
             # or an `only` of nothing but blanks, stops the job. A name given twice is copied once.
@@ -85,9 +121,21 @@ jobs:
           echo "cases: ${ONLY:-$CASES} ($(ls -d evals-ci/*/* | wc -l))"
           # Cases that already have a clean result on this commit's skills; space-separated <skill>/<case>.
           for c in $SKIP_CASES; do rm -rf "evals-ci/$c"; done
-          claude plugin eval . --eval-dir evals-ci --runs "$RUNS" -j 4 --scaffold \
+          claude plugin eval . --eval-dir evals-ci --runs "$RUNS" -j 2 --ablation "$ABLATION" --scaffold \
             --allow-tools Write Edit Bash --model "$MODEL" --judge-model sonnet \
-            --no-publish --trust-plugin --threshold 0.7 --json evals-ci/result.json
+            --no-publish --trust-plugin --threshold 0.7 --keep-temp --json evals-ci/result.json
+      - name: Collect the traces
+        if: always()
+        run: |
+          # result.json names each run by its tracePath (/tmp/claude-eval-<id>/out/trace.jsonl); the copy is <id>.jsonl.
+          # A trace that shows an API key is left out, since the artifact is readable by anyone who can read the repo.
+          mkdir -p evals-ci/traces
+          for t in /tmp/claude-eval-*/out/trace.jsonl; do
+            [ -f "$t" ] || continue
+            if grep -q "sk-ant-" "$t"; then echo "left out (shows a key): $t"; continue; fi
+            id=${t#/tmp/claude-eval-}; cp "$t" "evals-ci/traces/${id%%/*}.jsonl"
+          done
+          ls -l evals-ci/traces
       - name: Summary
         if: always()
         # `shell: bash` adds pipefail, so a crash of the script fails this step instead of hiding behind tee;
@@ -100,7 +148,7 @@ jobs:
         if: always()
         env:
           CASES: "${{ github.event.inputs.cases || (contains(github.event.head_commit.message, '[run-evals: all]') && 'all') || (contains(github.event.head_commit.message, '[run-evals: in-container]') && 'in-container') || 'sandboxed' }}"
-          MODEL: ${{ github.event.inputs.model || 'claude-fable-5-1' }}
+          MODEL: ${{ github.event.inputs.model || 'claude-fable-5-2' }}
           ONLY: ${{ github.event.inputs.only }}
         run: |
           # The branch is CI's own record, written by the Actions bot, never merged: main stays the owner's.
@@ -135,3 +183,4 @@ jobs:
           path: |
             evals-ci/result.json
             evals-ci/results/
+            evals-ci/traces/

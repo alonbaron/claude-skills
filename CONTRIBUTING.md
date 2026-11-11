@@ -31,7 +31,7 @@ From the repo root:
 
 ```text
 claude plugin eval . --case <case-name> --runs 2 --allow-tools Write Edit \
-  --model claude-fable-5-1 --judge-model sonnet --no-publish --trust-plugin --threshold 0.7
+  --model claude-fable-5-2 --judge-model sonnet --no-publish --trust-plugin --threshold 0.7
 ```
 
 For a `needs-scaffold` case, or any case for architect, review-swarm or up-to-date (they run shell commands when they load), add `--scaffold` and grant `Bash` too (`--allow-tools Write Edit Bash`). That needs a host where `bwrap` sandboxing works, such as a plain Linux VM or a CI runner; [`evals/README.md`](evals/README.md) has the details. At `--runs 2` on Fable 5.1, the 2026-10-04 runs averaged about $2.50 per in-container case and $5.30 per sandboxed one (API-equivalent). Results land in `evals/results/<timestamp>/`, which is gitignored.

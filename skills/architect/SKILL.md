@@ -17,7 +17,7 @@ when_to_use: >-
   current docs — just do it. Not for pure implementation of an
   already-designed phase — code, don't re-spec.
 argument-hint: "[what you're building]   ·   add 'audit' to check existing docs for drift"
-effort: max
+effort: high
 ---
 
 !`ls -1 SOURCE_OF_TRUTH.md ARCHITECTURE_ROADMAP.md TODO_WORKFLOW.md CLAUDE.md docs/architecture 2>/dev/null || true`
@@ -59,7 +59,8 @@ everywhere else.
    SoT. Header block (`Version · Status · Owner`), then §-numbered: `0` Executive
    context · `1` Tech stack (Layer · Tech · Role table) · `2` Data schema
    (low-level: columns, types, constraints, indexes, JSONB shapes, decision
-   call-outs) · `3` Backend (structure · services · API-contract table) · `4`
+   call-outs) · `3` Backend (structure · services · API-contract table ·
+   failure paths: per component, what fails and what happens next) · `4`
    Frontend · `5` Execution phases · `6` Non-functional requirements.
 3. **`docs/architecture/00-index.md` + `01-…NN`** (larger projects only) —
    agent-friendly modular extracts of the roadmap sections. The index carries a
@@ -157,10 +158,18 @@ right doc and cross-linked; it does not get re-authored from scratch.
   implementation is not.
 - Every component has a defined responsibility *and* a failure mode.
 - Flag unknowns as open questions — never invent a constraint, a number, or an
-  API you haven't confirmed.
+  API you haven't confirmed. At most three are blocking, and those are the ones
+  the reply asks. Every other open question records the default you proceeded
+  on (a `Default if unanswered` column), so the list reads as assumptions to
+  confirm, not a questionnaire.
 - A choice you made that the user didn't give (a status code, a limit, fail-open
   vs fail-closed, a library) is a proposal, not a fact: mark it `(proposed)` in
   the doc and list it under "Decisions to confirm" in your reply.
+- Every invariant row names two enforcement points in its `Enforced at` cell,
+  each by mechanism: the check in app code, and the platform or storage layer
+  behind it. If the second is not settled, name the candidate you would pick,
+  mark it `(proposed)`, and put the open question after it. Never write "no
+  second boundary yet" or point at the Decisions section instead of naming it.
 - Decision-dense: tables and bullets, not prose. Call out reversed or forbidden
   decisions inline (`> Do not reintroduce X without an explicit decision`).
 - Verify or say you don't know; never invent a path, API, number, or fact.
