@@ -1,0 +1,125 @@
+{
+  "schemaVersion": 1,
+  "claudeVersion": "2.1.303",
+  "startedAt": "2026-11-11T13:06:44.753Z",
+  "durationSeconds": 13,
+  "costUsd": 0.100124,
+  "partial": false,
+  "suite": {
+    "root": "/home/runner/work/claude-skills/claude-skills",
+    "ablation": "none",
+    "modelOverride": "claude-fable-5-2",
+    "judgeModel": "sonnet",
+    "threshold": 0.7,
+    "concurrency": 2,
+    "plugins": [
+      {
+        "name": "alon-skills",
+        "version": "3.2.3",
+        "path": "/home/runner/work/claude-skills/claude-skills"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "declines-low-stakes",
+      "dir": "evals-ci/ask-the-council/declines-low-stakes",
+      "source": "prose",
+      "promptMarkdown": "Should I use date-fns or dayjs for formatting timestamps in my Next.js app? Both seem basically fine, I just can't decide.",
+      "runsPerCase": 3,
+      "timeoutSeconds": 900,
+      "maxTurns": 40,
+      "graders": [
+        {
+          "name": "declines-panel-result",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the response treats this as a low-stakes, reversible-in-an-afternoon choice and either (a) answers directly with a single pick (date-fns or dayjs) and a one-line reason without seating an advisor panel, or (b) explicitly states why a full council isn't warranted for this decision before giving a direct pick. FAIL if the response seats a panel of advisors, presents multiple diverging positions for this choice, or hedges without committing to one library.",
+          "config": {
+            "criteria": "PASS if the response treats this as a low-stakes, reversible-in-an-afternoon choice and either (a) answers directly with a single pick (date-fns or dayjs) and a one-line reason without seating an advisor panel, or (b) explicitly states why a full council isn't warranted for this decision before giving a direct pick. FAIL if the response seats a panel of advisors, presents multiple diverging positions for this choice, or hedges without committing to one library.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "no-subagents-spawned",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "skill-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?ask-the-council\"",
+            "min": 0
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 1,
+            "costUsd": 0.100124,
+            "judgeCostUsd": 0.004566,
+            "durationSeconds": 13,
+            "startedAt": "2026-11-11T13:06:44.774Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-orIt1K/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "declines-panel-result",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "**date-fns**, though if all you need is formatting, you may not need either.\n\n- **Try native `Intl` first.** `Intl.DateTimeFormat` and `Intl.RelativeTimeFormat` cover most display needs (\"Nov 11, 2026\", \"3:42 PM\", \"2 hours ago\") with no dependency, in both Server and Client Components:\n  ```ts\n  new Intl.DateTimeFormat(\"en-US\", { dateStyle: \"medium\", timeStyle: \"short\" }).format(date)\n  ```\n- **If you want a library, pick date-fns.** It uses plain functions on native `Date` objects, so you import only what you use and nothing needs wrapping or unwrapping when passing props from server to client. Its TypeScript types are solid, and v4 has first-class time zone support via `@date-fns/tz`.\n- **dayjs is fine too.** Its main draws are the chainable Moment-style API and a tiny core, but time zones, relative time and custom formats each need a plugin, and its wrapper objects can't be passed as props across the server/client boundary.\n\nWhichever you choose, the thing that actually bites in Next.js is hydration mismatches. The server formats in its own time zone and locale (often UTC) and the browser in the user's. Either pass an explicit `timeZone`, or format in a client component after mount.\n\nThis choice is cheap to reverse, especially if your formatting lives in one small `formatDate` helper."
+              },
+              {
+                "name": "no-subagents-spawned",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 0..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 1,
+        "passRate": 1
+      }
+    }
+  ],
+  "aggregates": {
+    "casesTotal": 1,
+    "casesPassed": 1,
+    "overallScore": 1,
+    "overallPassRate": 1
+  }
+}
