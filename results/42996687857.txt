@@ -1,0 +1,18 @@
+run: 42996687857 https://github.com/alonbaron/claude-skills/actions/runs/42996687857
+event: workflow_dispatch  commit: 3ee83a9d1bbe978708013ed4216011930066a494  ref: fix/fable-5-2-evals
+model: claude-fable-5-2  cases: sandboxed  job status at publish: success
+only: ask-the-council/forces-divergence
+cli: 2.1.303 (Claude Code)
+started: 2026-11-11T09:39:25Z
+
+valid 1 of 1
+re-run: none
+cost $0.69  runner aggregates over the 1 cases in the results: {"casesTotal": 1, "casesPassed": 1, "overallScore": 1, "overallPassRate": 1}
+
+== forces-divergence  with 1.00  without -
+   advisor-mandates-distinct          with P    without 
+   advisors-opus-routing              with P    without 
+   chairman-commits                   with P    without 
+   chairman-names-risk                with P    without 
+   chairman-names-tradeoff            with P    without 
+   skill-fired                        with P    without 
