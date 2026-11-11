@@ -1,18 +1,15 @@
 ---
 name: ask-the-council
 description: >-
-  Convenes a panel of opinionated Claude advisors, each with a distinct
-  mandate and a forbidden move so they genuinely diverge, then a Chairman
-  synthesis that commits to one recommendation with the decisive tradeoff and
-  the strongest dissent named.
+  Seats a panel of Claude advisors with opposed mandates, then a Chairman
+  commits to one recommendation and names the strongest dissent.
 when_to_use: >-
-  Trigger proactively for high-stakes design, architecture, or tradeoff
-  decisions where credible options genuinely compete and being wrong is
-  expensive to reverse — schema, auth model, vendor lock-in, an irreversible
-  migration. Also on "ask the council", "the council", "get a panel". Not for
-  fact-finding (the council opines, it doesn't verify — run research
-  instead), not for calls with one obvious answer, and not for anything
-  reversible in an afternoon: decide, ship, and revisit if it bites.
+  Use unasked for a high-stakes decision where credible options compete and
+  being wrong is expensive to reverse: schema, auth model, vendor lock-in,
+  an irreversible migration. Also on "ask the council", "the council", "get
+  a panel". Not for fact-finding (it opines, it doesn't verify), a call with
+  one obvious answer, or anything reversible in an afternoon: decide
+  directly.
 argument-hint: "[the decision or question] [+ 'deep' for the full panel]"
 effort: high
 ---

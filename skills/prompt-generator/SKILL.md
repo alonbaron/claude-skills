@@ -1,17 +1,15 @@
 ---
 name: prompt-generator
 description: >-
-  Turns a vague ask into a rigorous, grounded, token-efficient prompt for
-  another agent or LLM: role and objective, testable done criteria,
-  anti-hallucination and anti-tokenmaxing rules baked into the generated
-  prompt itself, and strict agent discipline for coding-agent hand-offs.
+  Turns a rough ask into a grounded, token-efficient prompt for another agent
+  or LLM, with testable done criteria and agent-discipline rules for
+  coding-agent hand-offs.
 when_to_use: >-
-  Use proactively when the user hands over a prompt, a task spec, or a "have
-  it do X" destined for another agent or LLM — also on "write a prompt",
-  "improve this prompt", "prompt for an agent". Not for text a human will
-  read (docs, messages, specs for people) — just write it. Not for work
-  you'll execute yourself this session — just do it, don't write yourself a
-  prompt.
+  Use unasked when the user hands over a prompt, a task spec, or a "have it
+  do X" meant for another agent or LLM. Also on "write a prompt", "improve
+  this prompt", "prompt for an agent". Not for text a human will read (docs,
+  messages, specs for people): just write it. Not for work you'll do
+  yourself this session: just do it.
 argument-hint: "[task, or a rough prompt to refine]"
 ---
 

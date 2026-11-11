@@ -1,21 +1,16 @@
 ---
 name: architect
 description: >-
-  Produces Alon's design-doc system before code: SOURCE_OF_TRUTH.md,
-  ARCHITECTURE_ROADMAP.md, TODO_WORKFLOW.md, CLAUDE.md, plus a modular
-  docs/architecture set for larger projects. Model first: data and invariants
-  before framework, every invariant enforced at two boundaries, failure paths
-  designed as deliberately as happy paths, one source of truth everything else
-  links back to. Also audits existing docs against the code, drift cited
-  both sides.
+  Writes the design docs before code (SOURCE_OF_TRUTH.md,
+  ARCHITECTURE_ROADMAP.md, TODO_WORKFLOW.md, CLAUDE.md) and audits existing
+  docs against the code.
 when_to_use: >-
-  Use proactively, no permission asked, when a new app, feature, or workstream
-  is starting and no design docs exist yet, or to wire one missing fact into
-  docs that already exist. Also run "architect audit" when docs may have
-  drifted from code. Fires on "architect", "design doc", "spec this out",
-  "roadmap", "audit the docs". Not for a small fix already fully covered by
-  current docs — just do it. Not for pure implementation of an
-  already-designed phase — code, don't re-spec.
+  Use unasked when a new app, feature, or workstream starts with no design
+  docs, or to wire one missing fact into existing docs. Run "architect
+  audit" when docs may have drifted from code. Also on "architect", "design
+  doc", "spec this out", "roadmap", "audit the docs". Not for a small fix
+  current docs already cover or for implementing an already-designed phase:
+  just code.
 argument-hint: "[what you're building]   ·   add 'audit' to check existing docs for drift"
 effort: high
 ---

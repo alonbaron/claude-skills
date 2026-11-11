@@ -1,26 +1,16 @@
 ---
 name: review-swarm
 description: >-
-  Local multi-specialist review of a diff: parallel Claude subagents
-  for correctness, security/trust boundaries, data/perf, architecture-altitude,
-  ponytail-simplicity, and tests/failure-paths, each non-trivial finding
-  adversarially verified before being kept, deduped, and ranked into a
-  Blockers / Should-fix / Nits report with file:line and a one-line fix per
-  item.
+  Reviews a diff with parallel local specialists, verifies each finding, and
+  ranks the survivors as Blockers / Should-fix / Nits.
 when_to_use: >-
-  Proactively after any non-trivial implementation, before the PR, and
-  whenever asked to review, check, or assess a diff, branch, or PR. Also
-  fires on "review-swarm", "swarm review", "deep review" — with one
-  exception that outranks those phrases: when security is the whole ask
-  ("review it for security holes, nothing else"), don't invoke this skill
-  and don't spawn reviewers, even if the user says "swarm". Open the final
-  answer by naming /security-review as the tool for that, then run it or
-  recommend it; a one-pass review of your own may follow that line but never
-  replaces it. Not for a trivial diff (docs, rename, one-liner) — a
-  single-pass read or plain /code-review covers it; if named on one anyway,
-  do that read and spawn nothing. Not when the ask is to fix rather than
-  review — implement first, then swarm the result. Not when /code-review is
-  named explicitly.
+  Use unasked after a non-trivial implementation or when asked to review a
+  diff, branch, or PR. Also on "review-swarm", "swarm review", "deep
+  review". Security is the whole ask: don't invoke this or spawn reviewers,
+  even on "swarm"; open the answer by naming /security-review, then run or
+  recommend it. Trivial diff (docs, rename, one-liner): read it once or
+  point to /code-review; spawn nothing, even when named. Not for a fix
+  request or when /code-review is named.
 argument-hint: "[optional: 'staged' | 'branch' | a path]"
 effort: high
 allowed-tools: Bash(git status *) Bash(git diff *) Bash(git merge-base *) Bash(git log *)
