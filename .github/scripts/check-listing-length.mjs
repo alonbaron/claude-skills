@@ -9,8 +9,6 @@ const CAP = 600
 // A skill listed here may pass CAP, up to its own ceiling. Each ceiling is the measured length of the
 // text that passed the evals, so that text cannot grow again without this file changing too.
 const CEILING = {
-  // Vendored from DietrichGebert/ponytail. Cut to 568, the skill stopped loading in two eval cases (run 43083796116).
-  ponytail: 1049,
   // The security hand-off clause. Without it the final answer stopped naming /security-review (run 43083796116).
   'review-swarm': 671,
 }
