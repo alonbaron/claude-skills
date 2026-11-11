@@ -1,0 +1,39 @@
+run: 42991253003 https://github.com/alonbaron/claude-skills/actions/runs/42991253003
+event: workflow_dispatch  commit: 3ee83a9d1bbe978708013ed4216011930066a494  ref: fix/fable-5-2-evals
+model: claude-fable-5-2  cases: sandboxed  job status at publish: success
+only: prompt-generator/coding-agent-repo-prompt prompt-generator/human-prose-boundary prompt-generator/whole-build-scope-check ask-the-council/declines-low-stakes
+cli: 2.1.303 (Claude Code)
+started: 2026-11-11T09:04:35Z
+
+valid 4 of 4
+re-run: none
+cost $1.69  runner aggregates over the 4 cases in the results: {"casesTotal": 4, "casesPassed": 4, "overallScore": 0.9821428571428572, "overallPassRate": 0.875, "meanDelta": 0.09523809523809526}
+
+== declines-low-stakes  with 1.00  without 1.00
+   declines-panel-result              with PP   without PP
+   no-subagents-spawned               with PP   without PP
+   skill-fired                        with PP   without 
+
+== coding-agent-repo-prompt  with 0.93  without 0.71
+   no-edit                            with PP   without PP
+   no-write                           with PP   without PP
+   result-agent-discipline            with P.   without ..
+   result-hedges-hunch                with PP   without PP
+   result-no-invented-facts           with PP   without PP
+   result-output-shape                with PP   without PP
+   result-sync-first                  with PP   without ..
+   skill-fired                        with PP   without 
+   FAIL with#1 result-agent-discipline: judge votes: FAIL FAIL FAIL
+      evidence: Tightening this into a rigorous hand-off prompt. | | ```markdown | # Task: find and fix the 500 on POST /orders when quantity is 0 | | You are debugging a Node/Express + Postgres API in the repo at `C:/dev/acme-api`. | Objective: find the real root cause of a 500 from `POST /orders` when the | request's quantity is 0, fix it with the smallest correct change, and prove the | fix with a test. | | ## What is known, and what is not | | Reported by the repo owner, not verified by anyone: | - `POST /orders` returns a 500 when quantity is 0, and the failure is described | as intermittent. | - The stack is Node/Express with Postgres. | | Unverified hunch, to be treated as a lead only: | - The owner 
+
+== human-prose-boundary  with 1.00  without 1.00
+   delivers-help                      with PP   without PP
+   no-agent-prompt-scaffold           with PP   without PP
+   no-fabricated-facts                with PP   without PP
+   skill-not-fired                    with PP   without PP
+
+== whole-build-scope-check  with 1.00  without 0.83
+   no-edit                            with PP   without PP
+   no-write                           with PP   without PP
+   result                             with PP   without .P
+   skill-fired                        with PP   without 
