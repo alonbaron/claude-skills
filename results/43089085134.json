@@ -1,0 +1,1143 @@
+{
+  "schemaVersion": 1,
+  "claudeVersion": "2.1.303",
+  "startedAt": "2026-11-11T19:38:53.242Z",
+  "durationSeconds": 466,
+  "costUsd": 5.6219866000000005,
+  "partial": false,
+  "suite": {
+    "root": "/home/runner/work/claude-skills/claude-skills",
+    "ablation": "none",
+    "modelOverride": "claude-fable-5-2",
+    "judgeModel": "sonnet",
+    "threshold": 0.7,
+    "concurrency": 2,
+    "plugins": [
+      {
+        "name": "alon-skills",
+        "version": "3.2.3",
+        "path": "/home/runner/work/claude-skills/claude-skills"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "defers-to-simplify",
+      "dir": "evals-ci/ponytail/defers-to-simplify",
+      "source": "mixed",
+      "promptMarkdown": "This PR already works and is merged-ready, but I added a couple of helper functions I probably didn't need along the way — formatDateRange() and isValidSlug() in src/utils.ts — can you clean it up before I open the PR?",
+      "runsPerCase": 3,
+      "timeoutSeconds": 300,
+      "maxTurns": 15,
+      "graders": [
+        {
+          "name": "result",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the response treats this as tidying an already-written, working diff rather than running ponytail: it either hands the cleanup to `/simplify` (including running `/simplify` and applying or reporting its cleanup, such as inlining single-use helpers or keeping them as-is), or reviews `formatDateRange()` and `isValidSlug()` as they stand and leaves the decision to the user. Either is fine.\n\nFAIL if the response invokes ponytail (announcing \"Ponytail:\", adding `// ponytail:` comments, or framing the answer in ponytail's ladder / lite-full-ultra levels).",
+          "config": {
+            "criteria": "PASS if the response treats this as tidying an already-written, working diff rather than running ponytail: it either hands the cleanup to `/simplify` (including running `/simplify` and applying or reporting its cleanup, such as inlining single-use helpers or keeping them as-is), or reviews `formatDateRange()` and `isValidSlug()` as they stand and leaves the decision to the user. Either is fine.\n\nFAIL if the response invokes ponytail (announcing \"Ponytail:\", adding `// ponytail:` comments, or framing the answer in ponytail's ladder / lite-full-ultra levels).",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "skill-not-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?ponytail\"",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 9,
+            "costUsd": 0.1901592,
+            "judgeCostUsd": 0.0040500000000000015,
+            "durationSeconds": 41,
+            "startedAt": "2026-11-11T19:38:53.304Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-0Crnwj/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "result",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "Both helpers were actually in use, each by exactly one caller, so I inlined them rather than just deleting them, and removed `src/utils.ts`. Behaviour is unchanged, the two remaining files type-check under `tsc --strict`, and there are no tests in the repo to run.\n\n- **`formatDateRange()`**: folded into `renderReportHeader()` in `src/report.ts`, which now does the date formatting itself.\n- **`isValidSlug()`**: replaced by a `SLUG_PATTERN` constant in `src/routes.ts`; `resolveRoute()` still rejects invalid slugs with the same regex and the same error.\n- **`src/utils.ts`**: deleted, since those two functions were all it contained.\n\nThe changes are uncommitted (the deletion is staged, the two edits are not), so you can review the diff before committing.\n\nI skipped the four parallel review agents that `/simplify` normally launches: the whole diff is about 20 lines, so I reviewed it directly and found nothing else to clean up."
+              },
+              {
+                "name": "skill-not-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.5,
+            "passed": false,
+            "turns": 11,
+            "costUsd": 0.1878882,
+            "judgeCostUsd": 0.009834,
+            "durationSeconds": 34,
+            "startedAt": "2026-11-11T19:38:53.304Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-HHZP2M/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "result",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "Both helpers are gone: each had exactly one caller, so I inlined them and deleted `src/utils.ts`, which was left empty. Behaviour is unchanged, and `tsc --noEmit --strict` passes on the result; there are no tests in the repo to run.\n\n- **`formatDateRange()`**: now a local `fmt` inside `renderReportHeader` in `src/report.ts`.\n- **`isValidSlug()`**: the regex check now sits directly in `resolveRoute` in `src/routes.ts`, with the same `invalid slug` error.\n\nI skipped `/simplify`'s four-agent review, since the whole change is three small files I had already read in full. Nothing else in them needed cleanup.\n\nThe changes are uncommitted in the working tree."
+              },
+              {
+                "name": "skill-not-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 0.75,
+        "passRate": 0.5
+      }
+    },
+    {
+      "name": "pushback-on-abstraction",
+      "dir": "evals-ci/ponytail/pushback-on-abstraction",
+      "source": "prose",
+      "promptMarkdown": "I'm adding response caching to our Node/Express API for the /products endpoint since it's getting hammered. Can you build a Cache class with a pluggable backend interface (in-memory now, Redis later) and a CacheStrategy interface so we can swap eviction policies down the line?",
+      "runsPerCase": 3,
+      "timeoutSeconds": 600,
+      "maxTurns": 15,
+      "graders": [
+        {
+          "name": "avoids-padded-interfaces",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Write",
+            "input_match": "(class|interface)\\s+\\w*(Strategy|Backend)\\b",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "names-simplification-tradeoff",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final message explicitly frames what was actually delivered as a\ndeliberate simplification of the requested pluggable-backend interface\nand/or the CacheStrategy interface — for example by saying it skipped the\nseparate backend/strategy interfaces, by explaining that a swappable\neviction-policy abstraction isn't justified when there is one caller and no\nsecond backend today, or by declining one of the two interfaces and stating\nwhy. A brief \"here's a lazier alternative\" aside is not enough on its own if\nit isn't what was actually built.\n\nFAIL if the final message presents the delivered code as implementing the\npluggable-backend interface and the CacheStrategy interface as originally\nrequested, with no such reasoning, or if a simpler alternative is only\nmentioned in passing while the interfaces were still built as asked.",
+          "config": {
+            "criteria": "PASS if the final message explicitly frames what was actually delivered as a\ndeliberate simplification of the requested pluggable-backend interface\nand/or the CacheStrategy interface — for example by saying it skipped the\nseparate backend/strategy interfaces, by explaining that a swappable\neviction-policy abstraction isn't justified when there is one caller and no\nsecond backend today, or by declining one of the two interfaces and stating\nwhy. A brief \"here's a lazier alternative\" aside is not enough on its own if\nit isn't what was actually built.\n\nFAIL if the final message presents the delivered code as implementing the\npluggable-backend interface and the CacheStrategy interface as originally\nrequested, with no such reasoning, or if a simpler alternative is only\nmentioned in passing while the interfaces were still built as asked.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "names-upgrade-trigger",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final message names a concrete, specific condition under which\nthe delivered solution should be replaced or upgraded — for example: move to\nRedis if the cache needs to survive a restart, or once the app scales past\none process/instance. A generic \"you can always extend this later\" with no\nconcrete trigger does not count.\n\nFAIL if no such concrete upgrade condition is stated anywhere in the final\nmessage.",
+          "config": {
+            "criteria": "PASS if the final message names a concrete, specific condition under which\nthe delivered solution should be replaced or upgraded — for example: move to\nRedis if the cache needs to survive a restart, or once the app scales past\none process/instance. A generic \"you can always extend this later\" with no\nconcrete trigger does not count.\n\nFAIL if no such concrete upgrade condition is stated anywhere in the final\nmessage.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "no-subagents-spawned",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "ships-working-code",
+          "type": "file_exists",
+          "weight": 1,
+          "config": {
+            "path": "**/*.js",
+            "exists": true
+          }
+        },
+        {
+          "name": "skill-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?ponytail\""
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 0.8333333333333334,
+            "passed": false,
+            "turns": 8,
+            "costUsd": 0.2326512,
+            "judgeCostUsd": 0.013670000000000009,
+            "durationSeconds": 54,
+            "startedAt": "2026-11-11T19:39:27.090Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-cgBbaL/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "avoids-padded-interfaces",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Write called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "names-simplification-tradeoff",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I built the lazy version instead of what you asked for: one Express middleware in `cache.ts` (about 30 lines, no dependencies), with no `Cache` class, backend interface or `CacheStrategy` interface. The 4 tests in `cache.test.ts` pass under `node --test`, but only against a fake req/res. The repo is empty, so it has not been type-checked against Express types or run in a real app.\n\n```ts\nimport { cacheResponse } from './cache';\n\napp.get('/products', cacheResponse(30_000), productsHandler);\n```\n\nIt caches 200 responses to GET requests sent via `res.json`, keyed by URL, with a TTL and a 1000-entry cap that evicts the oldest entry first.\n\n- **Per-user responses:** the key is the URL only, so don't mount it on a route whose response varies by user (auth, per-customer pricing) — one user's response would be served to another.\n- **Expiry spikes:** when a hot key expires, every concurrent request hits your handler until the first one finishes.\n- **CDN alternative:** if a CDN or reverse proxy sits in front of the API, `res.set('Cache-Control', 'public, max-age=30')` may do the job with no cache code at all.\n\nSkipped:\n- **Backend interface:** Redis needs async `get`/`set`, so a sync interface drawn now would be redrawn then. When Redis lands, the swap is the three `store.*` calls.\n- **`CacheStrategy` interface:** add it when a second eviction policy actually exists.\n\nIf you need the full pluggable design today (for example, Redis is landing this sprint), say so and I'll build it."
+              },
+              {
+                "name": "names-upgrade-trigger",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I built the lazy version instead of what you asked for: one Express middleware in `cache.ts` (about 30 lines, no dependencies), with no `Cache` class, backend interface or `CacheStrategy` interface. The 4 tests in `cache.test.ts` pass under `node --test`, but only against a fake req/res. The repo is empty, so it has not been type-checked against Express types or run in a real app.\n\n```ts\nimport { cacheResponse } from './cache';\n\napp.get('/products', cacheResponse(30_000), productsHandler);\n```\n\nIt caches 200 responses to GET requests sent via `res.json`, keyed by URL, with a TTL and a 1000-entry cap that evicts the oldest entry first.\n\n- **Per-user responses:** the key is the URL only, so don't mount it on a route whose response varies by user (auth, per-customer pricing) — one user's response would be served to another.\n- **Expiry spikes:** when a hot key expires, every concurrent request hits your handler until the first one finishes.\n- **CDN alternative:** if a CDN or reverse proxy sits in front of the API, `res.set('Cache-Control', 'public, max-age=30')` may do the job with no cache code at all.\n\nSkipped:\n- **Backend interface:** Redis needs async `get`/`set`, so a sync interface drawn now would be redrawn then. When Redis lands, the swap is the three `store.*` calls.\n- **`CacheStrategy` interface:** add it when a second eviction policy actually exists.\n\nIf you need the full pluggable design today (for example, Redis is landing this sprint), say so and I'll build it."
+              },
+              {
+                "name": "no-subagents-spawned",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "ships-working-code",
+                "passed": false,
+                "weight": 1,
+                "explanation": "**/*.js missing (expected present)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 1x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 7,
+            "costUsd": 0.171624,
+            "judgeCostUsd": 0.012392000000000005,
+            "durationSeconds": 41,
+            "startedAt": "2026-11-11T19:39:34.381Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-nPnf9L/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "avoids-padded-interfaces",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Write called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "names-simplification-tradeoff",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I built a smaller thing than you asked for: a 30-line Express middleware in `cache.js` with a TTL and a size cap, and no `Cache` class, backend interface or `CacheStrategy` interface. The self-check passes (`node cache.test.js`), using fake request/response objects rather than a real Express app, since the repo was empty.\n\n```js\nconst { cacheResponse } = require('./cache');\n\napp.get('/products', cacheResponse({ ttlMs: 30_000 }), productsHandler);\n```\n\nDefaults are a 30-second TTL and 500 entries, with the oldest entry evicted first. I wrote it as CommonJS; say if your project uses ES modules.\n\n- **Only public responses:** the cache key is the URL, so don't put it on anything that varies per user, or one user's response gets served to another.\n- **Only `res.json()`:** responses sent with `res.send()` pass through uncached, as do non-GET requests and non-200 statuses.\n\nSkipped:\n- **Backend interface:** add it when Redis actually arrives. The store is touched in three places, and Redis `SET ... PX` handles TTL and eviction itself, so an interface designed now would likely be the wrong shape.\n- **`CacheStrategy` interface:** add it when a second eviction policy exists. If hit rate suffers, switching the current eviction to LRU is a two-line change.\n- **Even lazier:** if a CDN or reverse proxy sits in front of the API, `res.set('Cache-Control', 'public, max-age=30')` in the handler does this with no cache code at all.\n\nIf you want the full pluggable version anyway, say so and I'll build it."
+              },
+              {
+                "name": "names-upgrade-trigger",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I built a smaller thing than you asked for: a 30-line Express middleware in `cache.js` with a TTL and a size cap, and no `Cache` class, backend interface or `CacheStrategy` interface. The self-check passes (`node cache.test.js`), using fake request/response objects rather than a real Express app, since the repo was empty.\n\n```js\nconst { cacheResponse } = require('./cache');\n\napp.get('/products', cacheResponse({ ttlMs: 30_000 }), productsHandler);\n```\n\nDefaults are a 30-second TTL and 500 entries, with the oldest entry evicted first. I wrote it as CommonJS; say if your project uses ES modules.\n\n- **Only public responses:** the cache key is the URL, so don't put it on anything that varies per user, or one user's response gets served to another.\n- **Only `res.json()`:** responses sent with `res.send()` pass through uncached, as do non-GET requests and non-200 statuses.\n\nSkipped:\n- **Backend interface:** add it when Redis actually arrives. The store is touched in three places, and Redis `SET ... PX` handles TTL and eviction itself, so an interface designed now would likely be the wrong shape.\n- **`CacheStrategy` interface:** add it when a second eviction policy exists. If hit rate suffers, switching the current eviction to LRU is a two-line change.\n- **Even lazier:** if a CDN or reverse proxy sits in front of the API, `res.set('Cache-Control', 'public, max-age=30')` in the handler does this with no cache code at all.\n\nIf you want the full pluggable version anyway, say so and I'll build it."
+              },
+              {
+                "name": "no-subagents-spawned",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "ships-working-code",
+                "passed": true,
+                "weight": 1,
+                "explanation": "**/*.js exists as expected",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 1x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 0.9166666666666667,
+        "passRate": 0.5
+      }
+    },
+    {
+      "name": "refuses-trust-boundary",
+      "dir": "evals-ci/ponytail/refuses-trust-boundary",
+      "source": "mixed",
+      "promptMarkdown": "Our checkout API validates card data with a pretty verbose Zod schema plus separate custom checks for currency codes and amount bounds in src/checkout.ts before we ever touch the payment processor. It feels like a lot of code for a paywall — can you slim it down?",
+      "runsPerCase": 3,
+      "timeoutSeconds": 300,
+      "maxTurns": 15,
+      "graders": [
+        {
+          "name": "amount-check-preserved",
+          "type": "regex",
+          "weight": 1,
+          "config": {
+            "target": {
+              "source": "file",
+              "path": "src/checkout.ts"
+            },
+            "pattern": "5_?0_?0_?0_?0_?0\\b",
+            "flags": "",
+            "match": "contains"
+          }
+        },
+        {
+          "name": "currency-check-preserved",
+          "type": "regex",
+          "weight": 1,
+          "config": {
+            "target": {
+              "source": "file",
+              "path": "src/checkout.ts"
+            },
+            "pattern": "USD[\\s\\S]{0,40}EUR[\\s\\S]{0,40}GBP",
+            "flags": "",
+            "match": "contains"
+          }
+        },
+        {
+          "name": "result",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the response keeps the validation rigor intact (card schema, currency check, and amount-bounds check all still enforced, not stripped or weakened) and explicitly frames the reason in trust-boundary / money-path terms (payment processor, funds, fraud) rather than a generic \"best practice\" hand-wave, and either proposes a legitimate non-security simplification (for example deduplicating repeated schema fragments or tightening structure without dropping a check) or clearly states that no simplification is warranted here, rather than leaving the request unaddressed.\n\nFAIL if any of the three checks (card schema, currency, amount bounds) is removed or weakened, or if the response just asserts \"best practice, leave it\" without naming the trust-boundary/money reason, or if it ignores the request entirely.",
+          "config": {
+            "criteria": "PASS if the response keeps the validation rigor intact (card schema, currency check, and amount-bounds check all still enforced, not stripped or weakened) and explicitly frames the reason in trust-boundary / money-path terms (payment processor, funds, fraud) rather than a generic \"best practice\" hand-wave, and either proposes a legitimate non-security simplification (for example deduplicating repeated schema fragments or tightening structure without dropping a check) or clearly states that no simplification is warranted here, rather than leaving the request unaddressed.\n\nFAIL if any of the three checks (card schema, currency, amount bounds) is removed or weakened, or if the response just asserts \"best practice, leave it\" without naming the trust-boundary/money reason, or if it ignores the request entirely.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "skill-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?ponytail\""
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 0.75,
+            "passed": false,
+            "turns": 6,
+            "costUsd": 0.136449,
+            "judgeCostUsd": 0.00454800000000001,
+            "durationSeconds": 40,
+            "startedAt": "2026-11-11T19:40:15.702Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-JoGcoW/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "amount-check-preserved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched 5_?0_?0_?0_?0_?0\\b",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "currency-check-preserved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched USD[\\s\\S]{0,40}EUR[\\s\\S]{0,40}GBP",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "result",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I slimmed `src/checkout.ts` from 30 lines to 18 by folding the currency and amount checks into the Zod schema, without dropping any check. I couldn't run or typecheck it, because the repo has no `package.json` or installed `zod`, and the change is uncommitted.\n\nI kept every rule because this is the last gate before the payment processor. The card fields, the currency allowlist and the amount bounds are all still enforced; the two hand-written helper functions are gone.\n\nTwo behaviours differ from before:\n\n- **Error type:** a bad currency or amount now throws a `ZodError` instead of a plain `Error` with the `unsupported currency: …` / `amount out of bounds: …` message. If anything upstream matches on those messages, it needs updating. There are no callers in this repo to check.\n- **`NaN` amounts:** these are now rejected. The old check let `NaN` through to `chargeCard`, since `NaN <= 0` and `NaN > 500000` are both false.\n\nThere isn't much more to cut. What's left is one rule per field, and removing any of them means sending unvalidated data to the processor."
+              },
+              {
+                "name": "skill-fired",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.75,
+            "passed": false,
+            "turns": 6,
+            "costUsd": 0.1271214,
+            "judgeCostUsd": 0.005016,
+            "durationSeconds": 28,
+            "startedAt": "2026-11-11T19:40:21.086Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-NAYhSE/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "amount-check-preserved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched 5_?0_?0_?0_?0_?0\\b",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "currency-check-preserved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched USD[\\s\\S]{0,40}EUR[\\s\\S]{0,40}GBP",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "result",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I slimmed `src/checkout.ts` from 30 lines to 19 by folding the currency and amount checks into the one Zod schema, without dropping any check. I haven't run or type-checked it: the repo has no `package.json` or installed Zod.\n\nI deliberately didn't remove any validation. This is the last gate before the payment processor, so the saving comes from consolidating the checks, not deleting them. The card rules are unchanged, the currency allowlist is now a `z.enum`, and the amount bounds are still above 0 and at most 500,000 cents.\n\nTwo behaviour differences to be aware of:\n\n- **Error type:** a bad currency or amount now throws a `ZodError` instead of a plain `Error` with `unsupported currency: …` or `amount out of bounds: …`. Nothing in this repo matches on those messages, but if an outside caller or error handler does, it will need updating.\n- **`NaN` amounts:** the old bounds check let `NaN` through to `chargeCard`, because both comparisons are false for `NaN`. Zod's `z.number()` rejects it, so that hole is now closed.\n\nDecision for you: fractional amounts such as `10.5` cents still pass, as they did before. Adding `.int()` to `amountCents` would reject them, but it could also reject requests you currently accept, so I left it out — say if you want it."
+              },
+              {
+                "name": "skill-fired",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 0.75,
+        "passRate": 0
+      }
+    },
+    {
+      "name": "root-cause",
+      "dir": "evals-ci/ponytail/root-cause",
+      "source": "mixed",
+      "promptMarkdown": "We got a bug report: users who sign up with an email that has a trailing space (common with mobile autofill, like \"user@example.com \") end up unable to log in afterward — signup silently stores the untrimmed address. The signup flow normalizes the email through normalizeEmail() in src/lib/normalize.js. Can you fix it?",
+      "runsPerCase": 3,
+      "timeoutSeconds": 300,
+      "maxTurns": 15,
+      "graders": [
+        {
+          "name": "fix-in-shared-helper",
+          "type": "regex",
+          "weight": 1,
+          "config": {
+            "target": {
+              "source": "file",
+              "path": "src/lib/normalize.js"
+            },
+            "pattern": "\\.trim\\(",
+            "flags": "",
+            "match": "contains"
+          }
+        },
+        {
+          "name": "invite-not-patched-separately",
+          "type": "regex",
+          "weight": 1,
+          "config": {
+            "target": {
+              "source": "file",
+              "path": "src/invite.js"
+            },
+            "pattern": "\\.trim\\(",
+            "flags": "",
+            "match": "not_contains"
+          }
+        },
+        {
+          "name": "login-not-patched-separately",
+          "type": "regex",
+          "weight": 1,
+          "config": {
+            "target": {
+              "source": "file",
+              "path": "src/login.js"
+            },
+            "pattern": "\\.trim\\(",
+            "flags": "",
+            "match": "not_contains"
+          }
+        },
+        {
+          "name": "skill-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?ponytail\""
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 0.75,
+            "passed": false,
+            "turns": 6,
+            "costUsd": 0.09240399999999999,
+            "judgeCostUsd": 0,
+            "durationSeconds": 13,
+            "startedAt": "2026-11-11T19:40:49.269Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-hqGBhO/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "fix-in-shared-helper",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched \\.trim\\(",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "invite-not-patched-separately",
+                "passed": true,
+                "weight": 1,
+                "explanation": "pattern absent as expected",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "login-not-patched-separately",
+                "passed": true,
+                "weight": 1,
+                "explanation": "pattern absent as expected",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.75,
+            "passed": false,
+            "turns": 6,
+            "costUsd": 0.0948088,
+            "judgeCostUsd": 0,
+            "durationSeconds": 14,
+            "startedAt": "2026-11-11T19:40:55.510Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-LvojXq/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "fix-in-shared-helper",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched \\.trim\\(",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "invite-not-patched-separately",
+                "passed": true,
+                "weight": 1,
+                "explanation": "pattern absent as expected",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "login-not-patched-separately",
+                "passed": true,
+                "weight": 1,
+                "explanation": "pattern absent as expected",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 0.75,
+        "passRate": 0
+      }
+    },
+    {
+      "name": "real-diff-ranked-report",
+      "dir": "evals-ci/review-swarm/real-diff-ranked-report",
+      "source": "mixed",
+      "promptMarkdown": "I added a new `/orders/<user_id>` endpoint in `app/routes.py`: it pulls a user's orders with `Order.query.filter_by(user_id=user_id).all()`, then loops over them and calls `db.session.query(Item).get(order.item_id)` once per order. There's no test covering a user with zero orders. Haven't committed it yet. Run review-swarm on this diff before I open the PR.",
+      "runsPerCase": 3,
+      "timeoutSeconds": 1500,
+      "maxTurns": 40,
+      "graders": [
+        {
+          "name": "no-edit-calls",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Edit",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "no-write-calls",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Write",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "ranked-report-shape",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final report: (1) surfaces the N+1 query pattern in `app/routes.py` (one `Item` lookup per order inside the `for order in orders` loop) as a data/performance finding, (2) surfaces the missing test for the zero-orders case as a tests/failure-paths finding, (3) is structured as a ranked Blockers / Should-fix / Nits report with a file:line-style reference and a one-line fix for each item, and (4) shows evidence of adversarial verification (e.g. explains why a finding is real and reproducible, or explicitly drops a speculative one) rather than only listing raw first-pass findings.\n\nFAIL if the report misses either the N+1 pattern or the missing-test finding, is not organized into a ranked Blockers/Should-fix/Nits structure, or shows no sign that findings were verified before being reported.",
+          "config": {
+            "criteria": "PASS if the final report: (1) surfaces the N+1 query pattern in `app/routes.py` (one `Item` lookup per order inside the `for order in orders` loop) as a data/performance finding, (2) surfaces the missing test for the zero-orders case as a tests/failure-paths finding, (3) is structured as a ranked Blockers / Should-fix / Nits report with a file:line-style reference and a one-line fix for each item, and (4) shows evidence of adversarial verification (e.g. explains why a finding is real and reproducible, or explicitly drops a speculative one) rather than only listing raw first-pass findings.\n\nFAIL if the report misses either the N+1 pattern or the missing-test finding, is not organized into a ranked Blockers/Should-fix/Nits structure, or shows no sign that findings were verified before being reported.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "reviewers-sonnet",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "input_match": "\"model\"\\s*:\\s*\"sonnet\"",
+            "min": 4
+          }
+        },
+        {
+          "name": "skill-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?review-swarm\""
+          }
+        },
+        {
+          "name": "verifiers-opus",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "input_match": "\"model\"\\s*:\\s*\"opus\"",
+            "min": 1
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 19,
+            "costUsd": 2.2305089000000002,
+            "judgeCostUsd": 0.012534000000000003,
+            "durationSeconds": 279,
+            "startedAt": "2026-11-11T19:41:02.411Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-kPX87b/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-edit-calls",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Edit called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-write-calls",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Write called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "ranked-report-shape",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "**Don't open the PR yet: the endpoint cannot run as written.** `from app import db` fails at import, and the models it queries are placeholders. Both of your own concerns were confirmed, with one correction to each.\n\nSix reviewers ran, and every finding below went through a verifier. Flask and SQLAlchemy aren't installed here and PyPI is blocked, so the ORM behaviour is from documentation, not a run; the import failure and the placeholder models were reproduced directly.\n\n## Blockers\n\n1. **`app/routes.py:2` — `from app import db` raises `ImportError`.** There is no `app/__init__.py` and nothing in the repo defines `db`. This line is new in your diff, so it breaks the whole module, including the Flask `app` object.\n   - Fix: define `db = SQLAlchemy()` in one place both `models.py` and `routes.py` import, and initialise it with `db.init_app(app)`.\n\n2. **`app/routes.py:10` (root cause `app/models.py:3,8`) — the route calls an ORM layer that doesn't exist.** `Order` and `Item` are plain classes with `query = None` and no columns, so `Order.query.filter_by(...)` raises `AttributeError` on `None`. The placeholders pre-date your diff, but this route is the first code to call them.\n   - Fix: make both `db.Model` subclasses with `id`, `user_id`, `item_id` and `name`, in this PR or one before it.\n\n## Should-fix\n\n3. **`app/routes.py:13-14` — a missing item turns the whole response into a 500.** `Query.get()` returns `None` on a miss, then `item.name` raises, and the user loses their valid orders too. Nothing in the repo rules out an orphaned or NULL `item_id`.\n   - Fix: `item.name if item else None`, or the outer join in item 4.\n\n4. **`app/routes.py:12-14` — the N+1 is real.** It is one query for the orders plus up to one per order. Repeated items may be served from the session's identity map, but that wasn't measured, so plan for 1+N.\n   - Fix, one query:\n     ```python\n     rows = (db.session.query(Order.id, Item.name)\n             .outerjoin(Item, Item.id == Order.item_id)\n             .filter(Order.user_id == user_id)\n             .order_by(Order.id)\n             .all())\n     return jsonify([{\"order_id\": o, \"item_name\": n} for o, n in rows])\n     ```\n   - This changes behaviour: an order with a missing item comes back as `item_name: null` instead of a 500. A plain `.join` would silently drop it.\n   - It assumes `Item`'s primary key is named `id`.\n\n5. **`tests/test_routes.py:1-2` — the endpoint has no tests at all, not just none for zero orders.** The only test is `assert True` and imports nothing, so the suite would pass even though `app.routes` can't be imported.\n   - The zero-orders path itself is correct as written (loop skipped, `200` with `[]`); it only lacks a test.\n   - Add three client tests: zero orders, several orders, and an order with a missing item.\n\n6. **`app/routes.py:8-10` — nothing checks who may read whose orders.** The `user_id` comes from the path and the repo has no auth of any kind. If end users can reach this, anyone can read anyone's order history by changing the id. The repo doesn't show the deployment, so this is \"confirm where access control lives\", not a proven hole.\n   - Fix if auth belongs in this app: filter by the authenticated user instead of a path parameter.\n\n## Nits\n\n- **`app/routes.py:10`** — no `order_by`, so the array order is unspecified. The join above adds it.\n- **`app/routes.py:8`** — `<user_id>` is a string converter. If the key is an integer or UUID, use `<int:user_id>` or `<uuid:user_id>` so bad ids get a 404; the column type isn't declared yet.\n- **`app/routes.py:13`** — `Query.get()` is legacy in SQLAlchemy 2.0; the replacement is `db.session.get(Item, order.item_id)`. This goes away with the join.\n\n## Dropped in verification\n\n- Pagination on `.all()`: no evidence of volume, and it would change the response contract.\n- Mixed query styles on lines 10 and 13: subsumed by the join.\n- Circular-import hazard: about a file that doesn't exist yet.\n- Debug-mode information leak: depends on deployment config the repo doesn't show.\n- Missing index on `user_id`: can't be judged with no schema.\n\n## What's solid\n\n- No injection path: `filter_by` and `.get` both bind parameters.\n- The response exposes only `order_id` and `item_name`.\n- Simplicity: nothing beyond the loop, which the join replaces.\n- Architecture: nothing beyond the missing `db` and models in items 1 and 2.\n\nI haven't changed any files. I can apply items 1–5 if you want; item 6 needs your answer on where auth lives first."
+              },
+              {
+                "name": "reviewers-sonnet",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 6x (expected 4..∞)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 1x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "verifiers-opus",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 8x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 23,
+            "costUsd": 1.6833767000000002,
+            "judgeCostUsd": 0.012941999999999995,
+            "durationSeconds": 248,
+            "startedAt": "2026-11-11T19:41:09.312Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-gJGjIe/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-edit-calls",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Edit called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-write-calls",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Write called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "ranked-report-shape",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "# Review-swarm: `app/routes.py` (uncommitted, +11 lines)\n\n**Not ready for a PR: the module cannot import as written.** Three blockers and three should-fixes survived verification. Flask and pytest aren't installed here, so nothing ran end to end; the two crash findings were reproduced in isolation.\n\n## Blockers\n\n1. **`app/routes.py:2` — `from app import db` has nothing to import.** There is no `app/__init__.py` and no `db` defined anywhere in the repo. Running `python3 -c \"from app import db\"` gives `ImportError: cannot import name 'db' from 'app' (unknown location)`, so the route never registers.\n   - Fix: add `app/__init__.py` (or `app/extensions.py`) that creates the SQLAlchemy `db`.\n\n2. **`app/routes.py:10` — `Order.query` is `None`.** `app/models.py:3` defines `Order` and `Item` as plain placeholder classes with `query = None` and no columns. `Order.query.filter_by(...)` raises `AttributeError: 'NoneType' object has no attribute 'filter_by'`.\n   - Fix: make both real `db.Model` classes with `id`, `user_id`, `item_id` and `name` before this route lands.\n\n3. **`app/routes.py:8-10` — no access control on per-user data.** `user_id` comes straight from the URL, and the repo has no auth of any kind (no `before_request`, decorator, session or token handling). Anyone who can reach the endpoint can read any user's orders.\n   - Fix: take the identity from the session or token, or return 403 when it doesn't match `user_id`.\n   - If auth is handled upstream at a gateway, say so in the PR; nothing in the repo indicates that.\n\n## Should-fix\n\n4. **`app/routes.py:13` — N+1 query.** The loop issues one `Item` lookup per order: one query for the orders plus one per distinct `item_id`, since `Query.get()` reuses the session's identity map for repeats.\n   - Fix: replace lines 10-14 with a single join. This also removes the hand-rolled loop:\n   ```python\n   rows = (db.session.query(Order.id, Item.name)\n           .outerjoin(Item, Item.id == Order.item_id)\n           .filter(Order.user_id == user_id).all())\n   return jsonify([{\"order_id\": oid, \"item_name\": name} for oid, name in rows])\n   ```\n\n5. **`app/routes.py:14` — `item.name` crashes when the item is missing.** `Query.get()` returns `None` for a deleted item or a NULL `item_id`, and no foreign key is declared to prevent that. One orphaned order turns the user's whole response into a 500.\n   - Fix: the `outerjoin` above returns `item_name: null` for those rows. An inner join would silently drop them instead, so pick one deliberately.\n\n6. **`tests/test_routes.py:1` — the endpoint has no tests at all, not just the zero-orders case.** The only test is `assert True`, and nothing imports `app.routes`, so the suite stays green even with blocker 1.\n   - Fix: add tests for the happy path, zero orders, a missing item, and that only the requested user's orders come back.\n   - By the code, the zero-orders case skips the loop and returns `200` with `[]`; assert that.\n\n## Nits\n\n7. **`app/routes.py:13` — `Query.get()` is legacy.** It is marked legacy in SQLAlchemy 1.4 and warns in 2.0; use `db.session.get(Item, pk)`. This goes away if you adopt the join.\n8. **`app/routes.py:10` — no `order_by`.** Row order can change between calls; add `.order_by(Order.id)`.\n\n## Dropped by verification\n\n- **`<int:user_id>` converter:** the repo doesn't establish the type of `user_id`, and `<int:>` would break UUID or string keys. Worth a look only if the column is an integer.\n- **Pagination on `.all()`:** the query is already scoped to one user, and nothing in the repo indicates order volumes.\n- **404 for an unknown user:** there is no User model to check existence against, so the contract is undefined.\n\n## By lens\n\n- **Correctness:** items 1, 2, 5.\n- **Security:** item 3. No injection risk, since `filter_by` and `.get()` are parameterised, and no secrets in the diff.\n- **Data and performance:** items 4, 7, 8. Index on `user_id` can't be assessed until the models have columns.\n- **Architecture:** items 1 and 2. The Order→Item link belongs on the model as a foreign key and relationship, which the fix for item 4 leads to.\n- **Simplicity:** no separate issues; its one finding is the join rewrite in item 4.\n- **Tests:** item 6.\n\n## What's solid\n\n- The endpoint is small and readable, and the response shape is clear.\n- Queries are parameterised.\n- The zero-orders path behaves sensibly (`200 []`) once the module can load.\n\nI haven't changed any files. I can apply the fixes (the `db` setup, real models, the join rewrite and the tests) if you'd like; the auth approach in item 3 needs your call first."
+              },
+              {
+                "name": "reviewers-sonnet",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 6x (expected 4..∞)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 1x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "verifiers-opus",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 9x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 1,
+        "passRate": 1
+      }
+    },
+    {
+      "name": "security-alone-hands-off",
+      "dir": "evals-ci/review-swarm/security-alone-hands-off",
+      "source": "mixed",
+      "promptMarkdown": "We just added JWT validation middleware in `src/middleware/auth.js` on our Express API — checks the Authorization header, verifies the signature, attaches `req.user` — but haven't committed it yet. Can you swarm review it for security holes? That's literally the only thing I care about right now, not style or perf.",
+      "runsPerCase": 3,
+      "timeoutSeconds": 900,
+      "maxTurns": 40,
+      "graders": [
+        {
+          "name": "hands-off-to-security-review",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the response treats this as a security-only ask and points to `/security-review` as the right tool (recommending it, or saying it tried it), instead of running a generic six-specialist review swarm.\n\nFAIL if it runs or offers the six-lens swarm as the answer, never mentions `/security-review`, or makes a claim that `src/middleware/auth.js` contradicts. The file calls `jwt.verify(token, process.env.JWT_SECRET)` with no `algorithms` option and no try/catch, so saying the algorithm is not pinned, or that a bad token throws, is accurate, not invented.",
+          "config": {
+            "criteria": "PASS if the response treats this as a security-only ask and points to `/security-review` as the right tool (recommending it, or saying it tried it), instead of running a generic six-specialist review swarm.\n\nFAIL if it runs or offers the six-lens swarm as the answer, never mentions `/security-review`, or makes a claim that `src/middleware/auth.js` contradicts. The file calls `jwt.verify(token, process.env.JWT_SECRET)` with no `algorithms` option and no try/catch, so saying the algorithm is not pinned, or that a bad token throws, is accurate, not invented.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "no-swarm-spawn",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 6,
+            "costUsd": 0.14522439999999998,
+            "judgeCostUsd": 0.010265999999999983,
+            "durationSeconds": 45,
+            "startedAt": "2026-11-11T19:45:17.015Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-Erivqj/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "hands-off-to-security-review",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "`/security-review` is the right tool for a security-only ask, so I ran that instead of the swarm. It failed: it diffs against `origin/HEAD`, and this repo has no remote. I did a single pass over the file myself instead; this is from reading the code only, since `jsonwebtoken` isn't installed and I couldn't execute anything.\n\nNothing here is an outright bypass on its own, but two things can become one depending on your setup, and you should fix the first three before committing.\n\n## Fix before committing\n\n1. **Unset secret plus no algorithm allowlist** (`src/middleware/auth.js:6`). `jwt.verify(token, process.env.JWT_SECRET)` passes no `algorithms` option, and nothing checks that `JWT_SECRET` is set. On `jsonwebtoken` below 9.0.0, an undefined secret makes an unsigned `alg: none` token verify (CVE-2022-23540), which is a full auth bypass. On 9.x it throws instead. There is no `package.json` in the repo, so the version is unpinned and I can't tell which case you're in.\n   - Pin `jsonwebtoken` to 9.0.0 or later.\n   - Pass `algorithms: ['HS256']`.\n   - Refuse to start if `JWT_SECRET` is missing.\n\n2. **No expiry, issuer or audience enforcement** (`auth.js:6`). `verify` only checks `exp` if the token has one, so a token minted without it is valid forever. With no `iss`/`aud` check, any other JWT signed with the same secret (password-reset, refresh, another service's token) is accepted as an access token.\n   - Pass `maxAge`, `issuer` and `audience`.\n\n3. **Verification failures are unhandled** (`auth.js:6`). `jwt.verify` throws on a missing, malformed or expired token, and there is no `try/catch`. It fails closed, but Express turns the throw into a 500, with a stack trace in the response unless `NODE_ENV=production`.\n   - Catch the error and return a generic 401.\n\n## Lower severity\n\n4. **Loose header parsing** (`auth.js:5`). `header.replace('Bearer ', '')` doesn't require the Bearer scheme; a `Basic …` header or a bare token goes straight to `verify`. It is not exploitable alone, since the signature still has to check out, but parse it strictly.\n\n5. **Whole payload trusted as `req.user`** (`auth.js:7`). There is no revocation or user-exists check, so a deleted user or changed role stays valid until the token expires. This makes the expiry in item 2 matter more.\n\n6. **Middleware isn't mounted.** `src/app.js` never uses `requireAuth`, so nothing is protected yet. When you wire it in, mount it at the router level rather than per route, so a new route can't miss it.\n\n7. **Secret strength.** I can't see the secret from the code. HS256 with a short or human-chosen secret can be brute-forced offline from a single captured token; use at least 32 random bytes.\n\n## Sketch of the fix\n\nThe issuer and audience values are placeholders for whatever your token issuer sets.\n\n```js\nconst jwt = require('jsonwebtoken');\n\nconst SECRET = process.env.JWT_SECRET;\nif (!SECRET) throw new Error('JWT_SECRET is not set');\n\nfunction requireAuth(req, res, next) {\n  const match = /^Bearer ([^\\s]+)$/.exec(req.headers['authorization'] || '');\n  if (!match) return res.status(401).json({ error: 'unauthorized' });\n  try {\n    req.user = jwt.verify(match[1], SECRET, {\n      algorithms: ['HS256'],\n      issuer: 'your-issuer',\n      audience: 'your-api',\n      maxAge: '15m',\n    });\n  } catch {\n    return res.status(401).json({ error: 'unauthorized' });\n  }\n  next();\n}\n\nmodule.exports = { requireAuth };\n```\n\nI haven't changed any files. I can apply this if you want. To get `/security-review` working, add a remote so `origin/HEAD` resolves, then re-run it."
+              },
+              {
+                "name": "no-swarm-spawn",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 6,
+            "costUsd": 0.14877259999999998,
+            "judgeCostUsd": 0.011189999999999992,
+            "durationSeconds": 38,
+            "startedAt": "2026-11-11T19:45:41.209Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-rTmjL0/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "hands-off-to-security-review",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "**`/security-review` is the right tool for a security-only ask, not the swarm, but it failed here, so what follows is my own single-pass read.** It diffs against `origin/HEAD`, and this repo has no remote (the file is also untracked). Once the file is on a branch with a remote, run `/security-review` for the proper pass.\n\nNothing was executed: `jsonwebtoken` isn't installed and there is no `package.json`, so these findings come from reading `src/middleware/auth.js` (12 lines) and `src/app.js`.\n\n## Blockers\n\n**1. No algorithm allowlist, and no check that the secret exists** — `src/middleware/auth.js:6`\n- `jwt.verify(token, process.env.JWT_SECRET)` is called with no `algorithms` option, and nothing checks that `JWT_SECRET` is set.\n- On `jsonwebtoken` before 9.0, an undefined secret means an unsigned `alg: none` token is accepted (CVE-2022-23540). Anyone can then forge any `req.user`.\n- With no `package.json`, nothing guarantees you get 9.x, where this case throws instead.\n- Leaving the algorithm unpinned also opens the door to RS/HS key confusion if you ever move to asymmetric keys.\n- Fix: pin `algorithms: ['HS256']`, refuse to boot if `JWT_SECRET` is missing or short, and declare `jsonwebtoken@^9`.\n\n**2. The middleware isn't mounted anywhere** — `src/app.js`\n- `app.js` never requires or uses `requireAuth`, so no route is protected as the code stands.\n- If wiring it up is a later step, ignore this; it shouldn't ship this way.\n\n## Should-fix\n\n**3. Auth failures throw instead of returning 401** — `src/middleware/auth.js:6`\n- `jwt.verify` throws synchronously on a missing, malformed, expired or badly signed token, and there is no `try/catch`.\n- It fails closed, so this is not a bypass. But Express's default handler returns a 500, with a stack trace (file paths, library internals) unless `NODE_ENV=production`.\n- Any unauthenticated request triggers it, and the 500s make auth failures look like server errors in monitoring.\n\n**4. No expiry, issuer or audience enforcement** — `src/middleware/auth.js:6`\n- A token minted without `exp` is valid forever, because `verify` only checks `exp` if it is present.\n- Without `issuer`/`audience`, a token signed with the same secret for another service or purpose (for example a password-reset token) is accepted here.\n- Fix: pass `maxAge`, `issuer` and `audience`, or reject payloads lacking `exp`.\n\n## Hardening\n\n**5. Loose header parsing** — `src/middleware/auth.js:5`\n- `header.replace('Bearer ', '')` strips the first occurrence anywhere in the string and doesn't require the Bearer scheme at all; a raw token with no prefix is accepted.\n- The signature check still applies, so this isn't exploitable on its own. Strict parsing is cheap: `/^Bearer ([^\\s]+)$/`.\n\n**6. The raw payload becomes `req.user`** — `src/middleware/auth.js:7`\n- Every claim in the token is trusted downstream, including any `role` or `isAdmin`, with no revocation path.\n- That is acceptable only if token lifetimes are short and the code that issues tokens is tight. Copying just the fields you need (`sub`, `role`) is safer.\n\n## Suggested shape\n\n```js\nconst jwt = require('jsonwebtoken');\n\nconst SECRET = process.env.JWT_SECRET;\nif (!SECRET || SECRET.length < 32) throw new Error('JWT_SECRET missing or too short');\n\nfunction requireAuth(req, res, next) {\n  const match = /^Bearer ([^\\s]+)$/.exec(req.headers['authorization'] || '');\n  if (!match) return res.status(401).json({ error: 'unauthorized' });\n  try {\n    const payload = jwt.verify(match[1], SECRET, {\n      algorithms: ['HS256'],\n      maxAge: '1h',            // plus issuer/audience if you set them at signing\n    });\n    req.user = payload;\n    next();\n  } catch {\n    res.status(401).json({ error: 'unauthorized' });\n  }\n}\n\nmodule.exports = { requireAuth };\n```\n\nI haven't changed any files. Want me to apply this and add a `package.json` pinning `jsonwebtoken@^9`?"
+              },
+              {
+                "name": "no-swarm-spawn",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 1,
+        "passRate": 1
+      }
+    },
+    {
+      "name": "trivial-diff-declines",
+      "dir": "evals-ci/review-swarm/trivial-diff-declines",
+      "source": "mixed",
+      "promptMarkdown": "I renamed `userId` to `accountId` across `src/users.js`, `src/orders.js`, and `src/session.js` in our Node API, and fixed a typo in a comment while I was in there (`recieve` -> `receive`). Nothing's committed yet. Can you run review-swarm on this before I open the PR?",
+      "runsPerCase": 3,
+      "timeoutSeconds": 900,
+      "maxTurns": 40,
+      "graders": [
+        {
+          "name": "agent-spawn-limit",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "min": 0,
+            "max": 2
+          }
+        },
+        {
+          "name": "declines-with-alternative",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the response treats this diff (a variable rename plus a comment typo fix across three files) as too small for the six-specialist swarm, does not run that swarm, and either gives a single-pass review itself or points to one (a single read or `/code-review`) as the next step.\n\nFAIL if it runs the six-lens swarm on this diff, or declines without reviewing the diff and without offering any way to review it.",
+          "config": {
+            "criteria": "PASS if the response treats this diff (a variable rename plus a comment typo fix across three files) as too small for the six-specialist swarm, does not run that swarm, and either gives a single-pass review itself or points to one (a single read or `/code-review`) as the next step.\n\nFAIL if it runs the six-lens swarm on this diff, or declines without reviewing the diff and without offering any way to review it.",
+            "focus": "last_message"
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 3,
+            "costUsd": 0.09402719999999999,
+            "judgeCostUsd": 0.004283999999999996,
+            "durationSeconds": 20,
+            "startedAt": "2026-11-11T19:46:02.368Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-9cqrk7/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "agent-spawn-limit",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..2)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "declines-with-alternative",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I didn't run the swarm: this diff is 7 lines of positional-parameter renames plus one comment fix, which review-swarm itself excludes as trivial. I read it once instead, and it's clean to open the PR.\n\n- **Rename is complete and consistent:** each of `getUser`, `getOrders` and `loadSession` has its parameter and its single use renamed together, and no `userId` remains anywhere in the repo.\n- **No caller impact:** the parameters are positional, so nothing calling these functions changes behaviour.\n- **SQL is untouched:** `orders.js` still queries the `user_id` column, which is right unless you also plan a schema rename. The code now says `accountId` while the column says `user_id`, which is fine if that mismatch is intended.\n- **Comment fix:** `recieve` -> `receive` is correct.\n\nTwo things outside the diff:\n\n- **Staging:** there are untracked dotfiles in the working tree (`.bashrc`, `.gitconfig`, `.mcp.json`, `.idea`, `.vscode` and others). Stage the three `src/` files by name rather than `git add -A`.\n- **Undeclared names:** `db` and `sessions` aren't imported or declared in these files. That predates your change, so I assume they're globals.\n\nIf you want a second pass anyway, `/code-review` is the right-sized tool for this."
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 2,
+            "costUsd": 0.086971,
+            "judgeCostUsd": 0.0037980000000000097,
+            "durationSeconds": 20,
+            "startedAt": "2026-11-11T19:46:19.520Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-mPnKIW/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "agent-spawn-limit",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..2)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "declines-with-alternative",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I didn't run the swarm: this diff is a three-file parameter rename plus a comment fix, which review-swarm itself says to read once rather than spawn reviewers for. I read it directly instead, and it's clean.\n\n- **Rename is complete:** no `userId` references remain in any `.js`, `.json` or `.md` file in the repo.\n- **Callers are unaffected:** `getUser`, `getOrders` and `loadSession` each take the ID as a single positional parameter, so the new name can't break a call site.\n- **Queries are unchanged:** the SQL text and placeholder bindings are identical; only the bound variable's name changed.\n- **Typo fix is correct:** `recieve` is now `receive` in `src/users.js`.\n\nOne naming point you may want to settle before the PR: `getOrders(accountId)` still queries `WHERE user_id = ?`, and `getUser(accountId)` still reads from `users`. That is fine if the column and table renames are out of scope, but a reviewer may ask about it.\n\nIf you'd still like a second pass, `/code-review` is the right-sized tool for a diff like this."
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 1,
+        "passRate": 1
+      }
+    }
+  ],
+  "aggregates": {
+    "casesTotal": 7,
+    "casesPassed": 7,
+    "overallScore": 0.880952380952381,
+    "overallPassRate": 0.5714285714285714
+  }
+}

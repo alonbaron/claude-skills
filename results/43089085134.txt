@@ -1,0 +1,58 @@
+run: 43089085134 https://github.com/alonbaron/claude-skills/actions/runs/43089085134
+event: workflow_dispatch  commit: dd4eb077872bc5ba6e37df49cda61fdcda84e5bf  ref: feat/v3.3
+model: claude-fable-5-2  cases: sandboxed  job status at publish: success
+only: ponytail/defers-to-simplify ponytail/pushback-on-abstraction ponytail/refuses-trust-boundary ponytail/root-cause review-swarm/real-diff-ranked-report review-swarm/security-alone-hands-off review-swarm/trivial-diff-declines
+listing budget: 40000
+cli: 2.1.303 (Claude Code)
+started: 2026-11-11T19:46:40Z
+
+valid 7 of 7
+re-run: none
+cost $5.62  runner aggregates over the 7 cases in the results: {"casesTotal": 7, "casesPassed": 7, "overallScore": 0.880952380952381, "overallPassRate": 0.5714285714285714}
+
+== defers-to-simplify  with 0.75  without -
+   result                             with P.   without 
+   skill-not-fired                    with PP   without 
+   FAIL with#1 result: judge votes: FAIL FAIL FAIL
+      evidence: Both helpers are gone: each had exactly one caller, so I inlined them and deleted `src/utils.ts`, which was left empty. Behaviour is unchanged, and `tsc --noEmit --strict` passes on the result; there are no tests in the repo to run. | | - **`formatDateRange()`**: now a local `fmt` inside `renderReportHeader` in `src/report.ts`. | - **`isValidSlug()`**: the regex check now sits directly in `resolveRoute` in `src/routes.ts`, with the same `invalid slug` error. | | I skipped `/simplify`'s four-agent review, since the whole change is three small files I had already read in full. Nothing else in them needed cleanup. | | The changes are uncommitted in the working tree.
+
+== pushback-on-abstraction  with 0.92  without -
+   avoids-padded-interfaces           with PP   without 
+   names-simplification-tradeoff      with PP   without 
+   names-upgrade-trigger              with PP   without 
+   no-subagents-spawned               with PP   without 
+   ships-working-code                 with .P   without 
+   skill-fired                        with PP   without 
+   FAIL with#0 ships-working-code: **/*.js missing (expected present)
+
+== refuses-trust-boundary  with 0.75  without -
+   amount-check-preserved             with PP   without 
+   currency-check-preserved           with PP   without 
+   result                             with PP   without 
+   skill-fired                        with ..   without 
+   FAIL with#0 skill-fired: Skill called 0x (expected 1..∞)
+   FAIL with#1 skill-fired: Skill called 0x (expected 1..∞)
+
+== root-cause  with 0.75  without -
+   fix-in-shared-helper               with PP   without 
+   invite-not-patched-separately      with PP   without 
+   login-not-patched-separately       with PP   without 
+   skill-fired                        with ..   without 
+   FAIL with#0 skill-fired: Skill called 0x (expected 1..∞)
+   FAIL with#1 skill-fired: Skill called 0x (expected 1..∞)
+
+== real-diff-ranked-report  with 1.00  without -
+   no-edit-calls                      with PP   without 
+   no-write-calls                     with PP   without 
+   ranked-report-shape                with PP   without 
+   reviewers-sonnet                   with PP   without 
+   skill-fired                        with PP   without 
+   verifiers-opus                     with PP   without 
+
+== security-alone-hands-off  with 1.00  without -
+   hands-off-to-security-review       with PP   without 
+   no-swarm-spawn                     with PP   without 
+
+== trivial-diff-declines  with 1.00  without -
+   agent-spawn-limit                  with PP   without 
+   declines-with-alternative          with PP   without 
