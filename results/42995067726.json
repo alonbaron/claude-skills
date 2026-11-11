@@ -1,0 +1,261 @@
+{
+  "schemaVersion": 1,
+  "claudeVersion": "2.1.303",
+  "startedAt": "2026-11-11T09:26:02.262Z",
+  "durationSeconds": 301,
+  "costUsd": 1.0158867,
+  "partial": false,
+  "suite": {
+    "root": "/home/runner/work/claude-skills/claude-skills",
+    "ablation": "none",
+    "modelOverride": "claude-fable-5-2",
+    "judgeModel": "sonnet",
+    "threshold": 0.7,
+    "concurrency": 2,
+    "plugins": [
+      {
+        "name": "alon-skills",
+        "version": "3.2.2",
+        "path": "/home/runner/work/claude-skills/claude-skills"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "right-sized-new-feature",
+      "dir": "evals-ci/architect/right-sized-new-feature",
+      "source": "prose",
+      "promptMarkdown": "Starting a new feature on our Next.js + Postgres trip-planning app: users\nshould be able to export their itinerary as a PDF and email it to\nthemselves. This is a brand new repo, nothing's written yet, no design docs\nat all yet.",
+      "runsPerCase": 3,
+      "timeoutSeconds": 900,
+      "maxTurns": 40,
+      "graders": [
+        {
+          "name": "blocking-questions",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final message reports the design docs as already written (it did\nnot ask permission to start, and it does not stop at a questionnaire), asks at\nmost 3 blocking questions (e.g. PDF generation approach, email delivery\nprovider, itinerary size limits), and presents its other choices as stated\nassumptions or proposals to confirm.\n\nFAIL if it asks more than 3 blocking questions, asks its questions before\nwriting any docs, or leaves the rest of its unknowns as further questions with\nno assumption attached.",
+          "config": {
+            "criteria": "PASS if the final message reports the design docs as already written (it did\nnot ask permission to start, and it does not stop at a questionnaire), asks at\nmost 3 blocking questions (e.g. PDF generation approach, email delivery\nprovider, itinerary size limits), and presents its other choices as stated\nassumptions or proposals to confirm.\n\nFAIL if it asks more than 3 blocking questions, asks its questions before\nwriting any docs, or leaves the rest of its unknowns as further questions with\nno assumption attached.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "failure-paths-designed",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if ARCHITECTURE_ROADMAP.md designs the failure paths of the export and\nemail flow, not just the happy path: failures such as PDF generation failing,\nthe email send failing or bouncing, and an oversized itinerary each get a\ndefined failure mode (what the system does, and what the user sees or can do\nnext).\n\nFAIL if the file only describes the happy path, or names failures without\nsaying what happens when they occur.",
+          "config": {
+            "criteria": "PASS if ARCHITECTURE_ROADMAP.md designs the failure paths of the export and\nemail flow, not just the happy path: failures such as PDF generation failing,\nthe email send failing or bouncing, and an oversized itinerary each get a\ndefined failure mode (what the system does, and what the user sees or can do\nnext).\n\nFAIL if the file only describes the happy path, or names failures without\nsaying what happens when they occur.",
+            "focus": {
+              "source": "file",
+              "path": "ARCHITECTURE_ROADMAP.md"
+            }
+          }
+        },
+        {
+          "name": "four-docs-created",
+          "type": "regex",
+          "weight": 1,
+          "config": {
+            "target": "files",
+            "pattern": "^(?=[\\s\\S]*SOURCE_OF_TRUTH\\.md)(?=[\\s\\S]*ARCHITECTURE_ROADMAP\\.md)(?=[\\s\\S]*TODO_WORKFLOW\\.md)(?=[\\s\\S]*CLAUDE\\.md)",
+            "flags": "",
+            "match": "contains"
+          }
+        },
+        {
+          "name": "no-modular-set",
+          "type": "file_exists",
+          "weight": 1,
+          "config": {
+            "path": "docs/architecture/**",
+            "exists": false
+          }
+        },
+        {
+          "name": "no-subagents",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "skill-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?architect\""
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 10,
+            "costUsd": 0.5318056,
+            "judgeCostUsd": 0.05026200000000001,
+            "durationSeconds": 301,
+            "startedAt": "2026-11-11T09:26:02.291Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-9tSexT/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "blocking-questions",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "The design docs for the export feature are written and cross-linked; no code yet, and nothing is committed. Three questions need your answer before the phases they block can start.\n\n## What the design says\n\nOne Server Action calls one service function. It writes an `itinerary_exports` row, renders the PDF in-process, sends one email with the PDF attached, and closes the row as `sent` or `failed`. There is no queue, no file storage and no worker.\n\nThe export row carries the safety rules, each enforced in app code and again in Postgres:\n\n- **Owner only:** you can only export a trip you own.\n- **Own email only:** the recipient is read from the database and is always your verified account email. No request field can change it, so the feature can't be used to mail other people.\n- **One at a time:** one in-flight export per user, which also covers double-clicks.\n- **Rate cap:** 5 exports per user per hour.\n- **Clean outcomes:** every export ends exactly once as `sent` or `failed` with a reason.\n\nA failed or timed-out send may still have been delivered, so a retry can produce a duplicate email. I accepted that because a duplicate of your own itinerary is harmless and a wrong recipient is not possible.\n\nBecause the repo is empty, Phase 0 covers only the minimum the export reads: a user with a verified email, a trip, its items, and seed data. The trip editor itself is not designed here.\n\n## Questions that block work\n\n1. **Auth:** how is sign-in done, and will Postgres hold a verified email per user? I assumed your own `users` table (Auth.js-style). An external provider such as Clerk changes how the own-email rule is enforced in the database. This blocks Phase 0.\n2. **Hosting:** serverless (Vercel or similar) or a long-running Node server? I assumed serverless limits. This blocks the PDF library check that opens Phase 1.\n3. **Download:** is email the only delivery, or should a \"Download PDF\" button ship too? I assumed email only. This affects Phase 3 scope.\n\n## Decisions to confirm\n\nThese are my choices, marked `(proposed)` in the docs:\n\n- **Synchronous export:** no job queue for now; the export row doubles as a job record if you add one later.\n- **Attachment, not link:** the PDF is never stored.\n- **PDF library:** `@react-pdf/renderer` rather than headless Chromium. I have not verified it against a pinned Next.js/React; that is the first Phase 1 task.\n- **Email provider:** Resend, through one mailer module.\n- **Tooling:** TypeScript, Drizzle, Zod, Vitest, pnpm.\n- **Limits:** 5 exports per hour (failed ones count), 30 s request budget, 10 s provider timeout, 5 MB PDF cap, pending exports treated as failed after 2 min.\n- **Database triggers:** one trigger stamps the recipient and backs up the rate cap.\n- **PDF content:** text only, English, 24-hour times, with one bundled font covering Latin, Greek and Cyrillic. Place names in CJK or Arabic will not render in v1.\n- **Empty itinerary:** the export is refused rather than sending a blank PDF.\n\nThe other open questions, each with the default I proceeded on, are in `SOURCE_OF_TRUTH.md` §6.\n\nThe `CLAUDE.md` I wrote follows the skill's template, which forbids AI co-author trailers on commits and requires feature branches. Change it if that isn't your policy.\n\nFiles are in `/tmp/claude-eval-9tSexT/home/cwd`:\n- SOURCE_OF_TRUTH.md\n- ARCHITECTURE_ROADMAP.md\n- TODO_WORKFLOW.md\n- CLAUDE.md\n- docs/handoff.md"
+              },
+              {
+                "name": "failure-paths-designed",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS — note: long file (15743 chars); llm judges are noisy on long inputs, prefer a regex grader for large artifacts",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "# Itinerary PDF Export — Architecture & Roadmap\n\n**Version:** 0.1 · **Status:** Draft, nothing built · **Date:** 2026-11-11 · **Owner:** TBD\n\nDerived from [SOURCE_OF_TRUTH.md](SOURCE_OF_TRUTH.md) (wins on conflict) · Tasks: [TODO_WORKFLOW.md](TODO_WORKFLOW.md) · Rules: [CLAUDE.md](CLAUDE.md) · Log: [docs/handoff.md](docs/handoff.md)\n\n`(proposed)` has the meaning defined in the SoT. Invariants (I1–I5), decisions (D1–D9), limits and open questions (Q1–Q11) are defined there and only referenced here.\n\n---\n\n## 0. Executive context\n\nThe repo is empty. The feature is one user action: \"email me this trip's itinerary as a PDF\". It needs three things that do not exist yet (a user with a verified email, a trip, its itinerary items) and adds one table of its own, `itinerary_exports`.\n\nThe design is deliberately small: one Server Action calls one service function, which writes an export row, renders the PDF in-process, sends one email, and closes the row. There is no queue, no file storage and no worker ([D1](SOURCE_OF_TRUTH.md#4-decisions), [D2](SOURCE_OF_TRUTH.md#4-decisions)). The export row is what carries the safety properties: owner-only, own-email-only, one at a time, rate-limited.\n\nThis document does not design the trip editor. Phase 0 builds only what the export reads, plus seed data.\n\n---\n\n## 1. Tech stack\n\n| Layer | Tech | Role |\n|---|---|---|\n| Web framework | Next.js, App Router (given; pin latest stable at scaffold) | Pages, Server Action entry point |\n| Language | TypeScript (proposed) | — |\n| Database | Postgres (given) | System of record; second enforcement point for every invariant |\n| DB access / migrations | Drizzle (proposed, [Q11](SOURCE_OF_TRUTH.md#6-open-questions)) | Typed queries; SQL migrations including the trigger |\n| Auth | Auth.js with a Postgres `users` table (proposed, [Q1](SOURCE_OF_TRUTH.md#6-open-questions)) | Session, verified email |\n| Input validation | Zod (proposed) | Strict schema on the action input |\n| PDF | `@react-pdf/renderer` (proposed, [D3](SOURCE_OF_TRUTH.md#4-decisions)) | Trip snapshot to PDF bytes, Node runtime only |\n| Email | Resend HTTP API (proposed, [D8](SOURCE_OF_TRUTH.md#4-decisions)) | One transactional message with attachment |\n| Tests | Vitest + a real Postgres for constraint tests (proposed) | Unit, integration |\n\nNo version numbers are pinned here; none have been verified. T0.1 pins them and T1.1 verifies the PDF library against the pinned Next.js/React.\n\n---\n\n## 2. Data schema\n\nPlain Postgres. `users`, `trips`, `itinerary_items` are the minimum prerequisite model (proposed); if auth or the trip model is designed elsewhere, only the columns marked **required by export** are load-bearing.\n\n### 2.1 `users` (prerequisite)\n\n| Column | Type | Constraints | Note |\n|---|---|---|---|\n| `id` | `uuid` | PK | |\n| `email` | `text` | `NOT NULL`, unique (case-insensitive) | **required by export** |\n| `email_verified_at` | `timestamptz` | nullable | **required by export**; `NULL` = cannot export (I2) |\n\n### 2.2 `trips` (prerequisite)\n\n| Column | Type | Constraints | Note |\n|---|---|---|---|\n| `id` | `uuid` | PK | |\n| `owner_id` | `uuid` | `NOT NULL`, FK → `users(id)` `ON DELETE CASCADE` | **required by export** (I1) |\n| `title` | `text` | `NOT NULL`, `CHECK (char_length(title) BETWEEN 1 AND 200)` | `TRIP_TITLE_MAX` |\n| `start_date` | `date` | nullable | |\n| `end_date` | `date` | nullable, `CHECK (end_date >= start_date)` | |\n| `created_at`, `updated_at` | `timestamptz` | `NOT NULL DEFAULT now()` | |\n\n- `UNIQUE (id, owner_id)` — **required by export**: target of the composite FK that enforces I1.\n\n### 2.3 `itinerary_items` (prerequisite)\n\n| Column | Type | Constraints | Note |\n|---|---|---|---|\n| `id` | `uuid` | PK | |\n| `trip_id` | `uuid` | `NOT NULL`, FK → `trips(id)` `ON DELETE CASCADE` | |\n| `day` | `date` | `NOT NULL` | |\n| `start_time`, `end_time` | `time` | nullable | Local wall-clock, no time zone (proposed) |\n| `title` | `text` | `NOT NULL` | |\n| `location`, `notes` | `text` | nullable | Rendered as plain text only |\n| `position` | `integer` | `NOT NULL` | Order within a day |\n\n- Index `(trip_id, day, position)` — the export's single read.\n\n### 2.4 `itinerary_exports` (this feature)\n\n| Column | Type | Constraints | Note |\n|---|---|---|---|\n| `id` | `uuid` | PK, `DEFAULT gen_random_uuid()` | |\n| `trip_id` | `uuid` | `NOT NULL` | |\n| `user_id` | `uuid` | `NOT NULL` | |\n| `recipient_email` | `text` | `NOT NULL` | Overwritten by the guard trigger; app-supplied value is ignored (I2, D4) |\n| `status` | `text` | `NOT NULL DEFAULT 'pending'`, `CHECK (status IN ('pending','sent','failed'))` | Text + CHECK rather than an enum type, easier to alter (proposed) |\n| `failure_code` | `text` | nullable | See [§3.4](#34-failure-paths) for values |\n| `provider_message_id` | `text` | nullable | |\n| `created_at` | `timestamptz` | `NOT NULL DEFAULT now()` | |\n| `completed_at` | `timestamptz` | nullable | |\n\nConstraints and indexes:\n\n| Object | Definition | Enforces |\n|---|---|---|\n| FK `exports_trip_owner_fk` | `(trip_id, user_id) → trips(id, owner_id) ON DELETE CASCADE` | I1 |\n| Trigger `itinerary_exports_guard` | `BEFORE INSERT`: set `recipient_email` from `users.email` where `email_verified_at IS NOT NULL`, raise if no such user; raise if the user's row count in the last hour has reached `EXPORT_RATE_LIMIT` | I2, I4 |\n| Partial unique index `exports_one_pending_per_user` | `(user_id) WHERE status = 'pending'` | I3 |\n| `CHECK` | `(status = 'pending') = (completed_at IS NULL)` | I5 |\n| `CHECK` | `(status = 'sent') = (provider_message_id IS NOT NULL)` | I5 |\n| `CHECK` | `(status = 'failed') = (failure_code IS NOT NULL)` | I5 |\n| Index `exports_user_created_idx` | `(user_id, created_at DESC)` | I4 count, stale sweep |\n\n> Decision call-out: the trigger raises with two distinct, named error conditions so the service can map them to `email_unverified` and `rate_limited`. The service checks both first; reaching the trigger means a race or a bug, and is logged as such.\n\n> Decision call-out: there is no column for PDF bytes or a file URL. Do not add one without revisiting [D2](SOURCE_OF_TRUTH.md#4-decisions).\n\n---\n\n## 3. Backend\n\n### 3.1 Structure (proposed)\n\n```\nsrc/\n  app/trips/[tripId]/\n    actions.ts            Server Action: session + input parsing only, calls the service\n    ExportButton.tsx      Client component (§4)\n  server/exports/\n    service.ts            requestExport(): every app-side invariant check, orchestration\n    repo.ts               SQL for itinerary_exports (insert, sweep, completeExport)\n  server/pdf/\n    ItineraryDocument.tsx Layout\n    render.ts             renderItineraryPdf(snapshot) -> bytes. Pure: no DB, no network\n  server/email/\n    mailer.ts             sendItineraryEmail(exportRow, pdfBytes) -> provider message id\ndb/migrations/\n```\n\n### 3.2 Components\n\n| Component | Responsibility | Must not |\n|---|---|---|\n| `actions.ts` | Resolve session; parse `{ tripId }` with a strict schema; call `requestExport`; return its result | Contain business rules; accept any field besides `tripId` |\n| `service.ts` | Pre-checks, row lifecycle, calling render and mailer, mapping failures to result codes | Hold a DB transaction open across render or the provider call |\n| `repo.ts` | The only SQL touching `itinerary_exports`; `completeExport` is the only status writer (I5) | Expose a generic \"update status\" |\n| `render.ts` | Trip snapshot in, PDF bytes out | Read the DB, read the session, emit HTML |\n| `mailer.ts` | One provider call with `MAILER_TIMEOUT`; recipient from the export row only | Take an address argument; retry on its own |\n\n### 3.3 Request flow and contract\n\nEntry point: Server Action `exportItinerary({ tripId })` ([D9](SOURCE_OF_TRUTH.md#4-decisions)). Runs on the Node.js runtime with `EXPORT_MAX_DURATION`.\n\nOrder of operations in `requestExport(sessionUserId, tripId)`:\n\n```\n 1. no session                                  -> unauthenticated\n 2. load trip WHERE id AND owner_id = me         -> not_found            (I1)\n 3. user.email_verified_at IS NULL               -> email_unverified     (I2)\n 4. trip has zero items                          -> itinerary_empty\n 5. TX A:\n      fail my pending rows older than EXPORT_STALE_AFTER (failure_code = 'timeout')   (D6)\n      a pending row remains                      -> export_in_progress   (I3)\n      rows in last hour >= EXPORT_RATE_LIMIT     -> rate_limited         (I4)\n      INSERT pending row                          (trigger + index + FK re-check I1-I4)\n    COMMIT\n 6. read trip + items in one query (the snapshot)\n 7. renderItineraryPdf(snapshot)                 fail -> completeExport(failed, render_failed)\n 8. bytes > PDF_MAX_BYTES                        -> completeExport(failed, pdf_too_large)\n 9. sendItineraryEmail(row, bytes)               fail -> completeExport(failed, <code>)\n10. completeExport(sent, provider_message_id)    -> sent\n```\n\nSteps 1–4 and the rejections in step 5 leave no row.\n\nResult contract (discriminated union returned to the client; all codes (proposed)):\n\n| Result | Payload | Row written | Retryable by user |\n|---|---|---|---|\n| `sent` | `exportId`, `sentTo` (the user's own address) | `sent` | — |\n| `unauthenticated` | — | none | after sign-in |\n| `not_found` | — | none | no |\n| `email_unverified` | — | none | after verifying |\n| `itinerary_empty` | — | none | after adding items |\n| `export_in_progress` | — | none | shortly |\n| `rate_limited` | `retryAfterSeconds` | none | after the wait |\n| `send_failed` | `exportId`, `failureCode` | `failed` | yes, counts toward I4 |\n\n### 3.4 Failure paths\n\n| Where | What fails | What happens next | `failure_code` |\n|---|---|---|---|\n| Action input | Unknown or malformed fields | Rejected by the strict schema before the service runs; treated as `not_found` | — |\n| TX A insert | Unique violation on the pending index (double-click race) | Map to `export_in_progress` | — |\n| TX A insert | Guard trigger raises | Map to `email_unverified` / `rate_limited`; log at warn, since the app check should have caught it | — |\n| TX A | DB unavailable | Action throws; UI shows a generic error; no row, nothing sent | — |\n| Snapshot read | Trip deleted after insert | Export row is already gone by cascade; return `not_found`; `completeExport` affecting zero rows is fine | — |\n| Render | Library throws (bad glyph, layout error) | Close row `failed`; log with `exportId`; nothing sent | `render_failed` |\n| Render | Output exceeds `PDF_MAX_BYTES` | Close row `failed`; nothing sent | `pdf_too_large` |\n| Mailer | Provider returns a 4xx (bad sender, rejected recipient, attachment refused) | Close row `failed`; not worth an immediate retry; log provider error code | `provider_rejected` |\n| Mailer | Provider 5xx, network error, or `MAILER_TIMEOUT` | Close row `failed`. Delivery is unknown, the email may still arrive ([D7](SOURCE_OF_TRUTH.md#4-decisions)). User may retry. | `provider_unavailable` |\n| After send | `completeExport(sent)` fails (DB blip) | Email is out, row stays `pending`, then becomes `failed/timeout` on the user's next request. User saw an error but has the email. Accepted under D7. | `timeout` (later) |\n| Anywhere | Process killed mid-request | Row stays `pending`; I3 blocks new exports until `EXPORT_STALE_AFTER`, then the lazy sweep closes it | `timeout` |\n| Late finisher | A request outlives `EXPORT_STALE_AFTER` and then completes | Its `completeExport` matches zero rows (already `failed/timeout`). Possible duplicate email. Accepted under D7. | — |\n\nIf the provider supports an idempotency key, pass `exportId`. Not yet verified for the chosen provider; do not rely on it for correctness.\n\n---\n\n## 4. Frontend\n\nOne client component on the trip page: `ExportButton` (\"Email me a PDF\").\n\n| State | UI |\n|---|---|\n| Idle | Button enabled. Helper text shows the destination: \"Sends to you@example.com\". |\n| Pending | Button disabled, `aria-busy`, label \"Sending…\". No second submit possible from this tab (other tabs are covered by I3). |\n| `sent` | Inline confirmation: \"Sent to you@example.com.\" Announced via an `aria-live=\"polite\"` region. |\n| `email_unverified` | Message plus link to the verify-email flow. |\n| `itinerary_empty` | \"Add at least one item before exporting.\" |\n| `export_in_progress` | \"An export is already being sent. Try again in a moment.\" |\n| `rate_limited` | \"You've reached the export limit. Try again in N minutes.\" (from `retryAfterSeconds`) |\n| `send_failed` | \"We couldn't send the email. Try again.\" Retry re-invokes the action; no automatic retry. |\n| `not_found` / thrown error | Generic error; no detail. |\n\nThe button being hidden or disabled is a convenience only. Every rule above is enforced server-side (SoT §3).\n\nPDF content, v1: trip title, date range, then items grouped by day in `position` order with time range, title, location, notes. Page numbers. File name `<slugified-title>-itinerary.pdf`. Email subject \"Your itinerary: <title>\" with control characters stripped; plain-text body, no tracking.\n\n---\n\n## 5. Execution phases\n\nEach phase is independently shippable and reversible. Tasks: [TODO_WORKFLOW.md](TODO_WORKFLOW.md).\n\n| Phase | Delivers | Exit criteria | Needs answered first |\n|---|---|---|---|\n| 0. Foundations | Scaffolded app, Postgres + migrations, auth with verified email, `trips` / `itinerary_items` tables, seed data | A seeded user can sign in and see a seeded trip page | Q1, Q11 |\n| 1. PDF renderer | `renderItineraryPdf` as a pure function | Tests render a fixture trip and assert text content, day grouping and non-Latin handling per Q4; verified on the target runtime | Q2 |\n| 2. Export core | `itinerary_exports` migration, repo, service, mailer, Server Action | Each of I1–I5 has one test through the service **and** one that bypasses the app and hits the DB constraint directly; every row of §3.4 has a test with a fake mailer | — |\n| 3. UI | `ExportButton` with all states from §4 | Manual pass through every state against a dev mailer; keyboard and screen-reader check of the live region | Q3 |\n| 4. Go-live | Verified sending domain, production secrets, structured logs | A real email with a valid PDF lands in a real inbox (not spam) from production | Q7 |\n\nPhase 1 and Phase 0 can run in parallel; Phase 1 needs only a fixture, not the database.\n\n---\n\n## 6. Non-functional requirements\n\n| Area | Requirement |\n|---|---|\n| Security | Session required. Ownership and recipient rules per I1/I2. Action input is `{ tripId }` only. User text reaches the PDF as text nodes and the email as subject/filename only after stripping control characters. Email API key is server-only env, never exposed to the client bundle. |\n| Abuse | I3 + I4 bound what one account can send. An unverified account can send nothing. |\n| Privacy | PDFs are never written to disk or storage. Logs carry `exportId`, `userId`, `tripId`, stage timings and `failure_code`; never the email address, the itinerary text or the PDF. |\n| Performance | Target (proposed, unmeasured): typical trip exports end-to-end well inside `EXPORT_MAX_DURATION`. Measure in Phase 1 on the target runtime; if p95 render exceeds a third of the budget, revisit D1. |\n| Reliability | No automatic retries. Failure is always visible to the user and recorded on the row. Duplicate email possible, wrong recipient not (D7). |\n| Observability | One structured log line per export at completion; a warn-level line whenever a DB boundary fires that the app check should have caught. |\n| Accessibility | Button and status per §4. The PDF is not tagged in v1 (non-goal). |\n| Operations | Sending domain needs SPF, DKIM and DMARC before go-live (T4.1, human task). |\n| Known gaps | Scripts outside the bundled font (Q4); no delivery/bounce tracking; no export history UI. |\n"
+              },
+              {
+                "name": "four-docs-created",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched ^(?=[\\s\\S]*SOURCE_OF_TRUTH\\.md)(?=[\\s\\S]*ARCHITECTURE_ROADMAP\\.md)(?=[\\s\\S]*TODO_WORKFLOW\\.md)(?=[\\s\\S]*CLAUDE\\.md)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-modular-set",
+                "passed": true,
+                "weight": 1,
+                "explanation": "docs/architecture/** absent as expected",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 1x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 10,
+            "costUsd": 0.4840811,
+            "judgeCostUsd": 0.046674,
+            "durationSeconds": 264,
+            "startedAt": "2026-11-11T09:26:02.292Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-buzymZ/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "blocking-questions",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "The design docs for the export-and-email feature are written; there is no code yet and nothing is committed. All 51 cross-links between the docs resolve.\n\nThe design in one paragraph: the user clicks \"Email me this itinerary (PDF)\", the server records the request as a row in Postgres and answers immediately, then renders the PDF and sends it after the response. That row doubles as the queue, the retry counter, the rate limiter and the audit log. The PDF is never stored, and the email only ever goes to the user's own verified account address.\n\n## Blocking questions\n\nI proceeded on the defaults below, but your answers could change the design or the phase order:\n\n1. **Where does this deploy — Vercel/serverless or a long-running Node container?** Default: Vercel-style serverless, with platform cron retrying stuck exports.\n2. **Are auth and the trip/itinerary model being designed elsewhere, and does sign-up verify email addresses?** Default: this workstream builds a minimal version first (Phase 0), with verified email as a hard prerequisite.\n3. **Do you already have an email provider and a sending domain with SPF/DKIM?** Default: Resend, with a new sending subdomain set up in Phase 3.\n\n## Decisions to confirm\n\nThese are my choices, not yours, and are tagged `(proposed)` in the docs:\n\n- **PDF library:** `@react-pdf/renderer` rather than headless Chromium, to avoid shipping a browser binary.\n- **Job mechanism:** a Postgres row plus Next.js `after()` plus a cron sweeper, rather than a dedicated queue service.\n- **Delivery:** at-least-once, capped at 3 attempts. The worst case is a duplicate email to the user's own inbox.\n- **Times:** stored and printed as wall-clock local date and time, with no timezone conversion.\n- **Limits:** 5 exports per user per hour, 500 items per export, 10 MB attachment.\n- **Status codes:** `404` for a non-owner (same as a missing trip), `403` for an unverified email, and `200` with the existing export when one is already in progress.\n- **Verified-email check in the database:** a BEFORE INSERT trigger as the second enforcement point.\n- **Tooling:** Drizzle, Zod, Vitest, pnpm, Auth.js.\n- **v1 scope:** email only (no separate \"Download PDF\" button), text-only PDF, export rows kept 90 days.\n\nThree things are assumed rather than verified: that the PDF library runs inside an App Router route handler, that `after()` works on your host, and that the email provider supports idempotency keys. Task T0.3 is a spike to check them against pinned versions before anything depends on them.\n\n`CLAUDE.md` carries the architect template's git rules: feature branches only, and no AI co-author trailer on commits. Change them there if they are not your conventions.\n\nFiles are in the repo root:\n- SOURCE_OF_TRUTH.md\n- ARCHITECTURE_ROADMAP.md\n- TODO_WORKFLOW.md\n- CLAUDE.md\n- docs/handoff.md"
+              },
+              {
+                "name": "failure-paths-designed",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS — note: long file (14783 chars); llm judges are noisy on long inputs, prefer a regex grader for large artifacts",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "# Architecture Roadmap — Itinerary PDF Export & Email\n\n**Version:** 0.1 (draft) · **Status:** Proposed · **Owner:** TBD (repo owner)\n\nDerived from [SOURCE_OF_TRUTH.md](SOURCE_OF_TRUTH.md) (wins on conflict) · Tasks: [TODO_WORKFLOW.md](TODO_WORKFLOW.md) · Rules: [CLAUDE.md](CLAUDE.md) · Log: [docs/handoff.md](docs/handoff.md)\n\nSingle feature, so there is no modular `docs/architecture/` set. Add one (with a `00-index.md`) when a second feature's design lands.\n\n## 0. Executive context\n\nThe repo is empty. The feature — \"email me my itinerary as a PDF\" — needs three things that don't exist yet: an authenticated user with a verified email, a trip with itinerary items, and outbound email. Phase 0 covers those prerequisites at the minimum the feature needs; Phases 1–4 are the feature itself; each phase ships on its own.\n\nThe shape: the browser asks for an export, the server records the request in Postgres and answers immediately, then renders the PDF and sends it outside the request. The Postgres row is the queue, the retry counter, the rate limiter, and the audit log. Nothing is stored except that row.\n\n## 1. Tech stack\n\n| Layer | Tech | Role |\n|---|---|---|\n| Web framework | Next.js (App Router), TypeScript — given | UI, route handlers, post-response work via `after()` |\n| Database | Postgres — given | Domain data; `itinerary_exports` doubles as the job queue |\n| DB access / migrations | Drizzle ORM + drizzle-kit `(proposed)` | Typed queries; SQL migrations that can carry the CHECKs, partial index, and trigger verbatim |\n| Validation | Zod `(proposed)` | Strict request schemas (I2) |\n| Auth | Auth.js `(proposed, pending Q2)` | Session → `user.id`; verified email |\n| PDF | `@react-pdf/renderer` `(proposed, D1)` | `renderItineraryPdf(snapshot) → Buffer`, Node runtime only |\n| Email | Resend `(proposed, pending Q3)` | One call: send with attachment, via JSON HTTP API (I6) |\n| Scheduler | Platform cron `(pending Q1)` | Calls the sweep endpoint every minute |\n| Tests | Vitest + a real Postgres for integration `(proposed)` | Constraints are part of the design, so they are tested against the real engine |\n| Package manager | pnpm `(proposed)` | — |\n\nVersions are pinned at scaffold time (T0.1). API surfaces named here (`after()`, the PDF library under the App Router, provider idempotency keys) are verified against the pinned versions in the T0.3 spike before anything depends on them.\n\n## 2. Data schema\n\nPrerequisite tables — only the columns this feature reads. Their owners may add more.\n\n**`users`**\n\n| Column | Type | Constraints |\n|---|---|---|\n| `id` | `uuid` | PK |\n| `email` | `citext` | NOT NULL, UNIQUE |\n| `email_verified_at` | `timestamptz` | NULL = unverified |\n\n**`trips`**\n\n| Column | Type | Constraints |\n|---|---|---|\n| `id` | `uuid` | PK |\n| `owner_id` | `uuid` | NOT NULL, FK → `users(id)` ON DELETE CASCADE |\n| `title` | `text` | NOT NULL, `CHECK (char_length(title) BETWEEN 1 AND 200)` |\n| `start_date`, `end_date` | `date` | NULL allowed; `CHECK (end_date >= start_date)` |\n\n- `UNIQUE (id, owner_id)` — redundant with the PK on its own, but required as the target of the composite FK that enforces I1.\n\n**`itinerary_items`**\n\n| Column | Type | Constraints |\n|---|---|---|\n| `id` | `uuid` | PK |\n| `trip_id` | `uuid` | NOT NULL, FK → `trips(id)` ON DELETE CASCADE |\n| `local_date` | `date` | NOT NULL (D6) |\n| `local_start_time`, `local_end_time` | `time` | NULL = all-day / unscheduled |\n| `title` | `text` | NOT NULL, 1–200 chars |\n| `location` | `text` | NULL, ≤ 300 chars |\n| `notes` | `text` | NULL, ≤ 5000 chars |\n| `position` | `integer` | NOT NULL; order within a day |\n\n- Index `(trip_id, local_date, position)` — the export's only read path.\n\n**`itinerary_exports`** — owned by this feature\n\n| Column | Type | Constraints |\n|---|---|---|\n| `id` | `uuid` | PK, `DEFAULT gen_random_uuid()` |\n| `trip_id` | `uuid` | NOT NULL |\n| `user_id` | `uuid` | NOT NULL |\n| `idempotency_key` | `uuid` | NOT NULL |\n| `status` | `text` | NOT NULL DEFAULT `'queued'`, `CHECK (status IN ('queued','processing','sent','failed'))` |\n| `attempts` | `smallint` | NOT NULL DEFAULT 0, `CHECK (attempts BETWEEN 0 AND 3)` |\n| `locked_until` | `timestamptz` | NULL; processing lease |\n| `sent_to` | `citext` | NULL; audit snapshot, written once at send |\n| `provider_message_id` | `text` | NULL |\n| `error_code` | `text` | NULL; `CHECK (error_code IN ('email_unverified','itinerary_empty','itinerary_too_large','pdf_too_large','render_failed','provider_rejected','max_attempts'))` |\n| `created_at`, `updated_at` | `timestamptz` | NOT NULL DEFAULT `now()` |\n| `sent_at` | `timestamptz` | NULL |\n\nConstraints and indexes:\n\n| Object | Definition | Serves |\n|---|---|---|\n| FK | `(trip_id, user_id) → trips (id, owner_id)` ON DELETE CASCADE | I1 |\n| Unique | `(user_id, idempotency_key)` | I3 |\n| Partial unique index | `(trip_id) WHERE status IN ('queued','processing')` | I3 |\n| Check | `(status = 'sent') = (sent_at IS NOT NULL)` | I5 |\n| Check | `(status = 'failed') = (error_code IS NOT NULL)` | I5 |\n| Trigger `(proposed)` | `itinerary_exports_require_verified_email` BEFORE INSERT: reject if the user's `email_verified_at` is NULL | I2 |\n| Index | `(user_id, created_at DESC)` | I4 count, history |\n| Partial index | `(locked_until) WHERE status IN ('queued','processing')` | Sweeper |\n\nDecision call-outs:\n\n- `status` is `text` + CHECK, not a Postgres enum: adding a state is a one-line constraint change instead of an enum migration.\n- The composite FK uses the default `ON UPDATE NO ACTION`, so changing `trips.owner_id` fails while exports exist. That is intended: ownership transfer is out of scope and must be designed, not stumbled into.\n- Deleting a trip or user cascades to their exports. A queued export for a deleted trip simply stops existing; the worker's claim finds no row and does nothing.\n- No PDF bytes, no itinerary JSON, no recipient input column (D3, D7, I2).\n- No JSONB columns.\n\n## 3. Backend\n\n### 3.1 Structure\n\n| Module | Responsibility | Fails how |\n|---|---|---|\n| `app/api/trips/[tripId]/exports/route.ts` | Create endpoint: auth, validation, invariants I1–I4, insert, schedule processing with `after()` | Returns an error from §3.2; never partially creates |\n| `app/api/trips/[tripId]/exports/[exportId]/route.ts` | Status read for polling | `404` |\n| `app/api/internal/exports/sweep/route.ts` | Cron entry: re-claim stuck rows, fail exhausted rows, delete rows past retention | `401` without the cron secret; a failed sweep is retried by the next tick |\n| `lib/exports/process.ts` | `processExport(id)`: claim → load → render → send → mark. The only code that changes `status` | See §3.3 |\n| `lib/exports/pdf.tsx` | `renderItineraryPdf(snapshot) → Buffer`. Pure: no DB, no network, no clock | Throws → `render_failed` |\n| `lib/email.ts` | `sendEmail({to, subject, text, attachment, idempotencyKey})`. The only file that imports the provider SDK | Throws a typed error: `transient` or `permanent` |\n\n### 3.2 API contract\n\nAll routes require a session unless noted. Errors are `{ \"error\": \"<code>\" }`.\n\n| Method & path | Request | Success | Errors |\n|---|---|---|---|\n| `POST /api/trips/:tripId/exports` | Header `Idempotency-Key: <uuid>`; **no body** | `202 { exportId, status: \"queued\" }` new · `200 { exportId, status }` same key replayed, or another export for this trip is already active `(proposed)` | `400 invalid_request` (missing/malformed key, or any body field) · `401` · `403 email_unverified` · `404 not_found` (missing trip **or** not the owner) · `422 itinerary_empty` · `422 itinerary_too_large` · `429 rate_limited` + `Retry-After` |\n| `GET /api/trips/:tripId/exports/:exportId` | — | `200 { exportId, status, sentAt, errorCode }` | `401` · `404 not_found` |\n| `POST /api/internal/exports/sweep` | `Authorization: Bearer $CRON_SECRET`; no session | `200 { reclaimed, failed, deleted }` | `401` |\n\nResponses never include the recipient address or itinerary content.\n\n### 3.3 Failure paths\n\n| Where | What fails | What happens next |\n|---|---|---|\n| Create | Two requests race for the same trip with different keys | Second insert hits the partial unique index (`23505`); handler loads the active row and returns it with `200` |\n| Create | Insert succeeds, `after()` never runs (function killed) | Row stays `queued`; sweeper claims it within about a minute |\n| Claim | Another worker already holds the lease | Conditional `UPDATE` changes 0 rows; this worker exits silently |\n| Load | Trip deleted since the request | Row is gone (cascade); claim found nothing; exit |\n| Load | Email no longer verified, itinerary now empty or over the item cap | → `failed` with the matching `error_code`; no retry (permanent) |\n| Render | Renderer throws | → `failed/render_failed`; logged with export id only. No retry: the same input fails the same way |\n| Render | PDF exceeds the attachment cap | → `failed/pdf_too_large` |\n| Send | Provider timeout, `5xx`, or `429` | Transient: → `queued` if `attempts < 3`, else `failed/max_attempts`. Sweeper retries after the lease window |\n| Send | Provider `4xx` (rejected address, invalid payload) | Permanent: → `failed/provider_rejected` |\n| Mark sent | Process dies after the provider accepted but before the row is updated | Lease expires, sweeper retries; provider idempotency key (= export id) suppresses the duplicate if supported, otherwise the user gets a second copy (D5) |\n| Sweep | Row is `processing`, lease expired, `attempts = 3` | → `failed/max_attempts` |\n| Sweep | Cron stops firing entirely | Exports that missed their `after()` stay `queued`; UI polling times out and offers retry; alert on `queued` rows older than 5 minutes (§6) |\n| After delivery | Email bounces or lands in spam | Not tracked in v1 — `sent` means \"accepted by the provider\". Bounce webhooks are a follow-up (T5.3) |\n\n### 3.4 Processing pseudocode\n\n```\nprocessExport(id):\n  row = UPDATE itinerary_exports\n           SET status='processing', attempts=attempts+1,\n               locked_until = now() + interval '2 minutes'      -- (proposed)\n         WHERE id = :id AND attempts < 3\n           AND (status='queued' OR (status='processing' AND locked_until < now()))\n     RETURNING *\n  if no row: return                                  -- lost race, deleted, or exhausted\n\n  snapshot = one SELECT: trip + owner (email, email_verified_at) + items\n             ordered by (local_date, position)       -- D7\n  if owner unverified / 0 items / > 500 items: fail(permanent code); return\n\n  pdf = renderItineraryPdf(snapshot)                 -- throws → fail('render_failed')\n  if pdf.bytes > 10 MB: fail('pdf_too_large'); return\n\n  result = sendEmail(to = owner.email, attachment = pdf, idempotencyKey = row.id)\n  transient error → requeue-or-fail-max;  permanent error → fail('provider_rejected')\n\n  UPDATE … SET status='sent', sent_at=now(), sent_to=owner.email,\n               provider_message_id=result.id, locked_until=NULL\n   WHERE id = :id AND status='processing'            -- I5\n```\n\nSweep: `SELECT id … WHERE (status='queued' AND created_at < now() - interval '30 seconds') OR (status='processing' AND locked_until < now()) FOR UPDATE SKIP LOCKED LIMIT 10`, then `processExport` each; mark exhausted rows failed; delete rows older than the retention window (Q7).\n\n## 4. Frontend\n\nOne control on the trip page: **\"Email me this itinerary (PDF)\"**, with the helper text \"We'll send it to *you@example.com*\".\n\n| State | UI | Trigger |\n|---|---|---|\n| Idle | Button enabled | — |\n| Unavailable | Button disabled with the reason inline (\"Verify your email first\" / \"Add something to your itinerary first\") | Known from page data; the server still enforces it |\n| Sending | Button `aria-busy`, label \"Sending…\" | `POST` returned `202`/`200`; poll `GET` every 2 s for up to 60 s |\n| Sent | Confirmation: \"Sent — check your inbox\" | `status = sent` |\n| Failed | Message mapped from `errorCode`, with \"Try again\" | `status = failed` |\n| Timed out | \"Still working — we'll keep trying. You can leave this page.\" | 60 s without a terminal status |\n| Rate limited | \"You've sent this a few times already. Try again in N minutes.\" | `429` |\n\n- The idempotency key is `crypto.randomUUID()` generated per click and reused for network retries of that click, never across clicks.\n- Status changes are announced through an `aria-live=\"polite\"` region.\n- No client-side check is ever the only check (see [SoT §3](SOURCE_OF_TRUTH.md#3-invariants)).\n\n## 5. Execution phases\n\n| Phase | Ships | Depends on | Done when |\n|---|---|---|---|\n| 0 — Foundations | Scaffold, DB + migrations, auth with verified email, minimal trips/items tables, the API-verification spike | Q1, Q2 | A signed-in verified user can load a seeded trip; spike notes confirm or replace D1/D2 |\n| 1 — PDF renderer | `renderItineraryPdf` + fixtures | 0 | Fixture itineraries (empty day, long notes, 500 items, non-Latin text) render; text content asserted in tests |\n| 2 — Export record & API | `itinerary_exports` migration, create + status endpoints | 0 | Every invariant in SoT §3 has one test through the handler and one directly against the DB |\n| 3 — Processing & email | `processExport`, `lib/email.ts`, sweeper, cron, sending domain DNS | 1, 2, Q3 | Every row of §3.3 has a test with a faked provider; a real email arrives in staging |\n| 4 — UI | Button and states from §4, behind a feature flag | 3 | All §4 states reachable; keyboard and screen-reader pass |\n| 5 — Hardening | Logs, metrics, alert, retention delete, flag removal | 4 | §6 targets measured in staging |\n\nPhases 1 and 2 are independent and can run in parallel.\n\n## 6. Non-functional requirements\n\n| Area | Requirement |\n|---|---|\n| Latency | Create endpoint p95 < 300 ms `(proposed)`; click-to-provider-accept p95 < 10 s `(proposed)` |\n| Limits | 500 items per export; 10 MB attachment `(proposed — check against the chosen provider's real limit in T0.3)` |\n| Privacy | PDFs are never written to disk, DB, or bucket (D3). Logs carry `export_id`, `user_id`, `trip_id`, status, and error code — never email addresses or itinerary text |\n| Security | Internal sweep route requires `CRON_SECRET`; provider key and cron secret live in env only; all export routes run on the Node runtime, not Edge |\n| Deliverability | Dedicated sending subdomain with SPF, DKIM, and DMARC before any production send |\n| Observability | One structured log line per status transition; counters by terminal status and error code; alert when any row has been `queued` for more than 5 minutes |\n| Retention | Export rows deleted after 90 days `(proposed, Q7)` |\n| Accessibility | §4 control is keyboard-operable with live status announcements |\n| Testing | Renderer: unit tests on fixtures. API and constraints: integration tests against real Postgres. Email: faked at `lib/email.ts` |\n"
+              },
+              {
+                "name": "four-docs-created",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched ^(?=[\\s\\S]*SOURCE_OF_TRUTH\\.md)(?=[\\s\\S]*ARCHITECTURE_ROADMAP\\.md)(?=[\\s\\S]*TODO_WORKFLOW\\.md)(?=[\\s\\S]*CLAUDE\\.md)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-modular-set",
+                "passed": true,
+                "weight": 1,
+                "explanation": "docs/architecture/** absent as expected",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 1x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 1,
+        "passRate": 1
+      }
+    }
+  ],
+  "aggregates": {
+    "casesTotal": 1,
+    "casesPassed": 1,
+    "overallScore": 1,
+    "overallPassRate": 1
+  }
+}

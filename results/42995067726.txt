@@ -1,0 +1,18 @@
+run: 42995067726 https://github.com/alonbaron/claude-skills/actions/runs/42995067726
+event: workflow_dispatch  commit: 3ee83a9d1bbe978708013ed4216011930066a494  ref: fix/fable-5-2-evals
+model: claude-fable-5-2  cases: sandboxed  job status at publish: success
+only: architect/right-sized-new-feature
+cli: 2.1.303 (Claude Code)
+started: 2026-11-11T09:31:04Z
+
+valid 1 of 1
+re-run: none
+cost $1.02  runner aggregates over the 1 cases in the results: {"casesTotal": 1, "casesPassed": 1, "overallScore": 1, "overallPassRate": 1}
+
+== right-sized-new-feature  with 1.00  without -
+   blocking-questions                 with PP   without 
+   failure-paths-designed             with PP   without 
+   four-docs-created                  with PP   without 
+   no-modular-set                     with PP   without 
+   no-subagents                       with PP   without 
+   skill-fired                        with PP   without 
