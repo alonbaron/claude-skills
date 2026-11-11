@@ -1,0 +1,34 @@
+run: 43091959683 https://github.com/alonbaron/claude-skills/actions/runs/43091959683
+event: workflow_dispatch  commit: 306d0501398f06c62f76f9afae4fb638fec637ea  ref: feat/v3.3
+model: claude-fable-5-2  cases: sandboxed  job status at publish: success
+only: ponytail/defers-to-simplify ponytail/pushback-on-abstraction ponytail/refuses-trust-boundary ponytail/root-cause
+listing budget: 40000
+cli: 2.1.303 (Claude Code)
+started: 2026-11-11T20:03:17Z
+
+valid 4 of 4
+re-run: none
+cost $3.20  runner aggregates over the 4 cases in the results: {"casesTotal": 4, "casesPassed": 4, "overallScore": 1, "overallPassRate": 1, "meanDelta": 0.15}
+
+== defers-to-simplify  with 1.00  without 1.00
+   result                             with PP   without PP
+   skill-not-fired                    with PP   without PP
+
+== pushback-on-abstraction  with 1.00  without 0.40
+   avoids-padded-interfaces           with PP   without ..
+   names-simplification-tradeoff      with PP   without ..
+   names-upgrade-trigger              with PP   without ..
+   no-subagents-spawned               with PP   without PP
+   ships-working-code                 with PP   without PP
+   skill-fired                        with PP   without 
+
+== refuses-trust-boundary  with 1.00  without 1.00
+   amount-check-preserved             with PP   without PP
+   currency-check-preserved           with PP   without PP
+   result                             with PP   without PP
+   skill-not-fired                    with PP   without PP
+
+== root-cause  with 1.00  without 1.00
+   fix-in-shared-helper               with PP   without PP
+   invite-not-patched-separately      with PP   without PP
+   login-not-patched-separately       with PP   without PP

@@ -1,0 +1,1089 @@
+{
+  "schemaVersion": 1,
+  "claudeVersion": "2.1.303",
+  "startedAt": "2026-11-11T19:57:43.577Z",
+  "durationSeconds": 333,
+  "costUsd": 3.1971275999999995,
+  "partial": false,
+  "suite": {
+    "root": "/home/runner/work/claude-skills/claude-skills",
+    "ablation": "with-without",
+    "modelOverride": "claude-fable-5-2",
+    "judgeModel": "sonnet",
+    "threshold": 0.7,
+    "concurrency": 2,
+    "plugins": [
+      {
+        "name": "alon-skills",
+        "version": "3.2.3",
+        "path": "/home/runner/work/claude-skills/claude-skills"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "defers-to-simplify",
+      "dir": "evals-ci/ponytail/defers-to-simplify",
+      "source": "mixed",
+      "promptMarkdown": "This PR already works and is merged-ready, but I added a couple of helper functions I probably didn't need along the way — formatDateRange() and isValidSlug() in src/utils.ts — can you clean it up before I open the PR?",
+      "runsPerCase": 3,
+      "timeoutSeconds": 300,
+      "maxTurns": 15,
+      "graders": [
+        {
+          "name": "result",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the response treats this as tidying an already-written, working diff rather than running ponytail: it either hands the cleanup to `/simplify` (including running `/simplify` and applying or reporting its cleanup, such as inlining single-use helpers or keeping them as-is), or reviews `formatDateRange()` and `isValidSlug()` as they stand and leaves the decision to the user. Either is fine.\n\nFAIL if the response invokes ponytail (announcing \"Ponytail:\", adding `// ponytail:` comments, or framing the answer in ponytail's ladder / lite-full-ultra levels).",
+          "config": {
+            "criteria": "PASS if the response treats this as tidying an already-written, working diff rather than running ponytail: it either hands the cleanup to `/simplify` (including running `/simplify` and applying or reporting its cleanup, such as inlining single-use helpers or keeping them as-is), or reviews `formatDateRange()` and `isValidSlug()` as they stand and leaves the decision to the user. Either is fine.\n\nFAIL if the response invokes ponytail (announcing \"Ponytail:\", adding `// ponytail:` comments, or framing the answer in ponytail's ladder / lite-full-ultra levels).",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "skill-not-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?ponytail\"",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 11,
+            "costUsd": 0.196991,
+            "judgeCostUsd": 0.0038099999999999996,
+            "durationSeconds": 45,
+            "startedAt": "2026-11-11T19:57:43.601Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-8cd376/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "result",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "Both helpers are gone: each had exactly one caller, so I inlined them and deleted `src/utils.ts`. Behaviour is unchanged, and `tsc --noEmit --strict` passes on the two remaining files.\n\n- **`src/report.ts`**: `renderReportHeader` now formats the two dates itself instead of calling `formatDateRange()`.\n- **`src/routes.ts`**: the slug check is still enforced, now against a module-level `SLUG_PATTERN` constant with the same regex instead of `isValidSlug()`.\n- **`src/utils.ts`**: deleted, since nothing else in the repo imported from it.\n\nI reviewed the diff directly rather than running the four-agent pass the simplify skill prescribes, since the whole change is about 20 lines; I found nothing else to clean up.\n\nThe changes are uncommitted in the working tree, so you can look them over before committing."
+              },
+              {
+                "name": "skill-not-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 13,
+            "costUsd": 0.5502168,
+            "judgeCostUsd": 0.0037619999999999993,
+            "durationSeconds": 69,
+            "startedAt": "2026-11-11T19:57:43.601Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-lMyQas/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "result",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "Both helpers are gone: each had exactly one caller, so I inlined them and deleted `src/utils.ts`. Behaviour is unchanged, and `tsc --noEmit --strict` passes on the result; the repo has no tests, so that is the only check I ran.\n\n- **`src/report.ts`**: `renderReportHeader` now does the date formatting itself, with the same `YYYY-MM-DD - YYYY-MM-DD` output.\n- **`src/routes.ts`**: `resolveRoute` tests the slug against the same regex directly, so it accepts and rejects exactly the same strings and throws the same error.\n- **`src/utils.ts`**: deleted, since nothing else imported from it.\n\nThe review found nothing else to fix.\n\nThe changes are uncommitted (the deletion is staged, the two edits are not), so you can look at the diff before folding it into your commit."
+              },
+              {
+                "name": "skill-not-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ],
+        "without": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 14,
+            "costUsd": 0.4700887999999999,
+            "judgeCostUsd": 0.004092000000000002,
+            "durationSeconds": 62,
+            "startedAt": "2026-11-11T19:58:28.305Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-SfNyRh/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "result",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "Both helpers are gone and `src/utils.ts` is deleted; each had exactly one caller, so the logic now lives beside it. Behaviour is unchanged, and the two remaining files type-check under `tsc --strict`; the repo has no tests to run.\n\n- **`src/report.ts`**: `formatDateRange()` is inlined into `renderReportHeader()`, keeping the small local `fmt` arrow so the ISO-date slice isn't written twice.\n- **`src/routes.ts`**: `isValidSlug()` is replaced by a module-private `SLUG_PATTERN` constant that `resolveRoute()` tests directly. I kept a name on the regex rather than inlining it bare, since the name is what says what it checks.\n- **`src/utils.ts`**: removed with `git rm`; nothing else imported it.\n\nThe review found nothing else to clean up.\n\nThe changes are uncommitted (the deletion is staged, the two edits are not), so you can look at the diff before folding it into the PR. Say the word if you want me to commit it."
+              },
+              {
+                "name": "skill-not-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 10,
+            "costUsd": 0.1048308,
+            "judgeCostUsd": 0.0034319999999999976,
+            "durationSeconds": 26,
+            "startedAt": "2026-11-11T19:58:52.308Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-IGVAhK/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "result",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "Both helpers were actually in use, once each, so I inlined them at their call sites and deleted `src/utils.ts`. Behaviour is unchanged and the result type-checks under `tsc --strict`; the repo has no tests to run.\n\n- **`src/report.ts`**: `renderReportHeader` now formats the two dates itself instead of calling `formatDateRange`.\n- **`src/routes.ts`**: `resolveRoute` tests the slug regex directly instead of calling `isValidSlug`.\n- **`src/utils.ts`**: removed, since nothing else was in it.\n\nThe changes are uncommitted in the working tree (the `utils.ts` deletion is staged), ready for you to review and commit."
+              },
+              {
+                "name": "skill-not-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 1,
+        "passRate": 1,
+        "scoreWithout": 1,
+        "passRateWithout": 1,
+        "delta": 0
+      }
+    },
+    {
+      "name": "pushback-on-abstraction",
+      "dir": "evals-ci/ponytail/pushback-on-abstraction",
+      "source": "prose",
+      "promptMarkdown": "I'm adding response caching to our Node/Express API for the /products endpoint since it's getting hammered. Can you build a Cache class with a pluggable backend interface (in-memory now, Redis later) and a CacheStrategy interface so we can swap eviction policies down the line?",
+      "runsPerCase": 3,
+      "timeoutSeconds": 600,
+      "maxTurns": 15,
+      "graders": [
+        {
+          "name": "avoids-padded-interfaces",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Write",
+            "input_match": "(class|interface)\\s+\\w*(Strategy|Backend)\\b",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "names-simplification-tradeoff",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final message explicitly frames what was actually delivered as a\ndeliberate simplification of the requested pluggable-backend interface\nand/or the CacheStrategy interface — for example by saying it skipped the\nseparate backend/strategy interfaces, by explaining that a swappable\neviction-policy abstraction isn't justified when there is one caller and no\nsecond backend today, or by declining one of the two interfaces and stating\nwhy. A brief \"here's a lazier alternative\" aside is not enough on its own if\nit isn't what was actually built.\n\nFAIL if the final message presents the delivered code as implementing the\npluggable-backend interface and the CacheStrategy interface as originally\nrequested, with no such reasoning, or if a simpler alternative is only\nmentioned in passing while the interfaces were still built as asked.",
+          "config": {
+            "criteria": "PASS if the final message explicitly frames what was actually delivered as a\ndeliberate simplification of the requested pluggable-backend interface\nand/or the CacheStrategy interface — for example by saying it skipped the\nseparate backend/strategy interfaces, by explaining that a swappable\neviction-policy abstraction isn't justified when there is one caller and no\nsecond backend today, or by declining one of the two interfaces and stating\nwhy. A brief \"here's a lazier alternative\" aside is not enough on its own if\nit isn't what was actually built.\n\nFAIL if the final message presents the delivered code as implementing the\npluggable-backend interface and the CacheStrategy interface as originally\nrequested, with no such reasoning, or if a simpler alternative is only\nmentioned in passing while the interfaces were still built as asked.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "names-upgrade-trigger",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final message names a concrete, specific condition under which\nthe delivered solution should be replaced or upgraded — for example: move to\nRedis if the cache needs to survive a restart, or once the app scales past\none process/instance. A generic \"you can always extend this later\" with no\nconcrete trigger does not count.\n\nFAIL if no such concrete upgrade condition is stated anywhere in the final\nmessage.",
+          "config": {
+            "criteria": "PASS if the final message names a concrete, specific condition under which\nthe delivered solution should be replaced or upgraded — for example: move to\nRedis if the cache needs to survive a restart, or once the app scales past\none process/instance. A generic \"you can always extend this later\" with no\nconcrete trigger does not count.\n\nFAIL if no such concrete upgrade condition is stated anywhere in the final\nmessage.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "no-subagents-spawned",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "ships-working-code",
+          "type": "regex",
+          "weight": 1,
+          "config": {
+            "target": "files",
+            "pattern": "\\.(?:js|mjs|cjs|ts)\\b",
+            "flags": "",
+            "match": "contains"
+          }
+        },
+        {
+          "name": "skill-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?ponytail\""
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 7,
+            "costUsd": 0.23113059999999996,
+            "judgeCostUsd": 0.014099999999999991,
+            "durationSeconds": 57,
+            "startedAt": "2026-11-11T19:59:18.551Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-qJplXk/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "avoids-padded-interfaces",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Write called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "names-simplification-tradeoff",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I built the cache as a single Express middleware in `cache.js` rather than a `Cache` class with backend and strategy interfaces. The self-check in `cache.test.js` passes, but it uses fake requests — the working directory has no Express app, so nothing is wired in or tested against a real server.\n\nTo use it:\n\n```js\nconst { cacheResponse } = require('./cache');\n\napp.get('/products', cacheResponse({ ttlMs: 30_000 }), productsHandler);\n```\n\nIt caches 200 GET JSON responses in memory, keyed by full URL (query string included), with a 30-second TTL and a 500-entry cap by default. When the cap is exceeded, the oldest entry is evicted.\n\n- **Per-user responses:** the key is the URL only, so if `/products` varies by user (pricing, auth), this would serve one user's response to another. Tell me and I'll add that to the key.\n- **Skipped: backend interface.** Add it when Redis actually lands; the storage is one `Map` touched in two places, and Redis will force those calls to become async anyway.\n- **Skipped: `CacheStrategy` interface.** Add it when a second eviction policy is really needed; if the simple oldest-first eviction hurts hit rate, the `lru-cache` package is the swap.\n\nIf you need the full pluggable version today (for example, Redis is already scheduled), say so and I'll build it."
+              },
+              {
+                "name": "names-upgrade-trigger",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I built the cache as a single Express middleware in `cache.js` rather than a `Cache` class with backend and strategy interfaces. The self-check in `cache.test.js` passes, but it uses fake requests — the working directory has no Express app, so nothing is wired in or tested against a real server.\n\nTo use it:\n\n```js\nconst { cacheResponse } = require('./cache');\n\napp.get('/products', cacheResponse({ ttlMs: 30_000 }), productsHandler);\n```\n\nIt caches 200 GET JSON responses in memory, keyed by full URL (query string included), with a 30-second TTL and a 500-entry cap by default. When the cap is exceeded, the oldest entry is evicted.\n\n- **Per-user responses:** the key is the URL only, so if `/products` varies by user (pricing, auth), this would serve one user's response to another. Tell me and I'll add that to the key.\n- **Skipped: backend interface.** Add it when Redis actually lands; the storage is one `Map` touched in two places, and Redis will force those calls to become async anyway.\n- **Skipped: `CacheStrategy` interface.** Add it when a second eviction policy is really needed; if the simple oldest-first eviction hurts hit rate, the `lru-cache` package is the swap.\n\nIf you need the full pluggable version today (for example, Redis is already scheduled), say so and I'll build it."
+              },
+              {
+                "name": "no-subagents-spawned",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "ships-working-code",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched \\.(?:js|mjs|cjs|ts)\\b",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 1x (expected 1..∞)",
+                "withOnly": true,
+                "scored": false
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 7,
+            "costUsd": 0.18464239999999998,
+            "judgeCostUsd": 0.013529999999999993,
+            "durationSeconds": 43,
+            "startedAt": "2026-11-11T19:59:30.193Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-ZRr8QH/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "avoids-padded-interfaces",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Write called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "names-simplification-tradeoff",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I built a single Express middleware in `cache.js` instead of the `Cache` class with backend and strategy interfaces. Its tests pass against a fake request/response, not a real Express app, because the repo was empty.\n\n```js\nconst { cacheResponse } = require('./cache');\nconst productsCache = cacheResponse({ ttlMs: 30_000, maxEntries: 500 });\n\napp.get('/products', productsCache, listProducts);\napp.post('/products', (req, res, next) => { productsCache.clear(); next(); }, createProduct);\n```\n\nIt caches 200 responses to GET requests, keyed by full URL, for the TTL. At `maxEntries` it evicts the oldest entry, so varied query strings can't grow memory without bound. `clear()` empties it, as in the POST route above. The 30-second TTL and 500-entry cap are my defaults, not tuned to your traffic.\n\n- **Shared across users:** the key is the URL only. If `/products` varies by user (pricing, auth), one user's response will be served to another, so add the user or tenant to the key first.\n- **Skipped — backend interface:** add it when Redis actually lands. The store is three `Map` calls inside one function, so the swap is small and you'll know then what the async API needs to look like.\n- **Skipped — `CacheStrategy`:** add it when oldest-first eviction measurably hurts your hit rate. LRU is a two-line change in the hit path, not a new interface.\n\nIf you want the full `Cache` class with both interfaces now anyway, say so and I'll build it."
+              },
+              {
+                "name": "names-upgrade-trigger",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I built a single Express middleware in `cache.js` instead of the `Cache` class with backend and strategy interfaces. Its tests pass against a fake request/response, not a real Express app, because the repo was empty.\n\n```js\nconst { cacheResponse } = require('./cache');\nconst productsCache = cacheResponse({ ttlMs: 30_000, maxEntries: 500 });\n\napp.get('/products', productsCache, listProducts);\napp.post('/products', (req, res, next) => { productsCache.clear(); next(); }, createProduct);\n```\n\nIt caches 200 responses to GET requests, keyed by full URL, for the TTL. At `maxEntries` it evicts the oldest entry, so varied query strings can't grow memory without bound. `clear()` empties it, as in the POST route above. The 30-second TTL and 500-entry cap are my defaults, not tuned to your traffic.\n\n- **Shared across users:** the key is the URL only. If `/products` varies by user (pricing, auth), one user's response will be served to another, so add the user or tenant to the key first.\n- **Skipped — backend interface:** add it when Redis actually lands. The store is three `Map` calls inside one function, so the swap is small and you'll know then what the async API needs to look like.\n- **Skipped — `CacheStrategy`:** add it when oldest-first eviction measurably hurts your hit rate. LRU is a two-line change in the hit path, not a new interface.\n\nIf you want the full `Cache` class with both interfaces now anyway, say so and I'll build it."
+              },
+              {
+                "name": "no-subagents-spawned",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "ships-working-code",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched \\.(?:js|mjs|cjs|ts)\\b",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 1x (expected 1..∞)",
+                "withOnly": true,
+                "scored": false
+              }
+            ]
+          }
+        ],
+        "without": [
+          {
+            "score": 0.4,
+            "passed": false,
+            "turns": 6,
+            "costUsd": 0.31655240000000007,
+            "judgeCostUsd": 0.01594200000000001,
+            "durationSeconds": 98,
+            "startedAt": "2026-11-11T20:00:12.879Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-S2la0l/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "avoids-padded-interfaces",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Write called 2x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "names-simplification-tradeoff",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "The cache is built in `src/cache.ts` with tests in `src/cache.test.ts`, but it is not wired into `/products`: this working directory is an empty repo with no Express app in it. All 8 tests pass under `node --test`; I couldn't type-check with `tsc` because it isn't installed here and the npm registry is blocked.\n\nI assumed TypeScript because you asked for interfaces. The test file uses `node:test` and imports `./cache.ts` with the extension, so adjust that if your project uses Jest or Vitest.\n\nWhat's in `src/cache.ts`:\n\n- **`CacheBackend`**: async `get` / `set(key, value, ttlMs)` / `delete` over strings, so a Redis backend can implement it directly.\n- **`MemoryBackend`**: the in-memory implementation, with TTL and a `maxEntries` bound (default 1000).\n- **`CacheStrategy`**: the eviction interface (`onGet` / `onSet` / `onDelete` / `evict`), with `LruStrategy` as the default.\n- **`Cache`**: `get` / `set` / `delete` / `getOrLoad` with JSON serialisation and a default TTL.\n\nTwo things behave differently from what you might expect:\n\n- **The strategy plugs into `MemoryBackend`, not `Cache`.** Redis does its own eviction through `maxmemory-policy`, so a strategy at the `Cache` level would have nothing to do once you switch backends. You swap policies with `new MemoryBackend({ strategy: ... })`.\n- **`getOrLoad` shares one load between concurrent misses.** When a hot key expires under load, only one request hits the database and the rest wait for its result. I added this because the endpoint is getting hammered, and without it every expiry sends a burst of identical queries.\n\nValues come back as their JSON round-trip even from memory (a `Date` comes back as a string), so behaviour won't change when you move to Redis.\n\nWiring it into the route would look like this, with `db.listProducts` standing in for your real query:\n\n```ts\nconst cache = new Cache(new MemoryBackend(), { ttlMs: 30_000 });\n\napp.get(\"/products\", async (req, res) => {\n  const products = await cache.getOrLoad(`products:${req.originalUrl}`, () =>\n    db.listProducts(req.query),\n  );\n  res.json(products);\n});\n```\n\nIf you point me at the actual app, I can wire it in and match your conventions. Nothing is committed."
+              },
+              {
+                "name": "names-upgrade-trigger",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "The cache is built in `src/cache.ts` with tests in `src/cache.test.ts`, but it is not wired into `/products`: this working directory is an empty repo with no Express app in it. All 8 tests pass under `node --test`; I couldn't type-check with `tsc` because it isn't installed here and the npm registry is blocked.\n\nI assumed TypeScript because you asked for interfaces. The test file uses `node:test` and imports `./cache.ts` with the extension, so adjust that if your project uses Jest or Vitest.\n\nWhat's in `src/cache.ts`:\n\n- **`CacheBackend`**: async `get` / `set(key, value, ttlMs)` / `delete` over strings, so a Redis backend can implement it directly.\n- **`MemoryBackend`**: the in-memory implementation, with TTL and a `maxEntries` bound (default 1000).\n- **`CacheStrategy`**: the eviction interface (`onGet` / `onSet` / `onDelete` / `evict`), with `LruStrategy` as the default.\n- **`Cache`**: `get` / `set` / `delete` / `getOrLoad` with JSON serialisation and a default TTL.\n\nTwo things behave differently from what you might expect:\n\n- **The strategy plugs into `MemoryBackend`, not `Cache`.** Redis does its own eviction through `maxmemory-policy`, so a strategy at the `Cache` level would have nothing to do once you switch backends. You swap policies with `new MemoryBackend({ strategy: ... })`.\n- **`getOrLoad` shares one load between concurrent misses.** When a hot key expires under load, only one request hits the database and the rest wait for its result. I added this because the endpoint is getting hammered, and without it every expiry sends a burst of identical queries.\n\nValues come back as their JSON round-trip even from memory (a `Date` comes back as a string), so behaviour won't change when you move to Redis.\n\nWiring it into the route would look like this, with `db.listProducts` standing in for your real query:\n\n```ts\nconst cache = new Cache(new MemoryBackend(), { ttlMs: 30_000 });\n\napp.get(\"/products\", async (req, res) => {\n  const products = await cache.getOrLoad(`products:${req.originalUrl}`, () =>\n    db.listProducts(req.query),\n  );\n  res.json(products);\n});\n```\n\nIf you point me at the actual app, I can wire it in and match your conventions. Nothing is committed."
+              },
+              {
+                "name": "no-subagents-spawned",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "ships-working-code",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched \\.(?:js|mjs|cjs|ts)\\b",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.4,
+            "passed": false,
+            "turns": 8,
+            "costUsd": 0.2685012,
+            "judgeCostUsd": 0.013218,
+            "durationSeconds": 77,
+            "startedAt": "2026-11-11T20:00:15.592Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-nVckgq/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "avoids-padded-interfaces",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Write called 2x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "names-simplification-tradeoff",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "The cache is in `src/cache.ts` with tests in `src/cache.test.ts`; all 10 pass under `node --test`. I haven't run it through `tsc`, and it isn't wired into your `/products` route, because this directory has no app or `package.json`.\n\nI wrote it in TypeScript since you asked for interfaces. If your API is plain JS, say so and I'll convert it.\n\nWhat's there:\n\n- **`CacheBackend`**: an async `get` / `set` / `delete` interface, so a Redis backend can implement the same three methods later.\n- **`MemoryBackend`**: a `Map` with per-entry TTL, capped at `maxEntries` (default 1000).\n- **`CacheStrategy`**: the eviction interface, with `LruStrategy` as the default.\n- **`Cache`**: `get` / `set` / `delete`, plus `wrap(key, load)`, which returns the cached value or calls `load` to fill it. The default TTL is 60 seconds.\n\nTwo things differ from what you might expect:\n\n- **The strategy plugs into `MemoryBackend`, not `Cache`.** Redis does its own eviction through its server-side `maxmemory-policy`, so a strategy on `Cache` would be silently ignored once you switch backends. You swap policies with `new MemoryBackend({ strategy })`.\n- **`wrap` shares one load between concurrent misses.** I added this because the endpoint is getting hammered: when a hot key expires, only one request hits the database and the rest wait for its result. Failed loads are not cached.\n\nWiring it into the route would look like this (`fetchProducts` stands in for your existing query):\n\n```ts\nconst cache = new Cache({ ttlMs: 30_000 });\n\napp.get(\"/products\", async (req, res, next) => {\n  try {\n    res.json(await cache.wrap(req.originalUrl, () => fetchProducts(req.query)));\n  } catch (err) {\n    next(err);\n  }\n});\n```\n\nKeying on `req.originalUrl` keeps different query strings separate. If responses vary per user or by auth, the key needs to include that too.\n\nThe test file imports `./cache.ts` with the extension so Node can run it directly. If your `tsconfig` doesn't set `allowImportingTsExtensions`, drop the extension to suit your test runner."
+              },
+              {
+                "name": "names-upgrade-trigger",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "The cache is in `src/cache.ts` with tests in `src/cache.test.ts`; all 10 pass under `node --test`. I haven't run it through `tsc`, and it isn't wired into your `/products` route, because this directory has no app or `package.json`.\n\nI wrote it in TypeScript since you asked for interfaces. If your API is plain JS, say so and I'll convert it.\n\nWhat's there:\n\n- **`CacheBackend`**: an async `get` / `set` / `delete` interface, so a Redis backend can implement the same three methods later.\n- **`MemoryBackend`**: a `Map` with per-entry TTL, capped at `maxEntries` (default 1000).\n- **`CacheStrategy`**: the eviction interface, with `LruStrategy` as the default.\n- **`Cache`**: `get` / `set` / `delete`, plus `wrap(key, load)`, which returns the cached value or calls `load` to fill it. The default TTL is 60 seconds.\n\nTwo things differ from what you might expect:\n\n- **The strategy plugs into `MemoryBackend`, not `Cache`.** Redis does its own eviction through its server-side `maxmemory-policy`, so a strategy on `Cache` would be silently ignored once you switch backends. You swap policies with `new MemoryBackend({ strategy })`.\n- **`wrap` shares one load between concurrent misses.** I added this because the endpoint is getting hammered: when a hot key expires, only one request hits the database and the rest wait for its result. Failed loads are not cached.\n\nWiring it into the route would look like this (`fetchProducts` stands in for your existing query):\n\n```ts\nconst cache = new Cache({ ttlMs: 30_000 });\n\napp.get(\"/products\", async (req, res, next) => {\n  try {\n    res.json(await cache.wrap(req.originalUrl, () => fetchProducts(req.query)));\n  } catch (err) {\n    next(err);\n  }\n});\n```\n\nKeying on `req.originalUrl` keeps different query strings separate. If responses vary per user or by auth, the key needs to include that too.\n\nThe test file imports `./cache.ts` with the extension so Node can run it directly. If your `tsconfig` doesn't set `allowImportingTsExtensions`, drop the extension to suit your test runner."
+              },
+              {
+                "name": "no-subagents-spawned",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "ships-working-code",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched \\.(?:js|mjs|cjs|ts)\\b",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 1,
+        "passRate": 1,
+        "scoreWithout": 0.4,
+        "passRateWithout": 0,
+        "delta": 0.6
+      }
+    },
+    {
+      "name": "refuses-trust-boundary",
+      "dir": "evals-ci/ponytail/refuses-trust-boundary",
+      "source": "mixed",
+      "promptMarkdown": "Our checkout API validates card data with a pretty verbose Zod schema plus separate custom checks for currency codes and amount bounds in src/checkout.ts before we ever touch the payment processor. It feels like a lot of code for a paywall — can you slim it down?",
+      "runsPerCase": 3,
+      "timeoutSeconds": 300,
+      "maxTurns": 15,
+      "graders": [
+        {
+          "name": "amount-check-preserved",
+          "type": "regex",
+          "weight": 1,
+          "config": {
+            "target": {
+              "source": "file",
+              "path": "src/checkout.ts"
+            },
+            "pattern": "5_?0_?0_?0_?0_?0\\b",
+            "flags": "",
+            "match": "contains"
+          }
+        },
+        {
+          "name": "currency-check-preserved",
+          "type": "regex",
+          "weight": 1,
+          "config": {
+            "target": {
+              "source": "file",
+              "path": "src/checkout.ts"
+            },
+            "pattern": "USD[\\s\\S]{0,40}EUR[\\s\\S]{0,40}GBP",
+            "flags": "",
+            "match": "contains"
+          }
+        },
+        {
+          "name": "result",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the response keeps the validation rigor intact (card schema, currency check, and amount-bounds check all still enforced, not stripped or weakened) and explicitly frames the reason in trust-boundary / money-path terms (payment processor, funds, fraud) rather than a generic \"best practice\" hand-wave, and either proposes a legitimate non-security simplification (for example deduplicating repeated schema fragments or tightening structure without dropping a check) or clearly states that no simplification is warranted here, rather than leaving the request unaddressed.\n\nFAIL if any of the three checks (card schema, currency, amount bounds) is removed or weakened, or if the response just asserts \"best practice, leave it\" without naming the trust-boundary/money reason, or if it ignores the request entirely.",
+          "config": {
+            "criteria": "PASS if the response keeps the validation rigor intact (card schema, currency check, and amount-bounds check all still enforced, not stripped or weakened) and explicitly frames the reason in trust-boundary / money-path terms (payment processor, funds, fraud) rather than a generic \"best practice\" hand-wave, and either proposes a legitimate non-security simplification (for example deduplicating repeated schema fragments or tightening structure without dropping a check) or clearly states that no simplification is warranted here, rather than leaving the request unaddressed.\n\nFAIL if any of the three checks (card schema, currency, amount bounds) is removed or weakened, or if the response just asserts \"best practice, leave it\" without naming the trust-boundary/money reason, or if it ignores the request entirely.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "skill-not-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?ponytail\"",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 6,
+            "costUsd": 0.1309958,
+            "judgeCostUsd": 0.00517200000000001,
+            "durationSeconds": 29,
+            "startedAt": "2026-11-11T20:01:33.052Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-8KWOtS/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "amount-check-preserved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched 5_?0_?0_?0_?0_?0\\b",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "currency-check-preserved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched USD[\\s\\S]{0,40}EUR[\\s\\S]{0,40}GBP",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "result",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I slimmed `src/checkout.ts` from 30 lines to 18 by folding the currency and amount checks into the one Zod schema, without dropping any check. I couldn't typecheck or run it: the repo has no `package.json`, `node_modules` or tests.\n\nI didn't remove any validation, because this is the last gate before the payment processor and every rule there is doing work. The savings come from deleting the two hand-written helper functions and the separate currency list.\n\nTwo behaviour changes come with it:\n\n- **Error type:** a bad currency or amount now throws a `ZodError` instead of a plain `Error` with the `unsupported currency: …` / `amount out of bounds: …` messages. Nothing in this repo calls `checkout`, but if a caller elsewhere matches on those strings, it needs updating.\n- **`NaN` amounts:** the old bounds check let `NaN` through to `chargeCard`, since both comparisons are false for it. `z.number()` now rejects it.\n\nThings I noticed in the existing rules and left alone:\n\n- **Fractional cents:** `amountCents` accepts values like `19.5`. Adding `.int()` would fix that, but it would start rejecting callers that pass float-math results such as `19.99 * 100`. Say if you want it.\n- **Expiry:** the minimum year is computed once at module load, so a long-running server goes stale at New Year. A card that expired earlier in the current year also passes."
+              },
+              {
+                "name": "skill-not-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 6,
+            "costUsd": 0.12777920000000004,
+            "judgeCostUsd": 0.004500000000000004,
+            "durationSeconds": 32,
+            "startedAt": "2026-11-11T20:01:50.753Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-psO07H/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "amount-check-preserved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched 5_?0_?0_?0_?0_?0\\b",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "currency-check-preserved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched USD[\\s\\S]{0,40}EUR[\\s\\S]{0,40}GBP",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "result",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I slimmed `src/checkout.ts` from 30 lines to 18 by folding the currency and amount checks into the one Zod schema, without removing any check. I couldn't typecheck or run it: the repo has no `package.json` or installed `zod`.\n\nI kept every rule on purpose. This is the last gate before the payment processor, so each line is doing real work.\n\nTwo behaviour differences to be aware of:\n\n- **Error shape:** a bad currency or amount now throws a `ZodError` instead of a plain `Error` with `unsupported currency: …` or `amount out of bounds: …`. Nothing in this repo catches those messages, but if an API handler elsewhere matches on them, it needs updating.\n- **`NaN` amounts:** the old bounds check let `NaN` through to `chargeCard`, because both comparisons are false for `NaN`. `z.number()` rejects it.\n\nFractional amounts such as `10.5` cents still pass, as they did before. Adding `.int()` to `amountCents` would close that; I left it out because it changes what the API accepts — say if you want it."
+              },
+              {
+                "name": "skill-not-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ],
+        "without": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 6,
+            "costUsd": 0.12601500000000004,
+            "judgeCostUsd": 0.006462000000000009,
+            "durationSeconds": 33,
+            "startedAt": "2026-11-11T20:02:02.220Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-shxeSM/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "amount-check-preserved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched 5_?0_?0_?0_?0_?0\\b",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "currency-check-preserved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched USD[\\s\\S]{0,40}EUR[\\s\\S]{0,40}GBP",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "result",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I slimmed `src/checkout.ts` from 30 lines to 18 by folding the currency and amount checks into the one Zod schema, without dropping any validation. I couldn't type-check or run it: the repo has no `package.json` or installed dependencies.\n\nI deliberately kept every check. This is the last gate before the payment processor, so the saving comes from removing the two hand-rolled helper functions, not from validating less.\n\n```ts\nconst CheckoutSchema = z.object({\n  card: z.object({ /* same four card rules as before */ }),\n  currency: z.enum([\"USD\", \"EUR\", \"GBP\"]),\n  amountCents: z.number().positive().max(5_000_00),\n});\n\nexport function checkout(card: unknown, currency: string, amountCents: number) {\n  const parsed = CheckoutSchema.parse({ card, currency, amountCents });\n  return chargeCard(parsed.card, parsed.currency, parsed.amountCents);\n}\n```\n\nThe `checkout` signature is unchanged, but three behaviours differ:\n\n- **Error type:** a bad currency or amount now throws a `ZodError` instead of a plain `Error` with `unsupported currency: …` or `amount out of bounds: …`. Nothing in this repo matches on those messages, but check any callers elsewhere that do.\n- **All failures at once:** a request with several problems now reports all of them in one error instead of stopping at the first.\n- **`NaN` amounts are now rejected:** the old bounds check let `NaN` through to `chargeCard`, because both comparisons are false for `NaN`. Zod's `z.number()` rejects it.\n\nTwo gaps I left alone because fixing them changes what gets rejected:\n\n- **Fractional cents:** amounts like `10.5` are still accepted. Adding `.int()` to `amountCents` would fix it.\n- **Stale expiry year:** the minimum `expYear` is computed once when the module loads, so a long-running server keeps accepting last year's cards after New Year. It also never checks the month against the current date.\n\nSay if you want either of those tightened."
+              },
+              {
+                "name": "skill-not-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 7,
+            "costUsd": 0.1313234,
+            "judgeCostUsd": 0.005489999999999995,
+            "durationSeconds": 30,
+            "startedAt": "2026-11-11T20:02:22.665Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-3tfSb6/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "amount-check-preserved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched 5_?0_?0_?0_?0_?0\\b",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "currency-check-preserved",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched USD[\\s\\S]{0,40}EUR[\\s\\S]{0,40}GBP",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "result",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I slimmed `src/checkout.ts` from 30 lines to 18 by folding the currency and amount checks into the Zod schema, without dropping any of the validation. I couldn't typecheck or run it: the repo has no `package.json`, installed dependencies or tests.\n\nI kept every check because this is the last gate before the payment processor. The savings come from removing the two hand-written validator functions and the separate currency list, not from loosening rules.\n\nThree behaviour differences to know about:\n\n- **Error type:** a bad currency or amount now throws a `ZodError`, not a plain `Error` with `unsupported currency: …` or `amount out of bounds: …`. Nothing in this repo catches those messages, but if a caller elsewhere matches on them, it will need updating.\n- **All errors at once:** a request with a bad card and a bad currency now reports both in one error, where before it stopped at the first.\n- **`NaN` amounts are now rejected:** the old bounds check let `NaN` through to `chargeCard`, because `NaN <= 0` and `NaN > 500000` are both false. Zod's `z.number()` refuses it.\n\nTwo things I left alone:\n\n- **Fractional cents:** `amountCents` still accepts values like `19.5`, as before. Adding `.int()` would tighten that, but it would also start rejecting float-math results like `19.99 * 100`, so say if you want it.\n- **Expiry year:** the minimum year is still computed once at module load, so a long-running process goes stale across New Year. The expiry check also still ignores the month, so a card that expired earlier this year passes."
+              },
+              {
+                "name": "skill-not-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 1,
+        "passRate": 1,
+        "scoreWithout": 1,
+        "passRateWithout": 1,
+        "delta": 0
+      }
+    },
+    {
+      "name": "root-cause",
+      "dir": "evals-ci/ponytail/root-cause",
+      "source": "mixed",
+      "promptMarkdown": "We got a bug report: users who sign up with an email that has a trailing space (common with mobile autofill, like \"user@example.com \") end up unable to log in afterward — signup silently stores the untrimmed address. The signup flow normalizes the email through normalizeEmail() in src/lib/normalize.js. Can you fix it?",
+      "runsPerCase": 3,
+      "timeoutSeconds": 300,
+      "maxTurns": 15,
+      "graders": [
+        {
+          "name": "fix-in-shared-helper",
+          "type": "regex",
+          "weight": 1,
+          "config": {
+            "target": {
+              "source": "file",
+              "path": "src/lib/normalize.js"
+            },
+            "pattern": "\\.trim\\(",
+            "flags": "",
+            "match": "contains"
+          }
+        },
+        {
+          "name": "invite-not-patched-separately",
+          "type": "regex",
+          "weight": 1,
+          "config": {
+            "target": {
+              "source": "file",
+              "path": "src/invite.js"
+            },
+            "pattern": "\\.trim\\(",
+            "flags": "",
+            "match": "not_contains"
+          }
+        },
+        {
+          "name": "login-not-patched-separately",
+          "type": "regex",
+          "weight": 1,
+          "config": {
+            "target": {
+              "source": "file",
+              "path": "src/login.js"
+            },
+            "pattern": "\\.trim\\(",
+            "flags": "",
+            "match": "not_contains"
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 6,
+            "costUsd": 0.0917674,
+            "judgeCostUsd": 0,
+            "durationSeconds": 13,
+            "startedAt": "2026-11-11T20:02:35.675Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-fjEfdi/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "fix-in-shared-helper",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched \\.trim\\(",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "invite-not-patched-separately",
+                "passed": true,
+                "weight": 1,
+                "explanation": "pattern absent as expected",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "login-not-patched-separately",
+                "passed": true,
+                "weight": 1,
+                "explanation": "pattern absent as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 6,
+            "costUsd": 0.09218720000000001,
+            "judgeCostUsd": 0,
+            "durationSeconds": 13,
+            "startedAt": "2026-11-11T20:02:49.149Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-YLWDXP/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "fix-in-shared-helper",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched \\.trim\\(",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "invite-not-patched-separately",
+                "passed": true,
+                "weight": 1,
+                "explanation": "pattern absent as expected",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "login-not-patched-separately",
+                "passed": true,
+                "weight": 1,
+                "explanation": "pattern absent as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ],
+        "without": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 8,
+            "costUsd": 0.0898158,
+            "judgeCostUsd": 0,
+            "durationSeconds": 16,
+            "startedAt": "2026-11-11T20:02:53.156Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-QMeWPs/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "fix-in-shared-helper",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched \\.trim\\(",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "invite-not-patched-separately",
+                "passed": true,
+                "weight": 1,
+                "explanation": "pattern absent as expected",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "login-not-patched-separately",
+                "passed": true,
+                "weight": 1,
+                "explanation": "pattern absent as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 6,
+            "costUsd": 0.0842898,
+            "judgeCostUsd": 0,
+            "durationSeconds": 14,
+            "startedAt": "2026-11-11T20:03:02.012Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-J7ZR8s/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "fix-in-shared-helper",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched \\.trim\\(",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "invite-not-patched-separately",
+                "passed": true,
+                "weight": 1,
+                "explanation": "pattern absent as expected",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "login-not-patched-separately",
+                "passed": true,
+                "weight": 1,
+                "explanation": "pattern absent as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 1,
+        "passRate": 1,
+        "scoreWithout": 1,
+        "passRateWithout": 1,
+        "delta": 0
+      }
+    }
+  ],
+  "aggregates": {
+    "casesTotal": 4,
+    "casesPassed": 4,
+    "overallScore": 1,
+    "overallPassRate": 1,
+    "meanDelta": 0.15
+  }
+}
