@@ -1,6 +1,6 @@
 <svg width="1280" height="640" viewBox="0 0 1280 640" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t d">
 <title id="t">alon-skills — Six Claude Code skills and a build loop, measured with and without the plugin</title>
-<desc id="d">Light-mode architecture banner for alon-skills v3.2.2 and workflow-watch 0.11. Shows the frosted glass identity card, 3D sapphire-porcelain core sculpture, the six slash commands (/architect, /review-swarm, /ask-the-council, /prompt-generator, /up-to-date, and /ponytail vendored from DietrichGebert/ponytail MIT), and five vertical eval uplift cards on Fable 5.1 (19/19 passing at 0.7 threshold).</desc>
+<desc id="d">Light-mode architecture banner for alon-skills v3.2.3 and workflow-watch 0.11. Shows the frosted glass identity card, 3D sapphire-porcelain core sculpture, the six slash commands (/architect, /review-swarm, /ask-the-council, /prompt-generator, /up-to-date, and /ponytail vendored from DietrichGebert/ponytail MIT), and five vertical eval uplift cards on Fable 5.2 (19/19 passing at 0.7 threshold).</desc>
 <defs>
   <linearGradient id="bg" x1="0" y1="0" x2="1280" y2="640" gradientUnits="userSpaceOnUse">
     <stop offset="0" stop-color="#F6F7FB"/>
@@ -53,7 +53,7 @@
     <circle cx="32" cy="32" r="4.5" fill="#067647"/>
     <text x="46" y="36.5" class="mono" font-size="11.5" font-weight="700" letter-spacing="1.2" fill="#125190">CLAUDE CODE MARKETPLACE · 2 PLUGINS · MIT</text>
 
-    <text x="28" y="96" class="sans" font-size="54" font-weight="900" letter-spacing="-1.5" fill="#0E1024">alon-skills <tspan font-size="26" font-weight="700" fill="#125190">v3.2.2</tspan></text>
+    <text x="28" y="96" class="sans" font-size="54" font-weight="900" letter-spacing="-1.5" fill="#0E1024">alon-skills <tspan font-size="26" font-weight="700" fill="#125190">v3.2.3</tspan></text>
     <text x="28" y="128" class="sans" font-size="15.5" font-weight="800" fill="#0E1024">Six Claude Code skills and a build loop, <tspan fill="#125190">measured with and without the plugin.</tspan></text>
     <text x="28" y="154" class="sans" font-size="14" fill="#545A75">Plus <tspan font-weight="700" fill="#0E1024">workflow-watch 0.11</tspan> side-pane tracker · CLI &amp; VS Code · macOS &amp; Windows</text>
   </g>
@@ -62,7 +62,7 @@
   <g transform="translate(916 40)" filter="url(#shadow)">
     <rect width="308" height="178" rx="22" fill="url(#glass)" stroke="#FFFFFF" stroke-width="1.5"/>
     <rect x=".75" y=".75" width="306.5" height="176.5" rx="21.25" fill="none" stroke="#125190" stroke-opacity=".14"/>
-    <text x="28" y="38" class="mono" font-size="11.5" font-weight="700" letter-spacing="1" fill="#545A75">CLAUDE PLUGIN EVAL · FABLE 5.1</text>
+    <text x="28" y="38" class="mono" font-size="11.5" font-weight="700" letter-spacing="1" fill="#545A75">CLAUDE PLUGIN EVAL · FABLE 5.2</text>
     <text x="28" y="92" class="sans" font-size="46" font-weight="900" fill="#067647">19 / 19 <tspan font-size="20" font-weight="700" fill="#0E1024">passing</tspan></text>
     <text x="28" y="124" class="mono" font-size="13" font-weight="600" fill="#125190">0.7 threshold · 120 trigger prompts</text>
     <text x="28" y="150" class="mono" font-size="12.5" fill="#545A75">75–100% fire rate · 0 false fires</text>
@@ -97,9 +97,9 @@
       <text x="22" y="32" class="mono" font-size="11" font-weight="700" fill="#125190">02 · VENDORED (MIT)</text>
       <text x="22" y="60" class="sans" font-size="20" font-weight="800" fill="#0E1024">ponytail</text>
       <text x="22" y="84" class="sans" font-size="13" fill="#545A75">1-caller pluggable cache</text>
-      <text x="22" y="138" class="sans" font-size="36" font-weight="900" fill="#125190">0.90 <tspan font-size="16" font-weight="600" fill="#64748B">vs 0.50</tspan></text>
-      <rect x="22" y="158" width="160" height="10" rx="5" fill="url(#brand)"/>
-      <rect x="22" y="174" width="89" height="8" rx="4" fill="#CBD5E1"/>
+      <text x="22" y="138" class="sans" font-size="36" font-weight="900" fill="#125190">1.00 <tspan font-size="16" font-weight="600" fill="#64748B">vs 0.20</tspan></text>
+      <rect x="22" y="158" width="178" height="10" rx="5" fill="url(#brand)"/>
+      <rect x="22" y="174" width="36" height="8" rx="4" fill="#CBD5E1"/>
     </g>
 
     <!-- 3: ask-the-council -->
@@ -121,9 +121,9 @@
       <text x="22" y="32" class="mono" font-size="11" font-weight="700" fill="#125190">04 · DOCS FIRST</text>
       <text x="22" y="60" class="sans" font-size="20" font-weight="800" fill="#0E1024">architect</text>
       <text x="22" y="84" class="sans" font-size="13" fill="#545A75">Feature spec from scratch</text>
-      <text x="22" y="138" class="sans" font-size="36" font-weight="900" fill="#125190">1.00 <tspan font-size="16" font-weight="600" fill="#64748B">vs 0.67</tspan></text>
+      <text x="22" y="138" class="sans" font-size="36" font-weight="900" fill="#125190">1.00 <tspan font-size="16" font-weight="600" fill="#64748B">vs 0.40</tspan></text>
       <rect x="22" y="158" width="178" height="10" rx="5" fill="url(#brand)"/>
-      <rect x="22" y="174" width="119" height="8" rx="4" fill="#CBD5E1"/>
+      <rect x="22" y="174" width="71" height="8" rx="4" fill="#CBD5E1"/>
     </g>
 
     <!-- 5: up-to-date -->
@@ -133,9 +133,9 @@
       <text x="22" y="32" class="mono" font-size="11" font-weight="700" fill="#125190">05 · REPO PREFLIGHT</text>
       <text x="22" y="60" class="sans" font-size="20" font-weight="800" fill="#0E1024">up-to-date</text>
       <text x="22" y="84" class="sans" font-size="13" fill="#545A75">Unpushed branch vs main</text>
-      <text x="22" y="138" class="sans" font-size="36" font-weight="900" fill="#125190">0.88 <tspan font-size="16" font-weight="600" fill="#64748B">vs 0.62</tspan></text>
-      <rect x="22" y="158" width="157" height="10" rx="5" fill="url(#brand)"/>
-      <rect x="22" y="174" width="110" height="8" rx="4" fill="#CBD5E1"/>
+      <text x="22" y="138" class="sans" font-size="36" font-weight="900" fill="#125190">1.00 <tspan font-size="16" font-weight="600" fill="#64748B">vs 0.75</tspan></text>
+      <rect x="22" y="158" width="178" height="10" rx="5" fill="url(#brand)"/>
+      <rect x="22" y="174" width="134" height="8" rx="4" fill="#CBD5E1"/>
     </g>
   </g>
 

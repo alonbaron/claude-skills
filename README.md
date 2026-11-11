@@ -9,7 +9,7 @@
 <p align="center">
   <img alt="Claude Code plugin marketplace" src="https://img.shields.io/badge/Claude_Code-2_plugins-125190?style=flat-square&labelColor=0E1024">&nbsp;
   <img alt="6 skills + 1 workflow" src="https://img.shields.io/badge/skills-6_+_1_workflow-4174A6?style=flat-square&labelColor=0E1024">&nbsp;
-  <img alt="alon-skills v3.2.2" src="https://img.shields.io/badge/alon--skills-v3.2.2-125190?style=flat-square&labelColor=0E1024">&nbsp;
+  <img alt="alon-skills v3.2.3" src="https://img.shields.io/badge/alon--skills-v3.2.3-125190?style=flat-square&labelColor=0E1024">&nbsp;
   <img alt="workflow-watch 0.11.6" src="https://img.shields.io/badge/workflow--watch-0.11.6-4174A6?style=flat-square&labelColor=0E1024">&nbsp;
   <a href="#-evals"><img alt="evals: 19/19 passing" src="https://img.shields.io/badge/evals-19%2F19_passing-067647?style=flat-square&labelColor=0E1024"></a>&nbsp;
   <img alt="MIT license" src="https://img.shields.io/badge/license-MIT-067647?style=flat-square&labelColor=0E1024">&nbsp;
@@ -42,7 +42,7 @@ The [`claude plugin eval`](https://code.claude.com/docs/en/plugin-evals) suite h
 | A feature spec from scratch: **architect** asks the few questions that matter and right-sizes the docs | **1.00** | 0.40 |
 | A branch that was never pushed: **up-to-date** says so and compares against `main` instead of faking a sync | **1.00** | 0.75 |
 
-Across 120 trigger prompts, each skill fired on 75 to 100% of the runs meant for it and never on the ones meant for another skill. Full table and method under [Evals](#-evals).
+Across 120 trigger prompts, measured on Fable 5.1, each skill fired on 75 to 100% of the runs meant for it and never on the ones meant for another skill. Full table and method under [Evals](#-evals).
 
 ---
 
@@ -82,7 +82,7 @@ Each skill also triggers from plain language — e.g. *"spec this out before we 
   <img src="./assets/build-loop.svg" width="100%" alt="">
 </p>
 
-`/alon-skills:build-loop` builds `TODO_WORKFLOW.md` rows one at a time without supervision, in any repo that carries the architect doc set. Each stage is a fresh subagent with an empty context; state between runs lives in the repo, never in chat. Fable 5.1 makes the calls everything downstream inherits (which row, what done means, who wins a dispute), Opus 5.5 reviews and repairs, Sonnet 5.5 builds, Haiku 5.5 searches and counts. Stages name model aliases, so each follows the newest model of its tier.
+`/alon-skills:build-loop` builds `TODO_WORKFLOW.md` rows one at a time without supervision, in any repo that carries the architect doc set. Each stage is a fresh subagent with an empty context; state between runs lives in the repo, never in chat. Fable 5.2 makes the calls everything downstream inherits (which row, what done means, who wins a dispute), Opus 5.5 reviews and repairs, Sonnet 5.5 builds, Haiku 5.5 searches and counts. Stages name model aliases, so each follows the newest model of its tier.
 
 | Stage | Model | Reads | Writes | Returns | Stops the loop when |
 |---|---|---|---|---|---|
@@ -299,6 +299,17 @@ One catch worth knowing about humanizer: as of v2.9.1 the plugin puts `SKILL.md`
 - Turn cards show your prompt. A message sent while Claude works stays in the same turn as `(mid-turn) …`, and an interrupt ends the turn instead of opening a fake one.
 - A session log past the 4 MiB read limit no longer blanks the pane. It's read through a filter that drops the engine's bookkeeping lines and pasted image data and cuts long strings, so a 12 MiB log comes to about 1 MiB. If a read still fails, the pane keeps the last items and says so.
 - `scripts/tracker.mjs` follows the same turn rules: an interrupt ends the turn, and a mid-turn message stays in it.
+
+## ◢ What's new in v3.2.3
+
+- Every eval case was measured again on Fable 5.2: 19 of 19 at 0.7 (runs 42838366081, 42991253003, 42992490426, 42995067726 and 42997198963). The eval workflow now runs Fable 5.2 by default.
+- The eval workflow sets a 40,000-character skill-listing budget. At the CLI default, the runner's listing dropped skill descriptions and ponytail never loaded.
+- architect, ask-the-council and review-swarm run at `effort: high` instead of `max`.
+- architect asks at most three blocking questions and records the default it proceeded on for every other open question. Every invariant row names two enforcement points, and failure paths have a place in the roadmap's backend section.
+- review-swarm: a security-only ask outranks the trigger phrases, even when the request says "swarm". The skill no longer calls itself free. It says the subagents spend your own tokens.
+- up-to-date: when it carries on into the task in the same turn, the final message still opens with the brief.
+- prompt-generator: generated prompts fit their length to the reader instead of a word cap, and tell the agent to work through ordinary obstacles before asking.
+- Five cases' graders changed, so their Fable 5.2 scores don't compare directly with the 5.1 ones. defers-to-simplify now checks only that ponytail stays out, so running `/simplify` passes. security-alone-hands-off passes whether or not review-swarm loads, as long as nothing is spawned. right-sized-new-feature's process grader is split into three. says-no-upstream accepts "unpushed" wording, and no-pull-run stops counting `git stash list`.
 
 ## ◢ What's new in v3.2.2
 
