@@ -1,0 +1,15 @@
+run: 43016433972 https://github.com/alonbaron/claude-skills/actions/runs/43016433972
+event: workflow_dispatch  commit: 6a56477b3b3173c70721f0fe9e30bc1ba7e4859b  ref: fix/fable-5-2-evals
+model: claude-fable-5-2  cases: sandboxed  job status at publish: failure
+only: ask-the-council/declines-low-stakes
+cli: 2.1.303 (Claude Code)
+started: 2026-11-11T11:59:30Z
+
+PARTIAL: the runner stopped early (authentication failed); cases it never started are not in the results
+valid 0 of 1
+re-run: ask-the-council/declines-low-stakes
+cost $0.00  runner aggregates over the 1 cases in the results, 1 of them INVALID: {"casesTotal": 1, "casesPassed": 0, "overallScore": 0, "overallPassRate": 0}
+valid-only aggregates: none, every case is INVALID
+
+== declines-low-stakes  with 0.00  without -  INVALID
+   INVALID with#0 run: exit 1: Invalid API key · Fix external API key · stderr: [claude-code:unrecognized_model] {"model":"claude-fable-5-2","query_source":"sdk"}

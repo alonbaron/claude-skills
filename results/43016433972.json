@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "claudeVersion": "2.1.303",
+  "startedAt": "2026-11-11T11:59:28.215Z",
+  "durationSeconds": 1,
+  "costUsd": 0,
+  "partial": true,
+  "partialReason": "auth_failed",
+  "suite": {
+    "root": "/home/runner/work/claude-skills/claude-skills",
+    "ablation": "none",
+    "modelOverride": "claude-fable-5-2",
+    "judgeModel": "sonnet",
+    "threshold": 0.7,
+    "concurrency": 2,
+    "plugins": [
+      {
+        "name": "alon-skills",
+        "version": "3.2.3",
+        "path": "/home/runner/work/claude-skills/claude-skills"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "declines-low-stakes",
+      "dir": "evals-ci/ask-the-council/declines-low-stakes",
+      "source": "prose",
+      "promptMarkdown": "Should I use date-fns or dayjs for formatting timestamps in my Next.js app? Both seem basically fine, I just can't decide.",
+      "runsPerCase": 3,
+      "timeoutSeconds": 900,
+      "maxTurns": 40,
+      "graders": [
+        {
+          "name": "declines-panel-result",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the response treats this as a low-stakes, reversible-in-an-afternoon choice and either (a) answers directly with a single pick (date-fns or dayjs) and a one-line reason without seating an advisor panel, or (b) explicitly states why a full council isn't warranted for this decision before giving a direct pick. FAIL if the response seats a panel of advisors, presents multiple diverging positions for this choice, or hedges without committing to one library.",
+          "config": {
+            "criteria": "PASS if the response treats this as a low-stakes, reversible-in-an-afternoon choice and either (a) answers directly with a single pick (date-fns or dayjs) and a one-line reason without seating an advisor panel, or (b) explicitly states why a full council isn't warranted for this decision before giving a direct pick. FAIL if the response seats a panel of advisors, presents multiple diverging positions for this choice, or hedges without committing to one library.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "no-subagents-spawned",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "skill-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?ask-the-council\"",
+            "min": 0
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 0,
+            "passed": false,
+            "turns": 1,
+            "costUsd": 0,
+            "judgeCostUsd": 0,
+            "durationSeconds": 1,
+            "startedAt": "2026-11-11T11:59:28.236Z",
+            "error": "exit 1: Invalid API key · Fix external API key · stderr: [claude-code:unrecognized_model] {\"model\":\"claude-fable-5-2\",\"query_source\":\"sdk\"} ",
+            "tracePath": "/tmp/claude-eval-gCzq3f/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": []
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 0,
+        "passRate": 0
+      }
+    }
+  ],
+  "aggregates": {
+    "casesTotal": 1,
+    "casesPassed": 0,
+    "overallScore": 0,
+    "overallPassRate": 0
+  }
+}
