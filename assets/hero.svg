@@ -65,7 +65,7 @@
     <text x="28" y="38" class="mono" font-size="11.5" font-weight="700" letter-spacing="1" fill="#545A75">CLAUDE PLUGIN EVAL · FABLE 5.2</text>
     <text x="28" y="92" class="sans" font-size="46" font-weight="900" fill="#067647">19 / 19 <tspan font-size="20" font-weight="700" fill="#0E1024">passing</tspan></text>
     <text x="28" y="124" class="mono" font-size="13" font-weight="600" fill="#125190">0.7 threshold · 120 trigger prompts</text>
-    <text x="28" y="150" class="mono" font-size="12.5" fill="#545A75">75–100% fire rate · 0 false fires</text>
+    <text x="28" y="150" class="mono" font-size="12.5" fill="#545A75">triggers on 5.1: 75–100%, 0 false</text>
   </g>
 
   <!-- MIDDLE SECTION: 5 Vertical Uplift Bento Cards -->
