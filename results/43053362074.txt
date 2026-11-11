@@ -1,0 +1,8 @@
+run: 43053362074 https://github.com/alonbaron/claude-skills/actions/runs/43053362074
+event: workflow_dispatch  commit: 70fa5dc024a4536b607c7105a947944989e549b4  ref: feat/v3.3
+model: claude-fable-5-2  cases: all  job status at publish: failure
+cli: /home/runner/work/_temp/241de01a-6539-40d1-a2c1-e75b8941a524.sh: line 15: claude: command not found
+unknown
+started: 2026-11-11T16:02:13Z
+
+(no summary: the eval step wrote no result.json)
