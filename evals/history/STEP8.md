@@ -93,6 +93,8 @@ Same command on the clone. Run directory
   no amend. e127c4c holds `TODO_WORKFLOW.md` and `docs/handoff.md`; tree clean.
 - Commits on `feature/slug`: 4 (dc47ddd, d3914ee, 1512ee5, e127c4c), all authored by the owner's git identity.
   Attribution lines: 0; trailers: 0. Tests 7 of 7, lint exit 0. No usage or limit message.
+- Plan window: 7% before the run, 13% after, this session's own use included (reading both run directories,
+  writing this file and the README paragraph).
 
 ## 5. Output tokens against October
 
