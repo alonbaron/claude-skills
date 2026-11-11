@@ -7,10 +7,11 @@ when_to_use: >-
   Use unasked after a non-trivial implementation or when asked to review a
   diff, branch, or PR. Also on "review-swarm", "swarm review", "deep
   review". Security is the whole ask: don't invoke this or spawn reviewers,
-  even on "swarm"; open the answer by naming /security-review, then run or
-  recommend it. Trivial diff (docs, rename, one-liner): read it once or
-  point to /code-review; spawn nothing, even when named. Not for a fix
-  request or when /code-review is named.
+  even on "swarm". Open the final answer by naming /security-review, then
+  run or recommend it; a one-pass review of your own may follow that line
+  but never replaces it. Trivial diff (docs, rename, one-liner): read it
+  once or point to /code-review; spawn nothing, even when named. Not for a
+  fix request or when /code-review is named.
 argument-hint: "[optional: 'staged' | 'branch' | a path]"
 effort: high
 allowed-tools: Bash(git status *) Bash(git diff *) Bash(git merge-base *) Bash(git log *)

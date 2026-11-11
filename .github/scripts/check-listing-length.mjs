@@ -6,6 +6,14 @@
 import { readdirSync, readFileSync } from 'node:fs'
 
 const CAP = 600
+// A skill listed here may pass CAP, up to its own ceiling. Each ceiling is the measured length of the
+// text that passed the evals, so that text cannot grow again without this file changing too.
+const CEILING = {
+  // Vendored from DietrichGebert/ponytail. Cut to 568, the skill stopped loading in two eval cases (run 43083796116).
+  ponytail: 1049,
+  // The security hand-off clause. Without it the final answer stopped naming /security-review (run 43083796116).
+  'review-swarm': 671,
+}
 
 // One frontmatter value as a single line: a plain or quoted scalar, or a block scalar (`>-`, `|`) with
 // its indented lines joined by spaces.
@@ -28,11 +36,12 @@ for (const skill of readdirSync('skills').sort()) {
   }
   const whenToUse = field(frontmatter[1], 'when_to_use')
   const total = description.length + whenToUse.length
-  const over = total > CAP
+  const cap = CEILING[skill] ?? CAP
+  const over = total > cap
   if (over) failed = true
   console.log(
     `${skill.padEnd(18)} description ${String(description.length).padStart(4)} + when_to_use ` +
-      `${String(whenToUse.length).padStart(4)} = ${String(total).padStart(4)} of ${CAP}${over ? '  OVER' : ''}`,
+      `${String(whenToUse.length).padStart(4)} = ${String(total).padStart(4)} of ${cap}${over ? '  OVER' : ''}`,
   )
 }
 process.exit(failed ? 1 : 0)

@@ -1,16 +1,22 @@
 ---
 name: ponytail
 description: >-
-  Forces the laziest solution that works: YAGNI, reuse, stdlib and native
-  platform before new code or dependencies.
+  Forces the laziest solution that actually works: YAGNI, reuse before new
+  code, stdlib before custom, native platform before dependencies, one line
+  before fifty. Three levels — lite (name the lazier alternative, build what's
+  asked), full (ladder enforced, default), ultra (YAGNI extremist, challenge
+  the requirement itself).
 when_to_use: >-
-  Invoke unasked when a solution outgrows the minimum: an abstraction with
-  one caller, a new dependency for a few lines, scaffolding "for later", a
-  complaint about bloat. Also on "ponytail", "be lazy", "yagni", "simplest
+  Fires when a solution is outgrowing the minimum: an abstraction with one
+  caller, a new dependency for a few lines, scaffolding "for later," a
+  question whether the stdlib or platform already covers it, or a complaint
+  about over-engineering or bloat — invoke without asking, announce
+  in one line, proceed. Also on "ponytail", "be lazy", "yagni", "simplest
   solution", "do less". Never to weaken a trust boundary (validation, auth,
-  data-loss handling, a11y). Not once the user has heard the lazier option
-  and reaffirmed the full one. Not for tidying a finished, working diff:
-  that is /simplify.
+  error handling that prevents data loss, a11y), not once the user has heard the
+  lazier option and reaffirmed the full one, and not for tidying a diff
+  that already exists and works — that's built-in /simplify. Ponytail
+  governs what gets built, before and while it's written; simplify cleans up after.
 argument-hint: "[lite|full|ultra]"
 license: MIT
 ---

@@ -1,4 +1,5 @@
-# Fails when a skill's `description` plus `when_to_use` is over 600 characters (the cap is in the script).
+# Fails when a skill's `description` plus `when_to_use` is over 600 characters (the cap, and the two
+# skills with their own ceiling, are in the script).
 # No secrets, no Claude calls.
 name: listing-length
 on:
