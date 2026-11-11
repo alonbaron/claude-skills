@@ -38,7 +38,7 @@ on:
         default: "with-without"
         required: false
       listing_budget:
-        description: "Skill-listing character budget for the agent under test (the CLI default is 1% of the context window)"
+        description: "Skill-listing character budget for the agent under test, or `default` to leave the CLI's own budget (1% of the context window) in place"
         default: "40000"
         required: false
       billing:
@@ -98,7 +98,10 @@ jobs:
           # The runner's model has a 200k context, and the default listing budget (1% of it) drops skill
           # descriptions once 24 skills are listed, so the agent can see a skill by name only. With 40000,
           # pushback-on-abstraction went from ponytail never loading (0 of 7 runs) to 1.00 (run 42837413273).
-          export SLASH_COMMAND_TOOL_CHAR_BUDGET="$LISTING_BUDGET"
+          # `default` leaves the variable unset, so the CLI applies its own budget: the way to check
+          # whether a skill still loads without the 40000 setting.
+          [ "$LISTING_BUDGET" = default ] || export SLASH_COMMAND_TOOL_CHAR_BUDGET="$LISTING_BUDGET"
+          echo "listing budget: ${SLASH_COMMAND_TOOL_CHAR_BUDGET:-CLI default (variable unset)}"
           if [ -n "$ONLY" ]; then
             # Named cases only, e.g. the ones a summary listed for a re-run; a name that is not evals/<skill>/<case>,
             # or an `only` of nothing but blanks, stops the job. A name given twice is copied once.
@@ -150,6 +153,7 @@ jobs:
           CASES: "${{ github.event.inputs.cases || (contains(github.event.head_commit.message, '[run-evals: all]') && 'all') || (contains(github.event.head_commit.message, '[run-evals: in-container]') && 'in-container') || 'sandboxed' }}"
           MODEL: ${{ github.event.inputs.model || 'claude-fable-5-2' }}
           ONLY: ${{ github.event.inputs.only }}
+          LISTING_BUDGET: ${{ github.event.inputs.listing_budget || '40000' }}
         run: |
           # The branch is CI's own record, written by the Actions bot, never merged: main stays the owner's.
           git config user.name "github-actions[bot]"
@@ -165,6 +169,7 @@ jobs:
             echo "event: ${{ github.event_name }}  commit: ${{ github.sha }}  ref: ${{ github.ref_name }}"
             echo "model: $MODEL  cases: $CASES  job status at publish: ${{ job.status }}"
             if [ -n "$ONLY" ]; then echo "only: $ONLY"; fi
+            echo "listing budget: $LISTING_BUDGET"
             echo "cli: $(claude --version 2>&1 || echo unknown)"
             echo "started: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
             echo
