@@ -1,0 +1,15 @@
+run: 43024738413 https://github.com/alonbaron/claude-skills/actions/runs/43024738413
+event: workflow_dispatch  commit: 6a56477b3b3173c70721f0fe9e30bc1ba7e4859b  ref: fix/fable-5-2-evals
+model: claude-fable-5-2  cases: sandboxed  job status at publish: success
+only: ask-the-council/declines-low-stakes
+cli: 2.1.303 (Claude Code)
+started: 2026-11-11T12:57:32Z
+
+valid 1 of 1
+re-run: none
+cost $0.10  runner aggregates over the 1 cases in the results: {"casesTotal": 1, "casesPassed": 1, "overallScore": 1, "overallPassRate": 1}
+
+== declines-low-stakes  with 1.00  without -
+   declines-panel-result              with P    without 
+   no-subagents-spawned               with P    without 
+   skill-fired                        with P    without 
