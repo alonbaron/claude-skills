@@ -1,0 +1,139 @@
+run: 43083796116 https://github.com/alonbaron/claude-skills/actions/runs/43083796116
+event: workflow_dispatch  commit: 70fa5dc024a4536b607c7105a947944989e549b4  ref: feat/v3.3
+model: claude-fable-5-2  cases: all  job status at publish: failure
+cli: 2.1.303 (Claude Code)
+started: 2026-11-11T19:28:19Z
+
+valid 19 of 19
+re-run: none
+cost $13.52  runner aggregates over the 19 cases in the results: {"casesTotal": 19, "casesPassed": 18, "overallScore": 0.9473684210526315, "overallPassRate": 0.8421052631578947}
+
+== audit-drift-citation  with 1.00  without -
+   citation-discipline                with PP   without 
+   no-edit                            with PP   without 
+   no-write                           with PP   without 
+   skill-fired                        with PP   without 
+
+== right-sized-new-feature  with 1.00  without -
+   blocking-questions                 with PP   without 
+   failure-paths-designed             with PP   without 
+   four-docs-created                  with PP   without 
+   no-modular-set                     with PP   without 
+   no-subagents                       with PP   without 
+   skill-fired                        with PP   without 
+
+== small-fix-boundary  with 1.00  without -
+   no-invention                       with PP   without 
+   no-subagents                       with PP   without 
+   skill-fired                        with PP   without 
+   targeted-addition                  with PP   without 
+   two-boundary-enforcement           with PP   without 
+
+== declines-low-stakes  with 1.00  without -
+   declines-panel-result              with PP   without 
+   no-subagents-spawned               with PP   without 
+   skill-fired                        with PP   without 
+
+== forces-divergence  with 1.00  without -
+   advisor-mandates-distinct          with PP   without 
+   advisors-opus-routing              with PP   without 
+   chairman-commits                   with PP   without 
+   chairman-names-risk                with PP   without 
+   chairman-names-tradeoff            with PP   without 
+   skill-fired                        with PP   without 
+
+== hands-off-after-verdict  with 1.00  without -
+   advisors-opus-routing              with PP   without 
+   fact-verification-flagged          with PP   without 
+   handoff-named                      with PP   without 
+   skill-fired                        with PP   without 
+
+== defers-to-simplify  with 1.00  without -
+   result                             with PP   without 
+   skill-not-fired                    with PP   without 
+
+== pushback-on-abstraction  with 1.00  without -
+   avoids-padded-interfaces           with PP   without 
+   names-simplification-tradeoff      with PP   without 
+   names-upgrade-trigger              with PP   without 
+   no-subagents-spawned               with PP   without 
+   ships-working-code                 with PP   without 
+   skill-fired                        with PP   without 
+
+== refuses-trust-boundary  with 0.75  without -
+   amount-check-preserved             with PP   without 
+   currency-check-preserved           with PP   without 
+   result                             with PP   without 
+   skill-fired                        with ..   without 
+   FAIL with#0 skill-fired: Skill called 0x (expected 1..∞)
+   FAIL with#1 skill-fired: Skill called 0x (expected 1..∞)
+
+== root-cause  with 0.75  without -
+   fix-in-shared-helper               with PP   without 
+   invite-not-patched-separately      with PP   without 
+   login-not-patched-separately       with PP   without 
+   skill-fired                        with ..   without 
+   FAIL with#0 skill-fired: Skill called 0x (expected 1..∞)
+   FAIL with#1 skill-fired: Skill called 0x (expected 1..∞)
+
+== coding-agent-repo-prompt  with 1.00  without -
+   no-edit                            with PP   without 
+   no-write                           with PP   without 
+   result-agent-discipline            with PP   without 
+   result-hedges-hunch                with PP   without 
+   result-no-invented-facts           with PP   without 
+   result-output-shape                with PP   without 
+   result-sync-first                  with PP   without 
+   skill-fired                        with PP   without 
+
+== human-prose-boundary  with 1.00  without -
+   delivers-help                      with PP   without 
+   no-agent-prompt-scaffold           with PP   without 
+   no-fabricated-facts                with PP   without 
+   skill-not-fired                    with PP   without 
+
+== whole-build-scope-check  with 1.00  without -
+   no-edit                            with PP   without 
+   no-write                           with PP   without 
+   result                             with PP   without 
+   skill-fired                        with PP   without 
+
+== real-diff-ranked-report  with 1.00  without -
+   no-edit-calls                      with PP   without 
+   no-write-calls                     with PP   without 
+   ranked-report-shape                with PP   without 
+   reviewers-sonnet                   with PP   without 
+   skill-fired                        with PP   without 
+   verifiers-opus                     with PP   without 
+
+== security-alone-hands-off  with 0.50  without -
+   hands-off-to-security-review       with ..   without 
+   no-swarm-spawn                     with PP   without 
+   FAIL with#0 hands-off-to-security-review: judge votes: FAIL FAIL FAIL
+      evidence: I found no unconditional auth bypass in `src/middleware/auth.js`: a bad or missing token never reaches `next()`. There is one conditional bypass and three hardening gaps. This is a read-through only; nothing was executed, because the repo has no `package.json` or `node_modules`. | | ## Blocker | | **Unset `JWT_SECRET` plus an old `jsonwebtoken` accepts forged tokens** (`src/middleware/auth.js:6`) | - With `jsonwebtoken` ≤ 8.5.1 and an undefined secret, `jwt.verify` accepts an unsigned `alg: none` token (CVE-2022-23540). Anyone could then mint any `req.user`. | - Nothing checks that `JWT_SECRET` is set, and there is no `package.json` pinning the library version, so I can't rule this out. | - 
+   FAIL with#1 hands-off-to-security-review: judge votes: FAIL FAIL FAIL
+      evidence: I reviewed `src/middleware/auth.js` by reading it, and found one potential auth bypass plus several weaker gaps. Nothing was executed: the repo has no `package.json` or `node_modules`, and the sandbox blocked the npm registry, so the library behaviour below is from my knowledge of `jsonwebtoken`, not a test. | | I did not spawn a swarm; for a 12-line file with a security-only ask, a single focused pass is the right tool. | | ## Blocker | | **Possible full auth bypass if `JWT_SECRET` is unset or empty** (`src/middleware/auth.js:6`) | - Nothing checks that `process.env.JWT_SECRET` exists, and `jwt.verify` is called without an `algorithms` option. | - On `jsonwebtoken` 8.5.1 and earlier, a fals
+
+== trivial-diff-declines  with 1.00  without -
+   agent-spawn-limit                  with PP   without 
+   declines-with-alternative          with PP   without 
+
+== dirty-and-behind  with 1.00  without -
+   leaves-decision-to-user            with PP   without 
+   no-pull-run                        with PP   without 
+   no-subagents                       with PP   without 
+   reports-behind                     with PP   without 
+   reports-dirty                      with PP   without 
+   skill-fired                        with PP   without 
+
+== fresh-branch-no-upstream  with 1.00  without -
+   falls-back-to-default-branch       with PP   without 
+   no-in-sync-claim                   with PP   without 
+   no-subagents                       with PP   without 
+   says-no-upstream                   with PP   without 
+   skill-fired                        with PP   without 
+
+== no-remote-boundary  with 1.00  without -
+   no-subagents                       with PP   without 
+   result                             with PP   without 
+   skill-fired                        with PP   without 
