@@ -1,0 +1,68 @@
+run: 42992490426 https://github.com/alonbaron/claude-skills/actions/runs/42992490426
+event: workflow_dispatch  commit: 3ee83a9d1bbe978708013ed4216011930066a494  ref: fix/fable-5-2-evals
+model: claude-fable-5-2  cases: sandboxed  job status at publish: success
+cli: 2.1.303 (Claude Code)
+started: 2026-11-11T09:22:49Z
+
+valid 8 of 9
+re-run: architect/right-sized-new-feature
+cost $6.08  runner aggregates over the 9 cases in the results, 1 of them INVALID: {"casesTotal": 9, "casesPassed": 9, "overallScore": 0.9907407407407409, "overallPassRate": 0.9444444444444444}
+valid-only aggregates (8 cases): score 1.00  8 of 8 at 0.7
+
+== audit-drift-citation  with 1.00  without -
+   citation-discipline                with PP   without 
+   no-edit                            with PP   without 
+   no-write                           with PP   without 
+   skill-fired                        with PP   without 
+
+== right-sized-new-feature  with 0.92  without -  INVALID
+   INVALID with#1 grader failure-paths-designed: grader threw: judge call failed: API Error: Sonnet 5.5's safeguards flagged this message (https://www.anthropic.com/legal/aup). This sometimes happens with safe, normal conversations. Claude Code can'
+   blocking-questions                 with PP   without 
+   failure-paths-designed             with P.   without 
+   four-docs-created                  with PP   without 
+   no-modular-set                     with PP   without 
+   no-subagents                       with PP   without 
+   skill-fired                        with PP   without 
+
+== small-fix-boundary  with 1.00  without -
+   no-invention                       with PP   without 
+   no-subagents                       with PP   without 
+   skill-fired                        with PP   without 
+   targeted-addition                  with PP   without 
+   two-boundary-enforcement           with PP   without 
+
+== real-diff-ranked-report  with 1.00  without -
+   no-edit-calls                      with PP   without 
+   no-write-calls                     with PP   without 
+   ranked-report-shape                with PP   without 
+   reviewers-sonnet                   with PP   without 
+   skill-fired                        with PP   without 
+   verifiers-opus                     with PP   without 
+
+== security-alone-hands-off  with 1.00  without -
+   hands-off-to-security-review       with PP   without 
+   no-swarm-spawn                     with PP   without 
+
+== trivial-diff-declines  with 1.00  without -
+   agent-spawn-limit                  with PP   without 
+   declines-with-alternative          with PP   without 
+
+== dirty-and-behind  with 1.00  without -
+   leaves-decision-to-user            with PP   without 
+   no-pull-run                        with PP   without 
+   no-subagents                       with PP   without 
+   reports-behind                     with PP   without 
+   reports-dirty                      with PP   without 
+   skill-fired                        with PP   without 
+
+== fresh-branch-no-upstream  with 1.00  without -
+   falls-back-to-default-branch       with PP   without 
+   no-in-sync-claim                   with PP   without 
+   no-subagents                       with PP   without 
+   says-no-upstream                   with PP   without 
+   skill-fired                        with PP   without 
+
+== no-remote-boundary  with 1.00  without -
+   no-subagents                       with PP   without 
+   result                             with PP   without 
+   skill-fired                        with PP   without 

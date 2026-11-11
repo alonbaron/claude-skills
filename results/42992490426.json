@@ -1,0 +1,1666 @@
+{
+  "schemaVersion": 1,
+  "claudeVersion": "2.1.303",
+  "startedAt": "2026-11-11T09:07:41.964Z",
+  "durationSeconds": 907,
+  "costUsd": 6.080394999999999,
+  "partial": false,
+  "suite": {
+    "root": "/home/runner/work/claude-skills/claude-skills",
+    "ablation": "none",
+    "modelOverride": "claude-fable-5-2",
+    "judgeModel": "sonnet",
+    "threshold": 0.7,
+    "concurrency": 2,
+    "plugins": [
+      {
+        "name": "alon-skills",
+        "version": "3.2.2",
+        "path": "/home/runner/work/claude-skills/claude-skills"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "audit-drift-citation",
+      "dir": "evals-ci/architect/audit-drift-citation",
+      "source": "mixed",
+      "promptMarkdown": "Run architect audit on our repo. I think the docs are stale — we shipped a\nStripe webhook endpoint last week (POST /webhooks/stripe) and I don't think\nit ever made it into the architecture roadmap or the API contract table.",
+      "runsPerCase": 3,
+      "timeoutSeconds": 300,
+      "maxTurns": 15,
+      "graders": [
+        {
+          "name": "citation-discipline",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the response reports the drift as a finding that cites both sides:\nthe code that states the fact (the POST /webhooks/stripe handler in\nsrc/routes/webhooks.js) AND the doc + section that should describe it and\ndoesn't (ARCHITECTURE_ROADMAP.md §3's API contract table). It stays in\nverify-and-report form — a prioritized fix list with an offer to apply it —\nrather than treating the finding as settled without pointing at the actual\ncode location, and it does not pull in an unrelated hand-off (ask-the-council,\nreview-swarm) for what is a single straightforward drift item.\n\nFAIL if any drift is reported as a hunch without citing both the code\nlocation and the doc location, if it fabricates a file/line that isn't in the\nrepo, or if it goes further than a report (e.g. claims the docs are now\nfixed) without ever actually changing them.",
+          "config": {
+            "criteria": "PASS if the response reports the drift as a finding that cites both sides:\nthe code that states the fact (the POST /webhooks/stripe handler in\nsrc/routes/webhooks.js) AND the doc + section that should describe it and\ndoesn't (ARCHITECTURE_ROADMAP.md §3's API contract table). It stays in\nverify-and-report form — a prioritized fix list with an offer to apply it —\nrather than treating the finding as settled without pointing at the actual\ncode location, and it does not pull in an unrelated hand-off (ask-the-council,\nreview-swarm) for what is a single straightforward drift item.\n\nFAIL if any drift is reported as a hunch without citing both the code\nlocation and the doc location, if it fabricates a file/line that isn't in the\nrepo, or if it goes further than a report (e.g. claims the docs are now\nfixed) without ever actually changing them.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "no-edit",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Edit",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "no-write",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Write",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "skill-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?architect\""
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 10,
+            "costUsd": 0.1293902,
+            "judgeCostUsd": 0.012078,
+            "durationSeconds": 47,
+            "startedAt": "2026-11-11T09:07:42.048Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-n4ekHk/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "citation-discipline",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "Your suspicion is confirmed: `POST /webhooks/stripe` is in the code but not in the roadmap's API contract table, and the audit turned up more drift around it. Nothing has been changed; this is the report only.\n\n## Drift findings (prioritized)\n\n| # | Pri | Code says | Doc doesn't / says otherwise | Fix |\n|---|---|---|---|---|\n| 1 | P0 | `src/routes/webhooks.js:10` and `:12` call `verifyStripeSignature` and `markOrderPaid`, which are neither imported nor defined anywhere in the repo. `:12` passes `event.data.object.id`, which for `checkout.session.completed` is the checkout session id, not a payment intent id. | `SOURCE_OF_TRUTH.md:9` says invariant 1 is enforced at \"webhook handler (signature check) + DB unique constraint on payment intent id\". Neither enforcement point can be verified: the check is an unresolved symbol, and there is no schema or migration in the repo. | Decide which is wrong. Either the code is incomplete (missing imports, wrong id), or the SoT row should name the real mechanism and key. |\n| 2 | P1 | `src/routes/webhooks.js:7` registers `app.post('/webhooks/stripe', …)`. | `ARCHITECTURE_ROADMAP.md:9-12` (§3 API contract) lists only `POST /checkout` and `GET /orders/:id`. | Add a row: `POST · /webhooks/stripe · Stripe signature (stripe-signature header) · on checkout.session.completed marks order paid`. |\n| 3 | P1 | `src/routes/webhooks.js:10-14` has no handling for a missing or invalid signature and no branch for other event types beyond a 200. | `ARCHITECTURE_ROADMAP.md` §3 has no failure-path entry for the webhook (bad signature, duplicate delivery, unknown order). | Document the failure paths in §3. The status codes are a decision for you, since the code doesn't settle them. |\n| 4 | P2 | `src/routes/webhooks.js:7` shipped in commit `9773051`. | `TODO_WORKFLOW.md:5` has one row, \"Checkout + order status\"; there is no task for the webhook. | Add a task row for the webhook referencing roadmap §3. |\n| 5 | P2 | `src/routes/webhooks.js:7`: the service ingests Stripe webhooks. | `SOURCE_OF_TRUTH.md:4` scope reads \"Handles checkout and order status\". | Add webhook ingestion to the scope line. |\n\n## Doc claims with no code behind them\n\nThese have only a doc side, so they are not drift findings in the strict sense, but you should know about them:\n\n- **Checkout and order routes:** `ARCHITECTURE_ROADMAP.md:11-12` documents `POST /checkout` and `GET /orders/:id`, and `TODO_WORKFLOW.md:5` marks them `[MERGED/DONE]`. The only source file in the repo is `src/routes/webhooks.js`; there is no handler for either route and no entrypoint that mounts the webhook app.\n- **Branch name:** `TODO_WORKFLOW.md:5` gives the branch as `main`, but the only branch is `master`.\n- **Stack:** \"Cloudflare Workers\" (`SOURCE_OF_TRUTH.md:4`, `ARCHITECTURE_ROADMAP.md:6`, `CLAUDE.md:3`) can't be checked, as there is no `wrangler.toml` or `package.json`. Hono is confirmed at `webhooks.js:2`.\n\n## Structural gaps in the doc set\n\n- **Roadmap sections:** `ARCHITECTURE_ROADMAP.md` has only §0 and §3; the data schema section (§2) is missing, which is where the unique constraint from invariant 1 should be defined.\n- **Sync rule:** `CLAUDE.md` has no architecture-change rule, which is how the webhook shipped without doc updates.\n- **Links:** There are no dead links; the docs refer to each other by filename and all three targets exist.\n\n## Next step\n\nI can apply items 2, 4 and 5 now, and add the sync rule to `CLAUDE.md`; these are mechanical doc edits. Items 1 and 3 need your call first:\n\n1. Is the dedupe key the payment intent id (as the SoT says) or the checkout session id (as the code passes)?\n2. Do `verifyStripeSignature`, `markOrderPaid` and the checkout/order routes live in another repo or an unpushed branch, or are they not yet written?\n\nWant me to apply the mechanical fixes?"
+              },
+              {
+                "name": "no-edit",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Edit called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-write",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Write called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 1x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 10,
+            "costUsd": 0.1379415,
+            "judgeCostUsd": 0.015912,
+            "durationSeconds": 55,
+            "startedAt": "2026-11-11T09:07:42.049Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-3hkfvd/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "citation-discipline",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "You're right: `POST /webhooks/stripe` is in the code but not in the roadmap or its API contract table, and the audit found five more drift items. I changed nothing; this is read-only so far.\n\n## Drift findings\n\n| # | Priority | Code / git says | Doc says | Drift |\n|---|---|---|---|---|\n| 1 | P1 | `src/routes/webhooks.js:7` registers `POST /webhooks/stripe`, authenticated by the `stripe-signature` header (`:8-10`) | `ARCHITECTURE_ROADMAP.md:9-12` (§3 API contract) lists only `POST /checkout` and `GET /orders/:id` | The endpoint is missing from the contract table and from the roadmap as a whole. |\n| 2 | P1 | `src/routes/webhooks.js:12` calls `markOrderPaid(event.data.object.id)`; for `checkout.session.completed` that is the Checkout Session id | `SOURCE_OF_TRUTH.md:9` puts invariant 1's second boundary on a \"DB unique constraint on payment intent id\" | Code and doc key on different identifiers. One of them is wrong, and it's your call which. |\n| 3 | P2 | `src/routes/webhooks.js:7` (webhook ingestion exists) | `SOURCE_OF_TRUTH.md:4` scope: \"Handles checkout and order status\" | The scope omits webhook handling, even though invariant 1 on line 9 depends on it. |\n| 4 | P2 | Commit `9773051` shipped `src/routes/webhooks.js` | `TODO_WORKFLOW.md:5` is the only row: \"Checkout + order status\" | There is no task row for the webhook work. |\n| 5 | P2 | The only route in the repo is `src/routes/webhooks.js:7`, and the only branch is `master` | `TODO_WORKFLOW.md:5` marks checkout + order status `[MERGED/DONE]` on branch `main`; `ARCHITECTURE_ROADMAP.md:11-12` lists both endpoints | The docs describe two endpoints with no code in this repo, and the status cites a branch that doesn't exist. |\n| 6 | P3 | `src/routes/webhooks.js:8-14` has no handling for a missing or invalid signature, and every event type gets `{ received: true }` | `ARCHITECTURE_ROADMAP.md` §3 has no failure-path entry for any component | The webhook's failure behaviour is undocumented. |\n\n## Observations (not counted as drift)\n\n- **The handler cannot run as committed.** `verifyStripeSignature` and `markOrderPaid` (`webhooks.js:10,12`) are neither imported nor defined, so every request would throw a `ReferenceError`. Invariant 1's first enforcement point is therefore unverifiable from this repo.\n- **The roadmap has no §2 Data schema.** It jumps from §0 to §3, so the unique constraint that `SOURCE_OF_TRUTH.md:9` relies on is not specified anywhere, and there is no migration in the repo.\n- **`CLAUDE.md` has no sync rule.** It carries only reference precedence (`CLAUDE.md:5-8`), with no docs-before-code or architecture-change rule. That is the likely root cause; the commit message itself says \"roadmap not updated\".\n\n## Proposed fixes, in order\n\n1. Add the `POST /webhooks/stripe` row to the §3 contract table (auth: Stripe signature) and bump the roadmap version.\n2. Resolve the identifier mismatch in finding 2, then make `SOURCE_OF_TRUTH.md:9` and the code agree.\n3. Extend the SoT scope line to include Stripe webhook ingestion.\n4. Add a TODO row for the webhook task, referencing §3, and correct row 1's status and branch once you confirm finding 5.\n5. Add a §3 failure-paths table for the webhook, with proposed behaviour marked `(proposed)` for you to confirm.\n6. Add the architecture-change sync rule to `CLAUDE.md`.\n\nFixes 1, 3, 4 (the new row) and 6 are mechanical and I can apply them now on a `docs/` branch. Two answers are needed before the rest:\n\n- **Finding 2:** should paid orders be keyed on the payment intent id (the code changes to `event.data.object.payment_intent`) or on the checkout session id (the SoT changes)?\n- **Finding 5:** does the checkout and orders code live somewhere else, or is it not built yet?\n\nWant me to apply the mechanical fixes?"
+              },
+              {
+                "name": "no-edit",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Edit called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-write",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Write called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 1x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 1,
+        "passRate": 1
+      }
+    },
+    {
+      "name": "right-sized-new-feature",
+      "dir": "evals-ci/architect/right-sized-new-feature",
+      "source": "prose",
+      "promptMarkdown": "Starting a new feature on our Next.js + Postgres trip-planning app: users\nshould be able to export their itinerary as a PDF and email it to\nthemselves. This is a brand new repo, nothing's written yet, no design docs\nat all yet.",
+      "runsPerCase": 3,
+      "timeoutSeconds": 900,
+      "maxTurns": 40,
+      "graders": [
+        {
+          "name": "blocking-questions",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final message reports the design docs as already written (it did\nnot ask permission to start, and it does not stop at a questionnaire), asks at\nmost 3 blocking questions (e.g. PDF generation approach, email delivery\nprovider, itinerary size limits), and presents its other choices as stated\nassumptions or proposals to confirm.\n\nFAIL if it asks more than 3 blocking questions, asks its questions before\nwriting any docs, or leaves the rest of its unknowns as further questions with\nno assumption attached.",
+          "config": {
+            "criteria": "PASS if the final message reports the design docs as already written (it did\nnot ask permission to start, and it does not stop at a questionnaire), asks at\nmost 3 blocking questions (e.g. PDF generation approach, email delivery\nprovider, itinerary size limits), and presents its other choices as stated\nassumptions or proposals to confirm.\n\nFAIL if it asks more than 3 blocking questions, asks its questions before\nwriting any docs, or leaves the rest of its unknowns as further questions with\nno assumption attached.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "failure-paths-designed",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if ARCHITECTURE_ROADMAP.md designs the failure paths of the export and\nemail flow, not just the happy path: failures such as PDF generation failing,\nthe email send failing or bouncing, and an oversized itinerary each get a\ndefined failure mode (what the system does, and what the user sees or can do\nnext).\n\nFAIL if the file only describes the happy path, or names failures without\nsaying what happens when they occur.",
+          "config": {
+            "criteria": "PASS if ARCHITECTURE_ROADMAP.md designs the failure paths of the export and\nemail flow, not just the happy path: failures such as PDF generation failing,\nthe email send failing or bouncing, and an oversized itinerary each get a\ndefined failure mode (what the system does, and what the user sees or can do\nnext).\n\nFAIL if the file only describes the happy path, or names failures without\nsaying what happens when they occur.",
+            "focus": {
+              "source": "file",
+              "path": "ARCHITECTURE_ROADMAP.md"
+            }
+          }
+        },
+        {
+          "name": "four-docs-created",
+          "type": "regex",
+          "weight": 1,
+          "config": {
+            "target": "files",
+            "pattern": "^(?=[\\s\\S]*SOURCE_OF_TRUTH\\.md)(?=[\\s\\S]*ARCHITECTURE_ROADMAP\\.md)(?=[\\s\\S]*TODO_WORKFLOW\\.md)(?=[\\s\\S]*CLAUDE\\.md)",
+            "flags": "",
+            "match": "contains"
+          }
+        },
+        {
+          "name": "no-modular-set",
+          "type": "file_exists",
+          "weight": 1,
+          "config": {
+            "path": "docs/architecture/**",
+            "exists": false
+          }
+        },
+        {
+          "name": "no-subagents",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "skill-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?architect\""
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 10,
+            "costUsd": 0.545849,
+            "judgeCostUsd": 0.06916,
+            "durationSeconds": 302,
+            "startedAt": "2026-11-11T09:08:28.789Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-C6kftq/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "blocking-questions",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "The design docs for the export feature are written; no code yet, and nothing is committed. Every cross-link between them resolves.\n\n- `SOURCE_OF_TRUTH.md` — scope, domain model, seven invariants, eight decisions, open questions\n- `ARCHITECTURE_ROADMAP.md` — schema, services, API contract, failure paths, UI states, phases\n- `TODO_WORKFLOW.md` — 20 tasks across Phase 0 (foundation), Phase 1 (download) and Phase 2 (email)\n- `CLAUDE.md` — working rules and the docs-before-code sync protocol\n- `docs/handoff.md` — first log entry\n\n## The design in brief\n\n- **Export runs inside the request.** There is no queue or worker; each attempt is one `itinerary_exports` row that moves `pending → completed | failed`.\n- **The PDF is never stored.** It is rendered in memory, then downloaded or attached to the email, then discarded.\n- **Email goes only to the account's own address.** No request can name a recipient and the table has no recipient column, so the feature can't become a mail relay.\n- **Each rule is enforced in both the app and Postgres.** Ownership uses a composite foreign key, \"one in-flight email per user\" uses a partial unique index, and the rate cap and verified-email check use a trigger.\n- **Delivery is at-least-once.** If the process dies between sending and recording, a retry may send a duplicate; I chose that over a silently lost email.\n\n## Blocking questions\n\n1. **Trip model and auth:** is someone designing these elsewhere, or should this feature's Phase 0 create them? I assumed Phase 0 creates a minimal `users` / `trips` / `itinerary_items` shape.\n2. **Verified emails:** which auth is planned, and does it guarantee a verified email (OAuth, magic link) or allow unverified password sign-ups? I assumed unverified emails can exist, so email export checks for verification. Task 0.3 is blocked on this.\n3. **Download:** is direct download in scope, or email only? I assumed both, with download shipping first because it needs no email infrastructure.\n\n## Decisions to confirm\n\nThese are my choices, marked `(proposed)` in the docs:\n\n- **Libraries:**\n  - `@react-pdf/renderer` for the PDF. Its compatibility with current Next.js/React is unverified; task 1.1 is a spike to settle that before anything builds on it.\n  - Resend for email.\n  - Drizzle with SQL migrations.\n  - Zod, Vitest and pnpm.\n- **Limits:** 5 email and 30 download exports per user per hour, a 10 MB PDF cap, a 30 s route budget, and a 2-minute threshold before a stuck export is marked failed.\n- **Rate cap and verified-email check in a DB trigger**, rather than a platform rate limiter in front of the route.\n- **Itinerary times stored as local date plus optional time**, printed as entered with no timezone conversion.\n- **HTTP status codes** in the API contract, for example 404 for both \"no such trip\" and \"not your trip\".\n- **Smaller defaults:** empty itineraries are exportable, export rows are kept indefinitely, and only Latin-script fonts are bundled, so CJK or Arabic text may not render."
+              },
+              {
+                "name": "failure-paths-designed",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS — note: long file (16016 chars); llm judges are noisy on long inputs, prefer a regex grader for large artifacts",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "# Itinerary PDF Export & Email — Architecture & Roadmap\n\n**Version:** 0.1 · **Status:** Draft, nothing built · **Owner:** TBD · **Date:** 2026-11-11\n\nDerived from [SOURCE_OF_TRUTH.md](SOURCE_OF_TRUTH.md) (wins on conflict). Tasks:\n[TODO_WORKFLOW.md](TODO_WORKFLOW.md). Working rules: [CLAUDE.md](CLAUDE.md).\nInvariants (I1–I7), decisions (D1–D8) and open questions (Q1–Q9) are defined in\nthe SoT and only referenced here.\n\n## 0. Executive context\n\nUsers of the trip-planning app want their itinerary as a PDF, either downloaded\nor emailed to themselves. The repo is empty, so this document covers the feature\nand the minimum it stands on. The export runs inside the request, the PDF is\nnever stored, and each attempt is one database row that carries the ownership,\nrate-limit and no-duplicate guarantees. Download ships first because it needs no\nemail infrastructure; email is a second, separately shippable phase on the same\nrenderer.\n\n## 1. Tech stack\n\nVersions are pinned at scaffold time (task 0.1), not here.\n\n| Layer | Tech | Role |\n|---|---|---|\n| Web framework | Next.js (App Router), TypeScript | Pages, Route Handlers on the Node runtime |\n| Database | PostgreSQL | System of record; second enforcement boundary for I1–I7 |\n| Data access | Drizzle + SQL migrations `(proposed, D8)` | Queries; migrations own constraints, indexes, trigger |\n| Auth | Not chosen (Q2) | Must provide `getSessionUser() → { id } \\| null`, `users.email`, `users.email_verified_at` |\n| PDF | `@react-pdf/renderer` `(proposed, D2)` | Snapshot → PDF bytes, in memory |\n| Email | Resend `(proposed, D4)` | Transactional send with attachment and idempotency key |\n| Validation | Zod `(proposed)` | Strict request schemas (I1) |\n| Tests | Vitest + a real Postgres `(proposed)` | Constraint tests must hit a real database, not a mock |\n| Package manager | pnpm `(proposed)` | — |\n\n## 2. Data schema\n\n### 2.1 Prerequisite tables\n\n`(proposed)` minimum this feature reads; superseded by any real trip-model\ndesign (Q1). Only the constraints marked ★ are required by this feature.\n\n**`users`**\n\n| Column | Type | Constraints |\n|---|---|---|\n| `id` | `uuid` | PK |\n| `email` | `text` | NOT NULL, UNIQUE (case-insensitive) ★ |\n| `email_verified_at` | `timestamptz` | NULL = unverified ★ (I3) |\n\n**`trips`**\n\n| Column | Type | Constraints |\n|---|---|---|\n| `id` | `uuid` | PK |\n| `owner_id` | `uuid` | NOT NULL, FK → `users(id)` ON DELETE CASCADE ★ |\n| `title` | `text` | NOT NULL, CHECK length 1–200, CHECK no control characters ★ (I7) |\n| `start_date`, `end_date` | `date` | NULL allowed; CHECK `end_date >= start_date` |\n\n- ★ `UNIQUE (id, owner_id)` — target of the composite FK that enforces I2.\n\n**`itinerary_items`**\n\n| Column | Type | Constraints |\n|---|---|---|\n| `id` | `uuid` | PK |\n| `trip_id` | `uuid` | NOT NULL, FK → `trips(id)` ON DELETE CASCADE |\n| `local_date` | `date` | NOT NULL (D7) |\n| `local_time` | `time` | NULL = \"any time that day\" (D7) |\n| `title` | `text` | NOT NULL, CHECK length 1–200 |\n| `location` | `text` | NULL, CHECK length ≤ 300 |\n| `notes` | `text` | NULL, CHECK length ≤ 5000 |\n| `position` | `integer` | NOT NULL; tie-break within a day |\n\n- Index `(trip_id, local_date, local_time, position)` — the snapshot's sort order.\n- Length caps are `(proposed)`; they also bound PDF size.\n\n### 2.2 itinerary_exports\n\nOwned by this feature.\n\n| Column | Type | Constraints |\n|---|---|---|\n| `id` | `uuid` | PK, default `gen_random_uuid()`; also the provider idempotency key (I5) |\n| `user_id` | `uuid` | NOT NULL |\n| `trip_id` | `uuid` | NOT NULL |\n| `delivery` | `export_delivery` enum | NOT NULL — `'download' \\| 'email'` |\n| `status` | `export_status` enum | NOT NULL, default `'pending'` — `'pending' \\| 'completed' \\| 'failed'` |\n| `error_code` | `text` | NULL; one of the codes in §3.4 |\n| `provider_message_id` | `text` | NULL; set on a completed email export |\n| `created_at` | `timestamptz` | NOT NULL, default `now()` |\n| `finished_at` | `timestamptz` | NULL while pending |\n\nConstraints and indexes:\n\n| Object | Definition | Serves |\n|---|---|---|\n| FK `exports_trip_owner_fk` | `(trip_id, user_id) → trips(id, owner_id)` ON DELETE CASCADE | I2 |\n| CHECK `exports_finished_ck` | `(status = 'pending') = (finished_at IS NULL)` | I6 |\n| CHECK `exports_error_ck` | `(status = 'failed') = (error_code IS NOT NULL)` | I6 |\n| CHECK `exports_msgid_ck` | `provider_message_id IS NULL OR (delivery = 'email' AND status = 'completed')` | I6 |\n| UNIQUE INDEX `exports_one_inflight_email` | `(user_id) WHERE delivery = 'email' AND status = 'pending'` | I5 |\n| INDEX `exports_user_window` | `(user_id, delivery, created_at DESC)` | I4 window count |\n\n> There is deliberately **no recipient column** (I1). Do not add one.\n\n> The composite FK has no `ON UPDATE` action, so changing `trips.owner_id` is\n> blocked while export rows exist. That is intended (SoT I2 note).\n\n### 2.3 Guard trigger\n\n`itinerary_exports_guard`, BEFORE INSERT on `itinerary_exports` `(proposed, Q7)`.\nThe DB-side boundary for I3 and I4.\n\n| Check | Condition | Raises |\n|---|---|---|\n| Verified email | `NEW.delivery = 'email'` and the user's `email_verified_at IS NULL` | custom SQLSTATE → `email_unverified` |\n| Rate cap | count of the user's rows with the same `delivery` and `created_at > now() - 1 hour` is at the cap (SoT I4) | custom SQLSTATE → `rate_limited` |\n\n- The cap values are defined once, in SoT I4. The app constant and the trigger\n  both cite it, and a test inserts cap+1 rows by raw SQL using the app constant\n  so the two cannot drift silently.\n- Concurrency: email inserts are serialized per user by `exports_one_inflight_email`,\n  so the email cap is exact. Download can overshoot by the number of concurrent\n  requests; accepted.\n\n## 3. Backend\n\n### 3.1 Structure\n\nLayout is `(proposed)`; nothing exists on disk yet.\n\n| Path | Responsibility |\n|---|---|\n| `src/db/schema.ts`, `drizzle/*.sql` | Table definitions; migrations including §2.2 constraints and §2.3 trigger |\n| `src/features/itinerary-export/snapshot.ts` | `loadItinerarySnapshot` |\n| `src/features/itinerary-export/pdf/` | `renderItineraryPdf` and the PDF document components |\n| `src/features/itinerary-export/mailer.ts` | `sendItineraryEmail` — the only code that talks to the email provider |\n| `src/features/itinerary-export/service.ts` | `exportItinerary`, `finishExport`, limits, error mapping |\n| `src/app/api/trips/[tripId]/itinerary.pdf/route.ts` | Download Route Handler |\n| `src/app/api/trips/[tripId]/exports/route.ts` | Email Route Handler |\n\n### 3.2 Services\n\n| Function | Responsibility | Failure mode |\n|---|---|---|\n| `loadItinerarySnapshot(tripId, userId)` | One SQL statement returning the trip and its ordered items, scoped by `owner_id` (I2). One statement, so the snapshot cannot be torn by a concurrent edit. | No row → `not_found` |\n| `renderItineraryPdf(snapshot)` | Pure function: snapshot → PDF bytes. Text nodes only (I7). No I/O apart from bundled fonts. | Throws → `render_failed`; output over 10 MB `(proposed)` → `pdf_too_large` |\n| `sendItineraryEmail(exportId, pdf)` | Resolves the recipient from `exportId` via the DB (I1); builds subject and filename with the sanitizers (I7); sends with idempotency key = `exportId` (I5); returns the provider message id. | Provider/network error → one retry with the same key `(proposed)`, then `email_provider_error` |\n| `exportItinerary(userId, tripId, delivery)` | Orchestrates the flow below. | Always leaves the row terminal, or leaves it to the stale sweep |\n| `finishExport(exportId, outcome)` | The only writer of terminal status: compare-and-set on `status = 'pending'` (I6). | 0 rows updated → log and continue; the row was already finished or swept |\n\nFlow (pseudocode; both deliveries):\n\n```\nexportItinerary(userId, tripId, delivery):\n  BEGIN\n    -- stale sweep: unblock a user whose earlier request died mid-flight\n    mark this user's pending rows older than STALE_AFTER as failed/'stale_timeout'\n    app checks, in order:\n      trip exists and is owned by userId          else not_found            (I2)\n      delivery = email → email verified           else email_unverified     (I3)\n      delivery = email → no pending email export  else export_in_progress   (I5)\n      rows in the last hour < cap                 else rate_limited         (I4)\n    INSERT export row (pending)\n      -- DB backstops; map each violation to the same code as its app check:\n      -- composite FK → not_found · trigger → email_unverified / rate_limited\n      -- partial unique index → export_in_progress\n  COMMIT                         -- never hold a transaction open across render/send\n\n  try:\n    snapshot = loadItinerarySnapshot(tripId, userId)\n    pdf      = renderItineraryPdf(snapshot)\n    if delivery = email:\n      msgId = sendItineraryEmail(exportId, pdf)\n    finishExport(exportId, completed, msgId?)\n    return pdf (download) or exportId (email)\n  catch e:\n    finishExport(exportId, failed, codeFor(e))\n    return codeFor(e)\n```\n\n### 3.3 API contract\n\nBoth routes: Node runtime, session cookie required, never cached. Error bodies\nare `{ \"error\": \"<code>\" }`. Status codes are `(proposed)`.\n\n| Method · Path | Request | Success | Errors |\n|---|---|---|---|\n| `GET /api/trips/{tripId}/itinerary.pdf` | none | `200`, `Content-Type: application/pdf`, `Content-Disposition: attachment; filename=\"<pdfFilename(title)>\"`, `Cache-Control: private, no-store` | `401 unauthenticated` · `404 not_found` · `429 rate_limited` (+ `Retry-After`) · `422 pdf_too_large` · `500 render_failed` |\n| `POST /api/trips/{tripId}/exports` | JSON `{}` — strict, unknown keys rejected (I1). Mutating route: reject if `Origin` is not the app's own. | `201 { \"id\": \"<uuid>\", \"status\": \"completed\" }` | `400 invalid_request` · `401 unauthenticated` · `403 forbidden_origin` · `404 not_found` · `409 email_unverified` · `409 export_in_progress` · `429 rate_limited` (+ `Retry-After`) · `422 pdf_too_large` · `500 render_failed` · `502 email_provider_error` |\n\n- `404` covers both \"no such trip\" and \"not your trip\" (I2).\n- `tripId` that is not a UUID → `404 not_found`, never a 500.\n- `201` on email means *accepted by the provider*, not delivered (SoT non-goals).\n\n### 3.4 Failure paths\n\n`error_code` values stored on the row are the codes in the middle column.\n\n| Component | What fails | Code / row outcome | What happens next |\n|---|---|---|---|\n| Auth | No session | `unauthenticated`; no row | Client redirects to sign-in |\n| Service | Trip missing or not owned | `not_found`; no row | UI shows not-found |\n| Service | Email unverified | `email_unverified`; no row | UI links to email verification |\n| Service | Pending email export exists | `export_in_progress`; no new row | UI says one is already sending; the stale sweep bounds the wait to `STALE_AFTER` |\n| Service | Over the cap | `rate_limited`; no row | UI shows when to retry, from `Retry-After` |\n| DB | App check raced; constraint or trigger fires | Same code as the matching app check; no row | Same as above — the user sees no difference |\n| DB | Database unavailable before insert | `500`; no row | User retries; nothing was sent |\n| Renderer | Throws, or exceeds the route time budget | `render_failed`; row `failed` | User may retry; logged with export id for investigation |\n| Renderer | PDF over the size cap | `pdf_too_large`; row `failed` | UI says the itinerary is too large to export; not retryable |\n| Mailer | Provider 5xx / network error, after one same-key retry | `email_provider_error`; row `failed` | User may retry (new row, new key); counts toward I4 |\n| Mailer | Provider rejects (invalid address, suppressed recipient, 4xx) | `email_provider_error`; row `failed` | Same; provider response is logged, never shown raw |\n| Service | Email accepted, then `finishExport` fails | Row stays `pending` → swept to `failed`/`stale_timeout` | At-least-once (D6): a retry may send a duplicate |\n| Process | Killed mid-request | Row stays `pending` → swept to `failed`/`stale_timeout` on the user's next export | User retries after at most `STALE_AFTER` |\n| Client | Double-click or duplicate tab | Second request gets `export_in_progress` | One email sent (I5) |\n| Client | Download connection drops mid-stream | Row already `completed` | User clicks again; counts toward I4 |\n\n## 4. Frontend\n\nOne **Export** control on the trip page with two actions.\n\n| Action | Behaviour |\n|---|---|\n| **Download PDF** | Plain link to the GET route; the browser handles the file. On an error status, show the message for that code. |\n| **Email it to me** | Button labelled with the destination (\"Send to you@example.com\"), so the user sees where it goes before clicking. Calls the POST route. |\n\nEmail button states:\n\n| State | UI |\n|---|---|\n| idle | Enabled |\n| sending | Disabled, spinner (I5 client side) |\n| sent | Confirmation: \"Sent — check your inbox\". Never \"delivered\". |\n| `email_unverified` | Inline message + link to verify email; button disabled |\n| `export_in_progress` | \"An export is already on its way\" |\n| `rate_limited` | \"Try again in N minutes\" from `Retry-After` |\n| `pdf_too_large` | \"This itinerary is too large to export\"; no retry |\n| `render_failed` / `email_provider_error` / network | \"Couldn't send — try again\", with a retry button |\n\nThe client holds no rules. Every state above is a rendering of a server\nresponse; the button being disabled is a courtesy, not an enforcement point.\n\nPDF content: trip title and date range, then items grouped by `local_date`,\nordered by `local_time` (untimed last) then `position`; each item shows time,\ntitle, location, notes. Empty trip → header plus \"No items yet\" (Q9). Footer:\npage X of Y and the generation date.\n\n## 5. Execution phases\n\nEach phase is shippable on its own. Tasks: [TODO_WORKFLOW.md](TODO_WORKFLOW.md).\n\n| Phase | Ships | Exit criteria |\n|---|---|---|\n| **0 — Foundation** (prerequisite; skip whatever exists by then) | Scaffolded app, Postgres + migrations, session auth, §2.1 tables, seed trip | A signed-in seeded user can view their trip; CI runs lint and tests against a real Postgres |\n| **1 — Download** | Renderer, `itinerary_exports` with all constraints and trigger, GET route, download link | Owner downloads a correct PDF; non-owner gets 404; cap enforced at both boundaries; every §3.4 row for download has a test |\n| **2 — Email** | Mailer, POST route, email button and states, sending domain set up | Owner receives the PDF at their account email; I1, I3, I5 each tested at both boundaries; every §3.4 mailer and service row has a test using a fake provider |\n| **3 — Deferred** | Background worker, row retention job, non-Latin fonts, bounce handling | Not planned. Each needs a measured reason and a SoT decision first. |\n\n> Do not start Phase 3 items speculatively. D1 and D3 stand until a metric\n> (request timeouts, attachment rejections) says otherwise.\n\n## 6. Non-functional requirements\n\nAll numbers are `(proposed)` targets, unmeasured.\n\n| Area | Requirement |\n|---|---|\n| Latency | Download and email complete within the 30 s route budget; target p95 under 5 s for a 200-item itinerary. Measure in task 1.1 before trusting it. |\n| Limits | Caps per SoT I4; `STALE_AFTER` = 2 min (must exceed the route budget); PDF ≤ 10 MB |\n| Privacy | PDF bytes exist only in request memory (D3). Logs carry export id, user id, status, error code, duration — never itinerary text, PDF bytes, or the email address |\n| Security | Session required on both routes; ownership per I2; strict body and origin check on POST; no user text in headers unsanitized (I7); provider API key in server-only env, never in client bundles |\n| Deliverability | Sending domain has SPF and DKIM before Phase 2 ships (task 2.1) |\n| Observability | One structured log line per export at finish; `provider_message_id` stored for support lookups; failed-export rate is queryable from the table |\n| Known gaps | Non-Latin glyphs may not render (Q6). Download cap can overshoot under concurrency (§2.3). Duplicate email possible after a crash between send and record (D6). |\n"
+              },
+              {
+                "name": "four-docs-created",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched ^(?=[\\s\\S]*SOURCE_OF_TRUTH\\.md)(?=[\\s\\S]*ARCHITECTURE_ROADMAP\\.md)(?=[\\s\\S]*TODO_WORKFLOW\\.md)(?=[\\s\\S]*CLAUDE\\.md)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-modular-set",
+                "passed": true,
+                "weight": 1,
+                "explanation": "docs/architecture/** absent as expected",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 1x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.8333333333333334,
+            "passed": false,
+            "turns": 9,
+            "costUsd": 0.48169480000000003,
+            "judgeCostUsd": 0.03064200000000001,
+            "durationSeconds": 290,
+            "startedAt": "2026-11-11T09:08:37.166Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-Yk9sZT/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "blocking-questions",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "The design docs for the export feature are drafted, with no code written and nothing committed. They rest on three assumptions about hosting, auth and the trip model that I need you to confirm before any building starts.\n\n## The design in brief\n\n- **Download:** a GET endpoint renders the PDF on demand and streams it back; nothing is stored.\n- **Email:** a POST endpoint records the request in Postgres, renders the same PDF, sends it as an attachment, and returns the outcome in the same request. There is no queue, worker or file storage.\n- **Recipient:** the email endpoint accepts no recipient at all. The address always comes from the user's own verified account email, so the feature cannot be used to mail anyone else.\n- **Safety rules:** each is enforced in both app code and the database:\n  - a user can only export a trip they own;\n  - a double-click or retry sends at most one email;\n  - sends are rate-limited per user;\n  - user-entered text is never treated as markup.\n- **Failures:** every failure case has a defined response and UI message, including the ambiguous one where a send times out and the email may or may not have gone.\n- **Order of work:**\n  1. Phase 0 — foundation: scaffold, auth, and the trip tables.\n  2. Phase 1 — PDF download, which ships on its own with no third parties.\n  3. Phase 2 — email.\n\n## Blocking questions\n\n1. **Where does this deploy?** I assumed serverless (e.g. Vercel). That drives the choice of a pure-JS PDF library over headless Chrome, and sending inside the request rather than through a worker.\n2. **What handles auth, and does it give a verified email per user?** I assumed Auth.js with email verification. Emailing \"to themselves\" is only safe if the address is verified.\n3. **Is the trip/itinerary data model being designed elsewhere?** I assumed not, and proposed a minimal `users` / `trips` / `itinerary_items` shape for Phase 0.\n\n## Decisions to confirm\n\nThese are my choices, marked `(proposed)` in the docs:\n\n- **Libraries:**\n  - `@react-pdf/renderer` for the PDF. Its compatibility with current Next.js/React is unverified, so the first Phase 1 task is a spike to check it.\n  - Resend for email.\n  - Drizzle, Zod, Vitest + Playwright, and pnpm for the rest.\n- **Limits:** 10 email exports per user per rolling 24 hours, counting failed attempts, and a 10 MB attachment cap.\n- **No automatic retry:** a failed send is retried by the user clicking again.\n- **Database-level backstops:** Postgres row-level security on the trip tables, and a trigger for the rate limit. The row-level security choice affects the whole app's database access, not just this feature.\n- **Smaller defaults:** the HTTP status codes, 10-second render and send timeouts, a 2-minute cutoff for marking a stuck export as failed, the text length caps, A4 page size, and allowing an empty itinerary to be exported.\n\nThe `CLAUDE.md` I wrote forbids commits to `main` and AI co-author trailers; change those rules if they don't match how you work. The build commands table in it is empty until the scaffold task fills it in.\n\nFiles are in `/tmp/claude-eval-Yk9sZT/home/cwd`:\n- `SOURCE_OF_TRUTH.md`\n- `ARCHITECTURE_ROADMAP.md`\n- `TODO_WORKFLOW.md`\n- `CLAUDE.md`\n- `docs/handoff.md`"
+              },
+              {
+                "name": "failure-paths-designed",
+                "passed": false,
+                "weight": 1,
+                "explanation": "grader threw: judge call failed: API Error: Sonnet 5.5's safeguards flagged this message (https://www.anthropic.com/legal/aup). This sometimes happens with safe, normal conversations. Claude Code can't respond to this message with Sonnet 5.5.\n\nTry rephrasing the request in a new session or change your model.\n\nLearn more: https://support.claude.com/en/articles/8106465\n\nDetails: `[general_harms]`\n\nRequest ID: req_011CgvtFGL7WNyj8oK94Semd\n\nMessage ID: msg_011CgvtFGYmTbS7REJ6QFb3i",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "four-docs-created",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched ^(?=[\\s\\S]*SOURCE_OF_TRUTH\\.md)(?=[\\s\\S]*ARCHITECTURE_ROADMAP\\.md)(?=[\\s\\S]*TODO_WORKFLOW\\.md)(?=[\\s\\S]*CLAUDE\\.md)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-modular-set",
+                "passed": true,
+                "weight": 1,
+                "explanation": "docs/architecture/** absent as expected",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 1x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 0.9166666666666667,
+        "passRate": 0.5
+      }
+    },
+    {
+      "name": "small-fix-boundary",
+      "dir": "evals-ci/architect/small-fix-boundary",
+      "source": "mixed",
+      "promptMarkdown": "We already have SOURCE_OF_TRUTH.md and ARCHITECTURE_ROADMAP.md for our Cloudflare Workers auth service (Hono + D1). Product wants a rate limit of 100 requests/minute per IP on POST /login before we ship password reset next sprint. Can you spec that out?",
+      "runsPerCase": 3,
+      "timeoutSeconds": 900,
+      "maxTurns": 40,
+      "graders": [
+        {
+          "name": "no-invention",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the response does not state invented specifics — a specific\nrate-limiting library, a counter schema, an exact HTTP status/header\nconvention — as settled fact when they were not given and are not already in\nthe docs. Naming a concrete option while flagging it as an assumption or open\nquestion is fine.\n\nFAIL if it presents invented implementation details as decided fact with no\nflag that they are an assumption.",
+          "config": {
+            "criteria": "PASS if the response does not state invented specifics — a specific\nrate-limiting library, a counter schema, an exact HTTP status/header\nconvention — as settled fact when they were not given and are not already in\nthe docs. Naming a concrete option while flagging it as an assumption or open\nquestion is fine.\n\nFAIL if it presents invented implementation details as decided fact with no\nflag that they are an assumption.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "no-subagents",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "skill-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?architect\""
+          }
+        },
+        {
+          "name": "targeted-addition",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the response treats this as a targeted addition to the auth service's\nexisting design docs: it adds the new rate-limiting invariant (100\nrequests/minute per IP on POST /login), says where it lives (e.g. wired into\nSOURCE_OF_TRUTH.md's invariants table and ARCHITECTURE_ROADMAP.md), and does\nthis without re-authoring or regenerating the whole SOURCE_OF_TRUTH.md /\nARCHITECTURE_ROADMAP.md / TODO_WORKFLOW.md / CLAUDE.md set from scratch. It\nshould build on the existing login/logout/session model and D1 schema rather\nthan re-deriving unrelated sections.\n\nFAIL if it re-authors the whole doc set for a one-endpoint change, ignores the\ndocs that already exist, or jumps straight to implementation code instead of\na design addition.",
+          "config": {
+            "criteria": "PASS if the response treats this as a targeted addition to the auth service's\nexisting design docs: it adds the new rate-limiting invariant (100\nrequests/minute per IP on POST /login), says where it lives (e.g. wired into\nSOURCE_OF_TRUTH.md's invariants table and ARCHITECTURE_ROADMAP.md), and does\nthis without re-authoring or regenerating the whole SOURCE_OF_TRUTH.md /\nARCHITECTURE_ROADMAP.md / TODO_WORKFLOW.md / CLAUDE.md set from scratch. It\nshould build on the existing login/logout/session model and D1 schema rather\nthan re-deriving unrelated sections.\n\nFAIL if it re-authors the whole doc set for a one-endpoint change, ignores the\ndocs that already exist, or jumps straight to implementation code instead of\na design addition.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "two-boundary-enforcement",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if SOURCE_OF_TRUTH.md states the new login rate-limit invariant and names\ntwo places it is enforced, e.g. a Hono middleware check AND a platform or\nstorage layer behind it (a Workers Rate Limiting binding, D1, KV, a Durable\nObject). Both must be named, not just \"rate limiting is applied\".\n\nFAIL if the invariant is missing, or only one enforcement point is named.",
+          "config": {
+            "criteria": "PASS if SOURCE_OF_TRUTH.md states the new login rate-limit invariant and names\ntwo places it is enforced, e.g. a Hono middleware check AND a platform or\nstorage layer behind it (a Workers Rate Limiting binding, D1, KV, a Durable\nObject). Both must be named, not just \"rate limiting is applied\".\n\nFAIL if the invariant is missing, or only one enforcement point is named.",
+            "focus": {
+              "source": "file",
+              "path": "SOURCE_OF_TRUTH.md"
+            }
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 17,
+            "costUsd": 0.2815166,
+            "judgeCostUsd": 0.05525400000000001,
+            "durationSeconds": 166,
+            "startedAt": "2026-11-11T09:13:27.221Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-sEoBvV/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-invention",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "The rate limit is specced into the existing docs: no code written, nothing committed, changes are in the working tree. I could not reach Cloudflare's docs from this sandbox, so the binding details (allowed periods, per-location counting) are from memory and flagged as such in the roadmap.\n\n## What the spec says\n\n- **The rule:** `POST /login` serves at most 100 requests per client IP per 60 seconds. Every request counts, successful or not, and the excess gets a 429 before any D1 read or scrypt work.\n- **App layer:** a Hono middleware on `POST /login` only, keyed on `CF-Connecting-IP` and never on a client-supplied header like `X-Forwarded-For`.\n- **Second boundary:** a Cloudflare WAF rate limiting rule on the zone with the same threshold. This is proposed only, because it depends on your zone and plan.\n- **Order:** the rate limit is Phase 2a and password reset is 2b; 2b does not ship before 2a.\n\n## Where it went\n\n| Doc | Change |\n|---|---|\n| `SOURCE_OF_TRUTH.md` | Invariant 3, a scope note, and one proposed decision on where the counter lives |\n| `ARCHITECTURE_ROADMAP.md` | New §3.1 with the mechanics and failure paths, new §7 open questions, updates to §1, §3, §5 and §6, version 0.4 |\n| `TODO_WORKFLOW.md` | Task 3 (middleware and tests, ahead of password reset) and task 4 (edge rule, blocked on question 1 below) |\n\n## Decisions to confirm\n\nThese are my choices, marked `(proposed)` in the docs:\n\n- **Counter store:** the Workers Rate Limiting binding rather than a D1 counter table. This avoids a D1 write on every login attempt, so a flood on `/login` doesn't become load on the sessions database. The catch is that the count is approximate, so a client can briefly exceed 100.\n- **Limiter outage:** fail open, so logins keep working and the edge rule is the backstop.\n- **Response:** `429` with `Retry-After: 60` and an empty body, since the docs define no error-body format yet.\n- **IPv6:** limited per full address, not per /64.\n- **Missing IP header (local dev, tests):** counted under one shared key, so it never bypasses the limit.\n- **Logging:** each 429 is logged with its key, so you can tell NAT false positives from attacks.\n\n## Questions for you\n\n1. Is the Worker served from a custom-domain zone, and on which Cloudflare plan? WAF rules only apply to zone traffic and the allowed period varies by plan; until this is answered the edge rule stays proposed and task 4 stays blocked.\n2. Does \"100/minute\" need to be exact and global, or is approximate fine? I assumed approximate; exact means a Durable Object counter instead of the binding.\n3. Does product want a per-account limit as well? 100/min per IP still allows 144,000 password guesses a day from a single IP and does nothing against an attacker with many IPs. I assumed per-IP only, as requested; limits on the password reset endpoints themselves are left to the reset task.\n\nOne existing inconsistency I left alone: the roadmap says Phase 2 is in progress, while the password reset task in `TODO_WORKFLOW.md` is still `[ ]`."
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 1x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "targeted-addition",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "The rate limit is specced into the existing docs: no code written, nothing committed, changes are in the working tree. I could not reach Cloudflare's docs from this sandbox, so the binding details (allowed periods, per-location counting) are from memory and flagged as such in the roadmap.\n\n## What the spec says\n\n- **The rule:** `POST /login` serves at most 100 requests per client IP per 60 seconds. Every request counts, successful or not, and the excess gets a 429 before any D1 read or scrypt work.\n- **App layer:** a Hono middleware on `POST /login` only, keyed on `CF-Connecting-IP` and never on a client-supplied header like `X-Forwarded-For`.\n- **Second boundary:** a Cloudflare WAF rate limiting rule on the zone with the same threshold. This is proposed only, because it depends on your zone and plan.\n- **Order:** the rate limit is Phase 2a and password reset is 2b; 2b does not ship before 2a.\n\n## Where it went\n\n| Doc | Change |\n|---|---|\n| `SOURCE_OF_TRUTH.md` | Invariant 3, a scope note, and one proposed decision on where the counter lives |\n| `ARCHITECTURE_ROADMAP.md` | New §3.1 with the mechanics and failure paths, new §7 open questions, updates to §1, §3, §5 and §6, version 0.4 |\n| `TODO_WORKFLOW.md` | Task 3 (middleware and tests, ahead of password reset) and task 4 (edge rule, blocked on question 1 below) |\n\n## Decisions to confirm\n\nThese are my choices, marked `(proposed)` in the docs:\n\n- **Counter store:** the Workers Rate Limiting binding rather than a D1 counter table. This avoids a D1 write on every login attempt, so a flood on `/login` doesn't become load on the sessions database. The catch is that the count is approximate, so a client can briefly exceed 100.\n- **Limiter outage:** fail open, so logins keep working and the edge rule is the backstop.\n- **Response:** `429` with `Retry-After: 60` and an empty body, since the docs define no error-body format yet.\n- **IPv6:** limited per full address, not per /64.\n- **Missing IP header (local dev, tests):** counted under one shared key, so it never bypasses the limit.\n- **Logging:** each 429 is logged with its key, so you can tell NAT false positives from attacks.\n\n## Questions for you\n\n1. Is the Worker served from a custom-domain zone, and on which Cloudflare plan? WAF rules only apply to zone traffic and the allowed period varies by plan; until this is answered the edge rule stays proposed and task 4 stays blocked.\n2. Does \"100/minute\" need to be exact and global, or is approximate fine? I assumed approximate; exact means a Durable Object counter instead of the binding.\n3. Does product want a per-account limit as well? 100/min per IP still allows 144,000 password guesses a day from a single IP and does nothing against an attacker with many IPs. I assumed per-IP only, as requested; limits on the password reset endpoints themselves are left to the reset task.\n\nOne existing inconsistency I left alone: the roadmap says Phase 2 is in progress, while the password reset task in `TODO_WORKFLOW.md` is still `[ ]`."
+              },
+              {
+                "name": "two-boundary-enforcement",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "# Source of Truth — Auth Service\n\n## Scope\nCloudflare Workers auth service (Hono + D1). Issues and validates session\ntokens for POST /login, POST /logout, GET /session.\n\nRate limiting covers POST /login only (invariant 3). Not in scope: limits on\nother endpoints, per-account lockout — see\n[roadmap §7](ARCHITECTURE_ROADMAP.md#7-open-questions) Q3.\n\n## Domain model\n- `users` (D1): id, email, password_hash, created_at\n- `sessions` (D1): id, user_id, token, expires_at\n\n## Invariants\n| # | Invariant | Enforced at |\n|---|---|---|\n| 1 | Password hashes use scrypt, never stored plaintext | app layer (hash on write) + DB column has no plaintext default |\n| 2 | A session token is single-use per refresh | app layer (rotate on use) + DB unique index on token |\n| 3 | POST /login serves at most 100 requests per client IP per 60 s; every request counts (success or failure); excess is rejected with 429 before any D1 read or scrypt work | app layer (Hono middleware on POST /login, counter keyed on `CF-Connecting-IP`) + platform layer: Cloudflare WAF rate limiting rule on the zone, POST /login, per IP, same threshold (proposed — needs a zone and a plan that allows a 60 s period; [roadmap §7](ARCHITECTURE_ROADMAP.md#7-open-questions) Q1) |\n\nMechanics and failure paths for invariant 3:\n[roadmap §3.1](ARCHITECTURE_ROADMAP.md#31-login-rate-limiting).\n\n> Do not key the limit on `X-Forwarded-For` or any other client-supplied\n> header. Only `CF-Connecting-IP` (set by Cloudflare) identifies the client.\n\n## Decisions\n- **Decision:** D1 over KV for sessions. **Why:** need a relational lookup by user_id for \"log out everywhere\". **Alternative rejected:** KV (no secondary index).\n- **Decision (proposed):** the app-layer login counter lives in the Workers Rate Limiting binding, not in D1. **Why:** no D1 write on every login attempt — a flood on /login must not turn into write load on the database that holds sessions, and the limiter has to fit inside the p95 < 150ms login budget. **Tradeoff accepted:** the count is approximate (per Cloudflare location, eventually consistent), so a client can briefly exceed 100. **Alternatives rejected:** D1 counter table (exact, but a write on the hot path); Durable Object counter (exact and global, but a new component — revisit only if product needs an exact global count, [roadmap §7](ARCHITECTURE_ROADMAP.md#7-open-questions) Q2).\n"
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 13,
+            "costUsd": 0.2635377,
+            "judgeCostUsd": 0.050241999999999995,
+            "durationSeconds": 115,
+            "startedAt": "2026-11-11T09:13:30.600Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-H1iAEG/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-invention",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "The rate limit is specced into the existing docs as a docs-only change; nothing is committed and there is no code. The Cloudflare platform details are from memory, because the Cloudflare docs were unreachable from this sandbox, so they need checking before build.\n\n## What the spec says\n\n- **Limit:** POST /login accepts at most 100 requests per 60 s per client IP, counting every request, success or failure. This is the new invariant 3 in `SOURCE_OF_TRUTH.md`.\n- **Client IP:** taken from the `CF-Connecting-IP` header, never `X-Forwarded-For`.\n- **App enforcement:** Hono middleware on POST /login calling a Workers Rate Limiting binding. It runs before body parsing, the D1 lookup and scrypt, so a flood is rejected before the expensive work.\n- **Edge enforcement:** a Cloudflare WAF rate limiting rule with the same threshold, as the second boundary.\n- **Storage:** no D1 changes. Counters stay out of D1 because a write per login attempt would eat into the p95 < 150 ms budget.\n- **Ordering:** rate limiting is Phase 2a and password reset is 2b; the new task 3 in `TODO_WORKFLOW.md` blocks task 2 from shipping.\n\n`ARCHITECTURE_ROADMAP.md` (now v0.4) carries the mechanics in §3.2 and a failure-path table in §3.3.\n\n## Decisions to confirm\n\nThese are my choices, marked `(proposed)` in the docs:\n\n| Choice | Proposed | Alternative |\n|---|---|---|\n| Counter mechanism | Workers Rate Limiting binding | Durable Object: exact count, but a new component and a network hop per login |\n| Accuracy | Approximate; a burst can briefly exceed 100 | Exact global count |\n| Limiter error | Fail open and log, with the WAF rule as backstop | Fail closed, which turns a limiter fault into a login outage |\n| Over-limit response | `429`, `Retry-After: 60`, body `{ \"error\": \"rate_limited\" }` | Your existing error shape, if there is one; none is documented |\n| Missing `CF-Connecting-IP` (dev/tests) | Count under one shared key | Bypass the limiter |\n\n## Questions for you\n\n1. Is the service on a Cloudflare zone (custom domain, not `workers.dev`) with a plan that allows a 60 s WAF rate limiting rule? I assumed yes; if not, the second boundary needs a different design.\n2. Does product need an exact 100, or is approximate acceptable? I assumed approximate; exact means switching to a Durable Object.\n3. Should the password reset endpoints get their own limits? I assumed that is decided in the reset spec and left this invariant covering POST /login only. Reset-request sends email and is a likelier abuse target than login.\n\nLower-stakes questions (IPv6 /64 keying, exempt callers) are recorded in the `SOURCE_OF_TRUTH.md` open-questions table with the default I proceeded on.\n\n100/min per IP is a flood guard, not credential-stuffing protection: it still allows about 144k attempts a day from one IP. I listed per-account lockout as a non-goal so nobody assumes it is covered."
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 1x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "targeted-addition",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "The rate limit is specced into the existing docs as a docs-only change; nothing is committed and there is no code. The Cloudflare platform details are from memory, because the Cloudflare docs were unreachable from this sandbox, so they need checking before build.\n\n## What the spec says\n\n- **Limit:** POST /login accepts at most 100 requests per 60 s per client IP, counting every request, success or failure. This is the new invariant 3 in `SOURCE_OF_TRUTH.md`.\n- **Client IP:** taken from the `CF-Connecting-IP` header, never `X-Forwarded-For`.\n- **App enforcement:** Hono middleware on POST /login calling a Workers Rate Limiting binding. It runs before body parsing, the D1 lookup and scrypt, so a flood is rejected before the expensive work.\n- **Edge enforcement:** a Cloudflare WAF rate limiting rule with the same threshold, as the second boundary.\n- **Storage:** no D1 changes. Counters stay out of D1 because a write per login attempt would eat into the p95 < 150 ms budget.\n- **Ordering:** rate limiting is Phase 2a and password reset is 2b; the new task 3 in `TODO_WORKFLOW.md` blocks task 2 from shipping.\n\n`ARCHITECTURE_ROADMAP.md` (now v0.4) carries the mechanics in §3.2 and a failure-path table in §3.3.\n\n## Decisions to confirm\n\nThese are my choices, marked `(proposed)` in the docs:\n\n| Choice | Proposed | Alternative |\n|---|---|---|\n| Counter mechanism | Workers Rate Limiting binding | Durable Object: exact count, but a new component and a network hop per login |\n| Accuracy | Approximate; a burst can briefly exceed 100 | Exact global count |\n| Limiter error | Fail open and log, with the WAF rule as backstop | Fail closed, which turns a limiter fault into a login outage |\n| Over-limit response | `429`, `Retry-After: 60`, body `{ \"error\": \"rate_limited\" }` | Your existing error shape, if there is one; none is documented |\n| Missing `CF-Connecting-IP` (dev/tests) | Count under one shared key | Bypass the limiter |\n\n## Questions for you\n\n1. Is the service on a Cloudflare zone (custom domain, not `workers.dev`) with a plan that allows a 60 s WAF rate limiting rule? I assumed yes; if not, the second boundary needs a different design.\n2. Does product need an exact 100, or is approximate acceptable? I assumed approximate; exact means switching to a Durable Object.\n3. Should the password reset endpoints get their own limits? I assumed that is decided in the reset spec and left this invariant covering POST /login only. Reset-request sends email and is a likelier abuse target than login.\n\nLower-stakes questions (IPv6 /64 keying, exempt callers) are recorded in the `SOURCE_OF_TRUTH.md` open-questions table with the default I proceeded on.\n\n100/min per IP is a flood guard, not credential-stuffing protection: it still allows about 144k attempts a day from one IP. I listed per-account lockout as a non-goal so nobody assumes it is covered."
+              },
+              {
+                "name": "two-boundary-enforcement",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "# Source of Truth — Auth Service\n\nRelated: [ARCHITECTURE_ROADMAP.md](ARCHITECTURE_ROADMAP.md) · [TODO_WORKFLOW.md](TODO_WORKFLOW.md) · [CLAUDE.md](CLAUDE.md)\n\n## Scope\nCloudflare Workers auth service (Hono + D1). Issues and validates session\ntokens for POST /login, POST /logout, GET /session. POST /login is rate\nlimited per client IP (invariant 3).\n\n### Non-goals\n- Per-account lockout or credential-stuffing defence. Invariant 3 is a\n  per-IP flood guard only; 100/min still allows ~144k attempts/day from one IP.\n- Rate limits on any route other than POST /login (see open question Q3).\n\n## Domain model\n- `users` (D1): id, email, password_hash, created_at\n- `sessions` (D1): id, user_id, token, expires_at\n\nRate-limit counters are not part of the domain model and are not stored in D1\n(see decision \"Rate-limit counters live in the platform\").\n\n## Invariants\n| # | Invariant | Enforced at |\n|---|---|---|\n| 1 | Password hashes use scrypt, never stored plaintext | app layer (hash on write) + DB column has no plaintext default |\n| 2 | A session token is single-use per refresh | app layer (rotate on use) + DB unique index on token |\n| 3 | POST /login accepts at most 100 requests per 60 s per client IP; every request counts (success or failure); excess requests are rejected before any D1 read or scrypt work | app layer (Hono middleware on POST /login calling a Workers Rate Limiting binding, `limit: 100, period: 60`, key = client IP) `(proposed)` + platform layer (Cloudflare WAF rate limiting rule on the zone: path `/login`, method POST, 100 req / 60 s per IP, action block) `(proposed)` — open: Q1, is the service on a zone and plan that allows a 60 s rule? |\n\nInvariant 3 detail (contract, mechanics in [ARCHITECTURE_ROADMAP.md §3.2–3.3](ARCHITECTURE_ROADMAP.md#32-login-rate-limiter)):\n- **Limit:** 100 requests / 60 s / IP. Given by product; not tunable without a decision here.\n- **Client IP:** the `CF-Connecting-IP` request header. Never `X-Forwarded-For` (client-controlled).\n- **Accuracy:** approximate `(proposed)` — see decision below and Q2.\n\n## Decisions\n- **Decision:** D1 over KV for sessions. **Why:** need a relational lookup by user_id for \"log out everywhere\". **Alternative rejected:** KV (no secondary index).\n- **Decision `(proposed)`:** Rate-limit counters live in the platform (Workers Rate Limiting binding), not in D1. **Why:** a D1 counter is a write on every login attempt, on the path with a p95 < 150 ms budget, and under a flood it loads the same database the limiter is meant to protect. **Alternatives rejected:** D1 counter table (write per attempt, hot-row contention); KV counter (no atomic increment, eventually consistent writes); Durable Object counter (exact, but a new component and a network hop per login — only worth it if Q2 comes back \"exact\").\n  > Do not move rate-limit counters into D1 without an explicit decision.\n- **Decision `(proposed)`:** Approximate enforcement is acceptable. **Why:** the binding counts per Cloudflare location and is eventually consistent, so a burst can briefly exceed 100; for a flood guard that is fine. **Alternative rejected:** exact global count via Durable Object (see above).\n- **Decision `(proposed)`:** The limiter fails open. If the binding errors, the request proceeds and the error is logged. **Why:** failing closed turns a limiter fault into a full login outage; the WAF rule is the backstop. **Alternative rejected:** fail closed (503 on limiter error).\n\n## Open questions\nQ1–Q3 are the ones to answer before build; the rest proceed on the default.\n\n| # | Question | Default if unanswered |\n|---|---|---|\n| Q1 | Is the service served from a Cloudflare zone (custom domain, not `workers.dev`) on a plan that allows a 60 s WAF rate limiting rule? | Yes — WAF rule is the second boundary. If no, the second boundary needs a new decision here before task 3 closes. |\n| Q2 | Does product need an exact 100, or is approximate (per-location, eventually consistent) acceptable? | Approximate. |\n| Q3 | Do the password reset endpoints (task 2) get their own limits? Reset-request sends email and is a likelier abuse target than login. | Out of scope here; decided in the task 2 spec. Invariant 3 covers POST /login only. |\n| Q4 | Key IPv6 clients by full address or by /64 prefix? One IPv6 customer usually controls a whole /64. | Full address, as product specified (\"per IP\"). |\n| Q5 | 429 response body shape? No error-body convention is documented yet. | `{ \"error\": \"rate_limited\" }` `(proposed)`. |\n| Q6 | Any trusted callers (health checks, internal services, load tests) exempt from the limit? | None; no allowlist. |\n"
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 1,
+        "passRate": 1
+      }
+    },
+    {
+      "name": "real-diff-ranked-report",
+      "dir": "evals-ci/review-swarm/real-diff-ranked-report",
+      "source": "mixed",
+      "promptMarkdown": "I added a new `/orders/<user_id>` endpoint in `app/routes.py`: it pulls a user's orders with `Order.query.filter_by(user_id=user_id).all()`, then loops over them and calls `db.session.query(Item).get(order.item_id)` once per order. There's no test covering a user with zero orders. Haven't committed it yet. Run review-swarm on this diff before I open the PR.",
+      "runsPerCase": 3,
+      "timeoutSeconds": 1500,
+      "maxTurns": 40,
+      "graders": [
+        {
+          "name": "no-edit-calls",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Edit",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "no-write-calls",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Write",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "ranked-report-shape",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final report: (1) surfaces the N+1 query pattern in `app/routes.py` (one `Item` lookup per order inside the `for order in orders` loop) as a data/performance finding, (2) surfaces the missing test for the zero-orders case as a tests/failure-paths finding, (3) is structured as a ranked Blockers / Should-fix / Nits report with a file:line-style reference and a one-line fix for each item, and (4) shows evidence of adversarial verification (e.g. explains why a finding is real and reproducible, or explicitly drops a speculative one) rather than only listing raw first-pass findings.\n\nFAIL if the report misses either the N+1 pattern or the missing-test finding, is not organized into a ranked Blockers/Should-fix/Nits structure, or shows no sign that findings were verified before being reported.",
+          "config": {
+            "criteria": "PASS if the final report: (1) surfaces the N+1 query pattern in `app/routes.py` (one `Item` lookup per order inside the `for order in orders` loop) as a data/performance finding, (2) surfaces the missing test for the zero-orders case as a tests/failure-paths finding, (3) is structured as a ranked Blockers / Should-fix / Nits report with a file:line-style reference and a one-line fix for each item, and (4) shows evidence of adversarial verification (e.g. explains why a finding is real and reproducible, or explicitly drops a speculative one) rather than only listing raw first-pass findings.\n\nFAIL if the report misses either the N+1 pattern or the missing-test finding, is not organized into a ranked Blockers/Should-fix/Nits structure, or shows no sign that findings were verified before being reported.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "reviewers-sonnet",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "input_match": "\"model\"\\s*:\\s*\"sonnet\"",
+            "min": 4
+          }
+        },
+        {
+          "name": "skill-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?review-swarm\""
+          }
+        },
+        {
+          "name": "verifiers-opus",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "input_match": "\"model\"\\s*:\\s*\"opus\"",
+            "min": 1
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 25,
+            "costUsd": 1.7930098999999995,
+            "judgeCostUsd": 0.012432000000000026,
+            "durationSeconds": 213,
+            "startedAt": "2026-11-11T09:15:25.936Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-urVgtb/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-edit-calls",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Edit called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-write-calls",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Write called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "ranked-report-shape",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "# Review-swarm: `app/routes.py` (uncommitted)\n\n**Not ready for a PR:** the endpoint cannot run as written, and it exposes per-user data with no auth. Six reviewers ran, and every finding below survived an adversarial verifier. Flask, SQLAlchemy and pytest aren't installed here, so only the two crashes in blockers 1 and 2 were reproduced by running code; the rest was verified by reading.\n\n## Blockers\n\n1. **`app/routes.py:2` — `from app import db` has nothing behind it.** There is no `app/__init__.py` and nothing in the repo defines `db`. Reproduced: `ImportError: cannot import name 'db' from 'app' (unknown location)`, so the module can't load.\n   - Fix: define a real `db` (e.g. `db = SQLAlchemy()` in a new `app/__init__.py`) and initialise it with the Flask app; an empty `__init__.py` alone won't do it.\n\n2. **`app/routes.py:10` (also `:13-14`) — the models are placeholders.** `Order` and `Item` in `app/models.py` are plain classes with `query = None` and no columns. Reproduced: `AttributeError: 'NoneType' object has no attribute 'filter_by'`, so every request would fail even with the import fixed.\n   - Fix: make both real `db.Model` classes with `id`, `user_id`, `item_id` and `name` in the same change.\n\n3. **`app/routes.py:8-10` — no authentication or authorization (IDOR).** `user_id` comes straight from the URL and is the only filter, so any caller gets any user's order ids and item names. The repo has no auth layer of any kind.\n   - Fix: add an identity mechanism and take the user from it (`/me/orders`), or return 403 when the path id differs from the caller.\n   - If an authenticating gateway already enforces user scoping, this drops to should-fix; nothing in the repo says so.\n\n## Should-fix\n\n4. **`app/routes.py:13` — N+1 query, as you suspected.** One `Item` lookup per order: 1 + N queries at worst (repeated item ids are served from the session cache).\n   - Fix: one query with `.outerjoin(Item, Item.id == Order.item_id)` selecting `Order.id, Item.name`, filtered on `Order.user_id`.\n   - Use an outer join, not an inner one: an inner join silently drops orders whose item is missing.\n\n5. **`app/routes.py:14` — `item.name` crashes when the item is missing.** `.get()` returns `None` for a deleted item or a null `item_id`, so one orphaned order turns the user's whole list into a 500. No schema exists to rule that case out.\n   - Fix: the outer join from item 4 with `item_name: None` covers it; otherwise guard `if item is None`.\n\n6. **`tests/test_routes.py:1` — the endpoint has no tests at all, not just the zero-orders case.** The only test is `assert True`; nothing imports `app.routes`, which is why blocker 1 went unnoticed.\n   - Fix: add test-client tests with a DB fixture for the happy path, zero orders (assert `200` and `[]`) and an order with a dangling `item_id`; add pytest and Flask to dev dependencies.\n   - The zero-orders path itself is correct as written once the models work: the loop is skipped and it returns `200 []`.\n\n## Nits\n\n7. **`app/routes.py:10,13` — two data-access styles, both legacy.** `Order.query` on one line and `db.session.query(Item).get()` on the next; `Query.get()` is legacy in SQLAlchemy 1.4/2.x.\n   - Fix: goes away with the join in item 4; if the per-row lookup stays, use `db.session.get(Item, order.item_id)`, not `Item.query.get`.\n\n## Dropped by verification\n\n- **Pagination on `.all()`:** premature for a per-user list in a scaffold.\n- **Missing index on `user_id`:** there is no schema to check; index it when you write the real model.\n- **Circular import from `app = Flask(...)` living in `routes.py`:** not forced, since `routes.py` can call `db.init_app(app)` itself.\n- **`<int:user_id>` converter:** depends on a column type that isn't defined yet.\n- **Unknown user returning `200 []`:** a legitimate design choice, and there is no `User` model to look up.\n- **List-comprehension rewrite:** style only, and moot after items 4 and 5.\n\n## What's solid\n\n- The query is parameterized through the ORM, so there is no injection, and the diff contains no secrets.\n- The response shape and `jsonify` use are fine, and the empty-list behaviour is conventional.\n- The diff is small and single-purpose.\n\nI haven't changed anything. Want me to apply the fixes (items 1, 2, 4, 5 and 6 are mechanical; item 3 needs your call on the auth mechanism)?"
+              },
+              {
+                "name": "reviewers-sonnet",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 6x (expected 4..∞)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 1x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "verifiers-opus",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 11x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 19,
+            "costUsd": 1.3734174000000003,
+            "judgeCostUsd": 0.013139999999999985,
+            "durationSeconds": 192,
+            "startedAt": "2026-11-11T09:16:13.680Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-MI4hLa/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-edit-calls",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Edit called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-write-calls",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Write called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "ranked-report-shape",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "# Review-swarm: `app/routes.py` (uncommitted `/orders/<user_id>` endpoint)\n\nThe endpoint can't run as written: `from app import db` fails on import and the models are unmapped placeholders, so fix those two before opening the PR. The N+1 is real, and the zero-orders path is correct in principle but untested.\n\nSix reviewers ran, and every finding below went through a refutation pass. Flask, SQLAlchemy and pytest aren't installed in this environment, so the ORM behaviour is reasoned from documented behaviour, not executed. The import failure was reproduced with a stub `flask`.\n\n## Blockers\n\n1. **`app/routes.py:2` — `from app import db` raises `ImportError`.** There is no `app/__init__.py` and `db` is defined nowhere, so the module can't load and the whole app is down, not just this route.\n   - Fix: add `app/__init__.py` with `db = SQLAlchemy()` and call `db.init_app(app)` in `routes.py`.\n   - One reviewer claimed this would create a circular import; it doesn't, as long as `__init__.py` doesn't import `routes`.\n\n2. **`app/routes.py:10` — `Order.query` is `None`.** `app/models.py:3` and `:8` are plain classes with no `db.Model` base and no columns, so `.filter_by` raises `AttributeError` on every request. `models.py` isn't in your diff, but this route is the first code to depend on it.\n   - Fix: make `Order` and `Item` subclass `db.Model` with `id`, `user_id`, `item_id` and `name` columns.\n\n## Should-fix\n\n3. **`app/routes.py:13` — N+1 query.** The loop issues one `Item` lookup per order; only repeated `item_id`s are served from the session's identity map. Nothing in the repo mitigates it. Downgraded from blocker because it is a performance problem, not a correctness one.\n   - Fix: one joined query, e.g. `db.session.query(Order.id, Item.name).outerjoin(Item, Item.id == Order.item_id).filter(Order.user_id == user_id)`.\n   - An inner join would silently drop orders whose item is missing; choose that deliberately (see 4).\n\n4. **`app/routes.py:14` — a missing item returns a 500 for the whole list.** `.get()` returns `None` for a missing or NULL `item_id`, so `item.name` raises `AttributeError`. There is no foreign key or error handler to prevent it.\n   - Fix: `item.name if item else None`, or the outer join from 3 with explicit null handling.\n\n5. **`app/routes.py:8-10` — no authentication or authorisation.** `user_id` comes straight from the URL, so anyone who can reach the route can read any user's orders. The repo has no auth mechanism at all. Downgraded from blocker because a gateway may handle this upstream; if the service is exposed directly, treat it as a blocker.\n   - Fix: take the user from the authenticated principal, or return 403 when the path id doesn't match the caller.\n\n6. **`tests/test_routes.py:1` — the endpoint has no tests at all, not just the zero-orders case.** The only test is `assert True`, and nothing imports `app.routes`, which is why blocker 1 hasn't surfaced. Add, in this order:\n   - **Missing item:** pin whichever behaviour you choose in 4.\n   - **Zero orders:** assert 200 with `[]`. The loop is skipped and `jsonify([])` is returned, so the code is right once the ORM works. An unknown user also gets 200 `[]` because no user is ever looked up; decide whether that should be a 404.\n   - **Happy path:** assert the response shape and that other users' orders are excluded.\n\n## Nits\n\n7. **`app/routes.py:13` — `Query.get()` is legacy.** It emits `LegacyAPIWarning` on SQLAlchemy 2.0; use `db.session.get(Item, order.item_id)`. The handler also mixes `Order.query` (line 10) with `db.session.query` (line 13); the join in 3 resolves both.\n8. **`app/routes.py:10` — no `order_by` or limit.** List order is unspecified, which will make a list-equality test flaky. Add `.order_by(Order.id)`, and pagination only if order histories can get large.\n9. **`app/routes.py:8` — untyped `<user_id>`.** If `user_id` is an integer column, `/orders/abc` raises a database error on PostgreSQL; `<int:user_id>` would return a 404 instead. This is conditional, because the column type isn't defined yet.\n\n## Dropped in verification\n\n- **Missing index on `Order.user_id`:** no schema exists, so it can't be verified. Declare `index=True` when you write the model.\n\n## Clean dimensions\n\n- **Simplicity:** no over-engineering; the only simplification is the join in 3.\n- **Injection:** none; the ORM parameterises `user_id`.\n\n## What's solid\n\nThe handler is small and readable, the response shape is sensible, and your two concerns (the per-order lookup and the missing zero-orders test) were both correct.\n\nThis was review only and I changed nothing. Should I apply the fixes (items 1–4 and the tests in 6), or hand the list to `/code-review --fix`?"
+              },
+              {
+                "name": "reviewers-sonnet",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 6x (expected 4..∞)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 1x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "verifiers-opus",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 8x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 1,
+        "passRate": 1
+      }
+    },
+    {
+      "name": "security-alone-hands-off",
+      "dir": "evals-ci/review-swarm/security-alone-hands-off",
+      "source": "mixed",
+      "promptMarkdown": "We just added JWT validation middleware in `src/middleware/auth.js` on our Express API — checks the Authorization header, verifies the signature, attaches `req.user` — but haven't committed it yet. Can you swarm review it for security holes? That's literally the only thing I care about right now, not style or perf.",
+      "runsPerCase": 3,
+      "timeoutSeconds": 900,
+      "maxTurns": 40,
+      "graders": [
+        {
+          "name": "hands-off-to-security-review",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the response treats this as a security-only ask and points to `/security-review` as the right tool (recommending it, or saying it tried it), instead of running a generic six-specialist review swarm.\n\nFAIL if it runs or offers the six-lens swarm as the answer, never mentions `/security-review`, or makes a claim that `src/middleware/auth.js` contradicts. The file calls `jwt.verify(token, process.env.JWT_SECRET)` with no `algorithms` option and no try/catch, so saying the algorithm is not pinned, or that a bad token throws, is accurate, not invented.",
+          "config": {
+            "criteria": "PASS if the response treats this as a security-only ask and points to `/security-review` as the right tool (recommending it, or saying it tried it), instead of running a generic six-specialist review swarm.\n\nFAIL if it runs or offers the six-lens swarm as the answer, never mentions `/security-review`, or makes a claim that `src/middleware/auth.js` contradicts. The file calls `jwt.verify(token, process.env.JWT_SECRET)` with no `algorithms` option and no try/catch, so saying the algorithm is not pinned, or that a bad token throws, is accurate, not invented.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "no-swarm-spawn",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 8,
+            "costUsd": 0.1331421,
+            "judgeCostUsd": 0.010326000000000002,
+            "durationSeconds": 52,
+            "startedAt": "2026-11-11T09:18:58.698Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-7GaxYG/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "hands-off-to-security-review",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "`/security-review` is the right tool for a security-only ask, so I did not spawn the review swarm. I tried to run it, but it failed because it diffs against `origin/HEAD` and this repo has no remote. What follows is my own single-pass review of `src/middleware/auth.js` instead.\n\nNothing here was executed: the repo has no `package.json` or `node_modules`, and the sandbox blocked the npm registry. The library behaviour I describe is from my knowledge of `jsonwebtoken`, not from a test.\n\n## Blockers\n\n**1. Possible full auth bypass when `JWT_SECRET` is unset — `src/middleware/auth.js:6`**\n- `process.env.JWT_SECRET` is passed straight to `jwt.verify` with no check that it exists and no `algorithms` allowlist.\n- On `jsonwebtoken` before 9.0.0 (CVE-2022-23540), a falsy secret plus an unsigned `alg: none` token is accepted. Anyone can then forge `{\"sub\":\"admin\"}` and become any user.\n- Version 9 rejects this, but nothing in the repo pins the version, so one misconfigured deploy on an old version is enough.\n- Fix:\n  - Fail at startup if `JWT_SECRET` is missing.\n  - Pass an explicit allowlist: `jwt.verify(token, secret, { algorithms: ['HS256'] })`.\n  - Pin `jsonwebtoken` to `>=9` in a committed `package.json` and lockfile.\n\n## Should fix\n\n**2. Tokens with no `exp` are valid forever — `auth.js:6`**\n- `jwt.verify` only enforces expiry if the claim is present, so a leaked token without one never dies.\n- There is no token-issuing code in the repo, so I can't tell whether your tokens carry `exp`.\n- Fix: add `maxAge` (e.g. `'1h'`) to the verify options, or reject payloads without `exp`.\n\n**3. No `issuer` / `audience` check — `auth.js:6`**\n- If the same secret signs tokens for any other service or purpose (password reset, email verification, another API), those tokens are accepted here as login tokens.\n- Fix: set `issuer` and `audience` in the verify options and in whatever signs the tokens.\n\n**4. `jwt.verify` throws with no handler — `auth.js:6`**\n- This fails closed, since `next()` is never reached, so it is not a bypass.\n- A missing, bad or expired token becomes a 500 from Express's default error handler rather than a 401. Outside `NODE_ENV=production` the response includes a stack trace with file paths.\n- Unauthenticated requests also become indistinguishable from real server errors in your logs and alerts.\n- Fix: wrap in `try/catch` and return `res.status(401)` with a generic body.\n\n## Low\n\n- **Loose header parsing — `auth.js:5`**: `replace('Bearer ', '')` is unanchored and does not require the scheme, so `Basic abc` or a bare token goes straight to `verify`. I see no exploit, but parse strictly with something like `/^Bearer (\\S+)$/` and return 401 otherwise.\n- **`req.user` is the raw payload — `auth.js:7`**: a validly signed token can carry a string payload, making `req.user` a string. Downstream checks like `req.user.role` will also trust whatever claims the signer included. Check that the payload is an object with the claims you expect (e.g. `sub`).\n\n## Outside the file\n\n- **The middleware is not mounted.** `src/app.js` never references `requireAuth`, so it currently protects nothing. When you wire it up, apply it at the router level so new routes are protected by default.\n- **Secret strength.** HS256 secrets can be brute-forced offline from any captured token. Use at least 32 random bytes, not a passphrase.\n- **No revocation.** Logout or a compromised account cannot invalidate a token, which makes a short `maxAge` (item 2) more important.\n\nI have not changed any files. I can apply the fixes for items 1–4 and the header parsing if you want; it is roughly a 15-line change to `auth.js`."
+              },
+              {
+                "name": "no-swarm-spawn",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 6,
+            "costUsd": 0.10433400000000001,
+            "judgeCostUsd": 0.013235999999999998,
+            "durationSeconds": 44,
+            "startedAt": "2026-11-11T09:19:25.484Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-dse73y/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "hands-off-to-security-review",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "`/security-review` is the right tool for a security-only ask, not a review swarm, so I ran that instead. It failed because this repo has no `origin/HEAD` to diff against, so what follows is my own single-pass read of `src/middleware/auth.js`, with no reviewers spawned.\n\n**Verdict:** I found no unconditional bypass, but there is one conditional full bypass and several gaps to close before committing. `jsonwebtoken` isn't installed and there is no `package.json`, so the library behaviour below is from my knowledge of it, not from running it here.\n\n## Findings, worst first\n\n1. **Unset or empty `JWT_SECRET` can become a full auth bypass** (`auth.js:6`)\n   - Nothing checks that the secret exists. On `jsonwebtoken` ≤ 8.5.1, a falsy secret with no `algorithms` option makes verification accept unsigned `alg: none` tokens (CVE-2022-23540), so anyone can forge any `req.user`.\n   - On v9 it throws instead, which fails closed. Nothing pins the version, so which case you get depends on what gets installed.\n   - Fix: refuse to start if `JWT_SECRET` is missing, and declare `jsonwebtoken@^9`.\n\n2. **No algorithm allowlist** (`auth.js:6`)\n   - `jwt.verify(token, secret)` relies on library defaults.\n   - Fix: pass `{ algorithms: ['HS256'] }`. This also closes finding 1 on old versions, and guards against key-confusion if you later move to RS256.\n\n3. **Expiry and audience are not enforced** (`auth.js:6`)\n   - `exp` is only checked if the token has one, so a token minted without it is valid forever. There is no revocation path either.\n   - `iss` and `aud` are not checked, so if the secret is shared with another service or environment, its tokens work here too.\n   - Fix: pass `issuer`, `audience` and `maxAge` to `verify`.\n\n4. **Verification errors are unhandled** (`auth.js:6`)\n   - `jwt.verify` throws on a missing, malformed or expired token. This fails closed, but Express's default handler returns a 500, and includes a stack trace with file paths unless `NODE_ENV=production`.\n   - Fix: catch the error and return a generic 401.\n\n5. **Loose header parsing** (`auth.js:5`)\n   - `header.replace('Bearer ', '')` doesn't require the Bearer scheme; it strips the first occurrence anywhere in the header. I don't see an exploit on its own since the signature check still gates it.\n   - Fix: match strictly with `/^Bearer (.+)$/` and reject anything else.\n\n6. **The middleware protects nothing yet** (`src/app.js`)\n   - `requireAuth` is never mounted and there are no routes. When you add routes, apply it by default at the router level so a new route can't be left unprotected by omission.\n\nI couldn't see the secret's value. For HS256 it needs to be at least 32 random bytes, since a weak secret can be brute-forced offline from any captured token.\n\n## Suggested shape\n\nI have not applied this; the issuer and audience values are placeholders.\n\n```js\nconst jwt = require('jsonwebtoken');\n\nconst secret = process.env.JWT_SECRET;\nif (!secret) throw new Error('JWT_SECRET is not set');\n\nfunction requireAuth(req, res, next) {\n  const match = /^Bearer (.+)$/.exec(req.headers['authorization'] || '');\n  if (!match) return res.status(401).json({ error: 'unauthorized' });\n  try {\n    req.user = jwt.verify(match[1], secret, {\n      algorithms: ['HS256'],\n      issuer: 'your-issuer',\n      audience: 'your-api',\n      maxAge: '1h',\n    });\n  } catch (err) {\n    return res.status(401).json({ error: 'unauthorized' });\n  }\n  next();\n}\n\nmodule.exports = { requireAuth };\n```\n\nWant me to apply this and add a `package.json` pinning `jsonwebtoken@^9`? Once the repo has a remote, `/security-review` will run properly against the diff."
+              },
+              {
+                "name": "no-swarm-spawn",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 1,
+        "passRate": 1
+      }
+    },
+    {
+      "name": "trivial-diff-declines",
+      "dir": "evals-ci/review-swarm/trivial-diff-declines",
+      "source": "mixed",
+      "promptMarkdown": "I renamed `userId` to `accountId` across `src/users.js`, `src/orders.js`, and `src/session.js` in our Node API, and fixed a typo in a comment while I was in there (`recieve` -> `receive`). Nothing's committed yet. Can you run review-swarm on this before I open the PR?",
+      "runsPerCase": 3,
+      "timeoutSeconds": 900,
+      "maxTurns": 40,
+      "graders": [
+        {
+          "name": "agent-spawn-limit",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "min": 0,
+            "max": 2
+          }
+        },
+        {
+          "name": "declines-with-alternative",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the response treats this diff (a variable rename plus a comment typo fix across three files) as too small for the six-specialist swarm, does not run that swarm, and either gives a single-pass review itself or points to one (a single read or `/code-review`) as the next step.\n\nFAIL if it runs the six-lens swarm on this diff, or declines without reviewing the diff and without offering any way to review it.",
+          "config": {
+            "criteria": "PASS if the response treats this diff (a variable rename plus a comment typo fix across three files) as too small for the six-specialist swarm, does not run that swarm, and either gives a single-pass review itself or points to one (a single read or `/code-review`) as the next step.\n\nFAIL if it runs the six-lens swarm on this diff, or declines without reviewing the diff and without offering any way to review it.",
+            "focus": "last_message"
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 3,
+            "costUsd": 0.0759744,
+            "judgeCostUsd": 0.014658000000000004,
+            "durationSeconds": 19,
+            "startedAt": "2026-11-11T09:19:51.121Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-c1Tghl/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "agent-spawn-limit",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..2)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "declines-with-alternative",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I didn't run review-swarm: this diff is a pure rename plus a comment typo, which the skill itself excludes, so I did a single-pass read instead and found nothing blocking.\n\n- **The rename is complete and consistent.** No `userId` remains anywhere in the repo, and each function's parameter and its one use were renamed together.\n- **No callers break.** All three parameters are positional (`getOrders`, `loadSession`, `getUser`), so the change is invisible outside each function and the exports are unchanged.\n- **The queries are unchanged in behaviour.** They are still parameterized, with only the bound variable's name differing.\n- **The typo fix is fine** (`src/users.js:2`).\n\nTwo things to decide before the PR:\n\n- **Naming mismatch:** `src/orders.js:2` now binds `accountId` to the `user_id` column, and `getUser(accountId)` queries `users.id`. Leaving the column alone is correct for a code-only rename, but say in the PR description whether a schema rename is planned.\n- **Staging:** there are untracked dotfiles in the working tree (`.bashrc`, `.gitconfig`, `.mcp.json`, `.idea`, `.vscode` and others). Stage with `git add src/` rather than `git add -A` so they stay out of the commit.\n\nI ran no tests; the repo has no test files."
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 3,
+            "costUsd": 0.06792260000000003,
+            "judgeCostUsd": 0.004608000000000029,
+            "durationSeconds": 20,
+            "startedAt": "2026-11-11T09:20:09.342Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-wQx8jY/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "agent-spawn-limit",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..2)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "declines-with-alternative",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I didn't run the swarm: review-swarm excludes trivial diffs like renames, and this is a 7-line mechanical rename plus a comment fix, so I did a single-pass read instead. The diff is clean and nothing blocks the PR.\n\n- **Rename is complete:** no `userId` remains anywhere in the repo, and each renamed parameter is updated at its one use site.\n- **Callers are unaffected:** all three are positional function parameters, and the exported names (`getUser`, `getOrders`, `loadSession`) are unchanged.\n- **SQL is untouched:** the queries are still parameterized, and the `recieve` -> `receive` fix is comment-only.\n\nTwo naming nits, neither a bug:\n\n- **`src/orders.js:2`:** `accountId` is now bound to the `user_id` column. Leaving the column alone is right for a code-only rename, but the mismatch is worth a line in the PR description so reviewers know it's deliberate.\n- **`src/users.js:1`:** `getUser(accountId)` querying `users.id` reads a bit oddly. If accounts and users are the same entity, that's fine. If they are distinct, this rename would mislabel what the function takes.\n\nWhen you commit, stage only the three `src/` files. The working tree has untracked dotfiles (`.bashrc`, `.gitconfig`, `.mcp.json`, `.idea`, `.vscode` and others) that `git add -A` would sweep in. You're also on `master` while the PR base is `main`, so branch first."
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 1,
+        "passRate": 1
+      }
+    },
+    {
+      "name": "dirty-and-behind",
+      "dir": "evals-ci/up-to-date/dirty-and-behind",
+      "source": "mixed",
+      "promptMarkdown": "Picking back up on the TenderTrack backend — I want to add pagination to the\ntenders list endpoint. Heads up, I was messing with the API client yesterday\nand never committed it, it's just sitting there in the working tree.",
+      "runsPerCase": 3,
+      "timeoutSeconds": 300,
+      "maxTurns": 15,
+      "graders": [
+        {
+          "name": "leaves-decision-to-user",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final message leaves pulling or stashing to the user: it reports that nothing was pulled or changed, and any pull, stash or rebase appears only as a recommendation for the user to confirm.\n\nFAIL if it says it already pulled, stashed, rebased or merged, or presents one of those as done.",
+          "config": {
+            "criteria": "PASS if the final message leaves pulling or stashing to the user: it reports that nothing was pulled or changed, and any pull, stash or rebase appears only as a recommendation for the user to confirm.\n\nFAIL if it says it already pulled, stashed, rebased or merged, or presents one of those as done.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "no-pull-run",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Bash",
+            "input_match": "git\\s+(pull|rebase|merge|checkout|reset|stash(?!\\s+list))\\b",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "no-subagents",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "reports-behind",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final message says the branch is behind its upstream (origin/main) by commits.\n\nFAIL if it calls the branch up to date or in sync, or does not mention that it is behind.",
+          "config": {
+            "criteria": "PASS if the final message says the branch is behind its upstream (origin/main) by commits.\n\nFAIL if it calls the branch up to date or in sync, or does not mention that it is behind.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "reports-dirty",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final message says the working tree has uncommitted changes (the edit in src/api_client.py).\n\nFAIL if it calls the tree clean or does not mention the uncommitted change.",
+          "config": {
+            "criteria": "PASS if the final message says the working tree has uncommitted changes (the edit in src/api_client.py).\n\nFAIL if it calls the tree clean or does not mention the uncommitted change.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "skill-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?up-to-date\""
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 5,
+            "costUsd": 0.09883020000000002,
+            "judgeCostUsd": 0.016266000000000003,
+            "durationSeconds": 33,
+            "startedAt": "2026-11-11T09:20:10.044Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-C9v1b0/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "leaves-decision-to-user",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "**Up-to-date brief: TenderTrack (`main`)**\n\n- **Branch:** `main` is 2 commits behind `origin/main`, 0 ahead, and the tree is dirty (your uncommitted `src/api_client.py`).\n- **New upstream commits (both dated 2026-11-11, author \"fixture\"):**\n  - `66262e5` \"add fetch_tender\" adds `fetch_tender(tender_id)` to `src/api_client.py`.\n  - `117e56d` \"add pagination helper\" adds `src/pagination.py` with `paginate(items, page, size)`.\n- **Open PRs/issues:** not checked, because `gh` isn't authenticated here.\n- **Warnings:**\n  - Upstream already has a pagination helper. If I build pagination on your current tree, I'd duplicate it.\n  - Your uncommitted change is a single line, `# TODO: wire up new pagination params`, appended after `fetch_tenders()`. Upstream's `fetch_tender` lands in the same spot, so syncing will produce a small conflict there. The resolution is to keep both.\n\nI haven't pulled or changed anything, since the tree is dirty.\n\n**Recommended first action:** let me stash your change, run `git pull --ff-only`, pop the stash and resolve the conflict by keeping both your TODO and upstream's `fetch_tender`. Then I'd build the pagination on top of upstream's `paginate()`.\n\nWant me to go ahead with that, or would you rather commit your work in progress first, or sync it yourself?\n\nThe repo currently has only `fetch_tenders()` returning `[]` — there is no actual list endpoint or route yet. Once we're synced, I'd add `page`/`size` params to `fetch_tenders()` using `paginate()`, unless the endpoint you mean lives somewhere else."
+              },
+              {
+                "name": "no-pull-run",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Bash called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "reports-behind",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "**Up-to-date brief: TenderTrack (`main`)**\n\n- **Branch:** `main` is 2 commits behind `origin/main`, 0 ahead, and the tree is dirty (your uncommitted `src/api_client.py`).\n- **New upstream commits (both dated 2026-11-11, author \"fixture\"):**\n  - `66262e5` \"add fetch_tender\" adds `fetch_tender(tender_id)` to `src/api_client.py`.\n  - `117e56d` \"add pagination helper\" adds `src/pagination.py` with `paginate(items, page, size)`.\n- **Open PRs/issues:** not checked, because `gh` isn't authenticated here.\n- **Warnings:**\n  - Upstream already has a pagination helper. If I build pagination on your current tree, I'd duplicate it.\n  - Your uncommitted change is a single line, `# TODO: wire up new pagination params`, appended after `fetch_tenders()`. Upstream's `fetch_tender` lands in the same spot, so syncing will produce a small conflict there. The resolution is to keep both.\n\nI haven't pulled or changed anything, since the tree is dirty.\n\n**Recommended first action:** let me stash your change, run `git pull --ff-only`, pop the stash and resolve the conflict by keeping both your TODO and upstream's `fetch_tender`. Then I'd build the pagination on top of upstream's `paginate()`.\n\nWant me to go ahead with that, or would you rather commit your work in progress first, or sync it yourself?\n\nThe repo currently has only `fetch_tenders()` returning `[]` — there is no actual list endpoint or route yet. Once we're synced, I'd add `page`/`size` params to `fetch_tenders()` using `paginate()`, unless the endpoint you mean lives somewhere else."
+              },
+              {
+                "name": "reports-dirty",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "**Up-to-date brief: TenderTrack (`main`)**\n\n- **Branch:** `main` is 2 commits behind `origin/main`, 0 ahead, and the tree is dirty (your uncommitted `src/api_client.py`).\n- **New upstream commits (both dated 2026-11-11, author \"fixture\"):**\n  - `66262e5` \"add fetch_tender\" adds `fetch_tender(tender_id)` to `src/api_client.py`.\n  - `117e56d` \"add pagination helper\" adds `src/pagination.py` with `paginate(items, page, size)`.\n- **Open PRs/issues:** not checked, because `gh` isn't authenticated here.\n- **Warnings:**\n  - Upstream already has a pagination helper. If I build pagination on your current tree, I'd duplicate it.\n  - Your uncommitted change is a single line, `# TODO: wire up new pagination params`, appended after `fetch_tenders()`. Upstream's `fetch_tender` lands in the same spot, so syncing will produce a small conflict there. The resolution is to keep both.\n\nI haven't pulled or changed anything, since the tree is dirty.\n\n**Recommended first action:** let me stash your change, run `git pull --ff-only`, pop the stash and resolve the conflict by keeping both your TODO and upstream's `fetch_tender`. Then I'd build the pagination on top of upstream's `paginate()`.\n\nWant me to go ahead with that, or would you rather commit your work in progress first, or sync it yourself?\n\nThe repo currently has only `fetch_tenders()` returning `[]` — there is no actual list endpoint or route yet. Once we're synced, I'd add `page`/`size` params to `fetch_tenders()` using `paginate()`, unless the endpoint you mean lives somewhere else."
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 1x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 5,
+            "costUsd": 0.09734549999999995,
+            "judgeCostUsd": 0.015575999999999951,
+            "durationSeconds": 45,
+            "startedAt": "2026-11-11T09:20:29.688Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-SBaINE/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "leaves-decision-to-user",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I ran up-to-date before touching anything and stopped before writing code: `origin/main` already has a pagination helper, and it lands on the same file as your uncommitted change.\n\n## Brief\n\n- **Branch:** `main` is 2 behind and 0 ahead of `origin/main`, with a dirty tree (`src/api_client.py` modified, no stashes).\n- **Incoming commits (both dated 2026-11-11, author `fixture`):**\n  - `1887160 add fetch_tender` appends `fetch_tender(tender_id)` to `src/api_client.py`.\n  - `d22a0bd add pagination helper` adds `src/pagination.py` with `paginate(items, page, size)`, a 1-indexed slice.\n- **Your uncommitted change:** one line at the end of `src/api_client.py`, `# TODO: wire up new pagination params`.\n- **Open PRs/issues:** not checked, because `gh` is unauthenticated and `origin` is a local path.\n- **Warning:** the incoming `fetch_tender` and your TODO both append right after `fetch_tenders()`, so git will refuse a plain pull while the file is dirty. Expect a small conflict in that spot when the two are combined.\n\n## Recommended first action\n\nSync before building, so pagination uses the upstream `paginate` helper instead of a duplicate written on the stale tree. Since your local change is only the TODO comment, I'd do this:\n\n1. `git stash`\n2. `git pull --ff-only`\n3. `git stash pop`, resolving the conflict by keeping both `fetch_tender` and your TODO\n4. Add `page`/`size` params to `fetch_tenders()` using `paginate`\n\nI haven't changed anything. Want me to go ahead with that, or would you rather commit the TODO as a WIP commit and rebase instead?"
+              },
+              {
+                "name": "no-pull-run",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Bash called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "reports-behind",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  false
+                ],
+                "evidence": "I ran up-to-date before touching anything and stopped before writing code: `origin/main` already has a pagination helper, and it lands on the same file as your uncommitted change.\n\n## Brief\n\n- **Branch:** `main` is 2 behind and 0 ahead of `origin/main`, with a dirty tree (`src/api_client.py` modified, no stashes).\n- **Incoming commits (both dated 2026-11-11, author `fixture`):**\n  - `1887160 add fetch_tender` appends `fetch_tender(tender_id)` to `src/api_client.py`.\n  - `d22a0bd add pagination helper` adds `src/pagination.py` with `paginate(items, page, size)`, a 1-indexed slice.\n- **Your uncommitted change:** one line at the end of `src/api_client.py`, `# TODO: wire up new pagination params`.\n- **Open PRs/issues:** not checked, because `gh` is unauthenticated and `origin` is a local path.\n- **Warning:** the incoming `fetch_tender` and your TODO both append right after `fetch_tenders()`, so git will refuse a plain pull while the file is dirty. Expect a small conflict in that spot when the two are combined.\n\n## Recommended first action\n\nSync before building, so pagination uses the upstream `paginate` helper instead of a duplicate written on the stale tree. Since your local change is only the TODO comment, I'd do this:\n\n1. `git stash`\n2. `git pull --ff-only`\n3. `git stash pop`, resolving the conflict by keeping both `fetch_tender` and your TODO\n4. Add `page`/`size` params to `fetch_tenders()` using `paginate`\n\nI haven't changed anything. Want me to go ahead with that, or would you rather commit the TODO as a WIP commit and rebase instead?"
+              },
+              {
+                "name": "reports-dirty",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I ran up-to-date before touching anything and stopped before writing code: `origin/main` already has a pagination helper, and it lands on the same file as your uncommitted change.\n\n## Brief\n\n- **Branch:** `main` is 2 behind and 0 ahead of `origin/main`, with a dirty tree (`src/api_client.py` modified, no stashes).\n- **Incoming commits (both dated 2026-11-11, author `fixture`):**\n  - `1887160 add fetch_tender` appends `fetch_tender(tender_id)` to `src/api_client.py`.\n  - `d22a0bd add pagination helper` adds `src/pagination.py` with `paginate(items, page, size)`, a 1-indexed slice.\n- **Your uncommitted change:** one line at the end of `src/api_client.py`, `# TODO: wire up new pagination params`.\n- **Open PRs/issues:** not checked, because `gh` is unauthenticated and `origin` is a local path.\n- **Warning:** the incoming `fetch_tender` and your TODO both append right after `fetch_tenders()`, so git will refuse a plain pull while the file is dirty. Expect a small conflict in that spot when the two are combined.\n\n## Recommended first action\n\nSync before building, so pagination uses the upstream `paginate` helper instead of a duplicate written on the stale tree. Since your local change is only the TODO comment, I'd do this:\n\n1. `git stash`\n2. `git pull --ff-only`\n3. `git stash pop`, resolving the conflict by keeping both `fetch_tender` and your TODO\n4. Add `page`/`size` params to `fetch_tenders()` using `paginate`\n\nI haven't changed anything. Want me to go ahead with that, or would you rather commit the TODO as a WIP commit and rebase instead?"
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 1x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 1,
+        "passRate": 1
+      }
+    },
+    {
+      "name": "fresh-branch-no-upstream",
+      "dir": "evals-ci/up-to-date/fresh-branch-no-upstream",
+      "source": "mixed",
+      "promptMarkdown": "Let's keep going on the ShiftManager payment work -- I branched off\nyesterday for the retry-backoff logic on flaky card charges but haven't\npushed it up yet. Pick up where I left off.",
+      "runsPerCase": 3,
+      "timeoutSeconds": 300,
+      "maxTurns": 15,
+      "graders": [
+        {
+          "name": "falls-back-to-default-branch",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final message compares the branch against origin's default branch (origin/main) and says that is what it compared against.\n\nFAIL if it gives no comparison at all, or gives ahead/behind numbers without saying what they are relative to.",
+          "config": {
+            "criteria": "PASS if the final message compares the branch against origin's default branch (origin/main) and says that is what it compared against.\n\nFAIL if it gives no comparison at all, or gives ahead/behind numbers without saying what they are relative to.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "no-in-sync-claim",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final message never calls the branch in sync or up to date.\n\nFAIL if it calls the branch in sync, up to date, or current with its remote.",
+          "config": {
+            "criteria": "PASS if the final message never calls the branch in sync or up to date.\n\nFAIL if it calls the branch in sync, up to date, or current with its remote.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "no-subagents",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "says-no-upstream",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final message notes that the branch has no upstream, has no tracking branch, or is unpushed / local-only (any of those phrasings counts).\n\nFAIL if it does not mention that the branch is unpushed / has no upstream, or implies the branch has its own upstream tracking branch that it was compared against.",
+          "config": {
+            "criteria": "PASS if the final message notes that the branch has no upstream, has no tracking branch, or is unpushed / local-only (any of those phrasings counts).\n\nFAIL if it does not mention that the branch is unpushed / has no upstream, or implies the branch has its own upstream tracking branch that it was compared against.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "skill-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?up-to-date\""
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 9,
+            "costUsd": 0.15201720000000005,
+            "judgeCostUsd": 0.01771800000000004,
+            "durationSeconds": 67,
+            "startedAt": "2026-11-11T09:20:43.000Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-3RYupR/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "falls-back-to-default-branch",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "**Repo state:** `feature/payment-retry` has no upstream (never pushed) and has diverged from `origin/main`: 1 commit ahead, 1 behind.\n\n- **Ahead:** your `3109a76 start retry-backoff logic`, which added the `retry_with_backoff` stub in `src/retry.py`.\n- **Behind:** `2bb4b57 add refund handling`, which landed on `origin/main` after you branched and adds `refund()` to `src/payments.py`.\n- **PRs/issues:** not checked, because `gh` isn't authenticated here.\n- **Working tree:** only my uncommitted change to `src/retry.py`. The untracked dotfiles `git status` lists are sandbox placeholders, not your files.\n\n**What I did:** I filled in the stub in `src/retry.py`; it is uncommitted and nothing is pushed. `retry_with_backoff` now:\n\n- makes up to 4 attempts;\n- waits a random time between attempts, up to a cap that doubles from 0.5s and tops out at 8s;\n- retries only `ConnectionError` and `TimeoutError` by default (override with `retry_on`), so anything else, such as a card decline, fails immediately;\n- re-raises the last error once attempts run out.\n\nA throwaway check script passed for first-try success, recovery after transient failures, giving up after the last attempt, non-retryable errors and the delay cap. I did not add a test file to the repo, since it has no test setup yet.\n\n**Not done:** `charge()` doesn't use the retry helper yet. That edit is in `src/payments.py`, right next to the lines `main` just changed, so I stopped before touching it.\n\n**Questions for you:**\n1. Should I rebase the branch onto `origin/main` before wiring retry into `charge()`? I recommend it: the branch is unpushed and the two commits touch different files, so the rebase is safe and should apply cleanly. I'd need to commit or stash the `retry.py` change first.\n2. How does a flaky charge fail in the real gateway — an exception (which type?) or a `False` return? The stub `charge()` just returns `True`, so the default retryable errors are my guess.\n3. Does the gateway support idempotency keys? Retrying a charge that timed out after the gateway accepted it can double-charge the card unless each retry carries the same key."
+              },
+              {
+                "name": "no-in-sync-claim",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "**Repo state:** `feature/payment-retry` has no upstream (never pushed) and has diverged from `origin/main`: 1 commit ahead, 1 behind.\n\n- **Ahead:** your `3109a76 start retry-backoff logic`, which added the `retry_with_backoff` stub in `src/retry.py`.\n- **Behind:** `2bb4b57 add refund handling`, which landed on `origin/main` after you branched and adds `refund()` to `src/payments.py`.\n- **PRs/issues:** not checked, because `gh` isn't authenticated here.\n- **Working tree:** only my uncommitted change to `src/retry.py`. The untracked dotfiles `git status` lists are sandbox placeholders, not your files.\n\n**What I did:** I filled in the stub in `src/retry.py`; it is uncommitted and nothing is pushed. `retry_with_backoff` now:\n\n- makes up to 4 attempts;\n- waits a random time between attempts, up to a cap that doubles from 0.5s and tops out at 8s;\n- retries only `ConnectionError` and `TimeoutError` by default (override with `retry_on`), so anything else, such as a card decline, fails immediately;\n- re-raises the last error once attempts run out.\n\nA throwaway check script passed for first-try success, recovery after transient failures, giving up after the last attempt, non-retryable errors and the delay cap. I did not add a test file to the repo, since it has no test setup yet.\n\n**Not done:** `charge()` doesn't use the retry helper yet. That edit is in `src/payments.py`, right next to the lines `main` just changed, so I stopped before touching it.\n\n**Questions for you:**\n1. Should I rebase the branch onto `origin/main` before wiring retry into `charge()`? I recommend it: the branch is unpushed and the two commits touch different files, so the rebase is safe and should apply cleanly. I'd need to commit or stash the `retry.py` change first.\n2. How does a flaky charge fail in the real gateway — an exception (which type?) or a `False` return? The stub `charge()` just returns `True`, so the default retryable errors are my guess.\n3. Does the gateway support idempotency keys? Retrying a charge that timed out after the gateway accepted it can double-charge the card unless each retry carries the same key."
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "says-no-upstream",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "**Repo state:** `feature/payment-retry` has no upstream (never pushed) and has diverged from `origin/main`: 1 commit ahead, 1 behind.\n\n- **Ahead:** your `3109a76 start retry-backoff logic`, which added the `retry_with_backoff` stub in `src/retry.py`.\n- **Behind:** `2bb4b57 add refund handling`, which landed on `origin/main` after you branched and adds `refund()` to `src/payments.py`.\n- **PRs/issues:** not checked, because `gh` isn't authenticated here.\n- **Working tree:** only my uncommitted change to `src/retry.py`. The untracked dotfiles `git status` lists are sandbox placeholders, not your files.\n\n**What I did:** I filled in the stub in `src/retry.py`; it is uncommitted and nothing is pushed. `retry_with_backoff` now:\n\n- makes up to 4 attempts;\n- waits a random time between attempts, up to a cap that doubles from 0.5s and tops out at 8s;\n- retries only `ConnectionError` and `TimeoutError` by default (override with `retry_on`), so anything else, such as a card decline, fails immediately;\n- re-raises the last error once attempts run out.\n\nA throwaway check script passed for first-try success, recovery after transient failures, giving up after the last attempt, non-retryable errors and the delay cap. I did not add a test file to the repo, since it has no test setup yet.\n\n**Not done:** `charge()` doesn't use the retry helper yet. That edit is in `src/payments.py`, right next to the lines `main` just changed, so I stopped before touching it.\n\n**Questions for you:**\n1. Should I rebase the branch onto `origin/main` before wiring retry into `charge()`? I recommend it: the branch is unpushed and the two commits touch different files, so the rebase is safe and should apply cleanly. I'd need to commit or stash the `retry.py` change first.\n2. How does a flaky charge fail in the real gateway — an exception (which type?) or a `False` return? The stub `charge()` just returns `True`, so the default retryable errors are my guess.\n3. Does the gateway support idempotency keys? Retrying a charge that timed out after the gateway accepted it can double-charge the card unless each retry carries the same key."
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 1x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 8,
+            "costUsd": 0.14201550000000002,
+            "judgeCostUsd": 0.01701600000000003,
+            "durationSeconds": 55,
+            "startedAt": "2026-11-11T09:21:14.698Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-6OLuFk/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "falls-back-to-default-branch",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "**Repo brief**\n\n- **Branch:** `feature/payment-retry` has no upstream (never pushed). Against `origin/main` it is 1 ahead and 1 behind, so it has diverged.\n- **Recent commits:** yours is `d38e3d6 start retry-backoff logic`, which added the `src/retry.py` stub. `origin/main` gained `830631e add refund handling`, which adds `refund()` to `src/payments.py`.\n- **Open PRs/issues:** not checked, because `gh` isn't authenticated here.\n- **Warnings:** the two sides touch different files, so a rebase onto `origin/main` should be clean. I haven't rebased, merged or pushed anything.\n\n**What I did**\n\nYour stub in `src/retry.py` was a pass-through (`return fn()`), so I filled in the actual backoff:\n\n- **Retries:** `retry_with_backoff(fn)` makes up to 3 attempts by default and re-raises the last error once they run out.\n- **Delays:** exponential with full jitter, starting from a 0.5s base and capped at 8s.\n- **What gets retried:** only a new `TransientError` class by default (overridable via `retry_on`). Anything else, such as a hard decline, propagates immediately.\n- **Guard:** `max_attempts < 1` raises `ValueError`.\n\nI ran ad-hoc checks covering first-try success, recovery on the third attempt, exhaustion, non-retryable errors, the delay cap and the guard; all passed. The repo has no test suite, so none of that is committed as tests. The change itself is uncommitted in your working tree.\n\n**Not done yet**\n\n- **`charge()` doesn't use the retry.** It is still a stub returning `True`, with nothing that can fail. I left `payments.py` alone because main just changed it.\n- **Double-charge risk:** a timeout can mean the charge actually went through, so retrying needs an idempotency key on the charge call. That belongs in the wiring step.\n\n**Next step — your call**\n\nI recommend rebasing onto `origin/main` before the wiring, so the `payments.py` edit lands on top of the refund change. Say the word and I'll rebase, then wire `charge()` through the retry."
+              },
+              {
+                "name": "no-in-sync-claim",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "**Repo brief**\n\n- **Branch:** `feature/payment-retry` has no upstream (never pushed). Against `origin/main` it is 1 ahead and 1 behind, so it has diverged.\n- **Recent commits:** yours is `d38e3d6 start retry-backoff logic`, which added the `src/retry.py` stub. `origin/main` gained `830631e add refund handling`, which adds `refund()` to `src/payments.py`.\n- **Open PRs/issues:** not checked, because `gh` isn't authenticated here.\n- **Warnings:** the two sides touch different files, so a rebase onto `origin/main` should be clean. I haven't rebased, merged or pushed anything.\n\n**What I did**\n\nYour stub in `src/retry.py` was a pass-through (`return fn()`), so I filled in the actual backoff:\n\n- **Retries:** `retry_with_backoff(fn)` makes up to 3 attempts by default and re-raises the last error once they run out.\n- **Delays:** exponential with full jitter, starting from a 0.5s base and capped at 8s.\n- **What gets retried:** only a new `TransientError` class by default (overridable via `retry_on`). Anything else, such as a hard decline, propagates immediately.\n- **Guard:** `max_attempts < 1` raises `ValueError`.\n\nI ran ad-hoc checks covering first-try success, recovery on the third attempt, exhaustion, non-retryable errors, the delay cap and the guard; all passed. The repo has no test suite, so none of that is committed as tests. The change itself is uncommitted in your working tree.\n\n**Not done yet**\n\n- **`charge()` doesn't use the retry.** It is still a stub returning `True`, with nothing that can fail. I left `payments.py` alone because main just changed it.\n- **Double-charge risk:** a timeout can mean the charge actually went through, so retrying needs an idempotency key on the charge call. That belongs in the wiring step.\n\n**Next step — your call**\n\nI recommend rebasing onto `origin/main` before the wiring, so the `payments.py` edit lands on top of the refund change. Say the word and I'll rebase, then wire `charge()` through the retry."
+              },
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "says-no-upstream",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "**Repo brief**\n\n- **Branch:** `feature/payment-retry` has no upstream (never pushed). Against `origin/main` it is 1 ahead and 1 behind, so it has diverged.\n- **Recent commits:** yours is `d38e3d6 start retry-backoff logic`, which added the `src/retry.py` stub. `origin/main` gained `830631e add refund handling`, which adds `refund()` to `src/payments.py`.\n- **Open PRs/issues:** not checked, because `gh` isn't authenticated here.\n- **Warnings:** the two sides touch different files, so a rebase onto `origin/main` should be clean. I haven't rebased, merged or pushed anything.\n\n**What I did**\n\nYour stub in `src/retry.py` was a pass-through (`return fn()`), so I filled in the actual backoff:\n\n- **Retries:** `retry_with_backoff(fn)` makes up to 3 attempts by default and re-raises the last error once they run out.\n- **Delays:** exponential with full jitter, starting from a 0.5s base and capped at 8s.\n- **What gets retried:** only a new `TransientError` class by default (overridable via `retry_on`). Anything else, such as a hard decline, propagates immediately.\n- **Guard:** `max_attempts < 1` raises `ValueError`.\n\nI ran ad-hoc checks covering first-try success, recovery on the third attempt, exhaustion, non-retryable errors, the delay cap and the guard; all passed. The repo has no test suite, so none of that is committed as tests. The change itself is uncommitted in your working tree.\n\n**Not done yet**\n\n- **`charge()` doesn't use the retry.** It is still a stub returning `True`, with nothing that can fail. I left `payments.py` alone because main just changed it.\n- **Double-charge risk:** a timeout can mean the charge actually went through, so retrying needs an idempotency key on the charge call. That belongs in the wiring step.\n\n**Next step — your call**\n\nI recommend rebasing onto `origin/main` before the wiring, so the `payments.py` edit lands on top of the refund change. Say the word and I'll rebase, then wire `charge()` through the retry."
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 1x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 1,
+        "passRate": 1
+      }
+    },
+    {
+      "name": "no-remote-boundary",
+      "dir": "evals-ci/up-to-date/no-remote-boundary",
+      "source": "mixed",
+      "promptMarkdown": "No remote here, just a personal script I've been hacking on in\n~/scratch/csv-tools -- let's add a function that converts a CSV file to\nJSON.",
+      "runsPerCase": 3,
+      "timeoutSeconds": 300,
+      "maxTurns": 15,
+      "graders": [
+        {
+          "name": "no-subagents",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "result",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final message:\n1. Does not produce a sync brief. At most one line acknowledging that there\n   is nothing to sync; saying so is optional, because the user already stated\n   there is no remote.\n2. Makes no claims about ahead/behind counts, open PRs, or issues (none of\n   that applies without a remote), and does not attempt or narrate running a\n   fetch or divergence check against a remote that does not exist.\n3. Moves directly into the CSV-to-JSON task -- either starting on it, or\n   asking a normal clarifying question about it -- rather than dead-ending.\n\nFAIL if any of the following: it produces a sync brief (fetch, ahead/behind,\nPRs/issues) anyway; it blocks or stalls trying to reach a nonexistent remote;\nit fabricates or guesses at remote-relative state; or it stops after noting\nthere is no remote with no next step toward the requested task.",
+          "config": {
+            "criteria": "PASS if the final message:\n1. Does not produce a sync brief. At most one line acknowledging that there\n   is nothing to sync; saying so is optional, because the user already stated\n   there is no remote.\n2. Makes no claims about ahead/behind counts, open PRs, or issues (none of\n   that applies without a remote), and does not attempt or narrate running a\n   fetch or divergence check against a remote that does not exist.\n3. Moves directly into the CSV-to-JSON task -- either starting on it, or\n   asking a normal clarifying question about it -- rather than dead-ending.\n\nFAIL if any of the following: it produces a sync brief (fetch, ahead/behind,\nPRs/issues) anyway; it blocks or stalls trying to reach a nonexistent remote;\nit fabricates or guesses at remote-relative state; or it stops after noting\nthere is no remote with no next step toward the requested task.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "skill-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?up-to-date\"",
+            "min": 0
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 6,
+            "costUsd": 0.10275249999999994,
+            "judgeCostUsd": 0.005105999999999944,
+            "durationSeconds": 31,
+            "startedAt": "2026-11-11T09:21:50.438Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-MoLjnf/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "result",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I added `csv_to_json` in a new file, `csv_tools.py`, but two things didn't match what you described:\n\n- **Location:** `~/scratch/csv-tools` doesn't exist on this machine. The current directory is a repo whose README says `# csv-tools`, so I worked here.\n- **No existing script:** the repo held only `README.md`, so I picked Python and started the file from scratch. If your script lives elsewhere or is in another language, point me at it and I'll move the function there.\n\nWhat it does:\n\n- **As a function:** `csv_to_json(csv_path, json_path=None, indent=2)` turns each row into an object keyed by the header row. It returns the JSON string, or writes to `json_path` if you give one.\n- **From the command line:** `python3 csv_tools.py input.csv [output.json]` prints to stdout when no output file is given.\n- **Values stay strings:** `\"42\"` is not converted to `42`; say so if you want numbers and booleans inferred.\n\nI ran it on a sample file with a BOM, embedded quotes and commas, a multi-line field and non-ASCII characters, and all came through correctly. Ragged rows (more or fewer fields than the header) were not tested.\n\nNothing is committed; `csv_tools.py` is untracked."
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 0..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 5,
+            "costUsd": 0.09970390000000001,
+            "judgeCostUsd": 0.0050100000000000144,
+            "durationSeconds": 39,
+            "startedAt": "2026-11-11T09:22:10.062Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-ocQjtQ/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-subagents",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "result",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I added `csv_to_json` in a new `csv_tools.py`. Two things differed from what you described:\n\n- **Location:** `~/scratch/csv-tools` doesn't exist on this machine. The current directory is a `csv-tools` repo, so I worked here.\n- **Language:** the repo held only a README and no script, so I picked Python, standard library only. Say so if your script is in another language or lives elsewhere.\n\nThe function turns each CSV row into a JSON object keyed by the header row and returns the JSON string. Pass a second path and it also writes the file:\n\n```python\ncsv_to_json(\"data.csv\")               # returns the JSON string\ncsv_to_json(\"data.csv\", \"data.json\")  # also writes the file\n```\n\nIt also runs from the command line: `python3 csv_tools.py input.csv [output.json]`, printing to stdout when no output file is given.\n\nI ran it on a sample file with quoted commas, an embedded newline, non-ASCII text and an Excel-style BOM; all came through correctly.\n\nAll values stay strings (`\"36\"`, not `36`), because CSV carries no types. Converting numbers and booleans is a small addition if you want it.\n\nNothing is committed; `csv_tools.py` is untracked."
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 0..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 1,
+        "passRate": 1
+      }
+    }
+  ],
+  "aggregates": {
+    "casesTotal": 9,
+    "casesPassed": 9,
+    "overallScore": 0.9907407407407409,
+    "overallPassRate": 0.9444444444444444
+  }
+}
