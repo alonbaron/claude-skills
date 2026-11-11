@@ -1,0 +1,32 @@
+run: 43002337296 https://github.com/alonbaron/claude-skills/actions/runs/43002337296
+event: workflow_dispatch  commit: af8fe6aa1035696c7e4e138604e8ee793fc4b8e9  ref: fix/fable-5-2-evals
+model: claude-fable-5-2  cases: sandboxed  job status at publish: success
+only: prompt-generator/coding-agent-repo-prompt prompt-generator/human-prose-boundary prompt-generator/whole-build-scope-check
+cli: 2.1.303 (Claude Code)
+started: 2026-11-11T10:21:05Z
+
+valid 3 of 3
+re-run: none
+cost $0.87  runner aggregates over the 3 cases in the results: {"casesTotal": 3, "casesPassed": 3, "overallScore": 1, "overallPassRate": 1}
+
+== coding-agent-repo-prompt  with 1.00  without -
+   no-edit                            with PP   without 
+   no-write                           with PP   without 
+   result-agent-discipline            with PP   without 
+   result-hedges-hunch                with PP   without 
+   result-no-invented-facts           with PP   without 
+   result-output-shape                with PP   without 
+   result-sync-first                  with PP   without 
+   skill-fired                        with PP   without 
+
+== human-prose-boundary  with 1.00  without -
+   delivers-help                      with PP   without 
+   no-agent-prompt-scaffold           with PP   without 
+   no-fabricated-facts                with PP   without 
+   skill-not-fired                    with PP   without 
+
+== whole-build-scope-check  with 1.00  without -
+   no-edit                            with PP   without 
+   no-write                           with PP   without 
+   result                             with PP   without 
+   skill-fired                        with PP   without 

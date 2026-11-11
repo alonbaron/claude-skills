@@ -1,0 +1,700 @@
+{
+  "schemaVersion": 1,
+  "claudeVersion": "2.1.303",
+  "startedAt": "2026-11-11T10:17:32.657Z",
+  "durationSeconds": 211,
+  "costUsd": 0.8739699000000001,
+  "partial": false,
+  "suite": {
+    "root": "/home/runner/work/claude-skills/claude-skills",
+    "ablation": "none",
+    "modelOverride": "claude-fable-5-2",
+    "judgeModel": "sonnet",
+    "threshold": 0.7,
+    "concurrency": 2,
+    "plugins": [
+      {
+        "name": "alon-skills",
+        "version": "3.2.3",
+        "path": "/home/runner/work/claude-skills/claude-skills"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "coding-agent-repo-prompt",
+      "dir": "evals-ci/prompt-generator/coding-agent-repo-prompt",
+      "source": "prose",
+      "promptMarkdown": "I need a prompt I can hand to a coding subagent. Point it at our repo at\nC:/dev/acme-api (Node/Express + Postgres) and have it track down and fix an\nintermittent 500 on POST /orders whenever quantity is 0. My hunch is an\nunguarded divide-by-zero in pricing.js, but I haven't actually opened the file\nto check. Write me the prompt to hand off — don't go fix it yourself, I just\nneed the prompt.",
+      "runsPerCase": 3,
+      "timeoutSeconds": 300,
+      "maxTurns": 15,
+      "graders": [
+        {
+          "name": "no-edit",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Edit",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "no-write",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Write",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "result-agent-discipline",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the generated hand-off prompt instructs the receiving coding agent\nto do all three of: (a) read a file before editing it, (b) keep changes\nsmall/minimal and avoid unrelated refactors or cleanups, and (c) stop and\nreport or ask a question rather than guess when it is blocked or cannot\nreproduce the bug, with an explicit instruction to report what it could and\ncould not verify.\n\nFAIL if the generated prompt omits any one of (a), (b), or (c), or states it\nas vague filler with no bearing on this specific bug hand-off (e.g. a single\ngeneric \"be careful\" line with no concrete instruction). A missing standalone\n\"no AI co-author\" commit-message rule is NOT by itself a failure, since a\nprompt that correctly forbids the agent from committing at all makes that\nrule moot.",
+          "config": {
+            "criteria": "PASS if the generated hand-off prompt instructs the receiving coding agent\nto do all three of: (a) read a file before editing it, (b) keep changes\nsmall/minimal and avoid unrelated refactors or cleanups, and (c) stop and\nreport or ask a question rather than guess when it is blocked or cannot\nreproduce the bug, with an explicit instruction to report what it could and\ncould not verify.\n\nFAIL if the generated prompt omits any one of (a), (b), or (c), or states it\nas vague filler with no bearing on this specific bug hand-off (e.g. a single\ngeneric \"be careful\" line with no concrete instruction). A missing standalone\n\"no AI co-author\" commit-message rule is NOT by itself a failure, since a\nprompt that correctly forbids the agent from committing at all makes that\nrule moot.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "result-hedges-hunch",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the generated hand-off prompt frames the pricing.js divide-by-zero\nas the user's unverified hunch that the receiving coding agent must confirm\nbefore relying on it — e.g. \"hypothesis, not verified\", \"correct me if\nwrong\", \"confirm the file exists and read it before referencing it\" — rather\nthan as an established fact.\n\nFAIL if the generated prompt states, anywhere, that the divide-by-zero in\npricing.js is the confirmed or already-established root cause, or otherwise\ndrops the hedge and hands the receiving agent a conclusion instead of a lead\nto verify.",
+          "config": {
+            "criteria": "PASS if the generated hand-off prompt frames the pricing.js divide-by-zero\nas the user's unverified hunch that the receiving coding agent must confirm\nbefore relying on it — e.g. \"hypothesis, not verified\", \"correct me if\nwrong\", \"confirm the file exists and read it before referencing it\" — rather\nthan as an established fact.\n\nFAIL if the generated prompt states, anywhere, that the divide-by-zero in\npricing.js is the confirmed or already-established root cause, or otherwise\ndrops the hedge and hands the receiving agent a conclusion instead of a lead\nto verify.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "result-no-invented-facts",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the generated hand-off prompt does not invent specifics beyond what\nthe user gave (repo path C:/dev/acme-api, Node/Express + Postgres, POST\n/orders, quantity 0, the pricing.js hunch): no invented file:line citations,\nno invented function or variable names, no invented stack traces or error\ntext presented as already-observed fact. General, non-repo-specific\nprogramming knowledge used as reasoning (for example, noting that `x / 0` in\nJavaScript yields `Infinity`/`NaN` rather than throwing) is NOT an invented\nfact, and neither is an explicitly-flagged illustrative example (e.g., \"e.g.\na per-unit price calculation\") or a bracketed placeholder.\n\nFAIL if the generated prompt asserts a specific file:line, function/variable\nname, or error message as if it were already known or confirmed, when the\nuser never supplied it and the agent could not yet have read it.",
+          "config": {
+            "criteria": "PASS if the generated hand-off prompt does not invent specifics beyond what\nthe user gave (repo path C:/dev/acme-api, Node/Express + Postgres, POST\n/orders, quantity 0, the pricing.js hunch): no invented file:line citations,\nno invented function or variable names, no invented stack traces or error\ntext presented as already-observed fact. General, non-repo-specific\nprogramming knowledge used as reasoning (for example, noting that `x / 0` in\nJavaScript yields `Infinity`/`NaN` rather than throwing) is NOT an invented\nfact, and neither is an explicitly-flagged illustrative example (e.g., \"e.g.\na per-unit price calculation\") or a bracketed placeholder.\n\nFAIL if the generated prompt asserts a specific file:line, function/variable\nname, or error message as if it were already known or confirmed, when the\nuser never supplied it and the agent could not yet have read it.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "result-output-shape",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final message's deliverable is a single fenced code block\ncontaining the hand-off prompt, optionally followed by a few short\ncommentary lines (assumptions the writer made, what the user might want to\ntweak) — not a lecture on prompt engineering and not multiple competing\nprompt drafts.\n\nFAIL if there is no fenced prompt block; if there are two or more separate\nfenced blocks offered as alternative prompts; if the response is a prose\nessay or checklist instead of a deliverable prompt; or if the response\nactually attempts to investigate or fix the acme-api bug itself (e.g. reads\nor edits repo files, or reports a root cause) instead of producing a prompt\nto hand off. A short trailer of commentary or assumptions after the fenced\nblock is not a violation.",
+          "config": {
+            "criteria": "PASS if the final message's deliverable is a single fenced code block\ncontaining the hand-off prompt, optionally followed by a few short\ncommentary lines (assumptions the writer made, what the user might want to\ntweak) — not a lecture on prompt engineering and not multiple competing\nprompt drafts.\n\nFAIL if there is no fenced prompt block; if there are two or more separate\nfenced blocks offered as alternative prompts; if the response is a prose\nessay or checklist instead of a deliverable prompt; or if the response\nactually attempts to investigate or fix the acme-api bug itself (e.g. reads\nor edits repo files, or reports a root cause) instead of producing a prompt\nto hand off. A short trailer of commentary or assumptions after the fenced\nblock is not a violation.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "result-sync-first",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the generated hand-off prompt includes a step for the receiving\ncoding agent to sync or check the repo's state before starting work on the\nbug — e.g. running `up-to-date`, or `git fetch` plus `git status`, or\notherwise confirming a clean tree on the expected branch — before it starts\ninvestigating the bug.\n\nFAIL if the generated prompt has the agent start investigating or fixing the\nbug with no step anywhere to check the repo's current/clean state first.",
+          "config": {
+            "criteria": "PASS if the generated hand-off prompt includes a step for the receiving\ncoding agent to sync or check the repo's state before starting work on the\nbug — e.g. running `up-to-date`, or `git fetch` plus `git status`, or\notherwise confirming a clean tree on the expected branch — before it starts\ninvestigating the bug.\n\nFAIL if the generated prompt has the agent start investigating or fixing the\nbug with no step anywhere to check the repo's current/clean state first.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "skill-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?prompt-generator\""
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 3,
+            "costUsd": 0.2292283,
+            "judgeCostUsd": 0.12728599999999998,
+            "durationSeconds": 85,
+            "startedAt": "2026-11-11T10:17:32.680Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-4g7gwg/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-edit",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Edit called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-write",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Write called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "result-agent-discipline",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "Tightening this into a rigorous hand-off prompt.\n\n````markdown\n# Task: find and fix the 500 on POST /orders when quantity is 0\n\nYou are debugging a bug in a Node/Express + Postgres API. Your objective is to\nfind the actual cause of the 500, fix it at the root, and prove the fix with a\nregression test.\n\n## Context\n\n- Repo: `C:/dev/acme-api`\n- Reported symptom: `POST /orders` intermittently returns 500 when the\n  request's quantity is 0.\n- No stack trace, logs, or sample request have been captured yet. Getting one\n  is part of the job.\n\n## Ground truth\n\nAll of this is as reported by the repo owner. None of it has been checked\nagainst the code, so verify each point and say in your report if any is wrong:\n\n- The repo is at `C:/dev/acme-api` and is Node/Express with Postgres.\n- A `POST /orders` route exists.\n- The failure is tied to quantity being 0.\n\n**Unverified hypothesis:** an unguarded divide-by-zero in `pricing.js`. The\nowner has not opened that file, so its location, its contents, and whether it\nis on the `/orders` code path are all unconfirmed. Treat it as a lead to check,\nnot a diagnosis.\n\nTwo things make the hypothesis incomplete as stated:\n\n- Plain JavaScript number division by zero does not throw; it yields\n  `Infinity` or `NaN`. If a division is involved, the 500 is probably thrown\n  somewhere downstream (for example Postgres rejecting the value, a\n  serializer, or a BigInt/decimal library that does throw). Find the actual\n  throw site.\n- A simple arithmetic bug would fail every time, not intermittently. Either\n  find what else varies (a branch such as discounts or promos, per-product\n  data, multiple line items, concurrency) or establish that the failure is\n  deterministic and the report was imprecise.\n\n## Steps\n\n1. Sync first: run the `up-to-date` skill if you have it; otherwise run\n   `git fetch` and `git status`. This step is read-only. Do not pull, rebase,\n   or discard local work.\n2. Find the `POST /orders` handler and trace `quantity` from request parsing\n   through pricing to the DB write and the response. Read the code on that\n   path, including the pricing code wherever it actually lives.\n3. Reproduce the 500 before changing anything, preferably as a failing\n   automated test in the repo's existing test setup. If there is no usable\n   test harness, reproduce it against a local instance. Capture the stack\n   trace.\n4. Fix the root cause with the smallest change that does it.\n5. Run the regression test, the full test suite, and the linter if the repo\n   has one.\n\n## Expected behavior for quantity 0\n\nThis has not been specified. Use the repo's evidence: existing validation,\ntests, API docs, or schema constraints. If they show zero-quantity orders are\ninvalid, reject the request using the repo's existing validation-error\npattern. If they show zero is intentionally allowed, make that path work\nwithout crashing. If the repo doesn't settle it, implement the 4xx rejection\nand flag at the top of your report that this was a judgment call.\n\n## Rules\n\n- Use only a local or test database. Do not connect to any shared, staging,\n  or production database, even if credentials are in an env file.\n- If the fix seems to need a schema migration or a change to the API\n  contract beyond the quantity-0 case, stop and report instead of doing it.\n- If you notice adjacent problems (negative or non-numeric quantity, other\n  endpoints sharing the same pricing code), list them in the report. Fix them\n  only if the same guard covers them naturally.\n- Never state a file path, function name, or cause you have not confirmed by\n  reading the code or running it. Separate what you observed from what you\n  infer.\n\n## Agent discipline\n\n- **Read first:** read a file before editing it, and confirm a path or symbol\n  exists before referencing it. This applies to `pricing.js` in particular.\n- **Scope:** small, reversible changes limited to this bug. No refactoring,\n  renaming, dependency upgrades, or cleanup.\n- **When blocked:** work through ordinary obstacles yourself (a failing\n  command, a file in a different place than expected). If you cannot reproduce\n  the 500 after a real attempt, stop and report what you tried and what you\n  saw; do not ship a speculative fix.\n- **Report:** say what you verified and what you did not. If a step failed or\n  was skipped, say so plainly.\n- **Commits:** do not commit or push. Leave the changes in the working tree\n  for the owner to review and commit themselves.\n\n## Report format\n\nThe reader is the repo owner, who will review your diff. Lead with the root\ncause, with no preamble:\n\n1. Root cause: the throw site as `file:line`, why it fails, and why it looked\n   intermittent.\n2. Whether the `pricing.js` hypothesis was right, partly right, or wrong.\n3. What you changed, and the behavior now for quantity 0.\n4. Evidence: the commands you ran and their results, with the regression test\n   failing before the fix and passing after.\n5. Anything unverified, skipped, or noticed but left alone.\n\n## Done when\n\n- The root cause is backed by a stack trace or failing test, not by reading\n  the code alone.\n- A regression test exists that fails without the fix and passes with it.\n- `POST /orders` with quantity 0 no longer returns 500.\n- The existing test suite passes, or any failures are shown to predate your\n  change.\n- The diff contains nothing beyond the fix and its test.\n````\n\n- **Assumed:** the agent can run the app and tests against a local or test Postgres, and you want the changes left uncommitted for your review.\n- **Tweak:** the \"Expected behavior for quantity 0\" section defaults to a 4xx rejection when the repo doesn't settle it; if you know the intended behavior, replace that section with one line.\n- **Emphasized:** your hunch is framed as an unverified lead, because JavaScript division by zero doesn't throw and wouldn't be intermittent, so the real cause is likely somewhere else on the path."
+              },
+              {
+                "name": "result-hedges-hunch",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "Tightening this into a rigorous hand-off prompt.\n\n````markdown\n# Task: find and fix the 500 on POST /orders when quantity is 0\n\nYou are debugging a bug in a Node/Express + Postgres API. Your objective is to\nfind the actual cause of the 500, fix it at the root, and prove the fix with a\nregression test.\n\n## Context\n\n- Repo: `C:/dev/acme-api`\n- Reported symptom: `POST /orders` intermittently returns 500 when the\n  request's quantity is 0.\n- No stack trace, logs, or sample request have been captured yet. Getting one\n  is part of the job.\n\n## Ground truth\n\nAll of this is as reported by the repo owner. None of it has been checked\nagainst the code, so verify each point and say in your report if any is wrong:\n\n- The repo is at `C:/dev/acme-api` and is Node/Express with Postgres.\n- A `POST /orders` route exists.\n- The failure is tied to quantity being 0.\n\n**Unverified hypothesis:** an unguarded divide-by-zero in `pricing.js`. The\nowner has not opened that file, so its location, its contents, and whether it\nis on the `/orders` code path are all unconfirmed. Treat it as a lead to check,\nnot a diagnosis.\n\nTwo things make the hypothesis incomplete as stated:\n\n- Plain JavaScript number division by zero does not throw; it yields\n  `Infinity` or `NaN`. If a division is involved, the 500 is probably thrown\n  somewhere downstream (for example Postgres rejecting the value, a\n  serializer, or a BigInt/decimal library that does throw). Find the actual\n  throw site.\n- A simple arithmetic bug would fail every time, not intermittently. Either\n  find what else varies (a branch such as discounts or promos, per-product\n  data, multiple line items, concurrency) or establish that the failure is\n  deterministic and the report was imprecise.\n\n## Steps\n\n1. Sync first: run the `up-to-date` skill if you have it; otherwise run\n   `git fetch` and `git status`. This step is read-only. Do not pull, rebase,\n   or discard local work.\n2. Find the `POST /orders` handler and trace `quantity` from request parsing\n   through pricing to the DB write and the response. Read the code on that\n   path, including the pricing code wherever it actually lives.\n3. Reproduce the 500 before changing anything, preferably as a failing\n   automated test in the repo's existing test setup. If there is no usable\n   test harness, reproduce it against a local instance. Capture the stack\n   trace.\n4. Fix the root cause with the smallest change that does it.\n5. Run the regression test, the full test suite, and the linter if the repo\n   has one.\n\n## Expected behavior for quantity 0\n\nThis has not been specified. Use the repo's evidence: existing validation,\ntests, API docs, or schema constraints. If they show zero-quantity orders are\ninvalid, reject the request using the repo's existing validation-error\npattern. If they show zero is intentionally allowed, make that path work\nwithout crashing. If the repo doesn't settle it, implement the 4xx rejection\nand flag at the top of your report that this was a judgment call.\n\n## Rules\n\n- Use only a local or test database. Do not connect to any shared, staging,\n  or production database, even if credentials are in an env file.\n- If the fix seems to need a schema migration or a change to the API\n  contract beyond the quantity-0 case, stop and report instead of doing it.\n- If you notice adjacent problems (negative or non-numeric quantity, other\n  endpoints sharing the same pricing code), list them in the report. Fix them\n  only if the same guard covers them naturally.\n- Never state a file path, function name, or cause you have not confirmed by\n  reading the code or running it. Separate what you observed from what you\n  infer.\n\n## Agent discipline\n\n- **Read first:** read a file before editing it, and confirm a path or symbol\n  exists before referencing it. This applies to `pricing.js` in particular.\n- **Scope:** small, reversible changes limited to this bug. No refactoring,\n  renaming, dependency upgrades, or cleanup.\n- **When blocked:** work through ordinary obstacles yourself (a failing\n  command, a file in a different place than expected). If you cannot reproduce\n  the 500 after a real attempt, stop and report what you tried and what you\n  saw; do not ship a speculative fix.\n- **Report:** say what you verified and what you did not. If a step failed or\n  was skipped, say so plainly.\n- **Commits:** do not commit or push. Leave the changes in the working tree\n  for the owner to review and commit themselves.\n\n## Report format\n\nThe reader is the repo owner, who will review your diff. Lead with the root\ncause, with no preamble:\n\n1. Root cause: the throw site as `file:line`, why it fails, and why it looked\n   intermittent.\n2. Whether the `pricing.js` hypothesis was right, partly right, or wrong.\n3. What you changed, and the behavior now for quantity 0.\n4. Evidence: the commands you ran and their results, with the regression test\n   failing before the fix and passing after.\n5. Anything unverified, skipped, or noticed but left alone.\n\n## Done when\n\n- The root cause is backed by a stack trace or failing test, not by reading\n  the code alone.\n- A regression test exists that fails without the fix and passes with it.\n- `POST /orders` with quantity 0 no longer returns 500.\n- The existing test suite passes, or any failures are shown to predate your\n  change.\n- The diff contains nothing beyond the fix and its test.\n````\n\n- **Assumed:** the agent can run the app and tests against a local or test Postgres, and you want the changes left uncommitted for your review.\n- **Tweak:** the \"Expected behavior for quantity 0\" section defaults to a 4xx rejection when the repo doesn't settle it; if you know the intended behavior, replace that section with one line.\n- **Emphasized:** your hunch is framed as an unverified lead, because JavaScript division by zero doesn't throw and wouldn't be intermittent, so the real cause is likely somewhere else on the path."
+              },
+              {
+                "name": "result-no-invented-facts",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "Tightening this into a rigorous hand-off prompt.\n\n````markdown\n# Task: find and fix the 500 on POST /orders when quantity is 0\n\nYou are debugging a bug in a Node/Express + Postgres API. Your objective is to\nfind the actual cause of the 500, fix it at the root, and prove the fix with a\nregression test.\n\n## Context\n\n- Repo: `C:/dev/acme-api`\n- Reported symptom: `POST /orders` intermittently returns 500 when the\n  request's quantity is 0.\n- No stack trace, logs, or sample request have been captured yet. Getting one\n  is part of the job.\n\n## Ground truth\n\nAll of this is as reported by the repo owner. None of it has been checked\nagainst the code, so verify each point and say in your report if any is wrong:\n\n- The repo is at `C:/dev/acme-api` and is Node/Express with Postgres.\n- A `POST /orders` route exists.\n- The failure is tied to quantity being 0.\n\n**Unverified hypothesis:** an unguarded divide-by-zero in `pricing.js`. The\nowner has not opened that file, so its location, its contents, and whether it\nis on the `/orders` code path are all unconfirmed. Treat it as a lead to check,\nnot a diagnosis.\n\nTwo things make the hypothesis incomplete as stated:\n\n- Plain JavaScript number division by zero does not throw; it yields\n  `Infinity` or `NaN`. If a division is involved, the 500 is probably thrown\n  somewhere downstream (for example Postgres rejecting the value, a\n  serializer, or a BigInt/decimal library that does throw). Find the actual\n  throw site.\n- A simple arithmetic bug would fail every time, not intermittently. Either\n  find what else varies (a branch such as discounts or promos, per-product\n  data, multiple line items, concurrency) or establish that the failure is\n  deterministic and the report was imprecise.\n\n## Steps\n\n1. Sync first: run the `up-to-date` skill if you have it; otherwise run\n   `git fetch` and `git status`. This step is read-only. Do not pull, rebase,\n   or discard local work.\n2. Find the `POST /orders` handler and trace `quantity` from request parsing\n   through pricing to the DB write and the response. Read the code on that\n   path, including the pricing code wherever it actually lives.\n3. Reproduce the 500 before changing anything, preferably as a failing\n   automated test in the repo's existing test setup. If there is no usable\n   test harness, reproduce it against a local instance. Capture the stack\n   trace.\n4. Fix the root cause with the smallest change that does it.\n5. Run the regression test, the full test suite, and the linter if the repo\n   has one.\n\n## Expected behavior for quantity 0\n\nThis has not been specified. Use the repo's evidence: existing validation,\ntests, API docs, or schema constraints. If they show zero-quantity orders are\ninvalid, reject the request using the repo's existing validation-error\npattern. If they show zero is intentionally allowed, make that path work\nwithout crashing. If the repo doesn't settle it, implement the 4xx rejection\nand flag at the top of your report that this was a judgment call.\n\n## Rules\n\n- Use only a local or test database. Do not connect to any shared, staging,\n  or production database, even if credentials are in an env file.\n- If the fix seems to need a schema migration or a change to the API\n  contract beyond the quantity-0 case, stop and report instead of doing it.\n- If you notice adjacent problems (negative or non-numeric quantity, other\n  endpoints sharing the same pricing code), list them in the report. Fix them\n  only if the same guard covers them naturally.\n- Never state a file path, function name, or cause you have not confirmed by\n  reading the code or running it. Separate what you observed from what you\n  infer.\n\n## Agent discipline\n\n- **Read first:** read a file before editing it, and confirm a path or symbol\n  exists before referencing it. This applies to `pricing.js` in particular.\n- **Scope:** small, reversible changes limited to this bug. No refactoring,\n  renaming, dependency upgrades, or cleanup.\n- **When blocked:** work through ordinary obstacles yourself (a failing\n  command, a file in a different place than expected). If you cannot reproduce\n  the 500 after a real attempt, stop and report what you tried and what you\n  saw; do not ship a speculative fix.\n- **Report:** say what you verified and what you did not. If a step failed or\n  was skipped, say so plainly.\n- **Commits:** do not commit or push. Leave the changes in the working tree\n  for the owner to review and commit themselves.\n\n## Report format\n\nThe reader is the repo owner, who will review your diff. Lead with the root\ncause, with no preamble:\n\n1. Root cause: the throw site as `file:line`, why it fails, and why it looked\n   intermittent.\n2. Whether the `pricing.js` hypothesis was right, partly right, or wrong.\n3. What you changed, and the behavior now for quantity 0.\n4. Evidence: the commands you ran and their results, with the regression test\n   failing before the fix and passing after.\n5. Anything unverified, skipped, or noticed but left alone.\n\n## Done when\n\n- The root cause is backed by a stack trace or failing test, not by reading\n  the code alone.\n- A regression test exists that fails without the fix and passes with it.\n- `POST /orders` with quantity 0 no longer returns 500.\n- The existing test suite passes, or any failures are shown to predate your\n  change.\n- The diff contains nothing beyond the fix and its test.\n````\n\n- **Assumed:** the agent can run the app and tests against a local or test Postgres, and you want the changes left uncommitted for your review.\n- **Tweak:** the \"Expected behavior for quantity 0\" section defaults to a 4xx rejection when the repo doesn't settle it; if you know the intended behavior, replace that section with one line.\n- **Emphasized:** your hunch is framed as an unverified lead, because JavaScript division by zero doesn't throw and wouldn't be intermittent, so the real cause is likely somewhere else on the path."
+              },
+              {
+                "name": "result-output-shape",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "Tightening this into a rigorous hand-off prompt.\n\n````markdown\n# Task: find and fix the 500 on POST /orders when quantity is 0\n\nYou are debugging a bug in a Node/Express + Postgres API. Your objective is to\nfind the actual cause of the 500, fix it at the root, and prove the fix with a\nregression test.\n\n## Context\n\n- Repo: `C:/dev/acme-api`\n- Reported symptom: `POST /orders` intermittently returns 500 when the\n  request's quantity is 0.\n- No stack trace, logs, or sample request have been captured yet. Getting one\n  is part of the job.\n\n## Ground truth\n\nAll of this is as reported by the repo owner. None of it has been checked\nagainst the code, so verify each point and say in your report if any is wrong:\n\n- The repo is at `C:/dev/acme-api` and is Node/Express with Postgres.\n- A `POST /orders` route exists.\n- The failure is tied to quantity being 0.\n\n**Unverified hypothesis:** an unguarded divide-by-zero in `pricing.js`. The\nowner has not opened that file, so its location, its contents, and whether it\nis on the `/orders` code path are all unconfirmed. Treat it as a lead to check,\nnot a diagnosis.\n\nTwo things make the hypothesis incomplete as stated:\n\n- Plain JavaScript number division by zero does not throw; it yields\n  `Infinity` or `NaN`. If a division is involved, the 500 is probably thrown\n  somewhere downstream (for example Postgres rejecting the value, a\n  serializer, or a BigInt/decimal library that does throw). Find the actual\n  throw site.\n- A simple arithmetic bug would fail every time, not intermittently. Either\n  find what else varies (a branch such as discounts or promos, per-product\n  data, multiple line items, concurrency) or establish that the failure is\n  deterministic and the report was imprecise.\n\n## Steps\n\n1. Sync first: run the `up-to-date` skill if you have it; otherwise run\n   `git fetch` and `git status`. This step is read-only. Do not pull, rebase,\n   or discard local work.\n2. Find the `POST /orders` handler and trace `quantity` from request parsing\n   through pricing to the DB write and the response. Read the code on that\n   path, including the pricing code wherever it actually lives.\n3. Reproduce the 500 before changing anything, preferably as a failing\n   automated test in the repo's existing test setup. If there is no usable\n   test harness, reproduce it against a local instance. Capture the stack\n   trace.\n4. Fix the root cause with the smallest change that does it.\n5. Run the regression test, the full test suite, and the linter if the repo\n   has one.\n\n## Expected behavior for quantity 0\n\nThis has not been specified. Use the repo's evidence: existing validation,\ntests, API docs, or schema constraints. If they show zero-quantity orders are\ninvalid, reject the request using the repo's existing validation-error\npattern. If they show zero is intentionally allowed, make that path work\nwithout crashing. If the repo doesn't settle it, implement the 4xx rejection\nand flag at the top of your report that this was a judgment call.\n\n## Rules\n\n- Use only a local or test database. Do not connect to any shared, staging,\n  or production database, even if credentials are in an env file.\n- If the fix seems to need a schema migration or a change to the API\n  contract beyond the quantity-0 case, stop and report instead of doing it.\n- If you notice adjacent problems (negative or non-numeric quantity, other\n  endpoints sharing the same pricing code), list them in the report. Fix them\n  only if the same guard covers them naturally.\n- Never state a file path, function name, or cause you have not confirmed by\n  reading the code or running it. Separate what you observed from what you\n  infer.\n\n## Agent discipline\n\n- **Read first:** read a file before editing it, and confirm a path or symbol\n  exists before referencing it. This applies to `pricing.js` in particular.\n- **Scope:** small, reversible changes limited to this bug. No refactoring,\n  renaming, dependency upgrades, or cleanup.\n- **When blocked:** work through ordinary obstacles yourself (a failing\n  command, a file in a different place than expected). If you cannot reproduce\n  the 500 after a real attempt, stop and report what you tried and what you\n  saw; do not ship a speculative fix.\n- **Report:** say what you verified and what you did not. If a step failed or\n  was skipped, say so plainly.\n- **Commits:** do not commit or push. Leave the changes in the working tree\n  for the owner to review and commit themselves.\n\n## Report format\n\nThe reader is the repo owner, who will review your diff. Lead with the root\ncause, with no preamble:\n\n1. Root cause: the throw site as `file:line`, why it fails, and why it looked\n   intermittent.\n2. Whether the `pricing.js` hypothesis was right, partly right, or wrong.\n3. What you changed, and the behavior now for quantity 0.\n4. Evidence: the commands you ran and their results, with the regression test\n   failing before the fix and passing after.\n5. Anything unverified, skipped, or noticed but left alone.\n\n## Done when\n\n- The root cause is backed by a stack trace or failing test, not by reading\n  the code alone.\n- A regression test exists that fails without the fix and passes with it.\n- `POST /orders` with quantity 0 no longer returns 500.\n- The existing test suite passes, or any failures are shown to predate your\n  change.\n- The diff contains nothing beyond the fix and its test.\n````\n\n- **Assumed:** the agent can run the app and tests against a local or test Postgres, and you want the changes left uncommitted for your review.\n- **Tweak:** the \"Expected behavior for quantity 0\" section defaults to a 4xx rejection when the repo doesn't settle it; if you know the intended behavior, replace that section with one line.\n- **Emphasized:** your hunch is framed as an unverified lead, because JavaScript division by zero doesn't throw and wouldn't be intermittent, so the real cause is likely somewhere else on the path."
+              },
+              {
+                "name": "result-sync-first",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "Tightening this into a rigorous hand-off prompt.\n\n````markdown\n# Task: find and fix the 500 on POST /orders when quantity is 0\n\nYou are debugging a bug in a Node/Express + Postgres API. Your objective is to\nfind the actual cause of the 500, fix it at the root, and prove the fix with a\nregression test.\n\n## Context\n\n- Repo: `C:/dev/acme-api`\n- Reported symptom: `POST /orders` intermittently returns 500 when the\n  request's quantity is 0.\n- No stack trace, logs, or sample request have been captured yet. Getting one\n  is part of the job.\n\n## Ground truth\n\nAll of this is as reported by the repo owner. None of it has been checked\nagainst the code, so verify each point and say in your report if any is wrong:\n\n- The repo is at `C:/dev/acme-api` and is Node/Express with Postgres.\n- A `POST /orders` route exists.\n- The failure is tied to quantity being 0.\n\n**Unverified hypothesis:** an unguarded divide-by-zero in `pricing.js`. The\nowner has not opened that file, so its location, its contents, and whether it\nis on the `/orders` code path are all unconfirmed. Treat it as a lead to check,\nnot a diagnosis.\n\nTwo things make the hypothesis incomplete as stated:\n\n- Plain JavaScript number division by zero does not throw; it yields\n  `Infinity` or `NaN`. If a division is involved, the 500 is probably thrown\n  somewhere downstream (for example Postgres rejecting the value, a\n  serializer, or a BigInt/decimal library that does throw). Find the actual\n  throw site.\n- A simple arithmetic bug would fail every time, not intermittently. Either\n  find what else varies (a branch such as discounts or promos, per-product\n  data, multiple line items, concurrency) or establish that the failure is\n  deterministic and the report was imprecise.\n\n## Steps\n\n1. Sync first: run the `up-to-date` skill if you have it; otherwise run\n   `git fetch` and `git status`. This step is read-only. Do not pull, rebase,\n   or discard local work.\n2. Find the `POST /orders` handler and trace `quantity` from request parsing\n   through pricing to the DB write and the response. Read the code on that\n   path, including the pricing code wherever it actually lives.\n3. Reproduce the 500 before changing anything, preferably as a failing\n   automated test in the repo's existing test setup. If there is no usable\n   test harness, reproduce it against a local instance. Capture the stack\n   trace.\n4. Fix the root cause with the smallest change that does it.\n5. Run the regression test, the full test suite, and the linter if the repo\n   has one.\n\n## Expected behavior for quantity 0\n\nThis has not been specified. Use the repo's evidence: existing validation,\ntests, API docs, or schema constraints. If they show zero-quantity orders are\ninvalid, reject the request using the repo's existing validation-error\npattern. If they show zero is intentionally allowed, make that path work\nwithout crashing. If the repo doesn't settle it, implement the 4xx rejection\nand flag at the top of your report that this was a judgment call.\n\n## Rules\n\n- Use only a local or test database. Do not connect to any shared, staging,\n  or production database, even if credentials are in an env file.\n- If the fix seems to need a schema migration or a change to the API\n  contract beyond the quantity-0 case, stop and report instead of doing it.\n- If you notice adjacent problems (negative or non-numeric quantity, other\n  endpoints sharing the same pricing code), list them in the report. Fix them\n  only if the same guard covers them naturally.\n- Never state a file path, function name, or cause you have not confirmed by\n  reading the code or running it. Separate what you observed from what you\n  infer.\n\n## Agent discipline\n\n- **Read first:** read a file before editing it, and confirm a path or symbol\n  exists before referencing it. This applies to `pricing.js` in particular.\n- **Scope:** small, reversible changes limited to this bug. No refactoring,\n  renaming, dependency upgrades, or cleanup.\n- **When blocked:** work through ordinary obstacles yourself (a failing\n  command, a file in a different place than expected). If you cannot reproduce\n  the 500 after a real attempt, stop and report what you tried and what you\n  saw; do not ship a speculative fix.\n- **Report:** say what you verified and what you did not. If a step failed or\n  was skipped, say so plainly.\n- **Commits:** do not commit or push. Leave the changes in the working tree\n  for the owner to review and commit themselves.\n\n## Report format\n\nThe reader is the repo owner, who will review your diff. Lead with the root\ncause, with no preamble:\n\n1. Root cause: the throw site as `file:line`, why it fails, and why it looked\n   intermittent.\n2. Whether the `pricing.js` hypothesis was right, partly right, or wrong.\n3. What you changed, and the behavior now for quantity 0.\n4. Evidence: the commands you ran and their results, with the regression test\n   failing before the fix and passing after.\n5. Anything unverified, skipped, or noticed but left alone.\n\n## Done when\n\n- The root cause is backed by a stack trace or failing test, not by reading\n  the code alone.\n- A regression test exists that fails without the fix and passes with it.\n- `POST /orders` with quantity 0 no longer returns 500.\n- The existing test suite passes, or any failures are shown to predate your\n  change.\n- The diff contains nothing beyond the fix and its test.\n````\n\n- **Assumed:** the agent can run the app and tests against a local or test Postgres, and you want the changes left uncommitted for your review.\n- **Tweak:** the \"Expected behavior for quantity 0\" section defaults to a 4xx rejection when the repo doesn't settle it; if you know the intended behavior, replace that section with one line.\n- **Emphasized:** your hunch is framed as an unverified lead, because JavaScript division by zero doesn't throw and wouldn't be intermittent, so the real cause is likely somewhere else on the path."
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 1x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 3,
+            "costUsd": 0.2278357,
+            "judgeCostUsd": 0.131238,
+            "durationSeconds": 82,
+            "startedAt": "2026-11-11T10:17:32.680Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-AdDibP/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-edit",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Edit called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-write",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Write called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "result-agent-discipline",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "Tightening this into a rigorous hand-off prompt.\n\n````markdown\n# Task: find and fix the intermittent 500 on POST /orders when quantity is 0\n\nYou're working in the repo at `C:/dev/acme-api`, a Node/Express API backed by Postgres. POST /orders sometimes returns HTTP 500 when the request's quantity is 0. Find the root cause, fix it, and prove the fix with a test.\n\n## What's known and what isn't\n\nAll of this comes from the repo owner and has not been checked against the code:\n\n- The 500 happens on POST /orders with quantity 0, but only intermittently. Quantity 0 therefore looks necessary but not sufficient: some second condition (a particular code path, a product or pricing configuration, data state, concurrency) decides whether a given request fails. Identifying that condition is part of the job.\n- The owner suspects an unguarded divide-by-zero in `pricing.js`. They have not opened the file. Treat this as the first lead to check, not as the diagnosis. I don't know where `pricing.js` lives or whether a file with exactly that name exists; locate it yourself.\n\nWhen testing the hunch, remember that JavaScript number division by zero doesn't throw; it yields `Infinity` or `NaN`. If a division is involved, the 500 is probably raised downstream of it (when the bad value reaches Postgres, a serializer, or a validation step), or the division happens in SQL or on BigInt, where it does throw. Follow the value to the line that actually errors.\n\nIf anything above contradicts what you find in the repo, trust the repo and say so in your report.\n\n## Steps\n\n1. Get oriented, read-only. If an `up-to-date` skill is available, run it; otherwise run `git fetch` and `git status`. Don't pull, rebase, stash, or discard anything. Read the README and `package.json` to learn how the tests and the app are run.\n2. Trace POST /orders from the route definition through validation, pricing, and the database queries to the response.\n3. Reproduce the failure before changing any code. Write a failing test in the repo's existing test framework that sends quantity 0 and gets the 500, with the second condition pinned down so the test fails every time rather than sometimes.\n4. Fix the root cause, not the symptom. A try/catch that swallows the error or a guard that hides a bad value further downstream doesn't count.\n5. Run the new test and the full existing suite.\n\n## What quantity 0 should do\n\nDecide this from evidence in the repo: validation schemas, API docs, existing tests, database constraints.\n\n- If the repo shows zero-quantity orders are invalid, reject them the way this route rejects other invalid input (same status code and error body shape).\n- If it shows they are valid, make pricing handle them correctly.\n- If the repo doesn't settle it, reject with a 4xx in the existing validation style and flag that at the top of your report as a decision for the owner to confirm.\n\n## Agent discipline\n\n- **Read first:** Read a file before editing it. Confirm that a path, function, or column exists before you reference or rely on it; never invent one.\n- **Scope:** Make the smallest change that fixes the root cause, plus its regression test. No refactoring, renaming, dependency changes, or cleanup. No schema migrations. Use only the local or test database the repo's test setup provides; never connect to a shared, staging, or production database.\n- **When blocked:** Work through ordinary obstacles yourself (a failing command, a file in a different place than expected). If you can't reproduce the 500 after tracing the full request path, stop and report what you tried and what you found instead of shipping a speculative fix.\n- **Report:** State what you verified and what you didn't. Say plainly if a step failed or was skipped. Separate what you observed (a stack trace, a failing test) from what you infer.\n- **Commits:** Don't commit or push. Leave the changes in the working tree for the owner to review and commit themselves.\n\n## Done when\n\n- A test reproduces the 500 on the unfixed code and passes with the fix.\n- The full existing test suite passes, or any failures are shown to be pre-existing.\n- You can explain why the failure was intermittent, not only why quantity 0 was involved.\n\n## Final report\n\nThe repo owner reads this to decide whether to commit the change, so lead with the answer and skip any preamble or narration of your process:\n\n1. Root cause in one or two sentences, with `file:line`, and whether the `pricing.js` hunch was right, partly right, or wrong.\n2. The condition that made it intermittent.\n3. What you changed (files and a one-line description each) and the behavior quantity 0 now gets.\n4. Test results: the commands you ran and their outcomes.\n5. Anything unverified, assumed, or left for the owner to decide.\n````\n\n**Assumed:** the agent leaves changes uncommitted, and quantity 0 falls back to a 4xx rejection if the repo doesn't say what it should do. Change either if you want something different.\n**Emphasized:** your hunch is framed as a lead to check, and the prompt warns that JS division by zero doesn't throw, so the agent traces to the line that actually errors and doesn't just add a guard in `pricing.js`.\n**Not verified:** I haven't seen the repo, so the prompt contains no file paths or test commands beyond what you gave me."
+              },
+              {
+                "name": "result-hedges-hunch",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "Tightening this into a rigorous hand-off prompt.\n\n````markdown\n# Task: find and fix the intermittent 500 on POST /orders when quantity is 0\n\nYou're working in the repo at `C:/dev/acme-api`, a Node/Express API backed by Postgres. POST /orders sometimes returns HTTP 500 when the request's quantity is 0. Find the root cause, fix it, and prove the fix with a test.\n\n## What's known and what isn't\n\nAll of this comes from the repo owner and has not been checked against the code:\n\n- The 500 happens on POST /orders with quantity 0, but only intermittently. Quantity 0 therefore looks necessary but not sufficient: some second condition (a particular code path, a product or pricing configuration, data state, concurrency) decides whether a given request fails. Identifying that condition is part of the job.\n- The owner suspects an unguarded divide-by-zero in `pricing.js`. They have not opened the file. Treat this as the first lead to check, not as the diagnosis. I don't know where `pricing.js` lives or whether a file with exactly that name exists; locate it yourself.\n\nWhen testing the hunch, remember that JavaScript number division by zero doesn't throw; it yields `Infinity` or `NaN`. If a division is involved, the 500 is probably raised downstream of it (when the bad value reaches Postgres, a serializer, or a validation step), or the division happens in SQL or on BigInt, where it does throw. Follow the value to the line that actually errors.\n\nIf anything above contradicts what you find in the repo, trust the repo and say so in your report.\n\n## Steps\n\n1. Get oriented, read-only. If an `up-to-date` skill is available, run it; otherwise run `git fetch` and `git status`. Don't pull, rebase, stash, or discard anything. Read the README and `package.json` to learn how the tests and the app are run.\n2. Trace POST /orders from the route definition through validation, pricing, and the database queries to the response.\n3. Reproduce the failure before changing any code. Write a failing test in the repo's existing test framework that sends quantity 0 and gets the 500, with the second condition pinned down so the test fails every time rather than sometimes.\n4. Fix the root cause, not the symptom. A try/catch that swallows the error or a guard that hides a bad value further downstream doesn't count.\n5. Run the new test and the full existing suite.\n\n## What quantity 0 should do\n\nDecide this from evidence in the repo: validation schemas, API docs, existing tests, database constraints.\n\n- If the repo shows zero-quantity orders are invalid, reject them the way this route rejects other invalid input (same status code and error body shape).\n- If it shows they are valid, make pricing handle them correctly.\n- If the repo doesn't settle it, reject with a 4xx in the existing validation style and flag that at the top of your report as a decision for the owner to confirm.\n\n## Agent discipline\n\n- **Read first:** Read a file before editing it. Confirm that a path, function, or column exists before you reference or rely on it; never invent one.\n- **Scope:** Make the smallest change that fixes the root cause, plus its regression test. No refactoring, renaming, dependency changes, or cleanup. No schema migrations. Use only the local or test database the repo's test setup provides; never connect to a shared, staging, or production database.\n- **When blocked:** Work through ordinary obstacles yourself (a failing command, a file in a different place than expected). If you can't reproduce the 500 after tracing the full request path, stop and report what you tried and what you found instead of shipping a speculative fix.\n- **Report:** State what you verified and what you didn't. Say plainly if a step failed or was skipped. Separate what you observed (a stack trace, a failing test) from what you infer.\n- **Commits:** Don't commit or push. Leave the changes in the working tree for the owner to review and commit themselves.\n\n## Done when\n\n- A test reproduces the 500 on the unfixed code and passes with the fix.\n- The full existing test suite passes, or any failures are shown to be pre-existing.\n- You can explain why the failure was intermittent, not only why quantity 0 was involved.\n\n## Final report\n\nThe repo owner reads this to decide whether to commit the change, so lead with the answer and skip any preamble or narration of your process:\n\n1. Root cause in one or two sentences, with `file:line`, and whether the `pricing.js` hunch was right, partly right, or wrong.\n2. The condition that made it intermittent.\n3. What you changed (files and a one-line description each) and the behavior quantity 0 now gets.\n4. Test results: the commands you ran and their outcomes.\n5. Anything unverified, assumed, or left for the owner to decide.\n````\n\n**Assumed:** the agent leaves changes uncommitted, and quantity 0 falls back to a 4xx rejection if the repo doesn't say what it should do. Change either if you want something different.\n**Emphasized:** your hunch is framed as a lead to check, and the prompt warns that JS division by zero doesn't throw, so the agent traces to the line that actually errors and doesn't just add a guard in `pricing.js`.\n**Not verified:** I haven't seen the repo, so the prompt contains no file paths or test commands beyond what you gave me."
+              },
+              {
+                "name": "result-no-invented-facts",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "Tightening this into a rigorous hand-off prompt.\n\n````markdown\n# Task: find and fix the intermittent 500 on POST /orders when quantity is 0\n\nYou're working in the repo at `C:/dev/acme-api`, a Node/Express API backed by Postgres. POST /orders sometimes returns HTTP 500 when the request's quantity is 0. Find the root cause, fix it, and prove the fix with a test.\n\n## What's known and what isn't\n\nAll of this comes from the repo owner and has not been checked against the code:\n\n- The 500 happens on POST /orders with quantity 0, but only intermittently. Quantity 0 therefore looks necessary but not sufficient: some second condition (a particular code path, a product or pricing configuration, data state, concurrency) decides whether a given request fails. Identifying that condition is part of the job.\n- The owner suspects an unguarded divide-by-zero in `pricing.js`. They have not opened the file. Treat this as the first lead to check, not as the diagnosis. I don't know where `pricing.js` lives or whether a file with exactly that name exists; locate it yourself.\n\nWhen testing the hunch, remember that JavaScript number division by zero doesn't throw; it yields `Infinity` or `NaN`. If a division is involved, the 500 is probably raised downstream of it (when the bad value reaches Postgres, a serializer, or a validation step), or the division happens in SQL or on BigInt, where it does throw. Follow the value to the line that actually errors.\n\nIf anything above contradicts what you find in the repo, trust the repo and say so in your report.\n\n## Steps\n\n1. Get oriented, read-only. If an `up-to-date` skill is available, run it; otherwise run `git fetch` and `git status`. Don't pull, rebase, stash, or discard anything. Read the README and `package.json` to learn how the tests and the app are run.\n2. Trace POST /orders from the route definition through validation, pricing, and the database queries to the response.\n3. Reproduce the failure before changing any code. Write a failing test in the repo's existing test framework that sends quantity 0 and gets the 500, with the second condition pinned down so the test fails every time rather than sometimes.\n4. Fix the root cause, not the symptom. A try/catch that swallows the error or a guard that hides a bad value further downstream doesn't count.\n5. Run the new test and the full existing suite.\n\n## What quantity 0 should do\n\nDecide this from evidence in the repo: validation schemas, API docs, existing tests, database constraints.\n\n- If the repo shows zero-quantity orders are invalid, reject them the way this route rejects other invalid input (same status code and error body shape).\n- If it shows they are valid, make pricing handle them correctly.\n- If the repo doesn't settle it, reject with a 4xx in the existing validation style and flag that at the top of your report as a decision for the owner to confirm.\n\n## Agent discipline\n\n- **Read first:** Read a file before editing it. Confirm that a path, function, or column exists before you reference or rely on it; never invent one.\n- **Scope:** Make the smallest change that fixes the root cause, plus its regression test. No refactoring, renaming, dependency changes, or cleanup. No schema migrations. Use only the local or test database the repo's test setup provides; never connect to a shared, staging, or production database.\n- **When blocked:** Work through ordinary obstacles yourself (a failing command, a file in a different place than expected). If you can't reproduce the 500 after tracing the full request path, stop and report what you tried and what you found instead of shipping a speculative fix.\n- **Report:** State what you verified and what you didn't. Say plainly if a step failed or was skipped. Separate what you observed (a stack trace, a failing test) from what you infer.\n- **Commits:** Don't commit or push. Leave the changes in the working tree for the owner to review and commit themselves.\n\n## Done when\n\n- A test reproduces the 500 on the unfixed code and passes with the fix.\n- The full existing test suite passes, or any failures are shown to be pre-existing.\n- You can explain why the failure was intermittent, not only why quantity 0 was involved.\n\n## Final report\n\nThe repo owner reads this to decide whether to commit the change, so lead with the answer and skip any preamble or narration of your process:\n\n1. Root cause in one or two sentences, with `file:line`, and whether the `pricing.js` hunch was right, partly right, or wrong.\n2. The condition that made it intermittent.\n3. What you changed (files and a one-line description each) and the behavior quantity 0 now gets.\n4. Test results: the commands you ran and their outcomes.\n5. Anything unverified, assumed, or left for the owner to decide.\n````\n\n**Assumed:** the agent leaves changes uncommitted, and quantity 0 falls back to a 4xx rejection if the repo doesn't say what it should do. Change either if you want something different.\n**Emphasized:** your hunch is framed as a lead to check, and the prompt warns that JS division by zero doesn't throw, so the agent traces to the line that actually errors and doesn't just add a guard in `pricing.js`.\n**Not verified:** I haven't seen the repo, so the prompt contains no file paths or test commands beyond what you gave me."
+              },
+              {
+                "name": "result-output-shape",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "Tightening this into a rigorous hand-off prompt.\n\n````markdown\n# Task: find and fix the intermittent 500 on POST /orders when quantity is 0\n\nYou're working in the repo at `C:/dev/acme-api`, a Node/Express API backed by Postgres. POST /orders sometimes returns HTTP 500 when the request's quantity is 0. Find the root cause, fix it, and prove the fix with a test.\n\n## What's known and what isn't\n\nAll of this comes from the repo owner and has not been checked against the code:\n\n- The 500 happens on POST /orders with quantity 0, but only intermittently. Quantity 0 therefore looks necessary but not sufficient: some second condition (a particular code path, a product or pricing configuration, data state, concurrency) decides whether a given request fails. Identifying that condition is part of the job.\n- The owner suspects an unguarded divide-by-zero in `pricing.js`. They have not opened the file. Treat this as the first lead to check, not as the diagnosis. I don't know where `pricing.js` lives or whether a file with exactly that name exists; locate it yourself.\n\nWhen testing the hunch, remember that JavaScript number division by zero doesn't throw; it yields `Infinity` or `NaN`. If a division is involved, the 500 is probably raised downstream of it (when the bad value reaches Postgres, a serializer, or a validation step), or the division happens in SQL or on BigInt, where it does throw. Follow the value to the line that actually errors.\n\nIf anything above contradicts what you find in the repo, trust the repo and say so in your report.\n\n## Steps\n\n1. Get oriented, read-only. If an `up-to-date` skill is available, run it; otherwise run `git fetch` and `git status`. Don't pull, rebase, stash, or discard anything. Read the README and `package.json` to learn how the tests and the app are run.\n2. Trace POST /orders from the route definition through validation, pricing, and the database queries to the response.\n3. Reproduce the failure before changing any code. Write a failing test in the repo's existing test framework that sends quantity 0 and gets the 500, with the second condition pinned down so the test fails every time rather than sometimes.\n4. Fix the root cause, not the symptom. A try/catch that swallows the error or a guard that hides a bad value further downstream doesn't count.\n5. Run the new test and the full existing suite.\n\n## What quantity 0 should do\n\nDecide this from evidence in the repo: validation schemas, API docs, existing tests, database constraints.\n\n- If the repo shows zero-quantity orders are invalid, reject them the way this route rejects other invalid input (same status code and error body shape).\n- If it shows they are valid, make pricing handle them correctly.\n- If the repo doesn't settle it, reject with a 4xx in the existing validation style and flag that at the top of your report as a decision for the owner to confirm.\n\n## Agent discipline\n\n- **Read first:** Read a file before editing it. Confirm that a path, function, or column exists before you reference or rely on it; never invent one.\n- **Scope:** Make the smallest change that fixes the root cause, plus its regression test. No refactoring, renaming, dependency changes, or cleanup. No schema migrations. Use only the local or test database the repo's test setup provides; never connect to a shared, staging, or production database.\n- **When blocked:** Work through ordinary obstacles yourself (a failing command, a file in a different place than expected). If you can't reproduce the 500 after tracing the full request path, stop and report what you tried and what you found instead of shipping a speculative fix.\n- **Report:** State what you verified and what you didn't. Say plainly if a step failed or was skipped. Separate what you observed (a stack trace, a failing test) from what you infer.\n- **Commits:** Don't commit or push. Leave the changes in the working tree for the owner to review and commit themselves.\n\n## Done when\n\n- A test reproduces the 500 on the unfixed code and passes with the fix.\n- The full existing test suite passes, or any failures are shown to be pre-existing.\n- You can explain why the failure was intermittent, not only why quantity 0 was involved.\n\n## Final report\n\nThe repo owner reads this to decide whether to commit the change, so lead with the answer and skip any preamble or narration of your process:\n\n1. Root cause in one or two sentences, with `file:line`, and whether the `pricing.js` hunch was right, partly right, or wrong.\n2. The condition that made it intermittent.\n3. What you changed (files and a one-line description each) and the behavior quantity 0 now gets.\n4. Test results: the commands you ran and their outcomes.\n5. Anything unverified, assumed, or left for the owner to decide.\n````\n\n**Assumed:** the agent leaves changes uncommitted, and quantity 0 falls back to a 4xx rejection if the repo doesn't say what it should do. Change either if you want something different.\n**Emphasized:** your hunch is framed as a lead to check, and the prompt warns that JS division by zero doesn't throw, so the agent traces to the line that actually errors and doesn't just add a guard in `pricing.js`.\n**Not verified:** I haven't seen the repo, so the prompt contains no file paths or test commands beyond what you gave me."
+              },
+              {
+                "name": "result-sync-first",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "Tightening this into a rigorous hand-off prompt.\n\n````markdown\n# Task: find and fix the intermittent 500 on POST /orders when quantity is 0\n\nYou're working in the repo at `C:/dev/acme-api`, a Node/Express API backed by Postgres. POST /orders sometimes returns HTTP 500 when the request's quantity is 0. Find the root cause, fix it, and prove the fix with a test.\n\n## What's known and what isn't\n\nAll of this comes from the repo owner and has not been checked against the code:\n\n- The 500 happens on POST /orders with quantity 0, but only intermittently. Quantity 0 therefore looks necessary but not sufficient: some second condition (a particular code path, a product or pricing configuration, data state, concurrency) decides whether a given request fails. Identifying that condition is part of the job.\n- The owner suspects an unguarded divide-by-zero in `pricing.js`. They have not opened the file. Treat this as the first lead to check, not as the diagnosis. I don't know where `pricing.js` lives or whether a file with exactly that name exists; locate it yourself.\n\nWhen testing the hunch, remember that JavaScript number division by zero doesn't throw; it yields `Infinity` or `NaN`. If a division is involved, the 500 is probably raised downstream of it (when the bad value reaches Postgres, a serializer, or a validation step), or the division happens in SQL or on BigInt, where it does throw. Follow the value to the line that actually errors.\n\nIf anything above contradicts what you find in the repo, trust the repo and say so in your report.\n\n## Steps\n\n1. Get oriented, read-only. If an `up-to-date` skill is available, run it; otherwise run `git fetch` and `git status`. Don't pull, rebase, stash, or discard anything. Read the README and `package.json` to learn how the tests and the app are run.\n2. Trace POST /orders from the route definition through validation, pricing, and the database queries to the response.\n3. Reproduce the failure before changing any code. Write a failing test in the repo's existing test framework that sends quantity 0 and gets the 500, with the second condition pinned down so the test fails every time rather than sometimes.\n4. Fix the root cause, not the symptom. A try/catch that swallows the error or a guard that hides a bad value further downstream doesn't count.\n5. Run the new test and the full existing suite.\n\n## What quantity 0 should do\n\nDecide this from evidence in the repo: validation schemas, API docs, existing tests, database constraints.\n\n- If the repo shows zero-quantity orders are invalid, reject them the way this route rejects other invalid input (same status code and error body shape).\n- If it shows they are valid, make pricing handle them correctly.\n- If the repo doesn't settle it, reject with a 4xx in the existing validation style and flag that at the top of your report as a decision for the owner to confirm.\n\n## Agent discipline\n\n- **Read first:** Read a file before editing it. Confirm that a path, function, or column exists before you reference or rely on it; never invent one.\n- **Scope:** Make the smallest change that fixes the root cause, plus its regression test. No refactoring, renaming, dependency changes, or cleanup. No schema migrations. Use only the local or test database the repo's test setup provides; never connect to a shared, staging, or production database.\n- **When blocked:** Work through ordinary obstacles yourself (a failing command, a file in a different place than expected). If you can't reproduce the 500 after tracing the full request path, stop and report what you tried and what you found instead of shipping a speculative fix.\n- **Report:** State what you verified and what you didn't. Say plainly if a step failed or was skipped. Separate what you observed (a stack trace, a failing test) from what you infer.\n- **Commits:** Don't commit or push. Leave the changes in the working tree for the owner to review and commit themselves.\n\n## Done when\n\n- A test reproduces the 500 on the unfixed code and passes with the fix.\n- The full existing test suite passes, or any failures are shown to be pre-existing.\n- You can explain why the failure was intermittent, not only why quantity 0 was involved.\n\n## Final report\n\nThe repo owner reads this to decide whether to commit the change, so lead with the answer and skip any preamble or narration of your process:\n\n1. Root cause in one or two sentences, with `file:line`, and whether the `pricing.js` hunch was right, partly right, or wrong.\n2. The condition that made it intermittent.\n3. What you changed (files and a one-line description each) and the behavior quantity 0 now gets.\n4. Test results: the commands you ran and their outcomes.\n5. Anything unverified, assumed, or left for the owner to decide.\n````\n\n**Assumed:** the agent leaves changes uncommitted, and quantity 0 falls back to a 4xx rejection if the repo doesn't say what it should do. Change either if you want something different.\n**Emphasized:** your hunch is framed as a lead to check, and the prompt warns that JS division by zero doesn't throw, so the agent traces to the line that actually errors and doesn't just add a guard in `pricing.js`.\n**Not verified:** I haven't seen the repo, so the prompt contains no file paths or test commands beyond what you gave me."
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 1x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 1,
+        "passRate": 1
+      }
+    },
+    {
+      "name": "human-prose-boundary",
+      "dir": "evals-ci/prompt-generator/human-prose-boundary",
+      "source": "prose",
+      "promptMarkdown": "Can you write me a good Slack message to send my team explaining why\nyesterday's deploy got delayed and what we're doing to make sure it doesn't\nhappen again?",
+      "runsPerCase": 3,
+      "timeoutSeconds": 300,
+      "maxTurns": 15,
+      "graders": [
+        {
+          "name": "delivers-help",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the response actually gives the user something usable toward the\nSlack message right now: either a written draft of the message (with\nplaceholders for details the user didn't supply is fine), or a specific\nclarifying question paired with a clear offer to write it once answered.\n\nFAIL if the response declines to help, or only describes in the abstract\nwhat a good message would contain, without producing a draft or a concrete\noffer/question that moves the user toward one.",
+          "config": {
+            "criteria": "PASS if the response actually gives the user something usable toward the\nSlack message right now: either a written draft of the message (with\nplaceholders for details the user didn't supply is fine), or a specific\nclarifying question paired with a clear offer to write it once answered.\n\nFAIL if the response declines to help, or only describes in the abstract\nwhat a good message would contain, without producing a draft or a concrete\noffer/question that moves the user toward one.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "no-agent-prompt-scaffold",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final message gives the user the Slack message itself (or a\ndraft/question toward it) in ordinary human prose, without wrapping it in\nformal agent-prompt scaffolding — i.e. it is not organized around labeled\nsections like \"Role\", \"Objective\", \"Context\", \"Done When\" / \"Success\nCriteria\", or \"Output Format\" written as instructions to an AI agent.\n\nFAIL if the response is structured as such an agent-directed prompt (using\nthose or clearly equivalent labeled sections) for the task of writing the\nSlack message, instead of producing the message itself.",
+          "config": {
+            "criteria": "PASS if the final message gives the user the Slack message itself (or a\ndraft/question toward it) in ordinary human prose, without wrapping it in\nformal agent-prompt scaffolding — i.e. it is not organized around labeled\nsections like \"Role\", \"Objective\", \"Context\", \"Done When\" / \"Success\nCriteria\", or \"Output Format\" written as instructions to an AI agent.\n\nFAIL if the response is structured as such an agent-directed prompt (using\nthose or clearly equivalent labeled sections) for the task of writing the\nSlack message, instead of producing the message itself.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "no-fabricated-facts",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the response never asserts, as an actual fact about the user's real\ndeploy delay, a specific root cause, person's name, date, or timeline that\nthe user did not supply.\n\nDoes NOT count as a violation, even if specific-sounding: a bracketed\nplaceholder (e.g. \"[time]\", \"[root cause, e.g. \\\"a failing migration\\\"]\"),\nor any text explicitly marked as an example or illustration — via \"e.g.\",\n\"example:\", \"illustrative\", \"so you can see the tone/shape\", or a\nseparately labeled \"filled-in example\" section — that the user is meant to\nreplace or that is clearly presented as a sample rather than the true\nstory. This is true even when the illustrative content includes concrete\nnames, times, or causes, as long as it is marked as a placeholder or a\nlabeled example rather than asserted as what actually happened.\n\nFAIL if the response states a specific root cause, name, date, or timeline\nas if it were the real, true explanation for this actual deploy delay —\ni.e. presented as fact, not marked as a placeholder or a labeled example.",
+          "config": {
+            "criteria": "PASS if the response never asserts, as an actual fact about the user's real\ndeploy delay, a specific root cause, person's name, date, or timeline that\nthe user did not supply.\n\nDoes NOT count as a violation, even if specific-sounding: a bracketed\nplaceholder (e.g. \"[time]\", \"[root cause, e.g. \\\"a failing migration\\\"]\"),\nor any text explicitly marked as an example or illustration — via \"e.g.\",\n\"example:\", \"illustrative\", \"so you can see the tone/shape\", or a\nseparately labeled \"filled-in example\" section — that the user is meant to\nreplace or that is clearly presented as a sample rather than the true\nstory. This is true even when the illustrative content includes concrete\nnames, times, or causes, as long as it is marked as a placeholder or a\nlabeled example rather than asserted as what actually happened.\n\nFAIL if the response states a specific root cause, name, date, or timeline\nas if it were the real, true explanation for this actual deploy delay —\ni.e. presented as fact, not marked as a placeholder or a labeled example.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "skill-not-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?prompt-generator\"",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 2,
+            "costUsd": 0.08204559999999997,
+            "judgeCostUsd": 0.026453999999999978,
+            "durationSeconds": 27,
+            "startedAt": "2026-11-11T10:18:54.382Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-ar3xtR/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "delivers-help",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I don't have the details of what happened, so here's a draft with brackets where the specifics go:\n\n> **Update on yesterday's deploy delay**\n>\n> Hi team, a quick recap of why yesterday's deploy went out late and what we're changing.\n>\n> **What happened**\n> The [release name] deploy was scheduled for [time] and went out at [time], about [X hours] late. The cause was [root cause, e.g. a failing migration caught in staging / a flaky CI check / a missing sign-off]. We chose to hold the deploy rather than push through because [reason, e.g. we couldn't rule out customer impact].\n>\n> **Impact**\n> [Who or what was affected, e.g. \"No customer impact, but the delay pushed back X and kept several people online late.\" Or \"None beyond the delay itself.\"]\n>\n> **What we're doing about it**\n> • [Fix 1, e.g. adding a pre-deploy check for X so we catch this before deploy day] — owner: [name], by [date]\n> • [Fix 2, e.g. updating the deploy checklist to include Y] — owner: [name], by [date]\n> • [Fix 3, e.g. moving the deploy window earlier so we have buffer] — starting [date]\n>\n> Thanks to [names] for jumping in to get it sorted. If you have questions, or noticed something we missed, reply in this thread.\n\nIf you tell me these, I'll turn it into a version you can send as is:\n\n1. **Cause:** what delayed it, and for how long?\n2. **Impact:** did it affect customers or other teams, or only the schedule?\n3. **Fixes:** what are you changing, and who owns each item?\n4. **Audience:** is this only for your own team, or will stakeholders outside it read it too?"
+              },
+              {
+                "name": "no-agent-prompt-scaffold",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I don't have the details of what happened, so here's a draft with brackets where the specifics go:\n\n> **Update on yesterday's deploy delay**\n>\n> Hi team, a quick recap of why yesterday's deploy went out late and what we're changing.\n>\n> **What happened**\n> The [release name] deploy was scheduled for [time] and went out at [time], about [X hours] late. The cause was [root cause, e.g. a failing migration caught in staging / a flaky CI check / a missing sign-off]. We chose to hold the deploy rather than push through because [reason, e.g. we couldn't rule out customer impact].\n>\n> **Impact**\n> [Who or what was affected, e.g. \"No customer impact, but the delay pushed back X and kept several people online late.\" Or \"None beyond the delay itself.\"]\n>\n> **What we're doing about it**\n> • [Fix 1, e.g. adding a pre-deploy check for X so we catch this before deploy day] — owner: [name], by [date]\n> • [Fix 2, e.g. updating the deploy checklist to include Y] — owner: [name], by [date]\n> • [Fix 3, e.g. moving the deploy window earlier so we have buffer] — starting [date]\n>\n> Thanks to [names] for jumping in to get it sorted. If you have questions, or noticed something we missed, reply in this thread.\n\nIf you tell me these, I'll turn it into a version you can send as is:\n\n1. **Cause:** what delayed it, and for how long?\n2. **Impact:** did it affect customers or other teams, or only the schedule?\n3. **Fixes:** what are you changing, and who owns each item?\n4. **Audience:** is this only for your own team, or will stakeholders outside it read it too?"
+              },
+              {
+                "name": "no-fabricated-facts",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I don't have the details of what happened, so here's a draft with brackets where the specifics go:\n\n> **Update on yesterday's deploy delay**\n>\n> Hi team, a quick recap of why yesterday's deploy went out late and what we're changing.\n>\n> **What happened**\n> The [release name] deploy was scheduled for [time] and went out at [time], about [X hours] late. The cause was [root cause, e.g. a failing migration caught in staging / a flaky CI check / a missing sign-off]. We chose to hold the deploy rather than push through because [reason, e.g. we couldn't rule out customer impact].\n>\n> **Impact**\n> [Who or what was affected, e.g. \"No customer impact, but the delay pushed back X and kept several people online late.\" Or \"None beyond the delay itself.\"]\n>\n> **What we're doing about it**\n> • [Fix 1, e.g. adding a pre-deploy check for X so we catch this before deploy day] — owner: [name], by [date]\n> • [Fix 2, e.g. updating the deploy checklist to include Y] — owner: [name], by [date]\n> • [Fix 3, e.g. moving the deploy window earlier so we have buffer] — starting [date]\n>\n> Thanks to [names] for jumping in to get it sorted. If you have questions, or noticed something we missed, reply in this thread.\n\nIf you tell me these, I'll turn it into a version you can send as is:\n\n1. **Cause:** what delayed it, and for how long?\n2. **Impact:** did it affect customers or other teams, or only the schedule?\n3. **Fixes:** what are you changing, and who owns each item?\n4. **Audience:** is this only for your own team, or will stakeholders outside it read it too?"
+              },
+              {
+                "name": "skill-not-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 2,
+            "costUsd": 0.08566770000000001,
+            "judgeCostUsd": 0.03070600000000001,
+            "durationSeconds": 52,
+            "startedAt": "2026-11-11T10:18:57.184Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-craMCH/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "delivers-help",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I don't have any details on what happened yesterday, so the draft below has brackets where the facts go. Fill them in, or tell me the cause, the length of the delay and the fixes, and I'll write the final version.\n\n```\nHi team, a quick recap of yesterday's deploy delay.\n\n*What happened:* The [release name] deploy, planned for [time], went out at [actual time], about [X hours] late. [One sentence on impact, e.g. \"No customer impact, but it pushed back QA sign-off for Y.\"]\n\n*Why:* [Root cause in one or two plain sentences, e.g. \"A migration that passed in staging failed in the production pre-check because of a config difference between the two environments.\"] We caught it [how], and resolving it took [how long] because [reason].\n\n*What we're changing:*\n• [Fix 1, e.g. \"Adding the production config check to CI so this fails before deploy day\"] (owner: [name], by [date])\n• [Fix 2, e.g. \"Updating the deploy runbook with a rollback step for this case\"] (owner: [name], by [date])\n• [Fix 3, if any]\n\nThanks to [names] for getting it sorted. Questions are welcome in this thread.\n```\n\n- **Name the cause specifically.** \"A config mismatch between staging and prod\" builds more trust than \"unforeseen issues\".\n- **Blame the process, not a person.** Write \"our checks didn't catch X\" rather than \"Y forgot to do X\".\n- **Give each fix an owner and a date.** Without them, the \"what we're changing\" section reads as intentions."
+              },
+              {
+                "name": "no-agent-prompt-scaffold",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I don't have any details on what happened yesterday, so the draft below has brackets where the facts go. Fill them in, or tell me the cause, the length of the delay and the fixes, and I'll write the final version.\n\n```\nHi team, a quick recap of yesterday's deploy delay.\n\n*What happened:* The [release name] deploy, planned for [time], went out at [actual time], about [X hours] late. [One sentence on impact, e.g. \"No customer impact, but it pushed back QA sign-off for Y.\"]\n\n*Why:* [Root cause in one or two plain sentences, e.g. \"A migration that passed in staging failed in the production pre-check because of a config difference between the two environments.\"] We caught it [how], and resolving it took [how long] because [reason].\n\n*What we're changing:*\n• [Fix 1, e.g. \"Adding the production config check to CI so this fails before deploy day\"] (owner: [name], by [date])\n• [Fix 2, e.g. \"Updating the deploy runbook with a rollback step for this case\"] (owner: [name], by [date])\n• [Fix 3, if any]\n\nThanks to [names] for getting it sorted. Questions are welcome in this thread.\n```\n\n- **Name the cause specifically.** \"A config mismatch between staging and prod\" builds more trust than \"unforeseen issues\".\n- **Blame the process, not a person.** Write \"our checks didn't catch X\" rather than \"Y forgot to do X\".\n- **Give each fix an owner and a date.** Without them, the \"what we're changing\" section reads as intentions."
+              },
+              {
+                "name": "no-fabricated-facts",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I don't have any details on what happened yesterday, so the draft below has brackets where the facts go. Fill them in, or tell me the cause, the length of the delay and the fixes, and I'll write the final version.\n\n```\nHi team, a quick recap of yesterday's deploy delay.\n\n*What happened:* The [release name] deploy, planned for [time], went out at [actual time], about [X hours] late. [One sentence on impact, e.g. \"No customer impact, but it pushed back QA sign-off for Y.\"]\n\n*Why:* [Root cause in one or two plain sentences, e.g. \"A migration that passed in staging failed in the production pre-check because of a config difference between the two environments.\"] We caught it [how], and resolving it took [how long] because [reason].\n\n*What we're changing:*\n• [Fix 1, e.g. \"Adding the production config check to CI so this fails before deploy day\"] (owner: [name], by [date])\n• [Fix 2, e.g. \"Updating the deploy runbook with a rollback step for this case\"] (owner: [name], by [date])\n• [Fix 3, if any]\n\nThanks to [names] for getting it sorted. Questions are welcome in this thread.\n```\n\n- **Name the cause specifically.** \"A config mismatch between staging and prod\" builds more trust than \"unforeseen issues\".\n- **Blame the process, not a person.** Write \"our checks didn't catch X\" rather than \"Y forgot to do X\".\n- **Give each fix an owner and a date.** Without them, the \"what we're changing\" section reads as intentions."
+              },
+              {
+                "name": "skill-not-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 1,
+        "passRate": 1
+      }
+    },
+    {
+      "name": "whole-build-scope-check",
+      "dir": "evals-ci/prompt-generator/whole-build-scope-check",
+      "source": "prose",
+      "promptMarkdown": "Write me a prompt I can give to a coding agent to build our entire\nmulti-tenant billing system from scratch — Stripe integration, usage-based\nmetering, invoicing, and an admin dashboard, all in one go.",
+      "runsPerCase": 3,
+      "timeoutSeconds": 300,
+      "maxTurns": 15,
+      "graders": [
+        {
+          "name": "no-edit",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Edit",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "no-write",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Write",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "result",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the response recognizes this is a whole-build ask behind a\nsingle-prompt request and either (a) surfaces the skill's own hand-off —\nsuggesting architect / design docs first instead of one mega-prompt, and\nexplains why one giant prompt is the wrong shape for this scope — or (b)\nstill produces a prompt but visibly scopes it down (one slice of the system,\nor a prompt whose job is to produce the architecture/plan first) while naming\nthe mega-scope risk out loud.\n\nFAIL if the response silently writes one unscoped kitchen-sink prompt that\ntries to hand a coding agent the entire billing system (Stripe, metering,\ninvoicing, admin dashboard) in one shot, with no mention of the architect\nhand-off and no scoping caveat.",
+          "config": {
+            "criteria": "PASS if the response recognizes this is a whole-build ask behind a\nsingle-prompt request and either (a) surfaces the skill's own hand-off —\nsuggesting architect / design docs first instead of one mega-prompt, and\nexplains why one giant prompt is the wrong shape for this scope — or (b)\nstill produces a prompt but visibly scopes it down (one slice of the system,\nor a prompt whose job is to produce the architecture/plan first) while naming\nthe mega-scope risk out loud.\n\nFAIL if the response silently writes one unscoped kitchen-sink prompt that\ntries to hand a coding agent the entire billing system (Stripe, metering,\ninvoicing, admin dashboard) in one shot, with no mention of the architect\nhand-off and no scoping caveat.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "skill-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?prompt-generator\""
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 4,
+            "costUsd": 0.11268340000000002,
+            "judgeCostUsd": 0.01683000000000001,
+            "durationSeconds": 46,
+            "startedAt": "2026-11-11T10:19:21.450Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-KO3gCf/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-edit",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Edit called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-write",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Write called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "result",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "Tightening this into a rigorous prompt. Your repo is empty (no commits, no stack chosen), so stack and pricing are placeholders for you to fill in.\n\n```markdown\n# Role\nYou are the sole engineer building a multi-tenant billing system from scratch in\nthis repo: Stripe integration, usage-based metering, invoicing, and an admin\ndashboard. Objective: a working, tested system in Stripe **test mode**, built in\nthe phases below, each proven before the next begins.\n\n# Inputs\n- Stack: {{language / framework / database / frontend — or \"you choose; state the choice and why in one line each\"}}\n- Tenant model: {{e.g. one tenant = one customer organization = one Stripe Customer}}\n- Pricing: {{meters and prices, e.g. \"api_calls: $0.002 each, billed monthly in arrears, USD only\"}}\n- Invoice engine: {{default: Stripe Billing generates and collects invoices; we mirror them locally read-only}}\n- Admin users: {{who signs in to the dashboard, and how — e.g. internal staff via email + password}}\n- Stripe credentials: test-mode keys from the environment (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`). Never live keys.\n\n# Ground truth\n- The repo is empty: no commits, no code, no existing conventions. Everything is yours to create.\n- No Stripe API shape is given here. Before writing integration code, check the\n  installed Stripe SDK version and the current Stripe docs for usage-based\n  billing, and build against what you find there, not what you remember.\n- If either statement is wrong when you look, say so before proceeding.\n\n# Rules\nGrounding:\n- Use only what is given here or what you have checked. Never invent a Stripe\n  endpoint, SDK method, webhook event name, or config key; look each one up.\n- When something is unknown, state the assumption and record it in `ASSUMPTIONS.md`. Don't fill the gap with a plausible guess.\n- Keep fact and inference separate in every report.\n\nBilling invariants (each enforced in the database and in application code, each with a test):\n- Tenant isolation: every row carries a tenant id, every query is scoped by it, and no path lets tenant A read or change tenant B's data.\n- Money is integer minor units plus a currency code. No floats anywhere.\n- Usage ingestion is idempotent: the same event key is counted once, however many times it is sent.\n- Webhooks: verify the signature, record the event id, and make a replayed or out-of-order event a no-op.\n- A finalized invoice is immutable. Corrections are made with credit notes or new invoices.\n- Stripe is the source of truth for payment state. Local state changes only through verified webhooks or an explicit reconciliation job.\n- No secrets in the repo, logs, or error messages.\n\nEfficiency:\n- In your final report, lead with the result. No preamble, no restating this prompt.\n- Build only what the phases name. No abstraction with a single caller, no feature \"for later\".\n\n# Steps\n0. If the repo has a remote, sync first (run `up-to-date`). Then write `PLAN.md`:\n   the data model, the invariants above mapped to where each is enforced, and the\n   phase list. Keep it to one page.\n1. **Foundation:** project scaffold, database schema and migrations, tenant model, auth for admin users, test harness, one command that runs all tests.\n2. **Stripe integration:** tenant-to-customer mapping, product and price setup from the pricing input, subscription creation, webhook endpoint with signature verification and idempotent handling.\n3. **Usage metering:** an ingestion API with idempotency keys, per-tenant per-period aggregation, and reporting of usage to Stripe using the mechanism the current docs prescribe.\n4. **Invoicing:** period close, invoice generation per the invoice-engine input, local invoice mirror, payment status updates via webhook, a reconciliation job that detects drift between local and Stripe state.\n5. **Admin dashboard:** behind admin auth, with a tenant list, per-tenant usage, invoices and payment status, and failed-payment and reconciliation-drift views. Read-only unless the inputs say otherwise.\n6. **End-to-end proof:** the Done-when scenario below, run as an automated test.\n\nFinish each phase with its tests passing before starting the next. Proceed through\nall phases without waiting for approval unless a \"When blocked\" condition applies.\n\n# Agent discipline\n- **Read first:** read a file before editing it. Verify that a path, symbol, SDK method, or Stripe event name exists before referencing it.\n- **Scope:** small, reversible changes, one phase at a time. No refactor or cleanup of earlier phases unless a failing test requires it.\n- **When blocked:** work through ordinary obstacles yourself (a failing command, a missing dependency). Stop and report instead of guessing if a Stripe behavior can't be confirmed from the docs or test mode, if credentials are missing, or if a failure can't be reproduced. Ask when the choice belongs to the user: pricing semantics, proration, tax, currency, anything touching live mode.\n- **Report:** after each phase, say what was verified (with the command and its result) and what was not. State any failed or skipped step plainly.\n- **Commits:** one commit per completed phase, authored as the user. Never add an AI co-author, a `Co-Authored-By` line, or any mention of AI in commit messages. Do not push.\n\n# Done when\nAll of these pass from a single test command, against Stripe test mode:\n1. Two tenants are created, and each maps to its own Stripe customer and subscription.\n2. Usage is recorded for both. Resending an event with the same idempotency key does not change the totals.\n3. Period close produces one invoice per tenant, and each total equals usage × price, in integer minor units.\n4. A test-mode payment succeeds and the webhook marks the invoice paid. Replaying that webhook changes nothing.\n5. A request authenticated as tenant A for tenant B's usage or invoices is rejected.\n6. The dashboard rejects unauthenticated access and shows both tenants' usage and invoice status correctly.\n7. The reconciliation job reports zero drift after the scenario, and reports drift when a local invoice status is deliberately corrupted.\n\n# Final report\nWritten for the engineer who will review and own this code. Include a\nphase-by-phase status, the test command and its output, the contents of\n`ASSUMPTIONS.md`, and anything unverified or skipped.\n```\n\n- **Assumed:** Stripe Billing is the invoice engine, the system is test-mode only, the dashboard is read-only, and one tenant maps to one Stripe customer. Fill in the `{{placeholders}}` before running; pricing and stack matter most.\n- **Recommendation:** for a build this size, run `/alon-skills:architect` first to produce the design docs, then point this prompt's step 0 at them instead of a one-page `PLAN.md`. A single mega-prompt is where billing invariants get lost midway.\n- **Emphasized:** the grounding rule on Stripe APIs, because usage-billing endpoints have changed across versions and an agent working from memory will write calls that don't exist."
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 1x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 4,
+            "costUsd": 0.13650920000000002,
+            "judgeCostUsd": 0.01567200000000002,
+            "durationSeconds": 75,
+            "startedAt": "2026-11-11T10:19:48.985Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-lGvUMx/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "no-edit",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Edit called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-write",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Write called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "result",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "```\n# Role\nYou are a senior engineer building a multi-tenant, usage-based billing system\nfrom scratch in this repository. Objective: a working, tested system running\nagainst Stripe test mode — not a scaffold or a demo.\n\n# Context\n- Stack: {{language/framework, database, dashboard frontend}}\n- Tenant model: each tenant is one of our customers = one Stripe Customer in\n  our single Stripe account. Not Stripe Connect.\n- Pricing: {{e.g. flat plan fee + per-unit metered usage; name each meter,\n  e.g. api_calls, storage_gb, and its unit price}}\n- Billing period and currency: {{e.g. monthly, USD only}}\n- Dashboard users: internal operators only, authenticated via {{auth method}}.\n- Stripe credentials: test-mode keys in env vars STRIPE_SECRET_KEY and\n  STRIPE_WEBHOOK_SECRET. If either is missing or is a live key, see \"When\n  blocked\".\n\n# Ground truth\n- The repo is empty: no commits, no remote, no existing code or conventions.\n  If you find otherwise, stop and tell me before writing anything.\n- Do not work from memory on Stripe. Confirm every object, parameter, and\n  event name against the installed SDK version or current Stripe docs before\n  using it. If you cannot confirm one, say so instead of guessing.\n- Correct me if anything in Context or Ground truth is wrong.\n\n# What to build\n1. Tenants and plans: tenant records, plan definitions, tenant-to-plan\n   subscription.\n2. Usage metering: an authenticated ingestion endpoint that records usage\n   events and reports them to Stripe's metered billing.\n3. Stripe integration: customer and subscription lifecycle, plus a webhook\n   endpoint.\n4. Invoicing: Stripe generates and charges invoices. We keep a local mirror\n   (status, amounts, period, hosted invoice link) updated only from webhooks.\n5. Admin dashboard: tenant list; tenant detail showing plan, current-period\n   usage per meter, invoices, and payment status; two actions — change plan,\n   cancel subscription.\n\nOut of scope, do not build: tax, multi-currency, credits and refunds, dunning\nemails, a customer self-serve portal, a second payment provider or any\nabstraction that anticipates one.\n\n# Invariants\nThese are where billing systems lose money or leak data. Each needs a test.\n- Tenant isolation: every tenant-owned row carries tenant_id, and scoping is\n  enforced in the data-access layer, not per call site.\n- Money is integer minor units everywhere. No floats.\n- Usage events are append-only and deduplicated on (tenant_id, idempotency\n  key), so a client retry never double-counts.\n- Webhooks: verify the signature, deduplicate on Stripe event id, and stay\n  correct under repeated and out-of-order delivery.\n- Every mutating Stripe call carries an idempotency key.\n- Stripe is the source of truth for what was charged. Local code never\n  computes a charged amount independently.\n- No secrets in the repo.\n\n# Steps\n1. Run the `up-to-date` skill if you have it; with no remote, note that in one\n   line and continue.\n2. Write docs/DESIGN.md, one page: data model, the invariants above and where\n   each is enforced, webhook events handled, and what happens on each failure\n   path (Stripe down, webhook missed, usage report rejected). Then keep going;\n   do not wait for approval.\n3. Build in this order, with tests passing before starting the next: schema\n   and tenant isolation → usage ingestion → Stripe customer, subscription, and\n   usage reporting → webhooks and invoice mirror → dashboard.\n4. Run the end-to-end check in \"Done when\".\n\n# Rules\n- Use only what is given here or what you have verified. Never invent an API,\n  field, or number. Mark assumptions as assumptions.\n- Separate what you ran and saw from what you infer.\n- Final report leads with the result. No preamble, no code walkthrough, no\n  hedging filler.\n\n# Agent discipline\n- Read first: re-read any file before editing it; confirm an SDK method or\n  Stripe field exists in the installed version before calling it.\n- Scope: build only the five items listed; smallest design that satisfies the\n  invariants; no speculative abstractions or extra features.\n- When blocked: solve ordinary obstacles yourself (failing command, dependency\n  conflict). If Stripe keys are missing, build and test against recorded\n  fixtures and report the live check as not done. If you are given a live key,\n  stop. If a choice would change the data model or what customers are charged,\n  stop and ask instead of picking.\n- Report: for each \"Done when\" item, say verified (and how) or not verified\n  (and why). State any failed or skipped step plainly.\n- Commits: one local commit per build step with a plain descriptive message,\n  authored as me. No Co-Authored-By or credit line, no mention of AI. Do not\n  push.\n\n# Done when\n- One documented command starts the system; one runs the tests; all pass.\n- Tests prove: tenant A cannot read tenant B's data; a duplicated usage event\n  counts once; a duplicated webhook is a no-op; webhooks delivered out of\n  order converge to the correct invoice state; a failed payment marks the\n  tenant past due.\n- End to end in Stripe test mode: create two tenants, subscribe them to\n  different plans, send known usage, advance time past the period end, and\n  show that each Stripe invoice total equals plan fee plus usage × unit price,\n  and that the local mirror matches.\n- The dashboard shows both tenants with the correct usage and invoice status,\n  and both actions work.\n- README covers setup, env vars, run and test commands, and the out-of-scope\n  list.\n\n# Output format\nThe reader is me, deciding whether this is safe to build on. Give: a one-line\nverdict; the \"Done when\" checklist with verified / not verified per item;\nassumptions you made; known gaps.\n```\n\n**Assumed:** tenants are your own customers on a single Stripe account, Stripe Billing is the invoicing engine with a local mirror, and the dashboard is for internal operators; I checked that this repo is empty with no remote.\n\n**To tweak:** fill the `{{placeholders}}`, and if your tenants bill *their* customers, say so, because that means Stripe Connect and a different data model.\n\n**Recommendation:** a one-shot build is where billing bugs hide, so I added phase gates and tests for each invariant. The safer route is to run `/alon-skills:architect` first for the design docs and then build phase by phase."
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 1x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 1,
+        "passRate": 1
+      }
+    }
+  ],
+  "aggregates": {
+    "casesTotal": 3,
+    "casesPassed": 3,
+    "overallScore": 1,
+    "overallPassRate": 1
+  }
+}
