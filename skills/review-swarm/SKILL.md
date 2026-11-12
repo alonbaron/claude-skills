@@ -52,7 +52,18 @@ Spawn the specialists below with the Agent tool, **all in one message** so they 
 
 ## Verification
 
-For each non-trivial finding, spawn a verifier with `model: opus` that tries to *refute* it: is it real, reproducible, not already handled elsewhere? Default to dropping when uncertain. Never report a finding that has not been through the verifier pass.
+For each non-trivial finding, spawn a verifier with `model: opus` that tries to *refute* it. The verifier receives the claim and the code, and nothing else from the reviewer. Write its prompt to this recipe:
+
+```
+Claim: <the finding as one checkable sentence> at <file:line>
+Code: <the hunk, plus the paths to read to judge the claim>
+Task: try to refute the claim. Is it real, reproducible, not already handled elsewhere?
+Return: holds | refuted, with the evidence (a file:line or command output).
+```
+
+The reviewer's reasoning, its severity and its suggested fix stay out of that prompt: a verifier handed the argument tends to agree with it. For a Spec finding, the quoted spec line is part of the claim. You assign severity after the verdicts are in.
+
+Default to dropping when uncertain. Never report a finding that has not been through the verifier pass.
 
 ## Model routing
 
