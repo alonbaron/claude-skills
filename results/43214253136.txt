@@ -1,0 +1,26 @@
+run: 43214253136 https://github.com/alonbaron/claude-skills/actions/runs/43214253136
+event: workflow_dispatch  commit: df86ada06110345b395b0ea9dec85c848e64ab36  ref: feat/v3.3
+model: claude-fable-5-2  cases: sandboxed  job status at publish: success
+only: review-swarm/real-diff-ranked-report
+listing budget: 40000
+cli: 2.1.303 (Claude Code)
+started: 2026-11-12T12:07:45Z
+
+valid 1 of 1
+re-run: none
+cost $4.28  runner aggregates over the 1 cases in the results: {"casesTotal": 1, "casesPassed": 1, "overallScore": 1, "overallPassRate": 1, "meanDelta": 0.75}
+
+== real-diff-ranked-report  with 1.00  without 0.25
+   agent-cap                          with PP   without ..
+   agent-count-reported               with PP   without ..
+   needs-validation-list              with PP   without ..
+   no-edit-calls                      with PP   without PP
+   no-write-calls                     with PP   without PP
+   not-reviewed-line                  with PP   without ..
+   ranked-report-shape                with PP   without ..
+   reviewers-sonnet                   with PP   without ..
+   skill-fired                        with PP   without 
+   spec-section                       with PP   without ..
+   verifier-gets-claim-and-code       with PP   without ..
+   verifier-not-handed-severity       with PP   without PP
+   verifiers-opus                     with PP   without ..

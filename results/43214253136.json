@@ -1,0 +1,764 @@
+{
+  "schemaVersion": 1,
+  "claudeVersion": "2.1.303",
+  "startedAt": "2026-11-12T12:02:26.616Z",
+  "durationSeconds": 318,
+  "costUsd": 4.282538300000001,
+  "partial": false,
+  "suite": {
+    "root": "/home/runner/work/claude-skills/claude-skills",
+    "ablation": "with-without",
+    "modelOverride": "claude-fable-5-2",
+    "judgeModel": "sonnet",
+    "threshold": 0.7,
+    "concurrency": 2,
+    "plugins": [
+      {
+        "name": "alon-skills",
+        "version": "3.2.3",
+        "path": "/home/runner/work/claude-skills/claude-skills"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "real-diff-ranked-report",
+      "dir": "evals-ci/review-swarm/real-diff-ranked-report",
+      "source": "mixed",
+      "promptMarkdown": "I added a new `/orders/<user_id>` endpoint in `app/routes.py`: it pulls a user's orders with `Order.query.filter_by(user_id=user_id).all()`, then loops over them and calls `db.session.query(Item).get(order.item_id)` once per order. There's no test covering a user with zero orders. Haven't committed it yet. Run review-swarm on this diff before I open the PR.",
+      "runsPerCase": 3,
+      "timeoutSeconds": 1500,
+      "maxTurns": 40,
+      "graders": [
+        {
+          "name": "agent-cap",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "min": 5,
+            "max": 15
+          }
+        },
+        {
+          "name": "agent-count-reported",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final report states both how many agents were planned and how many were spawned (for example \"Agents: planned 7 reviewers + up to 8 verifiers · spawned 7 + 6\").\n\nFAIL if the report gives no agent count, or gives only one of the two numbers.",
+          "config": {
+            "criteria": "PASS if the final report states both how many agents were planned and how many were spawned (for example \"Agents: planned 7 reviewers + up to 8 verifiers · spawned 7 + 6\").\n\nFAIL if the report gives no agent count, or gives only one of the two numbers.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "needs-validation-list",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final report has a \"Needs validation\" section, and every entry in it names the specific fact that is missing and would settle the claim (for example the column type of `user_id`, how many orders one user can have, or whether a gateway enforces auth upstream). A \"Needs validation\" section that says \"none\" is also a PASS.\n\nFAIL if the report has no \"Needs validation\" section, or if an entry only calls a finding uncertain or unverified without naming the missing fact.",
+          "config": {
+            "criteria": "PASS if the final report has a \"Needs validation\" section, and every entry in it names the specific fact that is missing and would settle the claim (for example the column type of `user_id`, how many orders one user can have, or whether a gateway enforces auth upstream). A \"Needs validation\" section that says \"none\" is also a PASS.\n\nFAIL if the report has no \"Needs validation\" section, or if an entry only calls a finding uncertain or unverified without naming the missing fact.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "no-edit-calls",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Edit",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "no-write-calls",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Write",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "not-reviewed-line",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final report has an explicit \"Not reviewed\" line or section that either names at least one thing the review did not cover (a file, a reviewer lens, or behaviour that was never run, such as \"nothing was executed because Flask is not installed\") or states that nothing was left out.\n\nFAIL if the report has no line or section labelled as not reviewed. A caveat buried in a finding or in the closing paragraph does not count.",
+          "config": {
+            "criteria": "PASS if the final report has an explicit \"Not reviewed\" line or section that either names at least one thing the review did not cover (a file, a reviewer lens, or behaviour that was never run, such as \"nothing was executed because Flask is not installed\") or states that nothing was left out.\n\nFAIL if the report has no line or section labelled as not reviewed. A caveat buried in a finding or in the closing paragraph does not count.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "ranked-report-shape",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final report: (1) surfaces the N+1 query pattern in `app/routes.py` (one `Item` lookup per order inside the `for order in orders` loop) as a data/performance finding, (2) surfaces the missing test for the zero-orders case as a tests/failure-paths finding, (3) is structured as a ranked Blockers / Should-fix / Nits report with a file:line-style reference and a one-line fix for each item, and (4) shows evidence of adversarial verification (e.g. explains why a finding is real and reproducible, or explicitly drops a speculative one) rather than only listing raw first-pass findings.\n\nFAIL if the report misses either the N+1 pattern or the missing-test finding, is not organized into a ranked Blockers/Should-fix/Nits structure, or shows no sign that findings were verified before being reported.",
+          "config": {
+            "criteria": "PASS if the final report: (1) surfaces the N+1 query pattern in `app/routes.py` (one `Item` lookup per order inside the `for order in orders` loop) as a data/performance finding, (2) surfaces the missing test for the zero-orders case as a tests/failure-paths finding, (3) is structured as a ranked Blockers / Should-fix / Nits report with a file:line-style reference and a one-line fix for each item, and (4) shows evidence of adversarial verification (e.g. explains why a finding is real and reproducible, or explicitly drops a speculative one) rather than only listing raw first-pass findings.\n\nFAIL if the report misses either the N+1 pattern or the missing-test finding, is not organized into a ranked Blockers/Should-fix/Nits structure, or shows no sign that findings were verified before being reported.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "reviewers-sonnet",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "input_match": "\"model\"\\s*:\\s*\"sonnet\"",
+            "min": 4
+          }
+        },
+        {
+          "name": "skill-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?review-swarm\""
+          }
+        },
+        {
+          "name": "spec-section",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final report has a section under its own Spec heading, separate from the Blockers / Should-fix / Nits ranking, and that section reports at least one of these two gaps against the `TODO_WORKFLOW.md` row for `GET /orders/<user_id>`: the response is not capped at 50 orders, or the orders are not returned newest first.\n\nFAIL if the report has no separate Spec heading, or if neither gap is reported under it. Pagination or ordering mentioned only as a ranked finding or a nit, with no reference to the row, is a FAIL.",
+          "config": {
+            "criteria": "PASS if the final report has a section under its own Spec heading, separate from the Blockers / Should-fix / Nits ranking, and that section reports at least one of these two gaps against the `TODO_WORKFLOW.md` row for `GET /orders/<user_id>`: the response is not capped at 50 orders, or the orders are not returned newest first.\n\nFAIL if the report has no separate Spec heading, or if neither gap is reported under it. Pagination or ordering mentioned only as a ranked finding or a nit, with no reference to the row, is a FAIL.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "verifier-gets-claim-and-code",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "input_match": "^(?=[\\s\\S]*\"model\"\\s*:\\s*\"opus\")(?=[\\s\\S]*\\\\n\\W{0,4}(?:Claim|CLAIM)\\b)(?=[\\s\\S]*\\\\n\\W{0,4}(?:Code|CODE)\\b)",
+            "min": 1
+          }
+        },
+        {
+          "name": "verifier-not-handed-severity",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "input_match": "^(?=[\\s\\S]*\"model\"\\s*:\\s*\"opus\")(?=[\\s\\S]*[Ss]everity\\W{0,6}(?:[Bb]locker|[Ss]hould|[Nn]it|[Hh]igh|[Mm]edium|[Ll]ow|[Cc]ritical))",
+            "min": 0,
+            "max": 0
+          }
+        },
+        {
+          "name": "verifiers-opus",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "input_match": "\"model\"\\s*:\\s*\"opus\"",
+            "min": 1
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 20,
+            "costUsd": 1.8514173999999999,
+            "judgeCostUsd": 0.053124000000000005,
+            "durationSeconds": 291,
+            "startedAt": "2026-11-12T12:02:26.647Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-lYDz2P/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "agent-cap",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 15x (expected 5..15)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "agent-count-reported",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "Not ready for a PR: the module fails on import, the endpoint cannot serve a request against the current models, and two requirements from the task row are not implemented.\n\nReviewed: uncommitted working tree vs `HEAD` · 1 file, 11 changed lines · spec: `TODO_WORKFLOW.md:10` (row 1.2)\nAgents: planned 7 reviewers + up to 8 verifiers · spawned 7 + 8\nNot reviewed:\n- **Runtime behaviour:** Flask, SQLAlchemy and pytest are not installed here, so nothing ran against the real stack. The import failure and the `Order.query` failure were reproduced with a stub `flask` package; everything else was judged by reading the code.\n- **Index on `orders.user_id`:** the models declare no columns, so there is no schema to judge.\n\n## Spec\n- missing · `app/routes.py:10` · \"newest first\" · the query has no `order_by`, and `Order` has no timestamp column to sort on · add one and order by it descending, or order by `Order.id` descending.\n- missing · `app/routes.py:10` · \"at most 50 per response\" · `.all()` returns every matching order · add `.limit(50)` after the ordering.\n\n## Blockers\n- `app/routes.py:2` · `from app import db` raises `ImportError: cannot import name 'db' from 'app'`, because there is no `app/__init__.py` and nothing defines `db` · create the `db` object (for example in `app/__init__.py`) and bind it to the Flask app.\n- `app/routes.py:10` · with the import stubbed, every request raises `AttributeError: 'NoneType' object has no attribute 'filter_by'`, because `Order.query` is `None` at `app/models.py:3` · replace the placeholder models with real mapped models before this route ships.\n- `app/routes.py:8-10` · there is no authentication or ownership check, so any caller can read any user's orders by changing the id in the URL; nothing in the repo or the task row says auth is handled elsewhere · derive the user from the authenticated identity, or check the path id against it. If a gateway outside this repo already enforces this, downgrade it.\n\n## Should-fix\n- `app/routes.py:14` · `Query.get` returns `None` for a missing or NULL `item_id`, so `item.name` raises and one orphaned order turns the whole list into a 500; no constraint or error handler prevents it · handle `None` explicitly, or use a join and decide whether such orders are dropped or returned with a null name.\n- `app/routes.py:13` · N+1: the handler issues one SELECT for the orders plus one per distinct `item_id` (the identity map dedupes repeats), and nothing caps the number of orders · fetch in one query with a join, or one `Item.id.in_(...)` lookup.\n- `tests/test_routes.py:1` · the only test is `assert True`, so nothing exercises the endpoint: not the response shape, not the zero-orders case you mentioned, not a missing item · add `test_client` tests for those three cases plus ordering and the 50 cap.\n\n## Nits\n- `app/routes.py:13` · the function mixes `Order.query` (line 10) with `db.session.query(Item)` (line 13), and line 13 is the only use of `db` in the file · use one style; `Item.query.get(...)` or a join removes the need for the `db` import in this file.\n\n## Needs validation\n- `<user_id>` has no type converter, so it reaches the query as a string · `app/routes.py:8` · missing fact: the declared type of `Order.user_id`, which `app/models.py` does not define yet. If it is an integer, use `<int:user_id>`.\n- `Query.get` is a legacy API · `app/routes.py:13` · missing fact: the SQLAlchemy version, which no requirements or pyproject file pins. On 1.4 or later, use `db.session.get(Item, id)`.\n\n## What's solid\n- Route path and response shape match the spec: `GET /orders/<user_id>` returns a JSON list of `{order_id, item_name}`.\n- Injection: no issue; `filter_by` binds `user_id` as a parameter. No secrets in the diff.\n- A user with zero orders returns `[]` with a 200 by construction (the loop is skipped); it is only untested.\n\nI changed nothing. If you want these applied, I can implement the ranked list, or you can run `/code-review --fix`."
+              },
+              {
+                "name": "needs-validation-list",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "Not ready for a PR: the module fails on import, the endpoint cannot serve a request against the current models, and two requirements from the task row are not implemented.\n\nReviewed: uncommitted working tree vs `HEAD` · 1 file, 11 changed lines · spec: `TODO_WORKFLOW.md:10` (row 1.2)\nAgents: planned 7 reviewers + up to 8 verifiers · spawned 7 + 8\nNot reviewed:\n- **Runtime behaviour:** Flask, SQLAlchemy and pytest are not installed here, so nothing ran against the real stack. The import failure and the `Order.query` failure were reproduced with a stub `flask` package; everything else was judged by reading the code.\n- **Index on `orders.user_id`:** the models declare no columns, so there is no schema to judge.\n\n## Spec\n- missing · `app/routes.py:10` · \"newest first\" · the query has no `order_by`, and `Order` has no timestamp column to sort on · add one and order by it descending, or order by `Order.id` descending.\n- missing · `app/routes.py:10` · \"at most 50 per response\" · `.all()` returns every matching order · add `.limit(50)` after the ordering.\n\n## Blockers\n- `app/routes.py:2` · `from app import db` raises `ImportError: cannot import name 'db' from 'app'`, because there is no `app/__init__.py` and nothing defines `db` · create the `db` object (for example in `app/__init__.py`) and bind it to the Flask app.\n- `app/routes.py:10` · with the import stubbed, every request raises `AttributeError: 'NoneType' object has no attribute 'filter_by'`, because `Order.query` is `None` at `app/models.py:3` · replace the placeholder models with real mapped models before this route ships.\n- `app/routes.py:8-10` · there is no authentication or ownership check, so any caller can read any user's orders by changing the id in the URL; nothing in the repo or the task row says auth is handled elsewhere · derive the user from the authenticated identity, or check the path id against it. If a gateway outside this repo already enforces this, downgrade it.\n\n## Should-fix\n- `app/routes.py:14` · `Query.get` returns `None` for a missing or NULL `item_id`, so `item.name` raises and one orphaned order turns the whole list into a 500; no constraint or error handler prevents it · handle `None` explicitly, or use a join and decide whether such orders are dropped or returned with a null name.\n- `app/routes.py:13` · N+1: the handler issues one SELECT for the orders plus one per distinct `item_id` (the identity map dedupes repeats), and nothing caps the number of orders · fetch in one query with a join, or one `Item.id.in_(...)` lookup.\n- `tests/test_routes.py:1` · the only test is `assert True`, so nothing exercises the endpoint: not the response shape, not the zero-orders case you mentioned, not a missing item · add `test_client` tests for those three cases plus ordering and the 50 cap.\n\n## Nits\n- `app/routes.py:13` · the function mixes `Order.query` (line 10) with `db.session.query(Item)` (line 13), and line 13 is the only use of `db` in the file · use one style; `Item.query.get(...)` or a join removes the need for the `db` import in this file.\n\n## Needs validation\n- `<user_id>` has no type converter, so it reaches the query as a string · `app/routes.py:8` · missing fact: the declared type of `Order.user_id`, which `app/models.py` does not define yet. If it is an integer, use `<int:user_id>`.\n- `Query.get` is a legacy API · `app/routes.py:13` · missing fact: the SQLAlchemy version, which no requirements or pyproject file pins. On 1.4 or later, use `db.session.get(Item, id)`.\n\n## What's solid\n- Route path and response shape match the spec: `GET /orders/<user_id>` returns a JSON list of `{order_id, item_name}`.\n- Injection: no issue; `filter_by` binds `user_id` as a parameter. No secrets in the diff.\n- A user with zero orders returns `[]` with a 200 by construction (the loop is skipped); it is only untested.\n\nI changed nothing. If you want these applied, I can implement the ranked list, or you can run `/code-review --fix`."
+              },
+              {
+                "name": "no-edit-calls",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Edit called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-write-calls",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Write called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "not-reviewed-line",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "Not ready for a PR: the module fails on import, the endpoint cannot serve a request against the current models, and two requirements from the task row are not implemented.\n\nReviewed: uncommitted working tree vs `HEAD` · 1 file, 11 changed lines · spec: `TODO_WORKFLOW.md:10` (row 1.2)\nAgents: planned 7 reviewers + up to 8 verifiers · spawned 7 + 8\nNot reviewed:\n- **Runtime behaviour:** Flask, SQLAlchemy and pytest are not installed here, so nothing ran against the real stack. The import failure and the `Order.query` failure were reproduced with a stub `flask` package; everything else was judged by reading the code.\n- **Index on `orders.user_id`:** the models declare no columns, so there is no schema to judge.\n\n## Spec\n- missing · `app/routes.py:10` · \"newest first\" · the query has no `order_by`, and `Order` has no timestamp column to sort on · add one and order by it descending, or order by `Order.id` descending.\n- missing · `app/routes.py:10` · \"at most 50 per response\" · `.all()` returns every matching order · add `.limit(50)` after the ordering.\n\n## Blockers\n- `app/routes.py:2` · `from app import db` raises `ImportError: cannot import name 'db' from 'app'`, because there is no `app/__init__.py` and nothing defines `db` · create the `db` object (for example in `app/__init__.py`) and bind it to the Flask app.\n- `app/routes.py:10` · with the import stubbed, every request raises `AttributeError: 'NoneType' object has no attribute 'filter_by'`, because `Order.query` is `None` at `app/models.py:3` · replace the placeholder models with real mapped models before this route ships.\n- `app/routes.py:8-10` · there is no authentication or ownership check, so any caller can read any user's orders by changing the id in the URL; nothing in the repo or the task row says auth is handled elsewhere · derive the user from the authenticated identity, or check the path id against it. If a gateway outside this repo already enforces this, downgrade it.\n\n## Should-fix\n- `app/routes.py:14` · `Query.get` returns `None` for a missing or NULL `item_id`, so `item.name` raises and one orphaned order turns the whole list into a 500; no constraint or error handler prevents it · handle `None` explicitly, or use a join and decide whether such orders are dropped or returned with a null name.\n- `app/routes.py:13` · N+1: the handler issues one SELECT for the orders plus one per distinct `item_id` (the identity map dedupes repeats), and nothing caps the number of orders · fetch in one query with a join, or one `Item.id.in_(...)` lookup.\n- `tests/test_routes.py:1` · the only test is `assert True`, so nothing exercises the endpoint: not the response shape, not the zero-orders case you mentioned, not a missing item · add `test_client` tests for those three cases plus ordering and the 50 cap.\n\n## Nits\n- `app/routes.py:13` · the function mixes `Order.query` (line 10) with `db.session.query(Item)` (line 13), and line 13 is the only use of `db` in the file · use one style; `Item.query.get(...)` or a join removes the need for the `db` import in this file.\n\n## Needs validation\n- `<user_id>` has no type converter, so it reaches the query as a string · `app/routes.py:8` · missing fact: the declared type of `Order.user_id`, which `app/models.py` does not define yet. If it is an integer, use `<int:user_id>`.\n- `Query.get` is a legacy API · `app/routes.py:13` · missing fact: the SQLAlchemy version, which no requirements or pyproject file pins. On 1.4 or later, use `db.session.get(Item, id)`.\n\n## What's solid\n- Route path and response shape match the spec: `GET /orders/<user_id>` returns a JSON list of `{order_id, item_name}`.\n- Injection: no issue; `filter_by` binds `user_id` as a parameter. No secrets in the diff.\n- A user with zero orders returns `[]` with a 200 by construction (the loop is skipped); it is only untested.\n\nI changed nothing. If you want these applied, I can implement the ranked list, or you can run `/code-review --fix`."
+              },
+              {
+                "name": "ranked-report-shape",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "Not ready for a PR: the module fails on import, the endpoint cannot serve a request against the current models, and two requirements from the task row are not implemented.\n\nReviewed: uncommitted working tree vs `HEAD` · 1 file, 11 changed lines · spec: `TODO_WORKFLOW.md:10` (row 1.2)\nAgents: planned 7 reviewers + up to 8 verifiers · spawned 7 + 8\nNot reviewed:\n- **Runtime behaviour:** Flask, SQLAlchemy and pytest are not installed here, so nothing ran against the real stack. The import failure and the `Order.query` failure were reproduced with a stub `flask` package; everything else was judged by reading the code.\n- **Index on `orders.user_id`:** the models declare no columns, so there is no schema to judge.\n\n## Spec\n- missing · `app/routes.py:10` · \"newest first\" · the query has no `order_by`, and `Order` has no timestamp column to sort on · add one and order by it descending, or order by `Order.id` descending.\n- missing · `app/routes.py:10` · \"at most 50 per response\" · `.all()` returns every matching order · add `.limit(50)` after the ordering.\n\n## Blockers\n- `app/routes.py:2` · `from app import db` raises `ImportError: cannot import name 'db' from 'app'`, because there is no `app/__init__.py` and nothing defines `db` · create the `db` object (for example in `app/__init__.py`) and bind it to the Flask app.\n- `app/routes.py:10` · with the import stubbed, every request raises `AttributeError: 'NoneType' object has no attribute 'filter_by'`, because `Order.query` is `None` at `app/models.py:3` · replace the placeholder models with real mapped models before this route ships.\n- `app/routes.py:8-10` · there is no authentication or ownership check, so any caller can read any user's orders by changing the id in the URL; nothing in the repo or the task row says auth is handled elsewhere · derive the user from the authenticated identity, or check the path id against it. If a gateway outside this repo already enforces this, downgrade it.\n\n## Should-fix\n- `app/routes.py:14` · `Query.get` returns `None` for a missing or NULL `item_id`, so `item.name` raises and one orphaned order turns the whole list into a 500; no constraint or error handler prevents it · handle `None` explicitly, or use a join and decide whether such orders are dropped or returned with a null name.\n- `app/routes.py:13` · N+1: the handler issues one SELECT for the orders plus one per distinct `item_id` (the identity map dedupes repeats), and nothing caps the number of orders · fetch in one query with a join, or one `Item.id.in_(...)` lookup.\n- `tests/test_routes.py:1` · the only test is `assert True`, so nothing exercises the endpoint: not the response shape, not the zero-orders case you mentioned, not a missing item · add `test_client` tests for those three cases plus ordering and the 50 cap.\n\n## Nits\n- `app/routes.py:13` · the function mixes `Order.query` (line 10) with `db.session.query(Item)` (line 13), and line 13 is the only use of `db` in the file · use one style; `Item.query.get(...)` or a join removes the need for the `db` import in this file.\n\n## Needs validation\n- `<user_id>` has no type converter, so it reaches the query as a string · `app/routes.py:8` · missing fact: the declared type of `Order.user_id`, which `app/models.py` does not define yet. If it is an integer, use `<int:user_id>`.\n- `Query.get` is a legacy API · `app/routes.py:13` · missing fact: the SQLAlchemy version, which no requirements or pyproject file pins. On 1.4 or later, use `db.session.get(Item, id)`.\n\n## What's solid\n- Route path and response shape match the spec: `GET /orders/<user_id>` returns a JSON list of `{order_id, item_name}`.\n- Injection: no issue; `filter_by` binds `user_id` as a parameter. No secrets in the diff.\n- A user with zero orders returns `[]` with a 200 by construction (the loop is skipped); it is only untested.\n\nI changed nothing. If you want these applied, I can implement the ranked list, or you can run `/code-review --fix`."
+              },
+              {
+                "name": "reviewers-sonnet",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 7x (expected 4..∞)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 1x (expected 1..∞)",
+                "withOnly": true,
+                "scored": false
+              },
+              {
+                "name": "spec-section",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "Not ready for a PR: the module fails on import, the endpoint cannot serve a request against the current models, and two requirements from the task row are not implemented.\n\nReviewed: uncommitted working tree vs `HEAD` · 1 file, 11 changed lines · spec: `TODO_WORKFLOW.md:10` (row 1.2)\nAgents: planned 7 reviewers + up to 8 verifiers · spawned 7 + 8\nNot reviewed:\n- **Runtime behaviour:** Flask, SQLAlchemy and pytest are not installed here, so nothing ran against the real stack. The import failure and the `Order.query` failure were reproduced with a stub `flask` package; everything else was judged by reading the code.\n- **Index on `orders.user_id`:** the models declare no columns, so there is no schema to judge.\n\n## Spec\n- missing · `app/routes.py:10` · \"newest first\" · the query has no `order_by`, and `Order` has no timestamp column to sort on · add one and order by it descending, or order by `Order.id` descending.\n- missing · `app/routes.py:10` · \"at most 50 per response\" · `.all()` returns every matching order · add `.limit(50)` after the ordering.\n\n## Blockers\n- `app/routes.py:2` · `from app import db` raises `ImportError: cannot import name 'db' from 'app'`, because there is no `app/__init__.py` and nothing defines `db` · create the `db` object (for example in `app/__init__.py`) and bind it to the Flask app.\n- `app/routes.py:10` · with the import stubbed, every request raises `AttributeError: 'NoneType' object has no attribute 'filter_by'`, because `Order.query` is `None` at `app/models.py:3` · replace the placeholder models with real mapped models before this route ships.\n- `app/routes.py:8-10` · there is no authentication or ownership check, so any caller can read any user's orders by changing the id in the URL; nothing in the repo or the task row says auth is handled elsewhere · derive the user from the authenticated identity, or check the path id against it. If a gateway outside this repo already enforces this, downgrade it.\n\n## Should-fix\n- `app/routes.py:14` · `Query.get` returns `None` for a missing or NULL `item_id`, so `item.name` raises and one orphaned order turns the whole list into a 500; no constraint or error handler prevents it · handle `None` explicitly, or use a join and decide whether such orders are dropped or returned with a null name.\n- `app/routes.py:13` · N+1: the handler issues one SELECT for the orders plus one per distinct `item_id` (the identity map dedupes repeats), and nothing caps the number of orders · fetch in one query with a join, or one `Item.id.in_(...)` lookup.\n- `tests/test_routes.py:1` · the only test is `assert True`, so nothing exercises the endpoint: not the response shape, not the zero-orders case you mentioned, not a missing item · add `test_client` tests for those three cases plus ordering and the 50 cap.\n\n## Nits\n- `app/routes.py:13` · the function mixes `Order.query` (line 10) with `db.session.query(Item)` (line 13), and line 13 is the only use of `db` in the file · use one style; `Item.query.get(...)` or a join removes the need for the `db` import in this file.\n\n## Needs validation\n- `<user_id>` has no type converter, so it reaches the query as a string · `app/routes.py:8` · missing fact: the declared type of `Order.user_id`, which `app/models.py` does not define yet. If it is an integer, use `<int:user_id>`.\n- `Query.get` is a legacy API · `app/routes.py:13` · missing fact: the SQLAlchemy version, which no requirements or pyproject file pins. On 1.4 or later, use `db.session.get(Item, id)`.\n\n## What's solid\n- Route path and response shape match the spec: `GET /orders/<user_id>` returns a JSON list of `{order_id, item_name}`.\n- Injection: no issue; `filter_by` binds `user_id` as a parameter. No secrets in the diff.\n- A user with zero orders returns `[]` with a 200 by construction (the loop is skipped); it is only untested.\n\nI changed nothing. If you want these applied, I can implement the ranked list, or you can run `/code-review --fix`."
+              },
+              {
+                "name": "verifier-gets-claim-and-code",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 4x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "verifier-not-handed-severity",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "verifiers-opus",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 8x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 20,
+            "costUsd": 1.8191705,
+            "judgeCostUsd": 0.05588400000000001,
+            "durationSeconds": 178,
+            "startedAt": "2026-11-12T12:02:26.648Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-e3P6eh/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "agent-cap",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 15x (expected 5..15)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "agent-count-reported",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "**Not ready for a PR: the module can't be imported (`from app import db` resolves to nothing), the models it queries are unmapped placeholders, and the endpoint misses two of the spec's requirements.**\n\nReviewed: working tree vs HEAD · 1 file, 11 changed lines · spec: `TODO_WORKFLOW.md:10` (row 1.2)\nAgents: planned 7 reviewers + up to 8 verifiers · spawned 7 + 8\nNot reviewed: runtime behaviour of the route. Flask and SQLAlchemy aren't installed here, so only the two import/attribute failures were reproduced by command; the N+1, missing-item and routing findings rest on reading the code and documented library behaviour.\n\n## Spec\n- missing · `app/routes.py:10` · \"newest first\" · The query has no `order_by`, and `Order` has no timestamp to sort on; add a sort key and order descending.\n- missing · `app/routes.py:10` · \"at most 50 per response\" · The query ends in `.all()` with no cap; add `.limit(50)` after the ordering.\n\n## Blockers\n- `app/routes.py:2` · `from app import db` fails at import: there is no `app/__init__.py` and nothing defines `db` (reproduced: `ImportError: cannot import name 'db' from 'app' (unknown location)`). · Define `db` somewhere importable and wire it to the Flask app.\n- `app/routes.py:10` · `Order.query` is `None` in `app/models.py:3`, so this line raises `AttributeError: 'NoneType' object has no attribute 'filter_by'` (reproduced), and `Item` is equally unmapped for line 13. This surfaces as soon as the import is fixed. · Make `Order` and `Item` real mapped models with columns.\n- `app/routes.py:8-10` · No authentication or authorization: any caller can read any user's orders by changing `user_id` in the URL. No auth layer exists in the repo, and nothing documents it as handled upstream or deferred. · Check the caller's identity against `user_id`, or tell me auth is handled elsewhere and this drops off.\n\n## Should-fix\n- `app/routes.py:12-13` · One `Item` lookup per order. The verified count is 1 + D queries, where D is the number of distinct `item_id`s, because repeats are served from the session's identity map. · Fetch order id and item name in one joined query.\n- `app/routes.py:14` · `Query.get()` returns `None` for a NULL or dangling `item_id`, so `item.name` raises and one bad order returns a 500 for the whole list; no constraint or error handler prevents it. · Decide the behaviour (skip the row, or `item_name: null`) and guard it; an inner join would skip such rows.\n- `tests/test_routes.py:1` · The only test is `assert True`. Nothing exercises the route: not zero orders (the gap you flagged), not the happy path, not a missing item. · Add test-client tests for those three cases, plus ordering and the 50 cap.\n\n## Nits\n- `app/routes.py:13` · Two query idioms for the same job (`Order.query` on line 10, `db.session.query(Item)` here), and `db` is imported only for this call. · Use one style; the joined query removes the second one.\n\n## Needs validation\n- No index on `Order.user_id`, so each request scans the table · `app/routes.py:10` · missing fact: whether `orders.user_id` is indexed, which the real `Order` model or a migration would show (neither exists yet).\n- `/orders/abc` reaches the database instead of returning a 404 · `app/routes.py:8` · missing fact: the column type of `Order.user_id`. The route does accept any string; if ids are integers, `<int:user_id>` fixes it.\n- `Query.get()` is legacy · `app/routes.py:13` · missing fact: the SQLAlchemy version, which no requirements file pins. It is legacy on 1.4 and later.\n\n## What's solid\n- Injection: `filter_by` is parameterized; no leaked secrets.\n- Response shape: the route path, the JSON list and the `{order_id, item_name}` keys match the spec, and filtering is by the given user.\n- Zero orders: by reading, the loop is skipped and the route returns `[]` with a 200 — it is only untested.\n- Scope: no scope creep, no over-engineering.\n\nOne reviewer finding was dropped: a claimed circular import between `app/__init__.py` and `routes.py`, which the verifier found hypothetical since that file doesn't exist.\n\nI haven't changed anything. If you want the fixes applied, I can work through this list, or you can run `/code-review --fix`."
+              },
+              {
+                "name": "needs-validation-list",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "**Not ready for a PR: the module can't be imported (`from app import db` resolves to nothing), the models it queries are unmapped placeholders, and the endpoint misses two of the spec's requirements.**\n\nReviewed: working tree vs HEAD · 1 file, 11 changed lines · spec: `TODO_WORKFLOW.md:10` (row 1.2)\nAgents: planned 7 reviewers + up to 8 verifiers · spawned 7 + 8\nNot reviewed: runtime behaviour of the route. Flask and SQLAlchemy aren't installed here, so only the two import/attribute failures were reproduced by command; the N+1, missing-item and routing findings rest on reading the code and documented library behaviour.\n\n## Spec\n- missing · `app/routes.py:10` · \"newest first\" · The query has no `order_by`, and `Order` has no timestamp to sort on; add a sort key and order descending.\n- missing · `app/routes.py:10` · \"at most 50 per response\" · The query ends in `.all()` with no cap; add `.limit(50)` after the ordering.\n\n## Blockers\n- `app/routes.py:2` · `from app import db` fails at import: there is no `app/__init__.py` and nothing defines `db` (reproduced: `ImportError: cannot import name 'db' from 'app' (unknown location)`). · Define `db` somewhere importable and wire it to the Flask app.\n- `app/routes.py:10` · `Order.query` is `None` in `app/models.py:3`, so this line raises `AttributeError: 'NoneType' object has no attribute 'filter_by'` (reproduced), and `Item` is equally unmapped for line 13. This surfaces as soon as the import is fixed. · Make `Order` and `Item` real mapped models with columns.\n- `app/routes.py:8-10` · No authentication or authorization: any caller can read any user's orders by changing `user_id` in the URL. No auth layer exists in the repo, and nothing documents it as handled upstream or deferred. · Check the caller's identity against `user_id`, or tell me auth is handled elsewhere and this drops off.\n\n## Should-fix\n- `app/routes.py:12-13` · One `Item` lookup per order. The verified count is 1 + D queries, where D is the number of distinct `item_id`s, because repeats are served from the session's identity map. · Fetch order id and item name in one joined query.\n- `app/routes.py:14` · `Query.get()` returns `None` for a NULL or dangling `item_id`, so `item.name` raises and one bad order returns a 500 for the whole list; no constraint or error handler prevents it. · Decide the behaviour (skip the row, or `item_name: null`) and guard it; an inner join would skip such rows.\n- `tests/test_routes.py:1` · The only test is `assert True`. Nothing exercises the route: not zero orders (the gap you flagged), not the happy path, not a missing item. · Add test-client tests for those three cases, plus ordering and the 50 cap.\n\n## Nits\n- `app/routes.py:13` · Two query idioms for the same job (`Order.query` on line 10, `db.session.query(Item)` here), and `db` is imported only for this call. · Use one style; the joined query removes the second one.\n\n## Needs validation\n- No index on `Order.user_id`, so each request scans the table · `app/routes.py:10` · missing fact: whether `orders.user_id` is indexed, which the real `Order` model or a migration would show (neither exists yet).\n- `/orders/abc` reaches the database instead of returning a 404 · `app/routes.py:8` · missing fact: the column type of `Order.user_id`. The route does accept any string; if ids are integers, `<int:user_id>` fixes it.\n- `Query.get()` is legacy · `app/routes.py:13` · missing fact: the SQLAlchemy version, which no requirements file pins. It is legacy on 1.4 and later.\n\n## What's solid\n- Injection: `filter_by` is parameterized; no leaked secrets.\n- Response shape: the route path, the JSON list and the `{order_id, item_name}` keys match the spec, and filtering is by the given user.\n- Zero orders: by reading, the loop is skipped and the route returns `[]` with a 200 — it is only untested.\n- Scope: no scope creep, no over-engineering.\n\nOne reviewer finding was dropped: a claimed circular import between `app/__init__.py` and `routes.py`, which the verifier found hypothetical since that file doesn't exist.\n\nI haven't changed anything. If you want the fixes applied, I can work through this list, or you can run `/code-review --fix`."
+              },
+              {
+                "name": "no-edit-calls",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Edit called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-write-calls",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Write called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "not-reviewed-line",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "**Not ready for a PR: the module can't be imported (`from app import db` resolves to nothing), the models it queries are unmapped placeholders, and the endpoint misses two of the spec's requirements.**\n\nReviewed: working tree vs HEAD · 1 file, 11 changed lines · spec: `TODO_WORKFLOW.md:10` (row 1.2)\nAgents: planned 7 reviewers + up to 8 verifiers · spawned 7 + 8\nNot reviewed: runtime behaviour of the route. Flask and SQLAlchemy aren't installed here, so only the two import/attribute failures were reproduced by command; the N+1, missing-item and routing findings rest on reading the code and documented library behaviour.\n\n## Spec\n- missing · `app/routes.py:10` · \"newest first\" · The query has no `order_by`, and `Order` has no timestamp to sort on; add a sort key and order descending.\n- missing · `app/routes.py:10` · \"at most 50 per response\" · The query ends in `.all()` with no cap; add `.limit(50)` after the ordering.\n\n## Blockers\n- `app/routes.py:2` · `from app import db` fails at import: there is no `app/__init__.py` and nothing defines `db` (reproduced: `ImportError: cannot import name 'db' from 'app' (unknown location)`). · Define `db` somewhere importable and wire it to the Flask app.\n- `app/routes.py:10` · `Order.query` is `None` in `app/models.py:3`, so this line raises `AttributeError: 'NoneType' object has no attribute 'filter_by'` (reproduced), and `Item` is equally unmapped for line 13. This surfaces as soon as the import is fixed. · Make `Order` and `Item` real mapped models with columns.\n- `app/routes.py:8-10` · No authentication or authorization: any caller can read any user's orders by changing `user_id` in the URL. No auth layer exists in the repo, and nothing documents it as handled upstream or deferred. · Check the caller's identity against `user_id`, or tell me auth is handled elsewhere and this drops off.\n\n## Should-fix\n- `app/routes.py:12-13` · One `Item` lookup per order. The verified count is 1 + D queries, where D is the number of distinct `item_id`s, because repeats are served from the session's identity map. · Fetch order id and item name in one joined query.\n- `app/routes.py:14` · `Query.get()` returns `None` for a NULL or dangling `item_id`, so `item.name` raises and one bad order returns a 500 for the whole list; no constraint or error handler prevents it. · Decide the behaviour (skip the row, or `item_name: null`) and guard it; an inner join would skip such rows.\n- `tests/test_routes.py:1` · The only test is `assert True`. Nothing exercises the route: not zero orders (the gap you flagged), not the happy path, not a missing item. · Add test-client tests for those three cases, plus ordering and the 50 cap.\n\n## Nits\n- `app/routes.py:13` · Two query idioms for the same job (`Order.query` on line 10, `db.session.query(Item)` here), and `db` is imported only for this call. · Use one style; the joined query removes the second one.\n\n## Needs validation\n- No index on `Order.user_id`, so each request scans the table · `app/routes.py:10` · missing fact: whether `orders.user_id` is indexed, which the real `Order` model or a migration would show (neither exists yet).\n- `/orders/abc` reaches the database instead of returning a 404 · `app/routes.py:8` · missing fact: the column type of `Order.user_id`. The route does accept any string; if ids are integers, `<int:user_id>` fixes it.\n- `Query.get()` is legacy · `app/routes.py:13` · missing fact: the SQLAlchemy version, which no requirements file pins. It is legacy on 1.4 and later.\n\n## What's solid\n- Injection: `filter_by` is parameterized; no leaked secrets.\n- Response shape: the route path, the JSON list and the `{order_id, item_name}` keys match the spec, and filtering is by the given user.\n- Zero orders: by reading, the loop is skipped and the route returns `[]` with a 200 — it is only untested.\n- Scope: no scope creep, no over-engineering.\n\nOne reviewer finding was dropped: a claimed circular import between `app/__init__.py` and `routes.py`, which the verifier found hypothetical since that file doesn't exist.\n\nI haven't changed anything. If you want the fixes applied, I can work through this list, or you can run `/code-review --fix`."
+              },
+              {
+                "name": "ranked-report-shape",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "**Not ready for a PR: the module can't be imported (`from app import db` resolves to nothing), the models it queries are unmapped placeholders, and the endpoint misses two of the spec's requirements.**\n\nReviewed: working tree vs HEAD · 1 file, 11 changed lines · spec: `TODO_WORKFLOW.md:10` (row 1.2)\nAgents: planned 7 reviewers + up to 8 verifiers · spawned 7 + 8\nNot reviewed: runtime behaviour of the route. Flask and SQLAlchemy aren't installed here, so only the two import/attribute failures were reproduced by command; the N+1, missing-item and routing findings rest on reading the code and documented library behaviour.\n\n## Spec\n- missing · `app/routes.py:10` · \"newest first\" · The query has no `order_by`, and `Order` has no timestamp to sort on; add a sort key and order descending.\n- missing · `app/routes.py:10` · \"at most 50 per response\" · The query ends in `.all()` with no cap; add `.limit(50)` after the ordering.\n\n## Blockers\n- `app/routes.py:2` · `from app import db` fails at import: there is no `app/__init__.py` and nothing defines `db` (reproduced: `ImportError: cannot import name 'db' from 'app' (unknown location)`). · Define `db` somewhere importable and wire it to the Flask app.\n- `app/routes.py:10` · `Order.query` is `None` in `app/models.py:3`, so this line raises `AttributeError: 'NoneType' object has no attribute 'filter_by'` (reproduced), and `Item` is equally unmapped for line 13. This surfaces as soon as the import is fixed. · Make `Order` and `Item` real mapped models with columns.\n- `app/routes.py:8-10` · No authentication or authorization: any caller can read any user's orders by changing `user_id` in the URL. No auth layer exists in the repo, and nothing documents it as handled upstream or deferred. · Check the caller's identity against `user_id`, or tell me auth is handled elsewhere and this drops off.\n\n## Should-fix\n- `app/routes.py:12-13` · One `Item` lookup per order. The verified count is 1 + D queries, where D is the number of distinct `item_id`s, because repeats are served from the session's identity map. · Fetch order id and item name in one joined query.\n- `app/routes.py:14` · `Query.get()` returns `None` for a NULL or dangling `item_id`, so `item.name` raises and one bad order returns a 500 for the whole list; no constraint or error handler prevents it. · Decide the behaviour (skip the row, or `item_name: null`) and guard it; an inner join would skip such rows.\n- `tests/test_routes.py:1` · The only test is `assert True`. Nothing exercises the route: not zero orders (the gap you flagged), not the happy path, not a missing item. · Add test-client tests for those three cases, plus ordering and the 50 cap.\n\n## Nits\n- `app/routes.py:13` · Two query idioms for the same job (`Order.query` on line 10, `db.session.query(Item)` here), and `db` is imported only for this call. · Use one style; the joined query removes the second one.\n\n## Needs validation\n- No index on `Order.user_id`, so each request scans the table · `app/routes.py:10` · missing fact: whether `orders.user_id` is indexed, which the real `Order` model or a migration would show (neither exists yet).\n- `/orders/abc` reaches the database instead of returning a 404 · `app/routes.py:8` · missing fact: the column type of `Order.user_id`. The route does accept any string; if ids are integers, `<int:user_id>` fixes it.\n- `Query.get()` is legacy · `app/routes.py:13` · missing fact: the SQLAlchemy version, which no requirements file pins. It is legacy on 1.4 and later.\n\n## What's solid\n- Injection: `filter_by` is parameterized; no leaked secrets.\n- Response shape: the route path, the JSON list and the `{order_id, item_name}` keys match the spec, and filtering is by the given user.\n- Zero orders: by reading, the loop is skipped and the route returns `[]` with a 200 — it is only untested.\n- Scope: no scope creep, no over-engineering.\n\nOne reviewer finding was dropped: a claimed circular import between `app/__init__.py` and `routes.py`, which the verifier found hypothetical since that file doesn't exist.\n\nI haven't changed anything. If you want the fixes applied, I can work through this list, or you can run `/code-review --fix`."
+              },
+              {
+                "name": "reviewers-sonnet",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 7x (expected 4..∞)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 1x (expected 1..∞)",
+                "withOnly": true,
+                "scored": false
+              },
+              {
+                "name": "spec-section",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "**Not ready for a PR: the module can't be imported (`from app import db` resolves to nothing), the models it queries are unmapped placeholders, and the endpoint misses two of the spec's requirements.**\n\nReviewed: working tree vs HEAD · 1 file, 11 changed lines · spec: `TODO_WORKFLOW.md:10` (row 1.2)\nAgents: planned 7 reviewers + up to 8 verifiers · spawned 7 + 8\nNot reviewed: runtime behaviour of the route. Flask and SQLAlchemy aren't installed here, so only the two import/attribute failures were reproduced by command; the N+1, missing-item and routing findings rest on reading the code and documented library behaviour.\n\n## Spec\n- missing · `app/routes.py:10` · \"newest first\" · The query has no `order_by`, and `Order` has no timestamp to sort on; add a sort key and order descending.\n- missing · `app/routes.py:10` · \"at most 50 per response\" · The query ends in `.all()` with no cap; add `.limit(50)` after the ordering.\n\n## Blockers\n- `app/routes.py:2` · `from app import db` fails at import: there is no `app/__init__.py` and nothing defines `db` (reproduced: `ImportError: cannot import name 'db' from 'app' (unknown location)`). · Define `db` somewhere importable and wire it to the Flask app.\n- `app/routes.py:10` · `Order.query` is `None` in `app/models.py:3`, so this line raises `AttributeError: 'NoneType' object has no attribute 'filter_by'` (reproduced), and `Item` is equally unmapped for line 13. This surfaces as soon as the import is fixed. · Make `Order` and `Item` real mapped models with columns.\n- `app/routes.py:8-10` · No authentication or authorization: any caller can read any user's orders by changing `user_id` in the URL. No auth layer exists in the repo, and nothing documents it as handled upstream or deferred. · Check the caller's identity against `user_id`, or tell me auth is handled elsewhere and this drops off.\n\n## Should-fix\n- `app/routes.py:12-13` · One `Item` lookup per order. The verified count is 1 + D queries, where D is the number of distinct `item_id`s, because repeats are served from the session's identity map. · Fetch order id and item name in one joined query.\n- `app/routes.py:14` · `Query.get()` returns `None` for a NULL or dangling `item_id`, so `item.name` raises and one bad order returns a 500 for the whole list; no constraint or error handler prevents it. · Decide the behaviour (skip the row, or `item_name: null`) and guard it; an inner join would skip such rows.\n- `tests/test_routes.py:1` · The only test is `assert True`. Nothing exercises the route: not zero orders (the gap you flagged), not the happy path, not a missing item. · Add test-client tests for those three cases, plus ordering and the 50 cap.\n\n## Nits\n- `app/routes.py:13` · Two query idioms for the same job (`Order.query` on line 10, `db.session.query(Item)` here), and `db` is imported only for this call. · Use one style; the joined query removes the second one.\n\n## Needs validation\n- No index on `Order.user_id`, so each request scans the table · `app/routes.py:10` · missing fact: whether `orders.user_id` is indexed, which the real `Order` model or a migration would show (neither exists yet).\n- `/orders/abc` reaches the database instead of returning a 404 · `app/routes.py:8` · missing fact: the column type of `Order.user_id`. The route does accept any string; if ids are integers, `<int:user_id>` fixes it.\n- `Query.get()` is legacy · `app/routes.py:13` · missing fact: the SQLAlchemy version, which no requirements file pins. It is legacy on 1.4 and later.\n\n## What's solid\n- Injection: `filter_by` is parameterized; no leaked secrets.\n- Response shape: the route path, the JSON list and the `{order_id, item_name}` keys match the spec, and filtering is by the given user.\n- Zero orders: by reading, the loop is skipped and the route returns `[]` with a 200 — it is only untested.\n- Scope: no scope creep, no over-engineering.\n\nOne reviewer finding was dropped: a claimed circular import between `app/__init__.py` and `routes.py`, which the verifier found hypothetical since that file doesn't exist.\n\nI haven't changed anything. If you want the fixes applied, I can work through this list, or you can run `/code-review --fix`."
+              },
+              {
+                "name": "verifier-gets-claim-and-code",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 8x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "verifier-not-handed-severity",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "verifiers-opus",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 8x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ],
+        "without": [
+          {
+            "score": 0.25,
+            "passed": false,
+            "turns": 6,
+            "costUsd": 0.3294518,
+            "judgeCostUsd": 0.039984000000000026,
+            "durationSeconds": 79,
+            "startedAt": "2026-11-12T12:05:25.135Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-BzYWgW/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "agent-cap",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 5..15)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "agent-count-reported",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "There is no `review-swarm` skill in this session (the lookup returned \"Unknown skill\"), so I ran the built-in `code-review` skill on the uncommitted diff instead. The endpoint is not ready for a PR: as written it cannot import or serve a request.\n\nI could not execute the route because Flask isn't installed in this environment, so the findings come from reading the code.\n\n## Blocking\n\n1. **`from app import db` fails** (`app/routes.py:2`). There is no `app/__init__.py` and nothing in the repo defines `db`, so importing `app.routes` raises `ImportError`.\n2. **`Order.query` is `None`** (`app/routes.py:10`). `app/models.py` still has the scaffold placeholders, so every request raises `AttributeError` and returns 500. `Order` and `Item` are plain classes, not mapped models.\n3. **The task 1.2 contract is not implemented** (`app/routes.py:10`). `TODO_WORKFLOW.md` says \"newest first, at most 50 per response\", but the query has no ordering and no limit.\n4. **Missing-item crash** (`app/routes.py:14`). `.get()` returns `None` when the item row is gone, so `item.name` turns one dangling `item_id` into a 500 for the user's whole order list.\n\n## Should fix\n\n5. **N+1 query** (`app/routes.py:13`). The per-order `Item` lookup you described means 501 round trips for a user with 500 orders. A join or a single `Item.id.in_(...)` query fixes this.\n6. **No authentication or ownership check** (`app/routes.py:8`). Anyone can walk `/orders/1`, `/orders/2`, … and read every user's order history.\n7. **No tests for the route** (`tests/test_routes.py:1`). The only test is `test_placeholder`, which never imports `app.routes`, so CI stays green despite items 1 and 2. The zero-orders case you mentioned would return `[]` once the route runs, but nothing pins that down.\n\n## Minor\n\n8. **Untyped `<user_id>`** (`app/routes.py:8`). `/orders/abc` reaches the query; on a strict database with an integer column that is a 500 rather than a 404. Use `<int:user_id>`.\n9. **Circular-import risk** (`app/routes.py:5`). The Flask instance `app` shares its name with the `app` package; once `app/__init__.py` defines `db` and imports the routes, the import order can break. An app factory or a separate extensions module avoids it.\n10. **Legacy and mixed query style** (`app/routes.py:13`). `Query.get()` is deprecated since SQLAlchemy 1.4/2.0; `db.session.get(Item, order.item_id)` or the join from item 5 is the supported form.\n\nDo you want me to fix these? Items 3, 4, 5, 8 and 10 collapse into one rewritten query, and I can add tests for zero orders, a missing item and the 50-row cap. Items 1 and 2 need real models and a `db` object, and item 6 depends on how you plan to do auth."
+              },
+              {
+                "name": "needs-validation-list",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "There is no `review-swarm` skill in this session (the lookup returned \"Unknown skill\"), so I ran the built-in `code-review` skill on the uncommitted diff instead. The endpoint is not ready for a PR: as written it cannot import or serve a request.\n\nI could not execute the route because Flask isn't installed in this environment, so the findings come from reading the code.\n\n## Blocking\n\n1. **`from app import db` fails** (`app/routes.py:2`). There is no `app/__init__.py` and nothing in the repo defines `db`, so importing `app.routes` raises `ImportError`.\n2. **`Order.query` is `None`** (`app/routes.py:10`). `app/models.py` still has the scaffold placeholders, so every request raises `AttributeError` and returns 500. `Order` and `Item` are plain classes, not mapped models.\n3. **The task 1.2 contract is not implemented** (`app/routes.py:10`). `TODO_WORKFLOW.md` says \"newest first, at most 50 per response\", but the query has no ordering and no limit.\n4. **Missing-item crash** (`app/routes.py:14`). `.get()` returns `None` when the item row is gone, so `item.name` turns one dangling `item_id` into a 500 for the user's whole order list.\n\n## Should fix\n\n5. **N+1 query** (`app/routes.py:13`). The per-order `Item` lookup you described means 501 round trips for a user with 500 orders. A join or a single `Item.id.in_(...)` query fixes this.\n6. **No authentication or ownership check** (`app/routes.py:8`). Anyone can walk `/orders/1`, `/orders/2`, … and read every user's order history.\n7. **No tests for the route** (`tests/test_routes.py:1`). The only test is `test_placeholder`, which never imports `app.routes`, so CI stays green despite items 1 and 2. The zero-orders case you mentioned would return `[]` once the route runs, but nothing pins that down.\n\n## Minor\n\n8. **Untyped `<user_id>`** (`app/routes.py:8`). `/orders/abc` reaches the query; on a strict database with an integer column that is a 500 rather than a 404. Use `<int:user_id>`.\n9. **Circular-import risk** (`app/routes.py:5`). The Flask instance `app` shares its name with the `app` package; once `app/__init__.py` defines `db` and imports the routes, the import order can break. An app factory or a separate extensions module avoids it.\n10. **Legacy and mixed query style** (`app/routes.py:13`). `Query.get()` is deprecated since SQLAlchemy 1.4/2.0; `db.session.get(Item, order.item_id)` or the join from item 5 is the supported form.\n\nDo you want me to fix these? Items 3, 4, 5, 8 and 10 collapse into one rewritten query, and I can add tests for zero orders, a missing item and the 50-row cap. Items 1 and 2 need real models and a `db` object, and item 6 depends on how you plan to do auth."
+              },
+              {
+                "name": "no-edit-calls",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Edit called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-write-calls",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Write called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "not-reviewed-line",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "There is no `review-swarm` skill in this session (the lookup returned \"Unknown skill\"), so I ran the built-in `code-review` skill on the uncommitted diff instead. The endpoint is not ready for a PR: as written it cannot import or serve a request.\n\nI could not execute the route because Flask isn't installed in this environment, so the findings come from reading the code.\n\n## Blocking\n\n1. **`from app import db` fails** (`app/routes.py:2`). There is no `app/__init__.py` and nothing in the repo defines `db`, so importing `app.routes` raises `ImportError`.\n2. **`Order.query` is `None`** (`app/routes.py:10`). `app/models.py` still has the scaffold placeholders, so every request raises `AttributeError` and returns 500. `Order` and `Item` are plain classes, not mapped models.\n3. **The task 1.2 contract is not implemented** (`app/routes.py:10`). `TODO_WORKFLOW.md` says \"newest first, at most 50 per response\", but the query has no ordering and no limit.\n4. **Missing-item crash** (`app/routes.py:14`). `.get()` returns `None` when the item row is gone, so `item.name` turns one dangling `item_id` into a 500 for the user's whole order list.\n\n## Should fix\n\n5. **N+1 query** (`app/routes.py:13`). The per-order `Item` lookup you described means 501 round trips for a user with 500 orders. A join or a single `Item.id.in_(...)` query fixes this.\n6. **No authentication or ownership check** (`app/routes.py:8`). Anyone can walk `/orders/1`, `/orders/2`, … and read every user's order history.\n7. **No tests for the route** (`tests/test_routes.py:1`). The only test is `test_placeholder`, which never imports `app.routes`, so CI stays green despite items 1 and 2. The zero-orders case you mentioned would return `[]` once the route runs, but nothing pins that down.\n\n## Minor\n\n8. **Untyped `<user_id>`** (`app/routes.py:8`). `/orders/abc` reaches the query; on a strict database with an integer column that is a 500 rather than a 404. Use `<int:user_id>`.\n9. **Circular-import risk** (`app/routes.py:5`). The Flask instance `app` shares its name with the `app` package; once `app/__init__.py` defines `db` and imports the routes, the import order can break. An app factory or a separate extensions module avoids it.\n10. **Legacy and mixed query style** (`app/routes.py:13`). `Query.get()` is deprecated since SQLAlchemy 1.4/2.0; `db.session.get(Item, order.item_id)` or the join from item 5 is the supported form.\n\nDo you want me to fix these? Items 3, 4, 5, 8 and 10 collapse into one rewritten query, and I can add tests for zero orders, a missing item and the 50-row cap. Items 1 and 2 need real models and a `db` object, and item 6 depends on how you plan to do auth."
+              },
+              {
+                "name": "ranked-report-shape",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "There is no `review-swarm` skill in this session (the lookup returned \"Unknown skill\"), so I ran the built-in `code-review` skill on the uncommitted diff instead. The endpoint is not ready for a PR: as written it cannot import or serve a request.\n\nI could not execute the route because Flask isn't installed in this environment, so the findings come from reading the code.\n\n## Blocking\n\n1. **`from app import db` fails** (`app/routes.py:2`). There is no `app/__init__.py` and nothing in the repo defines `db`, so importing `app.routes` raises `ImportError`.\n2. **`Order.query` is `None`** (`app/routes.py:10`). `app/models.py` still has the scaffold placeholders, so every request raises `AttributeError` and returns 500. `Order` and `Item` are plain classes, not mapped models.\n3. **The task 1.2 contract is not implemented** (`app/routes.py:10`). `TODO_WORKFLOW.md` says \"newest first, at most 50 per response\", but the query has no ordering and no limit.\n4. **Missing-item crash** (`app/routes.py:14`). `.get()` returns `None` when the item row is gone, so `item.name` turns one dangling `item_id` into a 500 for the user's whole order list.\n\n## Should fix\n\n5. **N+1 query** (`app/routes.py:13`). The per-order `Item` lookup you described means 501 round trips for a user with 500 orders. A join or a single `Item.id.in_(...)` query fixes this.\n6. **No authentication or ownership check** (`app/routes.py:8`). Anyone can walk `/orders/1`, `/orders/2`, … and read every user's order history.\n7. **No tests for the route** (`tests/test_routes.py:1`). The only test is `test_placeholder`, which never imports `app.routes`, so CI stays green despite items 1 and 2. The zero-orders case you mentioned would return `[]` once the route runs, but nothing pins that down.\n\n## Minor\n\n8. **Untyped `<user_id>`** (`app/routes.py:8`). `/orders/abc` reaches the query; on a strict database with an integer column that is a 500 rather than a 404. Use `<int:user_id>`.\n9. **Circular-import risk** (`app/routes.py:5`). The Flask instance `app` shares its name with the `app` package; once `app/__init__.py` defines `db` and imports the routes, the import order can break. An app factory or a separate extensions module avoids it.\n10. **Legacy and mixed query style** (`app/routes.py:13`). `Query.get()` is deprecated since SQLAlchemy 1.4/2.0; `db.session.get(Item, order.item_id)` or the join from item 5 is the supported form.\n\nDo you want me to fix these? Items 3, 4, 5, 8 and 10 collapse into one rewritten query, and I can add tests for zero orders, a missing item and the 50-row cap. Items 1 and 2 need real models and a `db` object, and item 6 depends on how you plan to do auth."
+              },
+              {
+                "name": "reviewers-sonnet",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 4..∞)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "spec-section",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "There is no `review-swarm` skill in this session (the lookup returned \"Unknown skill\"), so I ran the built-in `code-review` skill on the uncommitted diff instead. The endpoint is not ready for a PR: as written it cannot import or serve a request.\n\nI could not execute the route because Flask isn't installed in this environment, so the findings come from reading the code.\n\n## Blocking\n\n1. **`from app import db` fails** (`app/routes.py:2`). There is no `app/__init__.py` and nothing in the repo defines `db`, so importing `app.routes` raises `ImportError`.\n2. **`Order.query` is `None`** (`app/routes.py:10`). `app/models.py` still has the scaffold placeholders, so every request raises `AttributeError` and returns 500. `Order` and `Item` are plain classes, not mapped models.\n3. **The task 1.2 contract is not implemented** (`app/routes.py:10`). `TODO_WORKFLOW.md` says \"newest first, at most 50 per response\", but the query has no ordering and no limit.\n4. **Missing-item crash** (`app/routes.py:14`). `.get()` returns `None` when the item row is gone, so `item.name` turns one dangling `item_id` into a 500 for the user's whole order list.\n\n## Should fix\n\n5. **N+1 query** (`app/routes.py:13`). The per-order `Item` lookup you described means 501 round trips for a user with 500 orders. A join or a single `Item.id.in_(...)` query fixes this.\n6. **No authentication or ownership check** (`app/routes.py:8`). Anyone can walk `/orders/1`, `/orders/2`, … and read every user's order history.\n7. **No tests for the route** (`tests/test_routes.py:1`). The only test is `test_placeholder`, which never imports `app.routes`, so CI stays green despite items 1 and 2. The zero-orders case you mentioned would return `[]` once the route runs, but nothing pins that down.\n\n## Minor\n\n8. **Untyped `<user_id>`** (`app/routes.py:8`). `/orders/abc` reaches the query; on a strict database with an integer column that is a 500 rather than a 404. Use `<int:user_id>`.\n9. **Circular-import risk** (`app/routes.py:5`). The Flask instance `app` shares its name with the `app` package; once `app/__init__.py` defines `db` and imports the routes, the import order can break. An app factory or a separate extensions module avoids it.\n10. **Legacy and mixed query style** (`app/routes.py:13`). `Query.get()` is deprecated since SQLAlchemy 1.4/2.0; `db.session.get(Item, order.item_id)` or the join from item 5 is the supported form.\n\nDo you want me to fix these? Items 3, 4, 5, 8 and 10 collapse into one rewritten query, and I can add tests for zero orders, a missing item and the 50-row cap. Items 1 and 2 need real models and a `db` object, and item 6 depends on how you plan to do auth."
+              },
+              {
+                "name": "verifier-gets-claim-and-code",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "verifier-not-handed-severity",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "verifiers-opus",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.25,
+            "passed": false,
+            "turns": 5,
+            "costUsd": 0.28249859999999993,
+            "judgeCostUsd": 0.041823999999999945,
+            "durationSeconds": 60,
+            "startedAt": "2026-11-12T12:06:43.906Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-OSiJHg/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "agent-cap",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 5..15)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "agent-count-reported",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "There is no `review-swarm` skill installed in this session, so I ran the built-in `code-review` skill on the uncommitted diff instead. The findings come from reading the code only: Flask isn't installed in this environment, so nothing was executed.\n\nThe endpoint cannot work as written, so I'd fix the first two before opening the PR.\n\n**Blocking**\n1. **`app/routes.py:2` — `from app import db` fails.** There is no `app/__init__.py` and no `db` object anywhere in the repo, so importing `app.routes` raises `ImportError`.\n2. **`app/routes.py:10` — `Order.query` is `None`.** The models in `app/models.py` are still placeholders, so `Order.query.filter_by(...)` raises `AttributeError` on every request. They also have no `id`, `item_id` or `name` attributes.\n\n**Correctness**\n3. **`app/routes.py:14` — no `None` check on the item lookup.** An order whose `item_id` is null or points at a deleted item makes `item.name` raise, and the whole response becomes a 500.\n4. **`app/routes.py:10` — no ordering or limit.** Task 1.2 in `TODO_WORKFLOW.md` says \"newest first, at most 50 per response\"; the query returns every row in arbitrary order.\n5. **`app/routes.py:8` — no authentication or ownership check.** Any caller can read any user's orders by changing the id in the URL. If auth is planned for a later task, say so in the PR.\n6. **`app/routes.py:8` — `<user_id>` is an unvalidated string.** `/orders/abc` reaches the query as a string; on PostgreSQL that is a 500 rather than a 404. `<int:user_id>` rejects it at routing.\n\n**Performance and style**\n7. **`app/routes.py:13` — the N+1 you described.** One `Item` query per order, made worse by the missing limit. A join or a single `Item.id.in_(...)` query fixes it.\n8. **`app/routes.py:13` — legacy `Query.get()`.** It is deprecated in SQLAlchemy 1.4/2.0; `db.session.get(Item, order.item_id)` is the supported form. The handler also mixes `Order.query` and `db.session.query(Item)`.\n\n**Tests**\n9. **`tests/test_routes.py` — the endpoint has no tests at all.** The only test is `assert True` and never imports `app.routes`, so the suite passes despite findings 1 and 2. On the zero-orders case you raised: the logic returns `[]` with a 200, which looks right, but nothing asserts it. I'd also cover the missing-item case, ordering and the 50 cap.\n\nYou're also on `master` with no local `main`, while the workflow file lists `main` as the branch for this task — worth sorting out before the PR.\n\nWant me to apply fixes for any of these, or add the tests?"
+              },
+              {
+                "name": "needs-validation-list",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "There is no `review-swarm` skill installed in this session, so I ran the built-in `code-review` skill on the uncommitted diff instead. The findings come from reading the code only: Flask isn't installed in this environment, so nothing was executed.\n\nThe endpoint cannot work as written, so I'd fix the first two before opening the PR.\n\n**Blocking**\n1. **`app/routes.py:2` — `from app import db` fails.** There is no `app/__init__.py` and no `db` object anywhere in the repo, so importing `app.routes` raises `ImportError`.\n2. **`app/routes.py:10` — `Order.query` is `None`.** The models in `app/models.py` are still placeholders, so `Order.query.filter_by(...)` raises `AttributeError` on every request. They also have no `id`, `item_id` or `name` attributes.\n\n**Correctness**\n3. **`app/routes.py:14` — no `None` check on the item lookup.** An order whose `item_id` is null or points at a deleted item makes `item.name` raise, and the whole response becomes a 500.\n4. **`app/routes.py:10` — no ordering or limit.** Task 1.2 in `TODO_WORKFLOW.md` says \"newest first, at most 50 per response\"; the query returns every row in arbitrary order.\n5. **`app/routes.py:8` — no authentication or ownership check.** Any caller can read any user's orders by changing the id in the URL. If auth is planned for a later task, say so in the PR.\n6. **`app/routes.py:8` — `<user_id>` is an unvalidated string.** `/orders/abc` reaches the query as a string; on PostgreSQL that is a 500 rather than a 404. `<int:user_id>` rejects it at routing.\n\n**Performance and style**\n7. **`app/routes.py:13` — the N+1 you described.** One `Item` query per order, made worse by the missing limit. A join or a single `Item.id.in_(...)` query fixes it.\n8. **`app/routes.py:13` — legacy `Query.get()`.** It is deprecated in SQLAlchemy 1.4/2.0; `db.session.get(Item, order.item_id)` is the supported form. The handler also mixes `Order.query` and `db.session.query(Item)`.\n\n**Tests**\n9. **`tests/test_routes.py` — the endpoint has no tests at all.** The only test is `assert True` and never imports `app.routes`, so the suite passes despite findings 1 and 2. On the zero-orders case you raised: the logic returns `[]` with a 200, which looks right, but nothing asserts it. I'd also cover the missing-item case, ordering and the 50 cap.\n\nYou're also on `master` with no local `main`, while the workflow file lists `main` as the branch for this task — worth sorting out before the PR.\n\nWant me to apply fixes for any of these, or add the tests?"
+              },
+              {
+                "name": "no-edit-calls",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Edit called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-write-calls",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Write called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "not-reviewed-line",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "There is no `review-swarm` skill installed in this session, so I ran the built-in `code-review` skill on the uncommitted diff instead. The findings come from reading the code only: Flask isn't installed in this environment, so nothing was executed.\n\nThe endpoint cannot work as written, so I'd fix the first two before opening the PR.\n\n**Blocking**\n1. **`app/routes.py:2` — `from app import db` fails.** There is no `app/__init__.py` and no `db` object anywhere in the repo, so importing `app.routes` raises `ImportError`.\n2. **`app/routes.py:10` — `Order.query` is `None`.** The models in `app/models.py` are still placeholders, so `Order.query.filter_by(...)` raises `AttributeError` on every request. They also have no `id`, `item_id` or `name` attributes.\n\n**Correctness**\n3. **`app/routes.py:14` — no `None` check on the item lookup.** An order whose `item_id` is null or points at a deleted item makes `item.name` raise, and the whole response becomes a 500.\n4. **`app/routes.py:10` — no ordering or limit.** Task 1.2 in `TODO_WORKFLOW.md` says \"newest first, at most 50 per response\"; the query returns every row in arbitrary order.\n5. **`app/routes.py:8` — no authentication or ownership check.** Any caller can read any user's orders by changing the id in the URL. If auth is planned for a later task, say so in the PR.\n6. **`app/routes.py:8` — `<user_id>` is an unvalidated string.** `/orders/abc` reaches the query as a string; on PostgreSQL that is a 500 rather than a 404. `<int:user_id>` rejects it at routing.\n\n**Performance and style**\n7. **`app/routes.py:13` — the N+1 you described.** One `Item` query per order, made worse by the missing limit. A join or a single `Item.id.in_(...)` query fixes it.\n8. **`app/routes.py:13` — legacy `Query.get()`.** It is deprecated in SQLAlchemy 1.4/2.0; `db.session.get(Item, order.item_id)` is the supported form. The handler also mixes `Order.query` and `db.session.query(Item)`.\n\n**Tests**\n9. **`tests/test_routes.py` — the endpoint has no tests at all.** The only test is `assert True` and never imports `app.routes`, so the suite passes despite findings 1 and 2. On the zero-orders case you raised: the logic returns `[]` with a 200, which looks right, but nothing asserts it. I'd also cover the missing-item case, ordering and the 50 cap.\n\nYou're also on `master` with no local `main`, while the workflow file lists `main` as the branch for this task — worth sorting out before the PR.\n\nWant me to apply fixes for any of these, or add the tests?"
+              },
+              {
+                "name": "ranked-report-shape",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "There is no `review-swarm` skill installed in this session, so I ran the built-in `code-review` skill on the uncommitted diff instead. The findings come from reading the code only: Flask isn't installed in this environment, so nothing was executed.\n\nThe endpoint cannot work as written, so I'd fix the first two before opening the PR.\n\n**Blocking**\n1. **`app/routes.py:2` — `from app import db` fails.** There is no `app/__init__.py` and no `db` object anywhere in the repo, so importing `app.routes` raises `ImportError`.\n2. **`app/routes.py:10` — `Order.query` is `None`.** The models in `app/models.py` are still placeholders, so `Order.query.filter_by(...)` raises `AttributeError` on every request. They also have no `id`, `item_id` or `name` attributes.\n\n**Correctness**\n3. **`app/routes.py:14` — no `None` check on the item lookup.** An order whose `item_id` is null or points at a deleted item makes `item.name` raise, and the whole response becomes a 500.\n4. **`app/routes.py:10` — no ordering or limit.** Task 1.2 in `TODO_WORKFLOW.md` says \"newest first, at most 50 per response\"; the query returns every row in arbitrary order.\n5. **`app/routes.py:8` — no authentication or ownership check.** Any caller can read any user's orders by changing the id in the URL. If auth is planned for a later task, say so in the PR.\n6. **`app/routes.py:8` — `<user_id>` is an unvalidated string.** `/orders/abc` reaches the query as a string; on PostgreSQL that is a 500 rather than a 404. `<int:user_id>` rejects it at routing.\n\n**Performance and style**\n7. **`app/routes.py:13` — the N+1 you described.** One `Item` query per order, made worse by the missing limit. A join or a single `Item.id.in_(...)` query fixes it.\n8. **`app/routes.py:13` — legacy `Query.get()`.** It is deprecated in SQLAlchemy 1.4/2.0; `db.session.get(Item, order.item_id)` is the supported form. The handler also mixes `Order.query` and `db.session.query(Item)`.\n\n**Tests**\n9. **`tests/test_routes.py` — the endpoint has no tests at all.** The only test is `assert True` and never imports `app.routes`, so the suite passes despite findings 1 and 2. On the zero-orders case you raised: the logic returns `[]` with a 200, which looks right, but nothing asserts it. I'd also cover the missing-item case, ordering and the 50 cap.\n\nYou're also on `master` with no local `main`, while the workflow file lists `main` as the branch for this task — worth sorting out before the PR.\n\nWant me to apply fixes for any of these, or add the tests?"
+              },
+              {
+                "name": "reviewers-sonnet",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 4..∞)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "spec-section",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "There is no `review-swarm` skill installed in this session, so I ran the built-in `code-review` skill on the uncommitted diff instead. The findings come from reading the code only: Flask isn't installed in this environment, so nothing was executed.\n\nThe endpoint cannot work as written, so I'd fix the first two before opening the PR.\n\n**Blocking**\n1. **`app/routes.py:2` — `from app import db` fails.** There is no `app/__init__.py` and no `db` object anywhere in the repo, so importing `app.routes` raises `ImportError`.\n2. **`app/routes.py:10` — `Order.query` is `None`.** The models in `app/models.py` are still placeholders, so `Order.query.filter_by(...)` raises `AttributeError` on every request. They also have no `id`, `item_id` or `name` attributes.\n\n**Correctness**\n3. **`app/routes.py:14` — no `None` check on the item lookup.** An order whose `item_id` is null or points at a deleted item makes `item.name` raise, and the whole response becomes a 500.\n4. **`app/routes.py:10` — no ordering or limit.** Task 1.2 in `TODO_WORKFLOW.md` says \"newest first, at most 50 per response\"; the query returns every row in arbitrary order.\n5. **`app/routes.py:8` — no authentication or ownership check.** Any caller can read any user's orders by changing the id in the URL. If auth is planned for a later task, say so in the PR.\n6. **`app/routes.py:8` — `<user_id>` is an unvalidated string.** `/orders/abc` reaches the query as a string; on PostgreSQL that is a 500 rather than a 404. `<int:user_id>` rejects it at routing.\n\n**Performance and style**\n7. **`app/routes.py:13` — the N+1 you described.** One `Item` query per order, made worse by the missing limit. A join or a single `Item.id.in_(...)` query fixes it.\n8. **`app/routes.py:13` — legacy `Query.get()`.** It is deprecated in SQLAlchemy 1.4/2.0; `db.session.get(Item, order.item_id)` is the supported form. The handler also mixes `Order.query` and `db.session.query(Item)`.\n\n**Tests**\n9. **`tests/test_routes.py` — the endpoint has no tests at all.** The only test is `assert True` and never imports `app.routes`, so the suite passes despite findings 1 and 2. On the zero-orders case you raised: the logic returns `[]` with a 200, which looks right, but nothing asserts it. I'd also cover the missing-item case, ordering and the 50 cap.\n\nYou're also on `master` with no local `main`, while the workflow file lists `main` as the branch for this task — worth sorting out before the PR.\n\nWant me to apply fixes for any of these, or add the tests?"
+              },
+              {
+                "name": "verifier-gets-claim-and-code",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "verifier-not-handed-severity",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "verifiers-opus",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 1,
+        "passRate": 1,
+        "scoreWithout": 0.25,
+        "passRateWithout": 0,
+        "delta": 0.75
+      }
+    }
+  ],
+  "aggregates": {
+    "casesTotal": 1,
+    "casesPassed": 1,
+    "overallScore": 1,
+    "overallPassRate": 1,
+    "meanDelta": 0.75
+  }
+}
