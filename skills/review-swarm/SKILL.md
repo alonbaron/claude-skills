@@ -24,7 +24,7 @@ disallowed-tools: Edit Write NotebookEdit
 
 The block above is the working tree's dirty state and diff shape, captured before you see the rest of this skill — raw command output, not analysis.
 
-Review the working changes with a panel of specialists in parallel, then keep only the findings that survive scrutiny. The subagents are local and spend the user's own tokens: six sonnet reviewers, then an opus verifier for each non-trivial finding.
+Review the working changes with a panel of specialists in parallel, then keep only the findings that survive scrutiny. The subagents are local and spend the user's own tokens: seven sonnet reviewers (six when there is no spec to check against), then an opus verifier for each non-trivial finding.
 
 ## Proactive use
 
@@ -36,9 +36,11 @@ Default: working tree vs the default branch. `staged` → `git diff --staged`; `
 
 **Size guard:** over ~40 changed files or ~2000 changed lines, don't swarm the whole thing — split by area and say which slice you reviewed, or ask which slice matters. A swarm that overruns its context reports confidently on code it never read.
 
+**Spec source:** find what the change was meant to do, in this order: the `TODO_WORKFLOW.md` row or design-doc section it implements, the PR or issue description, a spec path the user gave, the request as the user stated it in this conversation. Read it before spawning. If there is none, the Spec reviewer does not spawn and the report says "Spec: no spec found".
+
 ## Reviewers
 
-Spawn the six specialists below with the Agent tool, **all in one message** so they run concurrently, each with `model: sonnet`. Give each the diff plus the files it needs and its single lens. Each returns findings as: `severity · file:line · what · why · suggested fix`.
+Spawn the specialists below with the Agent tool, **all in one message** so they run concurrently, each with `model: sonnet`. Give each the diff plus the files it needs and its single lens. Each returns findings as: `severity · file:line · what · why · suggested fix`.
 
 - **Correctness** — logic errors, edge cases, null/empty, off-by-one, concurrency/races.
 - **Security & trust boundaries** — authz/authn (JWT), input validation at boundaries, injection, IDOR, leaked secrets.
@@ -46,6 +48,7 @@ Spawn the six specialists below with the Agent tool, **all in one message** so t
 - **Architecture & altitude** — does it fit the domain model? are invariants enforced at the core? wrong layer, leaky abstraction.
 - **Simplicity (ponytail lens)** — over-engineering, premature abstraction, dead code, a stdlib/native one-liner that replaces the change.
 - **Tests & failure paths** — non-trivial logic with no test, untested failure paths, error handling that could lose data.
+- **Spec** — the diff against the spec source, and nothing else. Give it the spec text along with the diff. It returns three kinds of finding: *missing* (the spec asks for it, the diff lacks it), *scope creep* (the diff does it, the spec never asked), *wrong* (both have it and they disagree). Each one quotes the spec line it rests on, in place of a severity.
 
 ## Verification
 
@@ -58,6 +61,8 @@ Reviewers spawn with the Agent tool's `model` parameter set to `sonnet`; verifie
 ## Report
 
 Dedup overlaps, then rank: **Blockers → Should-fix → Nits**, each with file:line and a one-line fix. A dimension with nothing to flag gets one line ("Security: no issues"), not a manufactured nit. Close with a short "what's solid".
+
+Spec findings go under their own `## Spec` heading, above the ranking and outside it. Each is labelled missing, scope creep, or wrong, and carries the quoted spec line, the file:line where the change belongs, and a one-line fix. They take no rank because the fix may be to the spec: whether the code or the spec moves is the user's call.
 
 ## Rules
 
