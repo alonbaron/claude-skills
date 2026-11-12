@@ -24,7 +24,7 @@ disallowed-tools: Edit Write NotebookEdit
 
 The block above is the working tree's dirty state and diff shape, captured before you see the rest of this skill — raw command output, not analysis.
 
-Review the working changes with a panel of specialists in parallel, then keep only the findings that survive scrutiny. The subagents are local and spend the user's own tokens: seven sonnet reviewers (six when there is no spec to check against), then an opus verifier for each non-trivial finding.
+Review the working changes with a panel of specialists in parallel, then keep only the findings that survive scrutiny. The subagents are local and spend the user's own tokens: seven sonnet reviewers (six when there is no spec to check against), then opus verifiers for the non-trivial findings, 15 agents at most.
 
 ## Proactive use
 
@@ -37,6 +37,24 @@ Default: working tree vs the default branch. `staged` → `git diff --staged`; `
 **Size guard:** over ~40 changed files or ~2000 changed lines, don't swarm the whole thing — split by area and say which slice you reviewed, or ask which slice matters. A swarm that overruns its context reports confidently on code it never read.
 
 **Spec source:** find what the change was meant to do, in this order: the `TODO_WORKFLOW.md` row or design-doc section it implements, the PR or issue description, a spec path the user gave, the request as the user stated it in this conversation. Read it before spawning. If there is none, the Spec reviewer does not spawn and the report says "Spec: no spec found".
+
+## Agent budget
+
+At most **15 agents** per review: up to 7 reviewers and up to 8 verifiers.
+
+Before the first spawn, state the plan in one line, so the user sees the spend before it happens:
+
+```
+Plan: <R> reviewers (sonnet) + up to <V> verifiers (opus), cap 15
+```
+
+When the reviewers are back, before the verifiers spawn, state the second half:
+
+```
+Verifying <n> findings with <v> verifiers
+```
+
+More than 8 findings to verify: give one verifier several claims that share a file or a root cause, highest severity first. Each claim still gets its own verdict. Never spawn a 16th agent. A finding the budget left unverified goes on the report's Not reviewed line and is not ranked.
 
 ## Reviewers
 
@@ -81,6 +99,7 @@ Dedup overlaps, then fill every slot below, in this order. A slot with nothing i
 
 ```
 Reviewed: <scope> · <n> files, <n> changed lines · spec: <its source, or "no spec found">
+Agents: planned <R> reviewers + up to <V> verifiers · spawned <r> + <v>
 Not reviewed: <each file, lens or behaviour left out, with the reason> | nothing left out
 
 ## Spec
@@ -97,7 +116,7 @@ Not reviewed: <each file, lens or behaviour left out, with the reason> | nothing
 ## What's solid
 ```
 
-- **Not reviewed** names what this review cannot vouch for: files outside the slice you took, a reviewer that did not spawn, behaviour that could only be judged by running code that did not run.
+- **Not reviewed** names what this review cannot vouch for: files outside the slice you took, a reviewer that did not spawn, a finding the agent budget left unverified, behaviour that could only be judged by running code that did not run.
 - **Spec** findings sit above the ranking and outside it. Each is labelled missing, scope creep, or wrong, and carries the quoted spec line, the file:line where the change belongs, and a one-line fix. They take no rank because the fix may be to the spec: whether the code or the spec moves is the user's call.
 - **Blockers → Should-fix → Nits** is the ranking, for findings whose verifier returned "holds".
 - **Needs validation** lists the "cannot tell" findings. An entry without its missing fact does not belong here; drop it.
