@@ -71,7 +71,7 @@ if (opts.task && !(args && typeof args === "object" && "maxTasks" in args)) opts
 opts.scratch = String(opts.scratch).replace(/\/+$/, "");
 
 // Model tiers. Aliases, not pinned IDs, so each stage follows the newest model of its tier
-// (measured 2026-11-11 on CLI 2.1.322: fable = Fable 5.2, opus = Opus 5.5, sonnet = Sonnet 5.5, haiku = Haiku 5.5,
+// (measured 2026-11-11 and again 2026-11-12 on CLI 2.1.322: fable = Fable 5.2, opus = Opus 5.5, sonnet = Sonnet 5.5, haiku = Haiku 5.5,
 // all four recording the effort they ran at; on 2026-10-12, CLI 2.1.296, fable resolved to Fable 5.1, and on
 // 2026-09-29, CLI 2.1.284, haiku still resolved to Haiku 4.5, which takes no effort).
 //   fable  - the decisions everything downstream inherits: which row, what "done" means, who is right in a dispute
