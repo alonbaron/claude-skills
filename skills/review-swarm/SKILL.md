@@ -58,12 +58,18 @@ For each non-trivial finding, spawn a verifier with `model: opus` that tries to 
 Claim: <the finding as one checkable sentence> at <file:line>
 Code: <the hunk, plus the paths to read to judge the claim>
 Task: try to refute the claim. Is it real, reproducible, not already handled elsewhere?
-Return: holds | refuted, with the evidence (a file:line or command output).
+Return: holds | refuted | cannot tell, with the evidence (a file:line or command output). For "cannot tell", name the one fact that would settle it.
 ```
 
 The reviewer's reasoning, its severity and its suggested fix stay out of that prompt: a verifier handed the argument tends to agree with it. For a Spec finding, the quoted spec line is part of the claim. You assign severity after the verdicts are in.
 
-Default to dropping when uncertain. Never report a finding that has not been through the verifier pass.
+What each verdict does:
+
+- **holds** → the finding is ranked in the report.
+- **refuted** → dropped.
+- **cannot tell** → it goes to Needs validation if the verifier named the missing fact (a column's type, a table's size, whether a gateway already enforces auth). With no nameable fact, drop it.
+
+Never report a finding that has not been through the verifier pass.
 
 ## Model routing
 
@@ -71,9 +77,33 @@ Reviewers spawn with the Agent tool's `model` parameter set to `sonnet`; verifie
 
 ## Report
 
-Dedup overlaps, then rank: **Blockers → Should-fix → Nits**, each with file:line and a one-line fix. A dimension with nothing to flag gets one line ("Security: no issues"), not a manufactured nit. Close with a short "what's solid".
+Dedup overlaps, then fill every slot below, in this order. A slot with nothing in it keeps its line or heading and says "none": that is how the user knows it was checked.
 
-Spec findings go under their own `## Spec` heading, above the ranking and outside it. Each is labelled missing, scope creep, or wrong, and carries the quoted spec line, the file:line where the change belongs, and a one-line fix. They take no rank because the fix may be to the spec: whether the code or the spec moves is the user's call.
+```
+Reviewed: <scope> · <n> files, <n> changed lines · spec: <its source, or "no spec found">
+Not reviewed: <each file, lens or behaviour left out, with the reason> | nothing left out
+
+## Spec
+<missing | scope creep | wrong> · <file:line> · "<the spec line>" · <one-line fix>
+
+## Blockers
+## Should-fix
+## Nits
+<file:line> · <what, with the evidence that survived verification> · <one-line fix>
+
+## Needs validation
+<the claim> · <file:line> · missing fact: <the one fact that would settle it, and where to find it>
+
+## What's solid
+```
+
+- **Not reviewed** names what this review cannot vouch for: files outside the slice you took, a reviewer that did not spawn, behaviour that could only be judged by running code that did not run.
+- **Spec** findings sit above the ranking and outside it. Each is labelled missing, scope creep, or wrong, and carries the quoted spec line, the file:line where the change belongs, and a one-line fix. They take no rank because the fix may be to the spec: whether the code or the spec moves is the user's call.
+- **Blockers → Should-fix → Nits** is the ranking, for findings whose verifier returned "holds".
+- **Needs validation** lists the "cannot tell" findings. An entry without its missing fact does not belong here; drop it.
+- **What's solid** is short. A dimension with nothing to flag gets one line there ("Security: no issues"), not a manufactured nit.
+
+The slots are for a swarm that ran. A declined swarm (trivial diff, security-only ask) answers the way "When not to use" says, without them.
 
 ## Rules
 
@@ -102,4 +132,4 @@ The local, your-stack-tailored swarm, paid for in the user's own subagent tokens
 
 ## Done when
 
-The user has a short, ranked, evidence-backed list where every item is a real, verified problem in the diff — and knows what's clean.
+The user has a short, ranked, evidence-backed list where every ranked item is a real, verified problem in the diff — and knows what's clean, what still needs a fact, and what was not reviewed.
