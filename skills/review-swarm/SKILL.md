@@ -98,6 +98,7 @@ Reviewers spawn with the Agent tool's `model` parameter set to `sonnet`; verifie
 Dedup overlaps, then fill every slot below, in this order. A slot with nothing in it keeps its line or heading and says "none": that is how the user knows it was checked.
 
 ```
+<one sentence: ready for a PR or not, and the reason>
 Reviewed: <scope> · <n> files, <n> changed lines · spec: <its source, or "no spec found">
 Agents: planned <R> reviewers + up to <V> verifiers · spawned <r> + <v>
 Not reviewed: <each file, lens or behaviour left out, with the reason> | nothing left out
