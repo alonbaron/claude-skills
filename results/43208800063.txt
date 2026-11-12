@@ -1,0 +1,29 @@
+run: 43208800063 https://github.com/alonbaron/claude-skills/actions/runs/43208800063
+event: workflow_dispatch  commit: 306d0501398f06c62f76f9afae4fb638fec637ea  ref: feat/v3.3
+model: claude-fable-5-2  cases: sandboxed  job status at publish: failure
+only: ponytail/pushback-on-abstraction
+listing budget: default
+cli: 2.1.303 (Claude Code)
+started: 2026-11-12T11:26:24Z
+
+valid 1 of 1
+re-run: none
+cost $0.75  runner aggregates over the 1 cases in the results: {"casesTotal": 1, "casesPassed": 0, "overallScore": 0.41666666666666663, "overallPassRate": 0}
+
+== pushback-on-abstraction  with 0.42  without -
+   avoids-padded-interfaces           with ..   without 
+   names-simplification-tradeoff      with ..   without 
+   names-upgrade-trigger              with P.   without 
+   no-subagents-spawned               with PP   without 
+   ships-working-code                 with PP   without 
+   skill-fired                        with ..   without 
+   FAIL with#0 avoids-padded-interfaces: Write called 2x (expected 0..0)
+   FAIL with#0 names-simplification-tradeoff: judge votes: FAIL FAIL FAIL
+      evidence: I built the cache in `src/cache.ts` with tests in `src/cache.test.ts`, but it isn't wired into `/products` yet: this repo was empty, so there was no Express app to hook it into. All 10 tests pass with `node --test src/cache.test.ts`, and `cache.ts` type-checks under `tsc --strict`. | | One deviation from what you described: the `CacheStrategy` plugs into `MemoryBackend`, not `Cache`. Redis does its own eviction (`maxmemory-policy`), and an eviction policy tracked in each API process would be wrong across multiple instances. | | What's there: | | - **`CacheBackend`**: async `get` / `set(key, value, ttlMs)` / `delete` / `clear` over strings, so a Redis backend only has to implement those four 
+   FAIL with#0 skill-fired: Skill called 0x (expected 1..∞)
+   FAIL with#1 avoids-padded-interfaces: Write called 2x (expected 0..0)
+   FAIL with#1 names-simplification-tradeoff: judge votes: FAIL FAIL FAIL
+      evidence: The cache is built in `src/cache/`, but it isn't wired into `/products` yet: the working directory was empty, with no Express app or `package.json`. I wrote it as dependency-free TypeScript; the two source files type-check under `--strict` and the five tests pass. | | - **`cache.ts`**: holds the `CacheBackend` interface and the `Cache` class (`get`, `set`, `delete`, `wrap`). The backend is async and stores strings, so a Redis backend can implement it directly later without changing call sites. | - **`memory-backend.ts`**: holds `MemoryBackend`, the `CacheStrategy` interface and an `LruStrategy` default. | - **`cache.test.ts`**: covers TTL expiry, LRU eviction, coalescing of concurrent misses
+   FAIL with#1 names-upgrade-trigger: judge votes: FAIL FAIL FAIL
+      evidence: The cache is built in `src/cache/`, but it isn't wired into `/products` yet: the working directory was empty, with no Express app or `package.json`. I wrote it as dependency-free TypeScript; the two source files type-check under `--strict` and the five tests pass. | | - **`cache.ts`**: holds the `CacheBackend` interface and the `Cache` class (`get`, `set`, `delete`, `wrap`). The backend is async and stores strings, so a Redis backend can implement it directly later without changing call sites. | - **`memory-backend.ts`**: holds `MemoryBackend`, the `CacheStrategy` interface and an `LruStrategy` default. | - **`cache.test.ts`**: covers TTL expiry, LRU eviction, coalescing of concurrent misses
+   FAIL with#1 skill-fired: Skill called 0x (expected 1..∞)

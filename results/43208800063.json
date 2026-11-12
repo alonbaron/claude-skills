@@ -1,0 +1,261 @@
+{
+  "schemaVersion": 1,
+  "claudeVersion": "2.1.303",
+  "startedAt": "2026-11-12T11:24:13.395Z",
+  "durationSeconds": 130,
+  "costUsd": 0.7456362,
+  "partial": false,
+  "suite": {
+    "root": "/home/runner/work/claude-skills/claude-skills",
+    "ablation": "none",
+    "modelOverride": "claude-fable-5-2",
+    "judgeModel": "sonnet",
+    "threshold": 0.7,
+    "concurrency": 2,
+    "plugins": [
+      {
+        "name": "alon-skills",
+        "version": "3.2.3",
+        "path": "/home/runner/work/claude-skills/claude-skills"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "pushback-on-abstraction",
+      "dir": "evals-ci/ponytail/pushback-on-abstraction",
+      "source": "prose",
+      "promptMarkdown": "I'm adding response caching to our Node/Express API for the /products endpoint since it's getting hammered. Can you build a Cache class with a pluggable backend interface (in-memory now, Redis later) and a CacheStrategy interface so we can swap eviction policies down the line?",
+      "runsPerCase": 3,
+      "timeoutSeconds": 600,
+      "maxTurns": 15,
+      "graders": [
+        {
+          "name": "avoids-padded-interfaces",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Write",
+            "input_match": "(class|interface)\\s+\\w*(Strategy|Backend)\\b",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "names-simplification-tradeoff",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final message explicitly frames what was actually delivered as a\ndeliberate simplification of the requested pluggable-backend interface\nand/or the CacheStrategy interface — for example by saying it skipped the\nseparate backend/strategy interfaces, by explaining that a swappable\neviction-policy abstraction isn't justified when there is one caller and no\nsecond backend today, or by declining one of the two interfaces and stating\nwhy. A brief \"here's a lazier alternative\" aside is not enough on its own if\nit isn't what was actually built.\n\nFAIL if the final message presents the delivered code as implementing the\npluggable-backend interface and the CacheStrategy interface as originally\nrequested, with no such reasoning, or if a simpler alternative is only\nmentioned in passing while the interfaces were still built as asked.",
+          "config": {
+            "criteria": "PASS if the final message explicitly frames what was actually delivered as a\ndeliberate simplification of the requested pluggable-backend interface\nand/or the CacheStrategy interface — for example by saying it skipped the\nseparate backend/strategy interfaces, by explaining that a swappable\neviction-policy abstraction isn't justified when there is one caller and no\nsecond backend today, or by declining one of the two interfaces and stating\nwhy. A brief \"here's a lazier alternative\" aside is not enough on its own if\nit isn't what was actually built.\n\nFAIL if the final message presents the delivered code as implementing the\npluggable-backend interface and the CacheStrategy interface as originally\nrequested, with no such reasoning, or if a simpler alternative is only\nmentioned in passing while the interfaces were still built as asked.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "names-upgrade-trigger",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "PASS if the final message names a concrete, specific condition under which\nthe delivered solution should be replaced or upgraded — for example: move to\nRedis if the cache needs to survive a restart, or once the app scales past\none process/instance. A generic \"you can always extend this later\" with no\nconcrete trigger does not count.\n\nFAIL if no such concrete upgrade condition is stated anywhere in the final\nmessage.",
+          "config": {
+            "criteria": "PASS if the final message names a concrete, specific condition under which\nthe delivered solution should be replaced or upgraded — for example: move to\nRedis if the cache needs to survive a restart, or once the app scales past\none process/instance. A generic \"you can always extend this later\" with no\nconcrete trigger does not count.\n\nFAIL if no such concrete upgrade condition is stated anywhere in the final\nmessage.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "no-subagents-spawned",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Agent",
+            "min": 0,
+            "max": 0,
+            "arm": "both"
+          }
+        },
+        {
+          "name": "ships-working-code",
+          "type": "regex",
+          "weight": 1,
+          "config": {
+            "target": "files",
+            "pattern": "\\.(?:js|mjs|cjs|ts)\\b",
+            "flags": "",
+            "match": "contains"
+          }
+        },
+        {
+          "name": "skill-fired",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?ponytail\""
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 0.5,
+            "passed": false,
+            "turns": 9,
+            "costUsd": 0.4443262,
+            "judgeCostUsd": 0.016942,
+            "durationSeconds": 130,
+            "startedAt": "2026-11-12T11:24:13.420Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-egbYSC/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "avoids-padded-interfaces",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Write called 2x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "names-simplification-tradeoff",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "I built the cache in `src/cache.ts` with tests in `src/cache.test.ts`, but it isn't wired into `/products` yet: this repo was empty, so there was no Express app to hook it into. All 10 tests pass with `node --test src/cache.test.ts`, and `cache.ts` type-checks under `tsc --strict`.\n\nOne deviation from what you described: the `CacheStrategy` plugs into `MemoryBackend`, not `Cache`. Redis does its own eviction (`maxmemory-policy`), and an eviction policy tracked in each API process would be wrong across multiple instances.\n\nWhat's there:\n\n- **`CacheBackend`**: async `get` / `set(key, value, ttlMs)` / `delete` / `clear` over strings, so a Redis backend only has to implement those four methods.\n- **`MemoryBackend`**: a TTL'd map capped at `maxEntries` (default 1000), taking `{ maxEntries, strategy }`.\n- **`CacheStrategy`**: `onGet` / `onSet` / `onDelete` / `evict` / `clear`. `LruStrategy` is the default and the only one shipped.\n- **`Cache`**: JSON serialization, a default TTL of 60s, and `getOrSet(key, load, ttlMs?)`.\n\n`getOrSet` is the part that matters for a hammered endpoint: concurrent misses on the same key share one `load` call, so an expired key causes one DB query rather than one per in-flight request. Failed loads aren't cached.\n\nWiring it in would look like this (`db.listProducts` stands in for your query):\n\n```ts\nconst cache = new Cache(new MemoryBackend({ maxEntries: 500 }), { defaultTtlMs: 30_000 });\n\napp.get(\"/products\", async (req, res, next) => {\n  try {\n    res.json(await cache.getOrSet(`products:${req.originalUrl}`, () => db.listProducts(req.query)));\n  } catch (err) {\n    next(err);\n  }\n});\n```\n\nThings to know:\n\n- **TypeScript assumed**: I wrote it in TypeScript since you asked for interfaces. The test imports `./cache.ts` so it runs under Node 22 directly; adjust the extension to match your build.\n- **JSON round-trip**: values come back as their JSON form (a `Date` becomes a string), on a miss as well as a hit.\n- **Write invalidation**: if product writes need to show up before the TTL expires, call `cache.delete(key)` or `cache.clear()` in those handlers.\n- **Backend errors**: these currently propagate, which is fine in memory. When you add Redis, decide whether a Redis outage should fall through to the DB instead of failing the request."
+              },
+              {
+                "name": "names-upgrade-trigger",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "I built the cache in `src/cache.ts` with tests in `src/cache.test.ts`, but it isn't wired into `/products` yet: this repo was empty, so there was no Express app to hook it into. All 10 tests pass with `node --test src/cache.test.ts`, and `cache.ts` type-checks under `tsc --strict`.\n\nOne deviation from what you described: the `CacheStrategy` plugs into `MemoryBackend`, not `Cache`. Redis does its own eviction (`maxmemory-policy`), and an eviction policy tracked in each API process would be wrong across multiple instances.\n\nWhat's there:\n\n- **`CacheBackend`**: async `get` / `set(key, value, ttlMs)` / `delete` / `clear` over strings, so a Redis backend only has to implement those four methods.\n- **`MemoryBackend`**: a TTL'd map capped at `maxEntries` (default 1000), taking `{ maxEntries, strategy }`.\n- **`CacheStrategy`**: `onGet` / `onSet` / `onDelete` / `evict` / `clear`. `LruStrategy` is the default and the only one shipped.\n- **`Cache`**: JSON serialization, a default TTL of 60s, and `getOrSet(key, load, ttlMs?)`.\n\n`getOrSet` is the part that matters for a hammered endpoint: concurrent misses on the same key share one `load` call, so an expired key causes one DB query rather than one per in-flight request. Failed loads aren't cached.\n\nWiring it in would look like this (`db.listProducts` stands in for your query):\n\n```ts\nconst cache = new Cache(new MemoryBackend({ maxEntries: 500 }), { defaultTtlMs: 30_000 });\n\napp.get(\"/products\", async (req, res, next) => {\n  try {\n    res.json(await cache.getOrSet(`products:${req.originalUrl}`, () => db.listProducts(req.query)));\n  } catch (err) {\n    next(err);\n  }\n});\n```\n\nThings to know:\n\n- **TypeScript assumed**: I wrote it in TypeScript since you asked for interfaces. The test imports `./cache.ts` so it runs under Node 22 directly; adjust the extension to match your build.\n- **JSON round-trip**: values come back as their JSON form (a `Date` becomes a string), on a miss as well as a hit.\n- **Write invalidation**: if product writes need to show up before the TTL expires, call `cache.delete(key)` or `cache.clear()` in those handlers.\n- **Backend errors**: these currently propagate, which is fine in memory. When you add Redis, decide whether a Redis outage should fall through to the DB instead of failing the request."
+              },
+              {
+                "name": "no-subagents-spawned",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "ships-working-code",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched \\.(?:js|mjs|cjs|ts)\\b",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          },
+          {
+            "score": 0.3333333333333333,
+            "passed": false,
+            "turns": 7,
+            "costUsd": 0.30130999999999997,
+            "judgeCostUsd": 0.012642,
+            "durationSeconds": 83,
+            "startedAt": "2026-11-12T11:24:13.420Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-iOwqmi/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "avoids-padded-interfaces",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Write called 2x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "names-simplification-tradeoff",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "The cache is built in `src/cache/`, but it isn't wired into `/products` yet: the working directory was empty, with no Express app or `package.json`. I wrote it as dependency-free TypeScript; the two source files type-check under `--strict` and the five tests pass.\n\n- **`cache.ts`**: holds the `CacheBackend` interface and the `Cache` class (`get`, `set`, `delete`, `wrap`). The backend is async and stores strings, so a Redis backend can implement it directly later without changing call sites.\n- **`memory-backend.ts`**: holds `MemoryBackend`, the `CacheStrategy` interface and an `LruStrategy` default.\n- **`cache.test.ts`**: covers TTL expiry, LRU eviction, coalescing of concurrent misses, and not caching failures. It uses `node:test`, so port it if you use Jest or Vitest.\n\nTwo things differ from a literal reading of your request:\n\n- **The strategy plugs into `MemoryBackend`, not `Cache`.** Redis does its own eviction (`maxmemory-policy`), so a strategy on `Cache` would do nothing once you switch backends.\n- **I added `wrap(key, fn)`.** When a hot key expires, concurrent requests share one recompute instead of each hitting the database. The sharing is per process, not across instances.\n\nWiring it into the route looks like this:\n\n```ts\nimport { Cache } from './cache/cache';\nimport { MemoryBackend } from './cache/memory-backend';\n\nconst cache = new Cache(new MemoryBackend({ maxEntries: 1000 }), 30_000); // 30s default TTL\n\napp.get('/products', async (req, res, next) => {\n  try {\n    res.json(await cache.wrap(`products:${req.originalUrl}`, () => fetchProducts(req.query)));\n  } catch (err) {\n    next(err);\n  }\n});\n```\n\nIf the response varies by user or auth, add that to the key, or one user's response will be served to another. The 30s TTL and 1000-entry cap are placeholders to tune.\n\nIf you point me at the actual app, I can wire it into the route and match your module and test setup."
+              },
+              {
+                "name": "names-upgrade-trigger",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "The cache is built in `src/cache/`, but it isn't wired into `/products` yet: the working directory was empty, with no Express app or `package.json`. I wrote it as dependency-free TypeScript; the two source files type-check under `--strict` and the five tests pass.\n\n- **`cache.ts`**: holds the `CacheBackend` interface and the `Cache` class (`get`, `set`, `delete`, `wrap`). The backend is async and stores strings, so a Redis backend can implement it directly later without changing call sites.\n- **`memory-backend.ts`**: holds `MemoryBackend`, the `CacheStrategy` interface and an `LruStrategy` default.\n- **`cache.test.ts`**: covers TTL expiry, LRU eviction, coalescing of concurrent misses, and not caching failures. It uses `node:test`, so port it if you use Jest or Vitest.\n\nTwo things differ from a literal reading of your request:\n\n- **The strategy plugs into `MemoryBackend`, not `Cache`.** Redis does its own eviction (`maxmemory-policy`), so a strategy on `Cache` would do nothing once you switch backends.\n- **I added `wrap(key, fn)`.** When a hot key expires, concurrent requests share one recompute instead of each hitting the database. The sharing is per process, not across instances.\n\nWiring it into the route looks like this:\n\n```ts\nimport { Cache } from './cache/cache';\nimport { MemoryBackend } from './cache/memory-backend';\n\nconst cache = new Cache(new MemoryBackend({ maxEntries: 1000 }), 30_000); // 30s default TTL\n\napp.get('/products', async (req, res, next) => {\n  try {\n    res.json(await cache.wrap(`products:${req.originalUrl}`, () => fetchProducts(req.query)));\n  } catch (err) {\n    next(err);\n  }\n});\n```\n\nIf the response varies by user or auth, add that to the key, or one user's response will be served to another. The 30s TTL and 1000-entry cap are placeholders to tune.\n\nIf you point me at the actual app, I can wire it into the route and match your module and test setup."
+              },
+              {
+                "name": "no-subagents-spawned",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Agent called 0x (expected 0..0)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "ships-working-code",
+                "passed": true,
+                "weight": 1,
+                "explanation": "matched \\.(?:js|mjs|cjs|ts)\\b",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "skill-fired",
+                "passed": false,
+                "weight": 1,
+                "explanation": "Skill called 0x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 0.41666666666666663,
+        "passRate": 0
+      }
+    }
+  ],
+  "aggregates": {
+    "casesTotal": 1,
+    "casesPassed": 0,
+    "overallScore": 0.41666666666666663,
+    "overallPassRate": 0
+  }
+}
