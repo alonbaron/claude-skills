@@ -58,7 +58,7 @@ More than 8 findings to verify: give one verifier several claims that share a fi
 
 ## Reviewers
 
-Spawn the specialists below with the Agent tool, **all in one message** so they run concurrently, each with `model: sonnet`. Give each the diff plus the files it needs and its single lens. Each returns findings as: `severity · file:line · what · why · suggested fix`.
+Spawn the specialists below with the Agent tool, **all in one message** so they run concurrently, each with `model: sonnet`. That message opens with the `Plan:` line from Agent budget; the spawns follow it. Give each the diff plus the files it needs and its single lens. Each returns findings as: `severity · file:line · what · why · suggested fix`.
 
 - **Correctness** — logic errors, edge cases, null/empty, off-by-one, concurrency/races.
 - **Security & trust boundaries** — authz/authn (JWT), input validation at boundaries, injection, IDOR, leaked secrets.
