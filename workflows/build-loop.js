@@ -236,6 +236,11 @@ const REFUTE_SCHEMA = {
   properties: {
     verdict: { type: "string", enum: ["pass", "fail"] },
     testsRan: { type: "boolean" },
+    baseCheck: {
+      type: "string",
+      enum: ["fails-on-base", "passes-on-base", "not-run", "not-a-bug-fix"],
+      description: "correctness lens only: did the bug-fix row's new test fail on the base commit",
+    },
     blocking: { type: "array", items: FINDING, maxItems: 8 },
     advisory: { type: "array", items: FINDING, maxItems: 6 },
   },
@@ -444,7 +449,10 @@ Do not read file contents beyond the two commands.`,
 const LENSES = {
   correctness: {
     model: () => M.refute,
-    text: (p, sp) => `Lens: correctness and tests. Rerun the verification commands yourself: ${sp.verifyCommands.length ? sp.verifyCommands.join(" && ") : fmtCommands(p.commands)}. A "done" claim is not evidence. Then read the diff for logic errors, off-by-one and boundary cases, unhandled failure paths, tests that cannot fail, and spec items with no test. If tests or lint exit non-zero, or you could not run them, verdict is fail and the failing command is a blocking finding. A TODO_WORKFLOW.md or docs/handoff.md edit in a commit other than the planner's "in progress" one is blocking (the builder must not touch them).`,
+    text: (p, sp) => `Lens: correctness and tests. Rerun the verification commands yourself: ${sp.verifyCommands.length ? sp.verifyCommands.join(" && ") : fmtCommands(p.commands)}. A "done" claim is not evidence. Then read the diff for logic errors, off-by-one and boundary cases, unhandled failure paths, tests that cannot fail, and spec items with no test. If tests or lint exit non-zero, or you could not run them, verdict is fail and the failing command is a blocking finding. A TODO_WORKFLOW.md or docs/handoff.md edit in a commit other than the planner's "in progress" one is blocking (the builder must not touch them).
+Base check. The task row is: "${p.taskRow}". Set baseCheck in your output, every time:
+- The row adds behavior and repairs nothing that existed at the base commit: baseCheck "not-a-bug-fix", and skip the recipe.
+- The row fixes a defect in behavior that existed at the base commit: a test that passes without the fix proves nothing, so confirm the new test fails there. Recipe: (1) "git diff --name-only --diff-filter=AM ${p.baseCommit}..HEAD" and keep the test files; (2) "git worktree add --detach ${scratchDir(p.taskId)}/base ${p.baseCommit}"; (3) copy those test files, and nothing else, from the working tree to the same paths under ${scratchDir(p.taskId)}/base; (4) run the test command inside ${scratchDir(p.taskId)}/base, narrowed to those files when the command allows it; (5) "git worktree remove --force ${scratchDir(p.taskId)}/base", whatever step 4 did. Then read step 4's output. The new test fails on its assertion about the defect: baseCheck "fails-on-base". The new test passes: baseCheck "passes-on-base", and a blocking finding citing the test file, because the test does not pin the bug. It could not run, or it failed for another reason (a module the base commit lacks, an install the worktree lacks): baseCheck "not-run", with the reason as an advisory finding.`,
   },
   acceptance: {
     model: () => M.refute,
@@ -703,6 +711,8 @@ for (let n = 0; n < opts.maxTasks; n++) {
       break;
     }
     if (votes.length < lenses.length) log(`round ${round}: ${lenses.length - votes.length} of ${lenses.length} lenses returned nothing`);
+    const correctness = votes.find((v) => v.lens === "correctness");
+    if (correctness) log(`round ${round}: base check ${correctness.baseCheck || "not reported"}`);
     const merged = merge(votes);
     advisory.push(...merged.advisory);
     blocking = merged.blocking.filter((f) => !dismissed.has(findingId(f)));
