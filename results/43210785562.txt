@@ -1,0 +1,38 @@
+run: 43210785562 https://github.com/alonbaron/claude-skills/actions/runs/43210785562
+event: workflow_dispatch  commit: 142d22436c142570b49cfe4c99be8cdb16afbc8f  ref: feat/v3.3
+model: claude-fable-5-2  cases: sandboxed  job status at publish: success
+only: review-swarm/real-diff-ranked-report review-swarm/security-alone-hands-off review-swarm/trivial-diff-declines
+listing budget: 40000
+cli: 2.1.303 (Claude Code)
+started: 2026-11-12T11:48:58Z
+
+valid 3 of 3
+re-run: none
+cost $8.54  runner aggregates over the 3 cases in the results: {"casesTotal": 3, "casesPassed": 3, "overallScore": 0.9583333333333334, "overallPassRate": 0.6666666666666666, "meanDelta": 0.5416666666666666}
+
+== real-diff-ranked-report  with 0.88  without 0.25
+   agent-cap                          with PP   without ..
+   agent-count-reported               with PP   without ..
+   needs-validation-list              with PP   without ..
+   no-edit-calls                      with PP   without PP
+   no-write-calls                     with PP   without PP
+   not-reviewed-line                  with PP   without ..
+   ranked-report-shape                with P.   without ..
+   reviewers-sonnet                   with PP   without ..
+   skill-fired                        with PP   without 
+   spec-section                       with PP   without ..
+   verifier-gets-claim-and-code       with ..   without ..
+   verifier-not-handed-severity       with PP   without PP
+   verifiers-opus                     with PP   without ..
+   FAIL with#0 verifier-gets-claim-and-code: Agent called 0x (expected 1..∞)
+   FAIL with#1 ranked-report-shape: judge votes: FAIL FAIL FAIL
+      evidence: **Not ready for a PR: the module fails at import, the endpoint would fail on every request even past that, and two requirements in the spec row are missing.** | | Reviewed: working tree vs `HEAD` · 1 file, 11 changed lines · spec: `TODO_WORKFLOW.md:10` (row 1.2) | Agents: planned 7 reviewers + up to 8 verifiers · spawned 7 + 8 | Not reviewed: nothing ran against real Flask or SQLAlchemy, because neither is installed and the repo has no requirements file. The import failure was reproduced with a stub `flask`; every other runtime behaviour below is judged from reading the code. | | ## Spec | - missing · `app/routes.py:10` · "newest first" · The query has no `order_by` and nothing sorts afterwa
+   FAIL with#1 verifier-gets-claim-and-code: Agent called 0x (expected 1..∞)
+
+== security-alone-hands-off  with 1.00  without 0.00
+   hands-off-to-security-review       with PP   without ..
+   no-swarm-spawn                     with PP   without ..
+
+== trivial-diff-declines  with 1.00  without 1.00
+   agent-spawn-limit                  with PP   without PP
+   declines-with-alternative          with PP   without PP
