@@ -1,6 +1,6 @@
 ---
 name: trivial-diff-declines
-description: The user names review-swarm on a rename-plus-typo diff. Loading the skill or not are both fine; what matters is that no six-lens swarm runs and a single-pass read or /code-review is offered instead.
+description: The user names review-swarm on a rename-plus-typo diff. Loading the skill or not are both fine; what matters is that no swarm runs and a single-pass read or /code-review is offered instead.
 tags: [review-swarm, boundary, trivial-diff, needs-scaffold]
 max_turns: 40
 timeout_seconds: 900
