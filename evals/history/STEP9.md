@@ -120,3 +120,19 @@ What to know before relying on it:
    are. The removal was correct here, and it followed the two advisory findings in the outcome.
 3. Not measured: a close on a repo with no `docs/handoff.md` at all, the 12-bullet ceiling, and the "- none yet"
    line.
+
+## 6. Left open at the v3.3 release (2026-11-15)
+
+- The finding in section 5 ships as is. A rewrite of close step 3 was drafted and not run, so it was not committed:
+  (a) remove a bullet that an advisory finding in the outcome cites as stale; (b) put one question to each
+  candidate, "will this sentence still be true after the next row is built?", and send a "no" to the row's
+  "Left for" note instead of the section; (c) add the patterns that are left, at most 3. Measuring it takes one
+  `autobuild.mjs --tasks 2` run on a clone of the fixture at 0b89a32 (section 3 reported $6.71 for that run).
+- The fixture was still on disk on 2026-11-15, in the scratchpad of session 1cc633f5-c584-4fda-814a-67b98b289b72
+  under `%TEMP%/claude`, as `build-loop-fixture-3` with `tools/seed-fixture.mjs` beside it. It is not kept.
+- Step B5, the 120-query trigger suite on Fable 5.2, was deferred by the owner on 2026-11-15. The last per-skill
+  costs, on Fable 5.1, were $9.95 to $13.60 for 40 runs (`STEP7.md` sections 15 to 18 and the 2026-10-17 results
+  file), about $70 for all six, against about $18.50 of reported cost per plan window. Cost per run on Fable 5.2
+  was not measured.
+- v3.3 changed the wording of two review-swarm rubrics and two case descriptions ("six-lens swarm" became "swarm")
+  after their last run, 43210785562. They were not run again.
