@@ -4,14 +4,14 @@
 // One TODO_WORKFLOW.md row at a time; every stage is a fresh subagent with an empty context:
 //   plan     -> pick the next eligible "[ ]" row (or resume a stale "[IN PROGRESS]" one), open the branch
 //   scout    -> locate files, symbols, tests and doc sections; locations, never contents
-//   spec     -> docs first (SoT -> Roadmap -> NN docs), then <scratch>/<id>/spec.md
+//   spec     -> docs first (SoT -> Roadmap -> NN docs), then <scratch>/<id>/spec.md; reads handoff.md's reusable patterns
 //   research -> verify unfamiliar APIs (skipped when the spec lists none)
 //   build    -> implement from the spec, run the repo's own commands, micro-commit
 //   measure  -> independent diff stats (size, docs-only, trust-boundary paths)
 //   refute   -> parallel lenses try to refute "done"; findings merged by evidence-weighted voting
 //   arbiter  -> only when a finding the fixer disputed comes back
 //   fix      -> address blocking findings, at most maxFixRounds
-//   close    -> the only writer of the TODO row and docs/handoff.md; runs on every exit after plan
+//   close    -> the only writer of the TODO row and docs/handoff.md (log entry and reusable patterns); runs on every exit after plan
 // Repo contract (the architect skill's templates carry all of it): TODO_WORKFLOW.md with the five status
 // strings, SOURCE_OF_TRUTH.md, a "## Commands" table in CLAUDE.md, "Left for <id>: ..." notes, docs/handoff.md.
 // State between runs lives in the repo (TODO_WORKFLOW.md, docs/handoff.md, <scratch>/<id>/), never in chat.
@@ -71,7 +71,7 @@ if (opts.task && !(args && typeof args === "object" && "maxTasks" in args)) opts
 opts.scratch = String(opts.scratch).replace(/\/+$/, "");
 
 // Model tiers. Aliases, not pinned IDs, so each stage follows the newest model of its tier
-// (measured 2026-11-11 on CLI 2.1.322: fable = Fable 5.2, opus = Opus 5.5, sonnet = Sonnet 5.5, haiku = Haiku 5.5,
+// (measured 2026-11-11 and again 2026-11-12 on CLI 2.1.322: fable = Fable 5.2, opus = Opus 5.5, sonnet = Sonnet 5.5, haiku = Haiku 5.5,
 // all four recording the effort they ran at; on 2026-10-12, CLI 2.1.296, fable resolved to Fable 5.1, and on
 // 2026-09-29, CLI 2.1.284, haiku still resolved to Haiku 4.5, which takes no effort).
 //   fable  - the decisions everything downstream inherits: which row, what "done" means, who is right in a dispute
@@ -114,7 +114,7 @@ const STATUS = {
 // ---------- shared prefix: identical first block in every stage prompt so the prompt cache is shared ----------
 const COMMON = `You are one stage of an unattended build loop. The repo root is the working directory.
 - Commands (install, test, lint, format) come from the "## Commands" table in CLAUDE.md, which is already in your context; the planner copied them into the stage inputs below. Never invent a package manager, a test filter, or a script name that the table does not show.
-- Doc system: SOURCE_OF_TRUTH.md (apex truth), ARCHITECTURE_ROADMAP.md, docs/architecture/NN-*.md (modular details), TODO_WORKFLOW.md (task rows: # | Task | Architecture Ref | Status | Branch), docs/handoff.md (newest-first log). Status strings, exact: "[ ]", "[IN PROGRESS]", "[FINISHED - PENDING MERGE]", "[MERGED/DONE]", "[BLOCKED] <reason>".
+- Doc system: SOURCE_OF_TRUTH.md (apex truth), ARCHITECTURE_ROADMAP.md, docs/architecture/NN-*.md (modular details), TODO_WORKFLOW.md (task rows: # | Task | Architecture Ref | Status | Branch), docs/handoff.md (a "## Reusable patterns" section, then a newest-first log). Status strings, exact: "[ ]", "[IN PROGRESS]", "[FINISHED - PENDING MERGE]", "[MERGED/DONE]", "[BLOCKED] <reason>".
 - Git: never commit to main, never force-push, never delete branches, never skip hooks. Commit as the repo owner only: no Co-Authored-By trailer, no AI mention in messages.
 - Do not invoke skills, do not spawn subagents. Keep each shell command short.
 - Scratch files for this task live under <scratch>/<taskId>/ (create the directory when you write there).
@@ -236,6 +236,11 @@ const REFUTE_SCHEMA = {
   properties: {
     verdict: { type: "string", enum: ["pass", "fail"] },
     testsRan: { type: "boolean" },
+    baseCheck: {
+      type: "string",
+      enum: ["fails-on-base", "passes-on-base", "not-run", "not-a-bug-fix"],
+      description: "correctness lens only: did the bug-fix row's new test fail on the base commit",
+    },
     blocking: { type: "array", items: FINDING, maxItems: 8 },
     advisory: { type: "array", items: FINDING, maxItems: 6 },
   },
@@ -370,7 +375,9 @@ Carried-over notes: ${p.leftForThisTask.length ? p.leftForThisTask.join(" | ") :
 Commands from CLAUDE.md: ${fmtCommands(p.commands)}
 Scout report (locations only): ${JSON.stringify(s)}
 
-Read: the SOURCE_OF_TRUTH.md sections relevant to the task, the doc sections the scout listed, and the relevant ranges of the source files it listed.
+Read: the SOURCE_OF_TRUTH.md sections relevant to the task, the doc sections the scout listed, the relevant ranges of the source files it listed, and the "## Reusable patterns" section of docs/handoff.md when that file has one (that section only, not the log entries under it).
+
+Reusable patterns: earlier tasks left them for this one. For each pattern that bears on this task, put it where the builder will meet it: a helper or convention in section 3 or 4 of the spec, a trap in section 6, each with the file path the pattern names. A pattern that does not bear on this task gets no mention.
 
 Architecture-change rule: if the task changes any architectural fact (a surface, a shape, a constant, a message, a storage layout), update SOURCE_OF_TRUTH.md, then ARCHITECTURE_ROADMAP.md, then the docs/architecture/NN-*.md file FIRST, and commit "docs(<area>): <what>" before writing the spec. Record the surface (signatures, file names, test names) in the doc so the code has something to match. If nothing architectural changes, change no docs.
 
@@ -442,7 +449,10 @@ Do not read file contents beyond the two commands.`,
 const LENSES = {
   correctness: {
     model: () => M.refute,
-    text: (p, sp) => `Lens: correctness and tests. Rerun the verification commands yourself: ${sp.verifyCommands.length ? sp.verifyCommands.join(" && ") : fmtCommands(p.commands)}. A "done" claim is not evidence. Then read the diff for logic errors, off-by-one and boundary cases, unhandled failure paths, tests that cannot fail, and spec items with no test. If tests or lint exit non-zero, or you could not run them, verdict is fail and the failing command is a blocking finding. A TODO_WORKFLOW.md or docs/handoff.md edit in a commit other than the planner's "in progress" one is blocking (the builder must not touch them).`,
+    text: (p, sp) => `Lens: correctness and tests. Rerun the verification commands yourself: ${sp.verifyCommands.length ? sp.verifyCommands.join(" && ") : fmtCommands(p.commands)}. A "done" claim is not evidence. Then read the diff for logic errors, off-by-one and boundary cases, unhandled failure paths, tests that cannot fail, and spec items with no test. If tests or lint exit non-zero, or you could not run them, verdict is fail and the failing command is a blocking finding. A TODO_WORKFLOW.md or docs/handoff.md edit in a commit other than the planner's "in progress" one is blocking (the builder must not touch them).
+Base check. The task row is: "${p.taskRow}". Set baseCheck in your output, every time:
+- The row adds behavior and repairs nothing that existed at the base commit: baseCheck "not-a-bug-fix", and skip the recipe.
+- The row fixes a defect in behavior that existed at the base commit: a test that passes without the fix proves nothing, so confirm the new test fails there. Recipe: (1) "git diff --name-only --diff-filter=AM ${p.baseCommit}..HEAD" and keep the test files; (2) "git worktree add --detach ${scratchDir(p.taskId)}/base ${p.baseCommit}"; (3) copy those test files, and nothing else, from the working tree to the same paths under ${scratchDir(p.taskId)}/base; (4) run the test command inside ${scratchDir(p.taskId)}/base, narrowed to those files when the command allows it; (5) "git worktree remove --force ${scratchDir(p.taskId)}/base", whatever step 4 did. Then read step 4's output. The new test fails on its assertion about the defect: baseCheck "fails-on-base". The new test passes: baseCheck "passes-on-base", and a blocking finding citing the test file, because the test does not pin the bug. It could not run, or it failed for another reason (a module the base commit lacks, an install the worktree lacks): baseCheck "not-run", with the reason as an advisory finding.`,
   },
   acceptance: {
     model: () => M.refute,
@@ -564,9 +574,10 @@ Branch ${p.branch}. If you are not on it and it exists, switch to it first. If y
 Read ${dir}/build.md and ${sp ? sp.specPath : dir + "/spec.md"} (sections 1 and 8 only) if they exist; if not, work from the outcome alone.
 
 1. TODO_WORKFLOW.md, row ${p.taskId}: set Status to "${statusCell}" followed by a note in the same register as the finished rows above it: which docs changed (if any), the one-line result, then "Left for <next task id or 'later'>: ..." carrying every advisory finding, deviation and disputed finding worth keeping. Under 90 words. Do not touch other rows. ${outcome.status === STATUS.todo ? 'The status goes back to "[ ]" because nothing was built; the note says why the loop stopped.' : ""}
-2. docs/handoff.md: create it if missing with a two-line header saying it is the build loop's log, newest first. Insert one entry at the top: "## <date from git log -1 --format=%cs> — ${p.taskId} ${outcome.status} (${p.branch})" then 3-6 bullets: what shipped, refute rounds and what they caught, what stays open. Do not recommend which row to pick next; the planner decides from TODO_WORKFLOW.md.
-3. Commit both files in one commit, made after both are written: "docs: TODO ${p.taskId} ${subject}". Never --amend; if that commit left something out, add a second commit with the same subject. If an uncommitted test file left by the adversarial review lens is still in the tree (it was never adopted by a fix), delete it; the note in step 1 records what it tested. Leave "git status" empty.
-4. After the commit command has returned, run "git status --short" and "git log -1 --format=%h" and read their output. Only then answer: commit = that hash; ok = true only when the status output is empty and the hash is the commit you just made.`,
+2. docs/handoff.md: create it if missing with a two-line header saying it is the build loop's log, newest first. Insert one entry above the newest existing entry: "## <date from git log -1 --format=%cs> — ${p.taskId} ${outcome.status} (${p.branch})" then 3-6 bullets: what shipped, refute rounds and what they caught, what stays open. Do not recommend which row to pick next; the planner decides from TODO_WORKFLOW.md.
+3. docs/handoff.md, section "## Reusable patterns": it sits between the header and the newest entry; create it there if it is missing. It holds what a later task in this repo will reuse, which the entry in step 2 does not: a helper to call, a test or naming convention the builder had to follow, a quirk of a command, a trap a review lens caught. One bullet each, in this shape: "- <the pattern, one line> (<file path it lives in>; from ${p.taskId})". Take them from build.md (deviations, doubts) and from the outcome's advisory findings. Add at most 3; skip one the section already holds; keep the section at 12 bullets or fewer by merging near-duplicates. When this task taught nothing reusable, add no bullet and leave the existing ones as they are; a section with no bullet at all holds the single line "- none yet", which the first real bullet replaces.
+4. Commit both files in one commit, made after both are written: "docs: TODO ${p.taskId} ${subject}". Never --amend; if that commit left something out, add a second commit with the same subject. If an uncommitted test file left by the adversarial review lens is still in the tree (it was never adopted by a fix), delete it; the note in step 1 records what it tested. Leave "git status" empty.
+5. After the commit command has returned, run "git status --short" and "git log -1 --format=%h" and read their output. Only then answer: commit = that hash; ok = true only when the status output is empty and the hash is the commit you just made.`,
     { label: `close:${p.taskId}`, phase: "Close", model: M.close, effort: "low", schema: CLOSE_SCHEMA },
   );
 }
@@ -700,6 +711,8 @@ for (let n = 0; n < opts.maxTasks; n++) {
       break;
     }
     if (votes.length < lenses.length) log(`round ${round}: ${lenses.length - votes.length} of ${lenses.length} lenses returned nothing`);
+    const correctness = votes.find((v) => v.lens === "correctness");
+    if (correctness) log(`round ${round}: base check ${correctness.baseCheck || "not reported"}`);
     const merged = merge(votes);
     advisory.push(...merged.advisory);
     blocking = merged.blocking.filter((f) => !dismissed.has(findingId(f)));

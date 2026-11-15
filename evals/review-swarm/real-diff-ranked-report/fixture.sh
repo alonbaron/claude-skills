@@ -26,6 +26,22 @@ def test_placeholder():
     assert True
 EOF
 
+# The spec the diff is reviewed against. Row 1.2 asks for two things the
+# uncommitted endpoint below does not do: newest first, and at most 50 orders.
+cat > TODO_WORKFLOW.md <<'EOF'
+# TODO_WORKFLOW
+
+Status: `[ ]` · `[IN PROGRESS]` · `[FINISHED - PENDING MERGE]` · `[MERGED/DONE]` · `[BLOCKED]`
+
+## Phase 1: read API
+
+| # | Task | Architecture Ref | Status | Branch |
+|---|------|------------------|--------|--------|
+| 1.1 | Scaffold the Flask app and the placeholder models | - | [MERGED/DONE] | main |
+| 1.2 | `GET /orders/<user_id>`: a user's orders as a JSON list of `{order_id, item_name}`, newest first, at most 50 per response | - | [IN PROGRESS] | main |
+| 1.3 | `GET /items/<item_id>`: one catalog item as JSON | - | [ ] | - |
+EOF
+
 git add -A
 git -c user.name=fixture -c user.email=fixture@example.com commit -q -m "scaffold flask app" || true
 

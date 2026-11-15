@@ -1,19 +1,15 @@
 ---
 name: up-to-date
 description: >-
-  Preflight sync and situational brief before repo work: fetches origin,
-  reports ahead/behind divergence (with a no-upstream/detached-HEAD
-  fallback), recent commits, open PRs and issues touching the work, and
-  dirty-tree warnings, then names one recommended first action. Read-only by
-  default — never pulls, rebases, merges, or discards local work without
-  explicit confirmation.
+  Preflight sync brief before repo work: ahead/behind against origin, recent
+  commits, open PRs and issues, a dirty tree, and one first action.
+  Read-only: no pull, rebase, or merge without confirmation.
 when_to_use: >-
-  Use proactively before starting work in any repo with a remote, especially
-  one that's shared or hasn't been touched in a while. Trigger phrases:
+  Use unasked before starting work in any repo with a remote. Also on
   "up-to-date", "sync first", "pull latest", "catch me up on the repo". Not
-  for a repo with no remote (say so in one line, then start the task), and
-  not for a mid-task re-check in a repo already briefed this session (a
-  plain git fetch + git status answers that without the full brief).
+  for a repo with no remote: say so in one line, then start the task. Not
+  for a mid-task re-check in a repo already briefed this session: git fetch
+  and git status answer that.
 argument-hint: "[optional: 'docs' to also refresh library docs, or a path to scope the PR/issue check]"
 allowed-tools: Bash(git rev-parse *) Bash(git remote *) Bash(git branch *) Bash(git status *) Bash(git stash list*) Bash(git fetch *) Bash(git rev-list *) Bash(git log *) Bash(gh pr list *) Bash(gh issue list *)
 ---

@@ -4,7 +4,7 @@ description: A security-only ask is /security-review's job. review-swarm may loa
 tags: [review-swarm, boundary, security, needs-scaffold]
 max_turns: 40
 timeout_seconds: 900
-expected_outcome: No specialists are spawned, whether or not the skill loads; the response points to /security-review instead of running a six-lens swarm.
+expected_outcome: No specialists are spawned, whether or not the skill loads; the response points to /security-review instead of running a swarm.
 allowed_tools: [Read, Grep, Glob, Skill, Agent, TodoWrite]
 ---
 
